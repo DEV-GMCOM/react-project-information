@@ -1,0 +1,235 @@
+.dashboard {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.dashboard-header {
+    margin-bottom: 32px;
+    text-align: center;
+}
+
+.dashboard-header h1 {
+    color: #333;
+    margin-bottom: 12px;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.dashboard-header p {
+    color: #666;
+    font-size: 18px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: white;
+    padding: 28px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: all 0.3s ease;
+    border: 1px solid #f1f3f4;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.stat-icon {
+    font-size: 40px;
+    width: 72px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    color: white;
+    flex-shrink: 0;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-content h3 {
+    color: #666;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-number {
+    font-size: 32px;
+    font-weight: 800;
+    color: #333;
+    margin-bottom: 6px;
+    line-height: 1;
+}
+
+.stat-sub {
+    font-size: 13px;
+    color: #666;
+    font-weight: 500;
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.chart-container {
+    background: white;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid #f1f3f4;
+}
+
+.chart-container h3 {
+    color: #333;
+    margin-bottom: 24px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.quick-actions {
+    background: white;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid #f1f3f4;
+}
+
+.quick-actions h3 {
+    color: #333;
+    margin-bottom: 24px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.action-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.action-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #495057;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.action-button:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    border-color: #007bff;
+    color: #007bff;
+}
+
+.action-icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+}
+
+.action-text {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.retry-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 16px;
+    font-weight: 500;
+}
+
+.retry-button:hover {
+    background-color: #0056b3;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+    }
+
+    .charts-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .action-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+    }
+
+    .stat-card {
+        padding: 20px;
+        gap: 16px;
+    }
+
+    .stat-icon {
+        font-size: 32px;
+        width: 60px;
+        height: 60px;
+    }
+
+    .stat-number {
+        font-size: 28px;
+    }
+
+    .chart-container {
+        padding: 20px;
+    }
+
+    .quick-actions {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-header h1 {
+        font-size: 24px;
+    }
+
+    .dashboard-header p {
+        font-size: 16px;
+    }
+
+    .stat-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .action-button {
+        padding: 20px;
+    }
+}

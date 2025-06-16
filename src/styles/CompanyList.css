@@ -1,0 +1,96 @@
+.company-list {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.company-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 24px;
+}
+
+.company-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid #f1f3f4;
+}
+
+.company-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.company-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 24px 16px 24px;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.company-header h3 {
+    color: #333;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+    flex: 1;
+    margin-right: 16px;
+}
+
+.company-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.company-details {
+    padding: 16px 24px;
+}
+
+.company-details p {
+    margin: 10px 0;
+    font-size: 14px;
+    color: #555;
+    line-height: 1.5;
+}
+
+.company-details strong {
+    color: #333;
+    font-weight: 600;
+}
+
+.company-meta {
+    padding: 16px 24px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #f1f3f4;
+}
+
+.company-meta small {
+    color: #666;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .company-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .company-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .company-header h3 {
+        margin-right: 0;
+    }
+
+    .company-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}

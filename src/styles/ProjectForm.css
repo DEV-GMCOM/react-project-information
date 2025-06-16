@@ -1,0 +1,255 @@
+/* src/styles/ProjectForm.css */
+.project-form {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.project-form .form {
+    margin-top: 0;
+}
+
+/* 필수 필드 표시 */
+.project-form .form-group label[for="project_code"]::after,
+.project-form .form-group label[for="project_name"]::after {
+    content: " *";
+    color: #dc3545;
+    font-weight: 700;
+}
+
+/* 프로젝트 코드 스타일 */
+.project-form .form-group input[name="project_code"] {
+    font-family: 'Courier New', 'Monaco', monospace;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* 예산 입력 필드 */
+.project-form .form-group input[name="budget"] {
+    font-family: 'Courier New', 'Monaco', monospace;
+    text-align: right;
+}
+
+/* 필드 도움말 */
+.field-help {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+}
+
+/* 프로젝트 요약 */
+.project-summary {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 10px;
+}
+
+.project-summary h4 {
+    color: #333;
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+
+.project-summary h4::before {
+    content: "📊";
+    margin-right: 8px;
+    font-size: 18px;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.summary-item .label {
+    font-weight: 500;
+    color: #555;
+    font-size: 14px;
+}
+
+.summary-item .value {
+    font-weight: 700;
+    color: #333;
+    font-size: 14px;
+}
+
+/* 텍스트 영역 */
+.project-form .form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+    font-family: inherit;
+}
+
+/* 선택 박스 개선 */
+.project-form .form-group select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 8px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 32px;
+}
+
+/* 날짜 입력 필드 */
+.project-form .form-group input[type="date"] {
+    font-family: inherit;
+}
+
+/* 상태 선택에 따른 색상 */
+.project-form .form-group select[name="status"] {
+    font-weight: 500;
+}
+
+.project-form .form-group select[name="status"][value="planning"] {
+    color: #0066cc;
+}
+
+.project-form .form-group select[name="status"][value="active"] {
+    color: #28a745;
+}
+
+.project-form .form-group select[name="status"][value="completed"] {
+    color: #6f42c1;
+}
+
+.project-form .form-group select[name="status"][value="cancelled"] {
+    color: #dc3545;
+}
+
+/* 로딩 상태 */
+.project-form .loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+    font-size: 16px;
+    color: #666;
+}
+
+/* 에러 메시지 개선 */
+.project-form .error-message {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+}
+
+.project-form .error-message::before {
+    content: "⚠️";
+    margin-right: 8px;
+    font-size: 18px;
+}
+
+/* 폼 액션 버튼 개선 */
+.project-form .form-actions {
+    background: #f8f9fa;
+    margin: 32px -30px -30px -30px;
+    padding: 24px 30px;
+    border-top: 2px solid #e9ecef;
+    border-radius: 0 0 8px 8px;
+}
+
+.project-form .btn {
+    min-width: 120px;
+    font-weight: 600;
+    padding: 12px 24px;
+}
+
+.project-form .btn-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+}
+
+.project-form .btn-primary:hover {
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.4);
+    transform: translateY(-1px);
+}
+
+.project-form .btn-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);
+    border: none;
+    color: white;
+}
+
+.project-form .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .project-form {
+        margin: 0 16px;
+    }
+
+    .project-form .form {
+        padding: 20px;
+    }
+
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .project-form .form-actions {
+        margin: 24px -20px -20px -20px;
+        padding: 20px;
+    }
+
+    .project-form .form-actions {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .project-form .btn {
+        width: 100%;
+        min-width: unset;
+    }
+}
+
+@media (max-width: 480px) {
+    .project-summary {
+        padding: 16px;
+    }
+
+    .project-summary h4 {
+        font-size: 14px;
+    }
+
+    .summary-item {
+        padding: 6px 10px;
+    }
+
+    .summary-item .label,
+    .summary-item .value {
+        font-size: 13px;
+    }
+}
