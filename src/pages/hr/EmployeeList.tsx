@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { apiService, Employee } from '../../services/api';
+
+// import { apiService, Employee } from '@/api/services/api';
+import { apiService, Employee  } from '../../api';  // ✅ 수정
+// import { apiService, Employee  } from '@/api';  // ✅ 수정
+
 import '../../styles/EmployeeList.css';
 
 const EmployeeList: React.FC = () => {

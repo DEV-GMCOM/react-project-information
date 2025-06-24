@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { apiService, Project } from '../../services/api';
 import '../../styles/ProjectList.css';
+import { apiService, Project } from '../../api';  // ✅ 수정
+import type { EmployeeCreate } from '../../api/types';  // ✅ 추가
 
 const ProjectList: React.FC = () => {
     const [projects, setProjects] = useState<Project[]>([]);
@@ -65,6 +66,10 @@ const ProjectList: React.FC = () => {
                 <h1>프로젝트 관리</h1>
                 <Link to="/project/new" className="btn btn-primary">
                     새 프로젝트 생성
+                </Link>
+                <br/>
+                <Link to="/project/regist" className="btn btn-primary">
+                    GMCOM 프로젝트 정보 등록
                 </Link>
             </div>
 

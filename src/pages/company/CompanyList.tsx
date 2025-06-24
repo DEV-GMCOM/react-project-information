@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { apiService, Company } from '../../services/api';
+
+// import { companyService } from '@/api';  // ✅ 수정
+// import type { Company } from '@/api';  // ✅ 수정
+
+import { companyService } from '../../api';  // ✅ 수정
+import type { Company } from '../../api/types';  // ✅ 추가
+
 import '../../styles/CompanyList.css';
 
 const CompanyList: React.FC = () => {
@@ -17,7 +23,7 @@ const CompanyList: React.FC = () => {
     const loadCompanies = async () => {
         try {
             setLoading(true);
-            const data = await apiService.getCompanies({
+            const data = await companyService.getCompanies({
                 search: searchTerm || undefined,
                 industry: selectedIndustry || undefined,
                 limit: 100
@@ -37,7 +43,7 @@ const CompanyList: React.FC = () => {
         }
 
         try {
-            await apiService.deleteCompany(id);
+            await companyService.deleteCompany(id);
             setCompanies(companies.filter(company => company.id !== id));
             alert('업체가 삭제되었습니다.');
         } catch (err: any) {
@@ -53,6 +59,10 @@ const CompanyList: React.FC = () => {
                 <h1>업체 관리</h1>
                 <Link to="/company/new" className="btn btn-primary">
                     새 업체 등록
+                </Link>
+                <br/>
+                <Link to="/company/regist" className="btn btn-primary">
+                    GMCOM 클라이언트 등록
                 </Link>
             </div>
 

@@ -1,7 +1,8 @@
 // src/components/hr/EmployeeForm.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { apiService, Employee, EmployeeCreate } from '../../services/api';
+import { apiService } from '../../api';  // ✅ 수정
+import type { EmployeeCreate } from '../../api/types';  // ✅ 추가
 import '../../styles/EmployeeForm.css';
 
 const EmployeeForm: React.FC = () => {
@@ -37,7 +38,7 @@ const EmployeeForm: React.FC = () => {
             setLoading(true);
             setError('');
 
-            const employee = await apiService.getEmployee(Number(id));
+            const employee = await apiService.getEmployee(Number(id));  // ✅ 수정
             setFormData({
                 employee_id: employee.employee_id,
                 name: employee.name,
@@ -299,13 +300,13 @@ const EmployeeForm: React.FC = () => {
             <div className="page-header">
                 <h1>{isEdit ? '직원 정보 수정' : '새 직원 등록'}</h1>
                 <div className="breadcrumb">
-          <span onClick={() => navigate('/hr')} className="breadcrumb-link">
-            직원 관리
-          </span>
+                    <span onClick={() => navigate('/hr')} className="breadcrumb-link">
+                        직원 관리
+                    </span>
                     <span className="breadcrumb-separator"> &gt; </span>
                     <span className="breadcrumb-current">
-            {isEdit ? '정보 수정' : '새 직원 등록'}
-          </span>
+                        {isEdit ? '정보 수정' : '새 직원 등록'}
+                    </span>
                 </div>
             </div>
 

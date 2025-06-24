@@ -1,0 +1,134 @@
+// src/api/types.ts (그대로 유지)
+export interface Company {
+    id: number;
+    company_name: string;
+    business_number?: string;
+    industry?: string;
+    ceo_name?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    website?: string;
+
+    // 담당자 정보
+    contact_person?: string;
+    contact_department?: string;
+    contact_position?: string;
+    contact_phone?: string;
+    contact_email?: string;
+
+    // 회사 규모 정보
+    established_date?: string;
+    capital?: number;
+    employee_count?: number;
+    annual_revenue?: number;
+
+    // 기타 정보
+    business_registration_date?: string;
+    tax_office?: string;
+    business_type?: string;
+    business_category?: string;
+    memo?: string;
+
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CompanyCreate {
+    company_name: string;
+    business_number?: string;
+    industry?: string;
+    ceo_name?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    website?: string;
+    contact_person?: string;
+    contact_department?: string;
+    contact_position?: string;
+    contact_phone?: string;
+    contact_email?: string;
+    established_date?: string;
+    capital?: number;
+    employee_count?: number;
+    annual_revenue?: number;
+    business_registration_date?: string;
+    tax_office?: string;
+    business_type?: string;
+    business_category?: string;
+    memo?: string;
+}
+
+export interface CompanyUpdate extends Partial<CompanyCreate> {}
+
+export interface CompanySearchParams {
+    skip?: number;
+    limit?: number;
+    search?: string;
+    industry?: string;
+    business_type?: string;
+}
+
+export interface Employee {
+    id: number;
+    employee_id: string;
+    name: string;
+    department?: string;
+    position?: string;
+    email?: string;
+    phone?: string;
+    hire_date?: string;
+    birth_date?: string;
+    address?: string;
+    status: 'active' | 'inactive' | 'terminated';
+    created_at: string;
+    updated_at: string;
+}
+
+export interface EmployeeCreate {
+    employee_id: string;
+    name: string;
+    department?: string;
+    position?: string;
+    email?: string;
+    phone?: string;
+    hire_date?: string;
+    birth_date?: string;
+    address?: string;
+    status: 'active' | 'inactive' | 'terminated';
+}
+
+export interface Project {
+    id: number;
+    project_code: string;
+    project_name: string;
+    project_type: string;
+    memo: string;
+    description?: string;
+    start_date?: string;
+    end_date?: string;
+    status: 'planning' | 'active' | 'completed' | 'cancelled';
+    budget?: number;
+    company_id?: number;
+    manager_id?: number;
+    company_name?: string;
+    manager_name?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface DashboardStats {
+    total_stats: {
+        companies: number;
+        employees: number;
+        projects: number;
+    };
+    active_stats: {
+        employees: number;
+        projects: number;
+    };
+    monthly_stats: {
+        new_companies: number;
+        new_employees: number;
+    };
+}

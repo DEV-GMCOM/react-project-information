@@ -11,6 +11,11 @@ import ProjectList from './pages/project/ProjectList';
 import ProjectForm from './pages/project/ProjectForm';
 import './styles/App.css';
 
+// import CompanyRegistForm from "@/pages/company/CompanyRegistForm.tsx";
+// import ProjectRegistForm from "@/pages/project/ProjectRegistForm.tsx";
+import CompanyRegistForm from "./pages/company/CompanyRegistForm.tsx";
+import ProjectRegistForm from "./pages/project/ProjectRegistForm.tsx";
+
 function App() {
   return (
     <Layout>
@@ -24,6 +29,7 @@ function App() {
         {/* 업체 관리 */}
         <Route path="/company" element={<CompanyList />} />
         <Route path="/company/new" element={<CompanyForm />} />
+        <Route path="/company/regist" element={<CompanyRegistForm />} />
         <Route path="/company/:id/edit" element={<CompanyForm />} />
         
         {/* 인적자원 관리 */}
@@ -34,6 +40,7 @@ function App() {
         {/* 프로젝트 관리 */}
         <Route path="/project" element={<ProjectList />} />
         <Route path="/project/new" element={<ProjectForm />} />
+        <Route path="/project/regist" element={<ProjectRegistForm />} />
         <Route path="/project/:id/edit" element={<ProjectForm />} />
         
         {/* 404 처리 - 대시보드로 리다이렉트 */}

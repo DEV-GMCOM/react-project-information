@@ -1,7 +1,9 @@
 // src/pages/project/ProjectForm.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { apiService, Project, Company, Employee } from '../../services/api';
+// import { apiService, Project, Company, Employee } from '@/api/services/api';
+import { apiService, Project, Company, Employee } from '../../api';  // ✅ 수정
+// import type { EmployeeCreate } from '../../api/types';  // ✅ 추가
 import '../../styles/ProjectForm.css';
 
 interface FormData {
