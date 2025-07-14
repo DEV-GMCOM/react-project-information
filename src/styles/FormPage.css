@@ -1,0 +1,368 @@
+/* styles/FormPage.css */
+
+.bidding-page-wrapper .form-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+/* 페이지 헤더 */
+.bidding-page-wrapper .page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.bidding-page-wrapper .page-header h1 {
+    /* 다른 CSS 파일의 효과를 무력화하고 흰색으로 강제 */
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+    -webkit-text-fill-color: initial;
+    color: white !important;
+
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+.bidding-page-wrapper .page-header p {
+    margin: 0;
+    font-size: 1.1rem;
+    opacity: 0.9;
+    color: white !important;
+}
+
+/* 등록자명 영역 */
+.bidding-page-wrapper .registrant-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.75rem;
+    margin: 0 0 2rem auto;
+    width: fit-content;
+    padding: 1rem 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.bidding-page-wrapper .registrant-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.bidding-page-wrapper .registrant-input-group label {
+    margin: 0;
+    font-weight: 500;
+    color: #2c3e50;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+/* [수정된 부분 ①]
+  모든 .required 클래스를 가진 label에 적용되도록 선택자를 일반화합니다.
+  기존의 '.bidding-page-wrapper .registrant-input-group label.required::after' 에서
+  '.registrant-input-group' 부분을 제거하여 범용성을 높였습니다.
+*/
+.bidding-page-wrapper label.required::after {
+    content: "*";
+    color: #e53e3e;
+    font-weight: bold;
+    font-size: 1rem;
+    margin-left: 4px;
+}
+
+.bidding-page-wrapper .registrant-input,
+.bidding-page-wrapper .registrant-select {
+    width: 220px;
+    flex-shrink: 0; /* 너비 고정 */
+    padding: 0.75rem;
+    border: 2px solid #e53e3e;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.bidding-page-wrapper .registrant-input:focus,
+.bidding-page-wrapper .registrant-select:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.bidding-page-wrapper .registrant-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1em;
+    padding-right: 2.5rem;
+    cursor: pointer;
+}
+
+
+/* 폼 컨테이너 */
+.bidding-page-wrapper .form-container {
+    background: transparent;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* 폼 섹션 */
+.bidding-page-wrapper .form-section {
+    padding: 2rem;
+    border-bottom: 1px solid #e9ecef;
+    margin-bottom: 1.5rem;
+    background: white; /* 폼 섹션에 배경색 추가 */
+}
+
+.bidding-page-wrapper .form-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.bidding-page-wrapper .form-section h2 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 0.5rem;
+}
+
+.bidding-page-wrapper .form-section h3 {
+    margin: 1.5rem 0 1rem 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #34495e;
+}
+
+/* 폼 그리드 */
+.bidding-page-wrapper .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+/* 폼 그룹 */
+.bidding-page-wrapper .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.bidding-page-wrapper .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #2c3e50;
+    font-size: 0.95rem;
+}
+
+.bidding-page-wrapper .form-group input,
+.bidding-page-wrapper .form-group select,
+.bidding-page-wrapper .form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.bidding-page-wrapper .form-group input:focus,
+.bidding-page-wrapper .form-group select:focus,
+.bidding-page-wrapper .form-group textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.bidding-page-wrapper .form-group input:invalid {
+    border-color: #e74c3c;
+}
+
+.bidding-page-wrapper .form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* 폼 액션 버튼 */
+.bidding-page-wrapper .form-actions {
+    padding: 2rem;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.bidding-page-wrapper .btn-primary,
+.bidding-page-wrapper .btn-secondary {
+    padding: 0.75rem 2rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 120px;
+}
+
+.bidding-page-wrapper .btn-primary {
+    background: #3498db;
+    color: white;
+}
+
+.bidding-page-wrapper .btn-primary:hover {
+    background: #2980b9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+.bidding-page-wrapper .btn-secondary {
+    background: #95a5a6;
+    color: white;
+}
+
+.bidding-page-wrapper .btn-secondary:hover {
+    background: #7f8c8d;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(149, 165, 166, 0.3);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .bidding-page-wrapper .form-page {
+        padding: 0 1rem;
+    }
+
+    .bidding-page-wrapper .page-header {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .bidding-page-wrapper .page-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .bidding-page-wrapper .registrant-info {
+        width: 100%;
+        margin: 0 auto 2rem auto;
+        padding: 1rem;
+        box-sizing: border-box;
+        align-items: stretch;
+    }
+
+    .bidding-page-wrapper .registrant-input-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .bidding-page-wrapper .registrant-input,
+    .bidding-page-wrapper .registrant-select {
+        width: 100%;
+    }
+
+    .bidding-page-wrapper .form-section {
+        padding: 1.5rem;
+    }
+
+    .bidding-page-wrapper .form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .bidding-page-wrapper .form-actions {
+        padding: 1.5rem;
+        flex-direction: column;
+    }
+
+    .bidding-page-wrapper .btn-primary,
+    .bidding-page-wrapper .btn-secondary {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .bidding-page-wrapper .page-header {
+        padding: 1rem;
+    }
+
+    .bidding-page-wrapper .page-header h1 {
+        font-size: 1.3rem;
+    }
+
+    .bidding-page-wrapper .form-section {
+        padding: 1rem;
+    }
+
+    .bidding-page-wrapper .form-section h2 {
+        font-size: 1.2rem;
+    }
+}
+
+/* 다크모드 지원 */
+@media (prefers-color-scheme: dark) {
+    .bidding-page-wrapper .registrant-info {
+        background-color: #34495e;
+        border-color: #495057;
+    }
+    .bidding-page-wrapper .registrant-input-group label {
+        color: #ecf0f1;
+    }
+
+    .bidding-page-wrapper .form-section {
+        background: #2c3e50;
+        border-bottom-color: #34495e;
+    }
+
+    .bidding-page-wrapper .form-section h2 {
+        color: #ecf0f1;
+        border-bottom-color: #3498db;
+    }
+
+    .bidding-page-wrapper .form-group label {
+        color: #ecf0f1;
+    }
+
+    .bidding-page-wrapper .form-group input,
+    .bidding-page-wrapper .form-group select,
+    .bidding-page-wrapper .form-group textarea {
+        background: #34495e;
+        border-color: #495057;
+        color: #ecf0f1;
+    }
+
+    .bidding-page-wrapper .registrant-input,
+    .bidding-page-wrapper .registrant-select {
+        background: #34495e;
+        border-color: #495057;
+        color: #ecf0f1;
+    }
+
+    .bidding-page-wrapper .form-group input:focus,
+    .bidding-page-wrapper .form-group select:focus,
+    .bidding-page-wrapper .form-group textarea:focus,
+    .bidding-page-wrapper .registrant-input:focus,
+    .bidding-page-wrapper .registrant-select:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+    }
+
+    .bidding-page-wrapper .form-actions {
+        background: #34495e;
+        border-top-color: #495057;
+    }
+}
