@@ -16,6 +16,7 @@ interface FormData {
     budget: string;
     company_id: string;
     manager_id: string;
+    project_type: string; // ✅ 추가
 }
 
 const ProjectForm: React.FC = () => {
@@ -32,8 +33,16 @@ const ProjectForm: React.FC = () => {
         status: 'planning',
         budget: '',
         company_id: '',
-        manager_id: ''
+        manager_id: '',
+        project_type: '' // ✅ 추가
     });
+
+    // 프로젝트 유형 옵션들 추가
+    const projectTypeOptions = [
+        '웹사이트 개발', '모바일 앱 개발', '시스템 구축', 'ERP 구축',
+        '브랜딩/마케팅', '컨설팅', '유지보수', '연구개발',
+        '인프라 구축', '데이터 분석', '교육/훈련', '기타'
+    ];
 
     const [companies, setCompanies] = useState<Company[]>([]);
     const [employees, setEmployees] = useState<Employee[]>([]);
@@ -75,7 +84,8 @@ const ProjectForm: React.FC = () => {
                 status: project.status,
                 budget: project.budget?.toString() || '',
                 company_id: project.company_id?.toString() || '',
-                manager_id: project.manager_id?.toString() || ''
+                manager_id: project.manager_id?.toString() || '',
+                project_type: project.project_type || '' // ✅ 추가
             });
         } catch (err: any) {
             setError('프로젝트 정보를 불러오는데 실패했습니다.');
@@ -123,13 +133,14 @@ const ProjectForm: React.FC = () => {
             const submitData = {
                 project_code: formData.project_code.trim(),
                 project_name: formData.project_name.trim(),
-                description: formData.description.trim() || undefined,
+                description: formData.description.trim() || '', // ✅ undefined 대신 빈 문자열로 변경
                 start_date: formData.start_date || undefined,
                 end_date: formData.end_date || undefined,
                 status: formData.status,
                 budget: formData.budget ? Number(formData.budget) : undefined,
                 company_id: formData.company_id ? Number(formData.company_id) : undefined,
-                manager_id: formData.manager_id ? Number(formData.manager_id) : undefined
+                manager_id: formData.manager_id ? Number(formData.manager_id) : undefined,
+                project_type: formData.project_type || undefined // ✅ 이미 추가되어 있다면 그대로 유지
             };
 
             if (isEdit && id) {
@@ -198,6 +209,7 @@ const ProjectForm: React.FC = () => {
         );
     }
 
+    // 폼에 프로젝트 유형 선택 필드 추가
     return (
         <div className="project-form">
             <div className="page-header">
@@ -241,6 +253,43 @@ const ProjectForm: React.FC = () => {
                             placeholder="프로젝트명을 입력하세요"
                             maxLength={255}
                         />
+                    </div>
+                </div>
+
+                {/* 프로젝트 유형 추가 */}
+                <div className="form-row">
+                    <div className="form-group">
+                        <label htmlFor="project_type">프로젝트 유형</label>
+                        <select
+                            id="project_type"
+                            name="project_type"
+                            value={formData.project_type}
+                            onChange={handleChange}
+                            disabled={loading}
+                        >
+                            <option value="">프로젝트 유형을 선택하세요</option>
+                            {projectTypeOptions.map(type => (
+                                <option key={type} value={type}>
+                                    {type}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="status">프로젝트 상태</label>
+                        <select
+                            id="status"
+                            name="status"
+                            value={formData.status}
+                            onChange={handleChange}
+                            disabled={loading}
+                        >
+                            <option value="planning">계획</option>
+                            <option value="active">진행중</option>
+                            <option value="completed">완료</option>
+                            <option value="cancelled">취소</option>
+                        </select>
                     </div>
                 </div>
 
@@ -289,22 +338,6 @@ const ProjectForm: React.FC = () => {
 
                 {/* 상태 및 예산 */}
                 <div className="form-row">
-                    <div className="form-group">
-                        <label htmlFor="status">프로젝트 상태</label>
-                        <select
-                            id="status"
-                            name="status"
-                            value={formData.status}
-                            onChange={handleChange}
-                            disabled={loading}
-                        >
-                            <option value="planning">계획</option>
-                            <option value="active">진행중</option>
-                            <option value="completed">완료</option>
-                            <option value="cancelled">취소</option>
-                        </select>
-                    </div>
-
                     <div className="form-group">
                         <label htmlFor="budget">예산 (원)</label>
                         <input
