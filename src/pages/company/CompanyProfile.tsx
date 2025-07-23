@@ -6,34 +6,35 @@ interface CompanyProfile {
     businessType: string;
     representative: string;
     businessCategory: string;
+    clientName: string;
+    representativeName: string;
+    businessNumber: string;
+    contactInfo: string;
 
     // 담당자 상세 정보
     department: string;
     contactPerson: string;
-    position: string;
     phone: string;
     email: string;
-
-    // 담당 업무
-    responsibilityType: string;
-    responsibilities: string;
-
-    // 부가 정보
-    companyInfo: string;
-    businessInfo: string;
+    responsibility: string;
+    workStyle: string;
+    personalInfo: string;
+    organizationInfo: string;
 
     // 히스토리
-    pastExperience: string;
-
-    // 프로젝트 경험
+    relationship: string;
     projectExperience: string;
-
-    // 비고
     notes: string;
 
-    // 컨택 리포트
-    contactDate: string;
-    contactContent: string;
+    // 컨택 리포트 (기존 데이터)
+    existingReports: Array<{
+        date: string;
+        content: string;
+    }>;
+
+    // 새 컨택 리포트 입력
+    newReportDate: string;
+    newReportContent: string;
 }
 
 const CompanyProfileForm: React.FC = () => {
@@ -41,28 +42,48 @@ const CompanyProfileForm: React.FC = () => {
         businessType: '',
         representative: '',
         businessCategory: '',
+        clientName: '',
+        representativeName: '',
+        businessNumber: '',
+        contactInfo: '',
         department: '',
         contactPerson: '',
-        position: '',
         phone: '',
         email: '',
-        responsibilityType: '',
-        responsibilities: '',
-        companyInfo: '',
-        businessInfo: '',
-        pastExperience: '',
+        responsibility: '',
+        workStyle: '',
+        personalInfo: '',
+        organizationInfo: '',
+        relationship: '',
         projectExperience: '',
         notes: '',
-        contactDate: '',
-        contactContent: ''
+        existingReports: [
+            { date: '2025.07.23', content: '• 제목 및 안건: 현대자동차 EV 신차 발표회 프로모션의 건\n• 회의 및 내용: ...' }
+        ],
+        newReportDate: '',
+        newReportContent: ''
     });
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
             [name]: value
         }));
+    };
+
+    const handleAddReport = () => {
+        if (formData.newReportDate && formData.newReportContent) {
+            setFormData(prev => ({
+                ...prev,
+                existingReports: [
+                    ...prev.existingReports,
+                    { date: prev.newReportDate, content: prev.newReportContent }
+                ],
+                newReportDate: '',
+                newReportContent: ''
+            }));
+        }
     };
 
     const handleSubmit = () => {
@@ -106,7 +127,7 @@ const CompanyProfileForm: React.FC = () => {
                     </div>
                 </div>
 
-                {/* 클라이언트 기업 정보 테이블 */}
+                {/* 클라이언트 기업 정보 (4x4 테이블) */}
                 <div className="profile-section">
                     <h3 className="section-header">
                         ■ 클라이언트 기업 정보
@@ -115,18 +136,30 @@ const CompanyProfileForm: React.FC = () => {
                     <table className="profile-table">
                         <tbody>
                         <tr>
-                            <td className="table-header table-header-category">구분</td>
+                            <td className="table-header">구분</td>
+                            <td className="table-header table-header-empty"></td>
                             <td className="table-header">내용</td>
-                        </tr>
-                        <tr>
-                            <td className="table-cell table-cell-label">법주처</td>
+                            <td className="table-header table-header-empty"></td>
+                        </tr>                        <tr>
+                            <td className="table-cell table-cell-label">발주처</td>
                             <td className="table-cell-input">
                                 <input
                                     type="text"
                                     name="businessType"
                                     value={formData.businessType}
                                     onChange={handleInputChange}
-                                    placeholder="제약기업"
+                                    placeholder="제일기획"
+                                    className="profile-input"
+                                />
+                            </td>
+                            <td className="table-cell table-cell-label">원청자</td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="clientName"
+                                    value={formData.clientName}
+                                    onChange={handleInputChange}
+                                    placeholder="삼성전자"
                                     className="profile-input"
                                 />
                             </td>
@@ -139,7 +172,18 @@ const CompanyProfileForm: React.FC = () => {
                                     name="representative"
                                     value={formData.representative}
                                     onChange={handleInputChange}
-                                    placeholder="○○○"
+                                    placeholder="제일기획 대표 이름"
+                                    className="profile-input"
+                                />
+                            </td>
+                            <td className="table-cell table-cell-label">사업자번호</td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="businessNumber"
+                                    value={formData.businessNumber}
+                                    onChange={handleInputChange}
+                                    placeholder="000-00-00000"
                                     className="profile-input"
                                 />
                             </td>
@@ -152,28 +196,43 @@ const CompanyProfileForm: React.FC = () => {
                                     name="businessCategory"
                                     value={formData.businessCategory}
                                     onChange={handleInputChange}
-                                    placeholder="삼성제약 광고대행사"
+                                    placeholder="삼성계열 광고대행사"
+                                    className="profile-input"
+                                />
+                            </td>
+                            <td className="table-cell table-cell-label">연락처</td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="contactInfo"
+                                    value={formData.contactInfo}
+                                    onChange={handleInputChange}
+                                    placeholder="대표전화/이메일/홈페이지"
                                     className="profile-input"
                                 />
                             </td>
                         </tr>
                         </tbody>
                     </table>
+                </div>
 
-                    {/* 담당자 상세 정보 테이블 */}
-                    <h3 className="section-header section-header-margin">
+                {/* 담당자 상세 정보 (7x5 테이블) */}
+                <div className="profile-section">
+                    <h3 className="section-header">
                         ■ 담당자 상세 정보
                     </h3>
 
                     <table className="profile-table">
                         <tbody>
                         <tr>
-                            <td className="table-header table-header-category">구분</td>
+                            <td className="table-header">구분</td>
+                            <td className="table-header table-header-empty" colSpan={2}></td>
                             <td className="table-header">내용</td>
+                            <td className="table-header table-header-empty"></td>
                         </tr>
                         <tr>
                             <td className="table-cell table-cell-label">소속/부서</td>
-                            <td className="table-cell-input">
+                            <td className="table-cell-input" colSpan={2}>
                                 <input
                                     type="text"
                                     name="department"
@@ -183,8 +242,6 @@ const CompanyProfileForm: React.FC = () => {
                                     className="profile-input"
                                 />
                             </td>
-                        </tr>
-                        <tr>
                             <td className="table-cell table-cell-label">직책/이름</td>
                             <td className="table-cell-input">
                                 <input
@@ -192,14 +249,14 @@ const CompanyProfileForm: React.FC = () => {
                                     name="contactPerson"
                                     value={formData.contactPerson}
                                     onChange={handleInputChange}
-                                    placeholder="담당 홍길동"
+                                    placeholder="팀장 홍길동"
                                     className="profile-input"
                                 />
                             </td>
                         </tr>
                         <tr>
                             <td className="table-cell table-cell-label">연락처</td>
-                            <td className="table-cell-input">
+                            <td className="table-cell-input" colSpan={2}>
                                 <input
                                     type="text"
                                     name="phone"
@@ -209,8 +266,6 @@ const CompanyProfileForm: React.FC = () => {
                                     className="profile-input"
                                 />
                             </td>
-                        </tr>
-                        <tr>
                             <td className="table-cell table-cell-label">이메일</td>
                             <td className="table-cell-input">
                                 <input
@@ -218,72 +273,67 @@ const CompanyProfileForm: React.FC = () => {
                                     name="email"
                                     value={formData.email}
                                     onChange={handleInputChange}
-                                    placeholder="123@cheil.com"
+                                    placeholder="abcd@efgh.com"
                                     className="profile-input"
                                 />
                             </td>
                         </tr>
-                        </tbody>
-                    </table>
-
-                    {/* 담당 업무 섹션 */}
-                    <h3 className="section-header section-header-margin">
-                        ■ 담당 업무
-                    </h3>
-
-                    <table className="profile-table">
-                        <tbody>
                         <tr>
-                            <td className="table-header table-header-category">구분</td>
-                            <td className="table-header">내용</td>
-                        </tr>
-                        <tr>
-                            <td className="table-cell table-cell-label table-cell-top">업무 스타일</td>
-                            <td className="table-cell-input">
+                            <td className="table-cell table-cell-label table-cell-rowspan" rowSpan={4}>부가정보</td>
+                            <td className="table-cell table-cell-label">담당 업무</td>
+                            <td className="table-cell-input" colSpan={3}>
                                 <input
                                     type="text"
-                                    name="responsibilityType"
-                                    value={formData.responsibilityType}
+                                    name="responsibility"
+                                    value={formData.responsibility}
                                     onChange={handleInputChange}
-                                    placeholder="보수적, 지출적"
+                                    placeholder="담당 업무 내용"
                                     className="profile-input"
                                 />
                             </td>
                         </tr>
                         <tr>
-                            <td className="table-cell table-cell-label table-cell-top">부가 정보</td>
-                            <td className="table-cell-input">
-                                <div className="additional-info">
-                                    <div className="info-label">
-                                        개별 특화정보
-                                    </div>
-                                    <textarea
-                                        name="companyInfo"
-                                        value={formData.companyInfo}
-                                        onChange={handleInputChange}
-                                        placeholder="성향, 취미, 개인적 성향"
-                                        className="info-textarea"
-                                    />
-                                </div>
-                                <div>
-                                    <div className="info-label">
-                                        부서 및 조직정보
-                                    </div>
-                                    <textarea
-                                        name="businessInfo"
-                                        value={formData.businessInfo}
-                                        onChange={handleInputChange}
-                                        placeholder="○○○전략부서, 기존 6대영업 기존"
-                                        className="info-textarea"
-                                    />
-                                </div>
+                            <td className="table-cell table-cell-label">업무 스타일</td>
+                            <td className="table-cell-input" colSpan={3}>
+                                <input
+                                    type="text"
+                                    name="workStyle"
+                                    value={formData.workStyle}
+                                    onChange={handleInputChange}
+                                    placeholder="보수적, 자율적"
+                                    className="profile-input"
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">개별 특화정보</td>
+                            <td className="table-cell-input" colSpan={3}>
+                  <textarea
+                      name="personalInfo"
+                      value={formData.personalInfo}
+                      onChange={handleInputChange}
+                      placeholder="생일, 취미, 개인적 성향"
+                      className="profile-textarea textarea-small"
+                  />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">부서 및 조직정보</td>
+                            <td className="table-cell-input" colSpan={3}>
+                  <textarea
+                      name="organizationInfo"
+                      value={formData.organizationInfo}
+                      onChange={handleInputChange}
+                      placeholder="XXX전담부서, 기존 BE 본부와 업무분할"
+                      className="profile-textarea textarea-small"
+                  />
                             </td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
 
-                {/* 히스토리 섹션 */}
+                {/* 히스토리 (4x2 테이블) */}
                 <div className="profile-section">
                     <h3 className="section-header">
                         ■ 히스토리
@@ -296,46 +346,27 @@ const CompanyProfileForm: React.FC = () => {
                             <td className="table-header">내용</td>
                         </tr>
                         <tr>
-                            <td className="table-cell table-cell-label table-cell-top">우리와 관계성</td>
+                            <td className="table-cell table-cell-label table-cell-top">관계성</td>
                             <td className="table-cell-input">
                   <textarea
-                      name="pastExperience"
-                      value={formData.pastExperience}
+                      name="relationship"
+                      value={formData.relationship}
                       onChange={handleInputChange}
-                      placeholder="• 지원원 담당자/부서는 누구인지, 언제부터 알았는지, 천번 담당 업무에 촛점 등"
-                      className="profile-textarea textarea-large"
+                      placeholder="• 지엠컴 담당자/부서는 누구이며, 언제부터 관계가 형성되었고, 친분 및 영업관계에 대한 친밀도 등등의 정보"
+                      className="profile-textarea textarea-medium"
                   />
                             </td>
                         </tr>
-                        </tbody>
-                    </table>
-
-                    {/* 프로젝트 경험 섹션 */}
-                    <table className="profile-table section-table">
-                        <tbody>
                         <tr>
-                            <td className="table-cell table-cell-label table-cell-top">프로젝트 경험</td>
+                            <td className="table-cell table-cell-label table-cell-top">프로젝트 경험성</td>
                             <td className="table-cell-input">
-                                <div className="project-badges">
-                    <span className="project-badge badge-profile">
-                      P/J Profile
-                    </span>
-                                    <span className="project-badge badge-creation">
-                      P/J 작성
-                    </span>
-                                </div>
-                                <div className="help-text help-text-gray">
-                                    • 프로젝트 유형정 시, 프로젝트달력/가길룸 흐름사성
-                                </div>
-                                <div className="help-text help-text-gray">
-                                    ▶ &lt;P/J Profile 및 작성산 이용을히이션 심신 활일 가능
-                                </div>
-                                <textarea
-                                    name="projectExperience"
-                                    value={formData.projectExperience}
-                                    onChange={handleInputChange}
-                                    className="profile-textarea textarea-medium"
-                                />
+                  <textarea
+                      name="projectExperience"
+                      value={formData.projectExperience}
+                      onChange={handleInputChange}
+                      placeholder="• 프로젝트 유경험 시, 프로젝트명/기간/특이사항 입력"
+                      className="profile-textarea textarea-medium"
+                  />
                             </td>
                         </tr>
                         <tr>
@@ -345,6 +376,7 @@ const CompanyProfileForm: React.FC = () => {
                       name="notes"
                       value={formData.notes}
                       onChange={handleInputChange}
+                      placeholder="기타 특이사항"
                       className="profile-textarea textarea-medium"
                   />
                             </td>
@@ -353,7 +385,7 @@ const CompanyProfileForm: React.FC = () => {
                     </table>
                 </div>
 
-                {/* 컨택 리포트 섹션 */}
+                {/* 컨택 리포트 (동적 3x2+ 테이블) */}
                 <div className="profile-section">
                     <h3 className="section-header">
                         ■ 컨택 리포트 (미팅 회의록)
@@ -365,35 +397,49 @@ const CompanyProfileForm: React.FC = () => {
                             <td className="table-header table-header-category">날짜</td>
                             <td className="table-header">주요 내용</td>
                         </tr>
-                        <tr>
-                            <td className="table-cell table-cell-label table-cell-top">
+                        {/* 기존 리포트들 */}
+                        {formData.existingReports.map((report, index) => (
+                            <tr key={index}>
+                                <td className="table-cell table-cell-label table-cell-top contact-date-cell">
+                                    <div className="contact-date">{report.date}</div>
+                                </td>
+                                <td className="table-cell-input">
+                                    <div className="contact-content">
+                                        {report.content.split('\n').map((line, lineIndex) => (
+                                            <div key={lineIndex}>{line}</div>
+                                        ))}
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                        {/* 새 리포트 입력 행 (항상 존재) */}
+                        <tr className="new-report-row">
+                            <td className="table-cell-input">
                                 <input
                                     type="date"
-                                    name="contactDate"
-                                    value={formData.contactDate}
+                                    name="newReportDate"
+                                    value={formData.newReportDate}
                                     onChange={handleInputChange}
                                     className="profile-date-input"
                                 />
-                                <div className="date-display">
-                                    2025.07.23
-                                </div>
                             </td>
                             <td className="table-cell-input">
-                                <div className="help-text help-text-gray">
-                                    • 제목 및 안건 : 원대성훈치 EV 신차 발표회 프로모션의 컨
-                                </div>
-                                <div className="help-text help-text-gray">
-                                    • 회의 및 내용 :
-                                </div>
-                                <textarea
-                                    name="contactContent"
-                                    value={formData.contactContent}
-                                    onChange={handleInputChange}
-                                    placeholder="회의 내용을 입력하세요"
-                                    className="profile-textarea textarea-xlarge"
-                                />
-                                <div className="help-text-note">
-                                    * 다음 단계 2049 작성하다 더 복음
+                                <div className="new-report-container">
+                    <textarea
+                        name="newReportContent"
+                        value={formData.newReportContent}
+                        onChange={handleInputChange}
+                        placeholder="• 제목 및 안건: 현대자동차 EV 신차 발표회 프로모션의 건"
+                        className="profile-textarea textarea-large"
+                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleAddReport}
+                                        className="add-report-btn"
+                                        disabled={!formData.newReportDate || !formData.newReportContent}
+                                    >
+                                        ➕ 추가
+                                    </button>
                                 </div>
                             </td>
                         </tr>
