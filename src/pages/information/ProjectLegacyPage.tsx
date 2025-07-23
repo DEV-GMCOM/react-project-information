@@ -1,8 +1,8 @@
-// BiddingPage.tsx
+// ProjectPage.tsx
 import React, { useState } from 'react';
 import '../../styles/FormPage.css';
 
-interface BiddingInfo {
+interface ProjectInfo {
     id?: string;
     title: string;
     organization: string;
@@ -29,8 +29,9 @@ interface BiddingInfo {
     biddingProfit: string;
 }
 
-const BiddingPage: React.FC = () => {
-    const [formData, setFormData] = useState<BiddingInfo>({
+// const ProjectPage: React.FC = () => {
+const ProjectPage: React.FC = () => {
+    const [formData, setFormData] = useState<ProjectInfo>({
         title: '',
         organization: '',
         announcementDate: '',
@@ -74,8 +75,8 @@ const BiddingPage: React.FC = () => {
         <div className="bidding-page-wrapper">
             <div className="form-page">
                 <div className="page-header">
-                    <h1>📋 입찰 정보 수집</h1>
-                    <p>새로운 입찰 공고 정보를 등록하고 관리합니다.</p>
+                    <h1>📋 프로젝트 정보 수집</h1>
+                    <p>프로젝트 기반 정보를 등록 / 관리합니다.</p>
                 </div>
 
                 <div className="registrant-info">
@@ -386,4 +387,5 @@ const BiddingPage: React.FC = () => {
     );
 };
 
-export default BiddingPage;
+export default ProjectPage;
+// export default BiddingPage;

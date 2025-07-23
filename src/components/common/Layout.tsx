@@ -24,7 +24,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const location = useLocation();
 
-  const menuItems: MenuItem[] = [
+  // 기존 시스템 메뉴 (윗부분)
+  const legacyMenuItems: MenuItem[] = [
     {
       path: '/dashboard',
       name: '대시보드',
@@ -35,8 +36,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       name: '정보수집',
       icon: '📋',
       subMenus: [
-        { path: '/information/bidding', name: '입찰' },
-        { path: '/information/advertiser', name: '광고주' }
+        { path: '/info-management/advertiser', name: '광고주' },
+        { path: '/info-management/project', name: '입찰' }
       ]
     },
     {
@@ -66,6 +67,40 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   ];
 
+  // 신규 생성 메뉴 (아래부분)
+  const newMenuItems: MenuItem[] = [
+    {
+      path: '/company',
+      name: '업체 관리',
+      icon: '🏢',
+      subMenus: [
+        { path: '/company', name: '업체 목록' },
+        { path: '/company/new', name: '업체 등록' },
+        { path: '/company/regist', name: '업체 신규등록' },
+        { path: '/company/profile', name: '입력폼 체크 용도' }
+      ]
+    },
+    {
+      path: '/hr',
+      name: '인적자원 관리',
+      icon: '👥',
+      subMenus: [
+        { path: '/hr', name: '직원 목록' },
+        { path: '/hr/new', name: '직원 등록' }
+      ]
+    },
+    {
+      path: '/project',
+      name: '프로젝트 관리',
+      icon: '📁',
+      subMenus: [
+        { path: '/project', name: '프로젝트 목록' },
+        { path: '/project/new', name: '프로젝트 등록' },
+        { path: '/project/regist', name: '프로젝트 신규등록' }
+      ]
+    }
+  ];
+
   const toggleMenu = (path: string) => {
     setExpandedMenus(prev =>
         prev.includes(path)
@@ -90,6 +125,60 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return item.subMenus.some(subMenu => location.pathname === subMenu.path);
   };
 
+  // 메뉴 항목 렌더링 함수
+  const renderMenuItem = (item: MenuItem) => (
+      <li key={item.path} className="nav-item">
+        {item.subMenus ? (
+            // 서브메뉴가 있는 경우
+            <>
+              <button
+                  className={`nav-link nav-button ${
+                      hasActiveSubMenu(item) ? 'active' : ''
+                  }`}
+                  onClick={() => toggleMenu(item.path)}
+              >
+                <span className="nav-icon">{item.icon}</span>
+                {sidebarOpen && (
+                    <>
+                      <span className="nav-text">{item.name}</span>
+                      <span className={`nav-arrow ${
+                          expandedMenus.includes(item.path) ? 'expanded' : ''
+                      }`}>
+                      ▼
+                    </span>
+                    </>
+                )}
+              </button>
+              {sidebarOpen && expandedMenus.includes(item.path) && (
+                  <ul className="sub-nav-list">
+                    {item.subMenus.map((subItem) => (
+                        <li key={subItem.path} className="sub-nav-item">
+                          <Link
+                              to={subItem.path}
+                              className={`sub-nav-link ${
+                                  isSubMenuActive(item.path, subItem.path) ? 'active' : ''
+                              }`}
+                          >
+                            <span className="sub-nav-text">{subItem.name}</span>
+                          </Link>
+                        </li>
+                    ))}
+                  </ul>
+              )}
+            </>
+        ) : (
+            // 서브메뉴가 없는 경우
+            <Link
+                to={item.path}
+                className={`nav-link ${isActive(item.path) ? 'active' : ''}`}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              {sidebarOpen && <span className="nav-text">{item.name}</span>}
+            </Link>
+        )}
+      </li>
+  );
+
   // 디버깅용 로그
   console.log('📍 Current pathname:', location.pathname);
 
@@ -113,60 +202,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="main-container">
           <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
             <nav className="sidebar-nav">
-              <ul className="nav-list">
-                {menuItems.map((item) => (
-                    <li key={item.path} className="nav-item">
-                      {item.subMenus ? (
-                          // 서브메뉴가 있는 경우
-                          <>
-                            <button
-                                className={`nav-link nav-button ${
-                                    hasActiveSubMenu(item) ? 'active' : ''
-                                }`}
-                                onClick={() => toggleMenu(item.path)}
-                            >
-                              <span className="nav-icon">{item.icon}</span>
-                              {sidebarOpen && (
-                                  <>
-                                    <span className="nav-text">{item.name}</span>
-                                    <span className={`nav-arrow ${
-                                        expandedMenus.includes(item.path) ? 'expanded' : ''
-                                    }`}>
-                              ▼
-                            </span>
-                                  </>
-                              )}
-                            </button>
-                            {sidebarOpen && expandedMenus.includes(item.path) && (
-                                <ul className="sub-nav-list">
-                                  {item.subMenus.map((subItem) => (
-                                      <li key={subItem.path} className="sub-nav-item">
-                                        <Link
-                                            to={subItem.path}
-                                            className={`sub-nav-link ${
-                                                isSubMenuActive(item.path, subItem.path) ? 'active' : ''
-                                            }`}
-                                        >
-                                          <span className="sub-nav-text">{subItem.name}</span>
-                                        </Link>
-                                      </li>
-                                  ))}
-                                </ul>
-                            )}
-                          </>
-                      ) : (
-                          // 서브메뉴가 없는 경우
-                          <Link
-                              to={item.path}
-                              className={`nav-link ${isActive(item.path) ? 'active' : ''}`}
-                          >
-                            <span className="nav-icon">{item.icon}</span>
-                            {sidebarOpen && <span className="nav-text">{item.name}</span>}
-                          </Link>
-                      )}
-                    </li>
-                ))}
-              </ul>
+              {/* 윗부분 - 기존 시스템 메뉴 */}
+              <div className="nav-section nav-section-top">
+                <ul className="nav-list">
+                  {legacyMenuItems.map(renderMenuItem)}
+                </ul>
+              </div>
+
+              {/* 구분선 */}
+              <div className="nav-divider"></div>
+
+              {/* 아래부분 - 신규 생성 메뉴 */}
+              <div className="nav-section nav-section-bottom">
+                <ul className="nav-list">
+                  {newMenuItems.map(renderMenuItem)}
+                </ul>
+              </div>
             </nav>
           </aside>
 
