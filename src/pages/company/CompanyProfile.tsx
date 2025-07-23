@@ -115,15 +115,37 @@ const CompanyProfileForm: React.FC = () => {
                     <h2 className="profile-subtitle">
                         - 광고주 Profile -
                     </h2>
+                    {/*<div className="profile-writer">*/}
+                    {/*    <label className="writer-label">*/}
+                    {/*        작성자*/}
+                    {/*    </label>*/}
+                    {/*    <input*/}
+                    {/*        type="text"*/}
+                    {/*        placeholder="○부○ ○팀 담당 ○○○"*/}
+                    {/*        className="writer-input"*/}
+                    {/*    />*/}
+                    {/*</div>*/}
                     <div className="profile-writer">
-                        <label className="writer-label">
-                            작성자
-                        </label>
-                        <input
-                            type="text"
-                            placeholder="○부○ ○팀 담당 ○○○"
-                            className="writer-input"
-                        />
+                        <div className="writer-form">
+                            <div className="writer-field">
+                                <label className="writer-field-label">등록자 이름:</label>
+                                <input
+                                    type="text"
+                                    name="writerName"
+                                    placeholder="홍길동"
+                                    className="writer-field-input"
+                                />
+                            </div>
+                            <div className="writer-field">
+                                <label className="writer-field-label">부서:</label>
+                                <input
+                                    type="text"
+                                    name="writerDepartment"
+                                    placeholder="마케팅팀"
+                                    className="writer-field-input"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -357,18 +379,68 @@ const CompanyProfileForm: React.FC = () => {
                   />
                             </td>
                         </tr>
+                        {/*<tr>*/}
+                        {/*    <td className="table-cell table-cell-label table-cell-top">프로젝트 경험성</td>*/}
+                        {/*    <td className="table-cell-input">*/}
+                        {/*        <div className="project-experience-container">*/}
+                        {/*            <div className="project-buttons">*/}
+                        {/*                <button*/}
+                        {/*                    type="button"*/}
+                        {/*                    className="project-btn"*/}
+                        {/*                    onClick={() => /!* 추후 모달 팝업 구현 *!/}*/}
+                        {/*                >*/}
+                        {/*                    Prj Profile*/}
+                        {/*                </button>*/}
+                        {/*                <button*/}
+                        {/*                    type="button"*/}
+                        {/*                    className="project-btn"*/}
+                        {/*                    onClick={() => /!* 추후 모달 팝업 구현 *!/}*/}
+                        {/*                >*/}
+                        {/*                    Proj Kickoff*/}
+                        {/*                </button>*/}
+                        {/*            </div>*/}
+                        {/*            <textarea*/}
+                        {/*                name="projectExperience"*/}
+                        {/*                value={formData.projectExperience}*/}
+                        {/*                onChange={handleInputChange}*/}
+                        {/*                placeholder="• 프로젝트 유경험 시, 프로젝트명/기간/특이사항 입력"*/}
+                        {/*                className="profile-textarea textarea-medium"*/}
+                        {/*            />*/}
+                        {/*        </div>*/}
+                        {/*    </td>*/}
+                        {/*</tr>*/}
+
                         <tr>
                             <td className="table-cell table-cell-label table-cell-top">프로젝트 경험성</td>
                             <td className="table-cell-input">
-                  <textarea
-                      name="projectExperience"
-                      value={formData.projectExperience}
-                      onChange={handleInputChange}
-                      placeholder="• 프로젝트 유경험 시, 프로젝트명/기간/특이사항 입력"
-                      className="profile-textarea textarea-medium"
-                  />
+                                <div className="project-experience-container">
+      <textarea
+          name="projectExperience"
+          value={formData.projectExperience}
+          onChange={handleInputChange}
+          placeholder="• 프로젝트 유경험 시, 프로젝트명/기간/특이사항 입력"
+          className="profile-textarea textarea-medium"
+      />
+                                    <div className="project-buttons-overlay">
+                                        <button
+                                            type="button"
+                                            className="project-btn"
+                                            onClick={() => {/* 추후 모달 팝업 구현 */}}
+                                        >
+                                            Prj Profile
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="project-btn"
+                                            onClick={() => {/* 추후 모달 팝업 구현 */}}
+                                        >
+                                            Proj Kickoff
+                                        </button>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
+
                         <tr>
                             <td className="table-cell table-cell-label table-cell-top">비고</td>
                             <td className="table-cell-input">
