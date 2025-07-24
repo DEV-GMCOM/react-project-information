@@ -1,0 +1,300 @@
+/* PTPostmortem.css */
+
+/* 메인 컨테이너 */
+.pt-postmortem-container {
+    font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    min-height: 100vh;
+}
+
+/* 헤더 */
+.postmortem-header {
+    background-color: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.postmortem-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.postmortem-logo {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* 메인 컨텐츠 섹션 */
+.postmortem-main {
+    background-color: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 타이틀 영역 */
+.postmortem-title-section {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+}
+
+.postmortem-subtitle {
+    margin: 0;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.postmortem-writer {
+    margin-top: 10px;
+}
+
+.writer-form {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+}
+
+.writer-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.writer-field-label {
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 80px;
+}
+
+.writer-field-input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 150px;
+}
+
+/* 섹션 */
+.postmortem-section {
+    margin-bottom: 30px;
+}
+
+/* 섹션 헤더 */
+.section-header {
+    background-color: #f8f9fa;
+    color: #333;
+    padding: 8px 12px;
+    margin: 0;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.section-header-margin {
+    margin-top: 20px;
+}
+
+/* 테이블 스타일 */
+.postmortem-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333;
+    margin-top: 15px;
+}
+
+/* 테이블 헤더 */
+.table-header {
+    background-color: #333;
+    color: white;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #333;
+    text-align: center;
+}
+
+.table-header-empty {
+    background-color: #333;
+}
+
+/* 테이블 셀 */
+.table-cell {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    font-size: 13px;
+}
+
+.table-cell-label {
+    background-color: #f8f9fa;
+    width: 120px;
+    text-align: center;
+    vertical-align: middle;
+    font-weight: 500;
+}
+
+.table-cell-rowspan {
+    vertical-align: middle;
+    text-align: center;
+    font-weight: bold;
+    background-color: #f0f0f0;
+    width: 100px;
+}
+
+.table-cell-input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    vertical-align: middle;
+}
+
+/* 입력 필드 */
+.postmortem-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    color: #333 !important;
+}
+
+.postmortem-input:focus {
+    background-color: white !important;
+    color: #333 !important;
+}
+
+/* 텍스트에어리어 */
+.postmortem-textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    resize: vertical;
+    font-size: 13px;
+    font-family: inherit;
+    color: #333 !important;
+}
+
+.postmortem-textarea:focus {
+    background-color: white !important;
+    color: #333 !important;
+}
+
+.textarea-small {
+    height: 40px;
+}
+
+.textarea-medium {
+    height: 60px;
+}
+
+.textarea-large {
+    height: 80px;
+}
+
+/* 텍스트에어리어에 자동으로 bullet point 추가 */
+.postmortem-textarea::placeholder {
+    color: #999;
+}
+
+/* bullet point 가 있는 텍스트에어리어의 내용 스타일링 */
+.postmortem-textarea {
+    line-height: 1.4;
+}
+
+/* 버튼 영역 */
+.postmortem-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-secondary:hover {
+    background-color: #545b62;
+}
+
+/* 인쇄 스타일 */
+@media print {
+    .pt-postmortem-container {
+        background-color: white;
+        box-shadow: none;
+        padding: 0;
+    }
+
+    .postmortem-header,
+    .postmortem-main {
+        box-shadow: none;
+        border-radius: 0;
+    }
+
+    .postmortem-actions {
+        display: none;
+    }
+}
+
+/* 자동완성 스타일 조정 */
+.postmortem-input:-webkit-autofill,
+.postmortem-input:-webkit-autofill:hover,
+.postmortem-input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px white inset !important;
+    -webkit-text-fill-color: #333 !important;
+    background-color: white !important;
+    border-color: transparent !important;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .pt-postmortem-container {
+        padding: 10px;
+    }
+
+    .writer-form {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .postmortem-table {
+        font-size: 12px;
+    }
+
+    .table-cell {
+        padding: 6px 8px;
+    }
+}

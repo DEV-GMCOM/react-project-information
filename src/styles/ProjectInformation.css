@@ -1,0 +1,379 @@
+/* ProjectInformation.css */
+
+/* 메인 컨테이너 */
+.project-info-container {
+    font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    min-height: 100vh;
+}
+
+/* 헤더 */
+.project-header {
+    background-color: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.project-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.project-logo {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* 메인 프로젝트 섹션 */
+.project-main {
+    background-color: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 프로젝트 타이틀 영역 */
+.project-title-section {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+}
+
+.project-subtitle {
+    margin: 0;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.project-writer {
+    margin-top: 10px;
+}
+
+.writer-form {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.writer-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.writer-field-label {
+    font-size: 14px;
+    font-weight: bold;
+    min-width: 80px;
+}
+
+.writer-field-input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 150px;
+}
+
+/* 섹션 */
+.project-section {
+    margin-bottom: 30px;
+}
+
+/* 섹션 헤더 */
+.section-header {
+    background-color: #f8f9fa;
+    color: #333;
+    padding: 8px 12px;
+    margin: 0;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.section-header-margin {
+    margin-top: 20px;
+}
+
+/* 테이블 스타일 */
+.project-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333;
+}
+
+.section-table {
+    margin-top: 15px;
+}
+
+/* 테이블 헤더 */
+.table-header {
+    background-color: #333;
+    color: white;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #333;
+    text-align: center;
+}
+
+.table-header-category {
+    width: 120px;
+}
+
+.table-header-empty {
+    background-color: #333;
+}
+
+.contact-date-header {
+    width: 120px;
+}
+
+/* 테이블 셀 */
+.table-cell {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    font-size: 13px;
+}
+
+.table-cell-label {
+    background-color: #f8f9fa;
+    width: 120px;
+    text-align: center;
+    vertical-align: middle;
+    font-weight: 500;
+}
+
+.table-cell-rowspan {
+    vertical-align: middle;
+    text-align: center;
+    font-weight: bold;
+    background-color: #f0f0f0;
+}
+
+.table-cell-top {
+    vertical-align: middle;
+}
+
+.table-cell-input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+}
+
+/* 입력 필드 */
+.project-input,
+.project-textarea,
+.project-date-input {
+    color: #333 !important;
+}
+
+.project-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 13px;
+}
+
+.project-input[type="email"] {
+    background-color: white !important;
+    border-color: gainsboro !important;
+}
+
+.project-input:-webkit-autofill,
+.project-input:-webkit-autofill:hover,
+.project-input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px white inset !important;
+    -webkit-text-fill-color: #333 !important;
+    background-color: white !important;
+    border-color: transparent !important;
+}
+
+.project-textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    resize: vertical;
+    font-size: 13px;
+    font-family: inherit;
+}
+
+.textarea-small {
+    height: 40px;
+}
+
+.textarea-medium {
+    height: 60px;
+}
+
+.textarea-large {
+    height: 80px;
+}
+
+.textarea-xlarge {
+    height: 100px;
+}
+
+/* bullet point가 자동으로 추가되는 텍스트 영역 */
+.bullet-textarea {
+    line-height: 1.4;
+}
+
+.project-date-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 13px;
+}
+
+/* 추가 정보 수집 특별 스타일 */
+.contact-date-cell {
+    width: 120px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.contact-date {
+    font-weight: bold;
+    color: #333;
+}
+
+.contact-content {
+    line-height: 1.4;
+    white-space: pre-line;
+}
+
+.new-info-row {
+    background-color: #fafafa;
+}
+
+.info-content-container {
+    position: relative;
+}
+
+/* 버튼 섹션 */
+.button-section {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+}
+
+.submit-btn,
+.print-btn {
+    padding: 10px 30px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.submit-btn {
+    background-color: #007bff;
+    color: white;
+}
+
+.submit-btn:hover {
+    background-color: #0056b3;
+}
+
+.print-btn {
+    background-color: #28a745;
+    color: white;
+}
+
+.print-btn:hover {
+    background-color: #218838;
+}
+
+/* 인쇄 스타일 */
+@media print {
+    .project-info-container {
+        background-color: white;
+        padding: 0;
+        margin: 0;
+        max-width: none;
+    }
+
+    .project-header,
+    .project-main {
+        box-shadow: none;
+        border-radius: 0;
+    }
+
+    .button-section {
+        display: none;
+    }
+
+    .project-table {
+        page-break-inside: avoid;
+    }
+
+    .project-section {
+        page-break-inside: avoid;
+        margin-bottom: 20px;
+    }
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .project-info-container {
+        padding: 10px;
+    }
+
+    .project-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+
+    .writer-form {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .writer-field {
+        justify-content: center;
+    }
+
+    .writer-field-input {
+        width: 200px;
+    }
+
+    .project-table {
+        font-size: 12px;
+    }
+
+    .table-cell-label {
+        width: 100px;
+    }
+
+    .contact-date-cell {
+        width: 100px;
+    }
+
+    .button-section {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .submit-btn,
+    .print-btn {
+        width: 200px;
+    }
+}

@@ -1,0 +1,422 @@
+/* ProjectKickoffChecklist.css */
+
+/* 메인 컨테이너 */
+.kickoff-checklist-container {
+    font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    min-height: 100vh;
+}
+
+/* 헤더 */
+.checklist-header {
+    background-color: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.checklist-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.checklist-logo {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* 메인 체크리스트 섹션 */
+.checklist-main {
+    background-color: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 체크리스트 타이틀 영역 */
+.checklist-title-section {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+}
+
+.checklist-subtitle {
+    margin: 0;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.checklist-writer {
+    margin-top: 10px;
+}
+
+.writer-form {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.writer-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.writer-field-label {
+    font-size: 14px;
+    font-weight: bold;
+    min-width: 80px;
+}
+
+.writer-field-input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 150px;
+}
+
+/* 섹션 */
+.checklist-section {
+    margin-bottom: 30px;
+}
+
+/* 섹션 헤더 */
+.section-header {
+    background-color: #f8f9fa;
+    color: #333;
+    padding: 8px 12px;
+    margin: 0;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* 테이블 스타일 */
+.checklist-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333;
+}
+
+/* 테이블 헤더 */
+.table-header {
+    background-color: #333;
+    color: white;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #333;
+    text-align: center;
+}
+
+.weight-header {
+    width: 80px;
+}
+
+.score-header {
+    width: 80px;
+}
+
+/* 테이블 셀 */
+.table-cell {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+.table-cell-label {
+    background-color: #f8f9fa;
+    width: 120px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.table-cell-content {
+    padding: 12px;
+    line-height: 1.4;
+}
+
+.table-cell-weight {
+    background-color: #f0f0f0;
+    text-align: center;
+    font-weight: bold;
+    width: 80px;
+}
+
+.table-cell-input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+.table-cell-merged {
+    background-color: #e9ecef;
+    text-align: center;
+    font-weight: bold;
+}
+
+.table-cell-total {
+    background-color: #fff3cd;
+    text-align: center;
+    font-weight: bold;
+    font-size: 16px;
+    color: #856404;
+}
+
+.table-cell-dash {
+    background-color: #f8f9fa;
+    text-align: center;
+    color: #666;
+}
+
+.table-cell-grade {
+    background-color: #f8f9fa;
+    text-align: center;
+    padding: 8px;
+}
+
+/* Bullet 포인트 콘텐츠 */
+.bullet-content {
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* 점수 입력 필드 */
+.checklist-score-input {
+    width: 60px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 4px 8px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.checklist-score-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* 총점 및 등급 행 */
+.total-row {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+.grade-row {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+/* 등급 배지 */
+.grade-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 16px;
+    min-width: 30px;
+    text-align: center;
+}
+
+.grade-a {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.grade-b {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.grade-c {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f1b0b7;
+}
+
+/* 의견 테이블 */
+.opinion-table {
+    margin-top: 15px;
+}
+
+.opinion-label {
+    width: 150px;
+}
+
+/* 텍스트 영역 */
+.checklist-textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    resize: vertical;
+    font-size: 13px;
+    font-family: inherit;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.checklist-textarea:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.textarea-large {
+    height: 80px;
+}
+
+/* 버튼 섹션 */
+.button-section {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+}
+
+.submit-btn,
+.print-btn {
+    padding: 10px 30px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.submit-btn {
+    background-color: #007bff;
+    color: white;
+}
+
+.submit-btn:hover {
+    background-color: #0056b3;
+}
+
+.print-btn {
+    background-color: #28a745;
+    color: white;
+}
+
+.print-btn:hover {
+    background-color: #218838;
+}
+
+/* 인쇄 스타일 */
+@media print {
+    .kickoff-checklist-container {
+        background-color: white;
+        padding: 0;
+        margin: 0;
+        max-width: none;
+    }
+
+    .checklist-header,
+    .checklist-main {
+        box-shadow: none;
+        border-radius: 0;
+    }
+
+    .button-section {
+        display: none;
+    }
+
+    .checklist-table {
+        page-break-inside: avoid;
+    }
+
+    .checklist-section {
+        page-break-inside: avoid;
+        margin-bottom: 20px;
+    }
+
+    .grade-badge {
+        border: 1px solid #333 !important;
+    }
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .kickoff-checklist-container {
+        padding: 10px;
+    }
+
+    .checklist-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+
+    .writer-form {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .writer-field {
+        justify-content: center;
+    }
+
+    .writer-field-input {
+        width: 200px;
+    }
+
+    .checklist-table {
+        font-size: 11px;
+    }
+
+    .table-cell-label {
+        width: 80px;
+    }
+
+    .weight-header,
+    .score-header,
+    .table-cell-weight {
+        width: 60px;
+    }
+
+    .checklist-score-input {
+        width: 50px;
+        font-size: 12px;
+    }
+
+    .bullet-content {
+        font-size: 11px;
+    }
+
+    .opinion-label {
+        width: 100px;
+    }
+
+    .button-section {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .submit-btn,
+    .print-btn {
+        width: 200px;
+    }
+
+    .grade-badge {
+        font-size: 14px;
+        padding: 3px 10px;
+    }
+}
