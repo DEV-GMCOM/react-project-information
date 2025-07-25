@@ -169,6 +169,52 @@
     border: 1px solid #ddd;
 }
 
+/* 입력 필드 안에 버튼이 있는 컨테이너 */
+.input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-inner-btn {
+    width: 100%;
+    padding-right: 120px; /* 버튼 공간 확보 */
+}
+
+.inner-profile-btn {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 3px 8px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.3s;
+    z-index: 1;
+}
+
+.inner-profile-btn:hover {
+    background-color: #0056b3;
+}
+
+.inner-profile-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* 날짜 입력 필드 */
+.profile-date-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 13px;
+}
+
 /* 입력 필드 */
 .profile-input,
 .profile-textarea,

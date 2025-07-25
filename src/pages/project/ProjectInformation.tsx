@@ -203,25 +203,44 @@ const ProjectInformationForm: React.FC = () => {
                             </td>
                             <td className="table-cell table-cell-label">담당자</td>
                             <td className="table-cell-input">
-                                <input
-                                    type="text"
-                                    name="manager"
-                                    value={formData.manager}
-                                    onChange={handleInputChange}
-                                    className="project-input"
-                                />
+                                <div className="input-container">
+                                    <input
+                                        type="text"
+                                        name="manager"
+                                        value={formData.manager}
+                                        onChange={handleInputChange}
+                                        className="project-input input-with-inner-btn"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="inner-profile-btn"
+                                        onClick={() => {
+                                            console.log('광고주 Profile 버튼 클릭');
+                                            // TODO: 광고주 Profile 페이지로 이동 또는 모달 열기
+                                        }}
+                                    >
+                                        광고주 Profile
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         <tr>
                             <td className="table-cell table-cell-label">행사일</td>
                             <td className="table-cell-input">
                                 <input
-                                    type="text"
+                                    type="date"
                                     name="eventDate"
-                                    value={formData.eventDate}
-                                    onChange={handleInputChange}
-                                    placeholder="yyyy.mm.dd"
-                                    className="project-input"
+                                    value={formData.eventDate ? formData.eventDate.replace(/\./g, '-') : ''}
+                                    onChange={(e) => {
+                                        const selectedDate = e.target.value;
+                                        if (selectedDate) {
+                                            const formattedDate = selectedDate.replace(/-/g, '.');
+                                            setFormData(prev => ({ ...prev, eventDate: formattedDate }));
+                                        } else {
+                                            setFormData(prev => ({ ...prev, eventDate: '' }));
+                                        }
+                                    }}
+                                    className="project-date-input"
                                 />
                             </td>
                             <td className="table-cell table-cell-label">행사장소</td>
@@ -262,23 +281,37 @@ const ProjectInformationForm: React.FC = () => {
                             <td className="table-cell table-cell-label">OT 일정</td>
                             <td className="table-cell-input">
                                 <input
-                                    type="text"
+                                    type="date"
                                     name="otSchedule"
-                                    value={formData.otSchedule}
-                                    onChange={handleInputChange}
-                                    placeholder="yyyy.mm.dd"
-                                    className="project-input"
+                                    value={formData.otSchedule ? formData.otSchedule.replace(/\./g, '-') : ''}
+                                    onChange={(e) => {
+                                        const selectedDate = e.target.value;
+                                        if (selectedDate) {
+                                            const formattedDate = selectedDate.replace(/-/g, '.');
+                                            setFormData(prev => ({ ...prev, otSchedule: formattedDate }));
+                                        } else {
+                                            setFormData(prev => ({ ...prev, otSchedule: '' }));
+                                        }
+                                    }}
+                                    className="project-date-input"
                                 />
                             </td>
                             <td className="table-cell table-cell-label">제출 / PT 일정</td>
                             <td className="table-cell-input">
                                 <input
-                                    type="text"
+                                    type="date"
                                     name="submissionSchedule"
-                                    value={formData.submissionSchedule}
-                                    onChange={handleInputChange}
-                                    placeholder="yyyy.mm.dd"
-                                    className="project-input"
+                                    value={formData.submissionSchedule ? formData.submissionSchedule.replace(/\./g, '-') : ''}
+                                    onChange={(e) => {
+                                        const selectedDate = e.target.value;
+                                        if (selectedDate) {
+                                            const formattedDate = selectedDate.replace(/-/g, '.');
+                                            setFormData(prev => ({ ...prev, submissionSchedule: formattedDate }));
+                                        } else {
+                                            setFormData(prev => ({ ...prev, submissionSchedule: '' }));
+                                        }
+                                    }}
+                                    className="project-date-input"
                                 />
                             </td>
                         </tr>
@@ -390,10 +423,13 @@ const ProjectInformationForm: React.FC = () => {
                                         <div className="contact-date">{info.date}</div>
                                     ) : (
                                         <input
-                                            type="text"
-                                            value={info.date}
-                                            onChange={(e) => handleAdditionalInfoChange(index, 'date', e.target.value)}
-                                            placeholder="yyyy.mm.dd"
+                                            type="date"
+                                            value={info.date ? info.date.replace(/\./g, '-') : ''}
+                                            onChange={(e) => {
+                                                const selectedDate = e.target.value;
+                                                const formattedDate = selectedDate ? selectedDate.replace(/-/g, '.') : '';
+                                                handleAdditionalInfoChange(index, 'date', formattedDate);
+                                            }}
                                             className="project-date-input"
                                         />
                                     )}

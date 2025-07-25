@@ -78,7 +78,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { path: '/company', name: '업체 목록' },
         { path: '/company/new', name: '업체 등록' },
         { path: '/company/regist', name: '업체 신규등록' },
-        { path: '/company/profile', name: '광고주(실무선) 정보 입력폼 샘플' }
+        { path: '/company/profile', name: '[입력폼 샘플] 광고주(실무선) 정보' }
       ]
     },
     {
@@ -98,14 +98,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { path: '/project', name: '프로젝트 목록' },
         { path: '/project/new', name: '프로젝트 등록' },
         { path: '/project/regist', name: '프로젝트 신규등록' },
-        { path: '/project/information', name: '프로젝트 정보수집 입력폼 샘플' }
+        { path: '/project/information', name: '[입력폼 샘플] 프로젝트 정보수집' }
 
-        ,{ path: '/project/kickoff-checklist', name: '프로젝트 정보수집 입력폼 샘플' }
-        ,{ path: '/project/profile', name: '프로젝트 프로파일 입력폼 샘플' }
-        ,{ path: '/project/kickoff', name: '프로젝트 진행여부 평가 체크리스트 입력폼 샘플' }
-        ,{ path: '/project/postmortem-pt', name: 'PT 사후분석 입력폼 샘플' }
-        ,{ path: '/project/postmortem-project', name: '프로젝트 진행결과 사후분석 입력폼 샘플' }
-        ,{ path: '/project/pt-checklist', name: 'PT 준비 체크리스트 입력폼 샘플' }
+        ,{ path: '/project/kickoff-checklist', name: '[입력폼 샘플] 프로젝트 평가 체크리스트' }
+        ,{ path: '/project/profile', name: '[입력폼 샘플] 프로젝트 프로파일' }
+        ,{ path: '/project/kickoff', name: '[입력폼 샘플] 프로젝트 진행여부 평가 체크리스트' }
+        ,{ path: '/project/postmortem-pt', name: '[입력폼 샘플] PT 사후분석' }
+        ,{ path: '/project/postmortem-project', name: '[입력폼 샘플] 프로젝트 진행결과 사후분석' }
+        ,{ path: '/project/pt-checklist', name: '[입력폼 샘플] PT 준비 체크리스트' }
       ]
     }
   ];

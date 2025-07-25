@@ -73,8 +73,15 @@ const ProjectKickoffChecklistForm: React.FC = () => {
         }));
     };
 
-    const handleScoreChange = (scoreType: keyof ChecklistScores, value: string) => {
+    const handleScoreChange = (scoreType: keyof ChecklistScores, value: string, maxScore: number) => {
         const numValue = value === '' ? '' : Number(value);
+
+        // 점수가 배점을 초과하는지 확인
+        if (numValue !== '' && numValue > maxScore) {
+            alert(`점수는 배점(${maxScore}점)을 초과할 수 없습니다.`);
+            return;
+        }
+
         setFormData(prev => ({
             ...prev,
             scores: {
@@ -154,7 +161,7 @@ const ProjectKickoffChecklistForm: React.FC = () => {
                         <tr>
                             <td className="table-header">구분</td>
                             <td className="table-header">내용</td>
-                            <td className="table-header weight-header">가중치</td>
+                            <td className="table-header weight-header">배점</td>
                             <td className="table-header score-header">점수</td>
                         </tr>
                         <tr>
@@ -172,7 +179,7 @@ const ProjectKickoffChecklistForm: React.FC = () => {
                                     min="0"
                                     max="50"
                                     value={formData.scores.revenue}
-                                    onChange={(e) => handleScoreChange('revenue', e.target.value)}
+                                    onChange={(e) => handleScoreChange('revenue', e.target.value, 50)}
                                     className="checklist-score-input"
                                 />
                             </td>
@@ -192,7 +199,7 @@ const ProjectKickoffChecklistForm: React.FC = () => {
                                     min="0"
                                     max="20"
                                     value={formData.scores.feasibility}
-                                    onChange={(e) => handleScoreChange('feasibility', e.target.value)}
+                                    onChange={(e) => handleScoreChange('feasibility', e.target.value, 20)}
                                     className="checklist-score-input"
                                 />
                             </td>
@@ -213,7 +220,7 @@ const ProjectKickoffChecklistForm: React.FC = () => {
                                     min="0"
                                     max="10"
                                     value={formData.scores.rfpReview}
-                                    onChange={(e) => handleScoreChange('rfpReview', e.target.value)}
+                                    onChange={(e) => handleScoreChange('rfpReview', e.target.value, 10)}
                                     className="checklist-score-input"
                                 />
                             </td>
@@ -233,7 +240,7 @@ const ProjectKickoffChecklistForm: React.FC = () => {
                                     min="0"
                                     max="10"
                                     value={formData.scores.futureValue}
-                                    onChange={(e) => handleScoreChange('futureValue', e.target.value)}
+                                    onChange={(e) => handleScoreChange('futureValue', e.target.value, 10)}
                                     className="checklist-score-input"
                                 />
                             </td>
@@ -254,7 +261,7 @@ const ProjectKickoffChecklistForm: React.FC = () => {
                                     min="0"
                                     max="10"
                                     value={formData.scores.relationship}
-                                    onChange={(e) => handleScoreChange('relationship', e.target.value)}
+                                    onChange={(e) => handleScoreChange('relationship', e.target.value, 10)}
                                     className="checklist-score-input"
                                 />
                             </td>

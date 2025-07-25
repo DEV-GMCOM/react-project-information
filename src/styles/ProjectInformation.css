@@ -172,6 +172,118 @@
     border: 1px solid #ddd;
 }
 
+/* 날짜 입력 필드 (CompanyProfile 방식) */
+.project-date-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 13px;
+}
+
+/* 기존 캘린더 버튼 방식 스타일 (주석 처리됨)
+.date-input-container {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+}
+
+.calendar-btn-large {
+    height: auto;
+    width: 40px;
+    background-color: #f8f9fa;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.calendar-btn-large:hover {
+    background-color: #e9ecef;
+}
+
+.date-display-input {
+    flex: 1;
+    box-sizing: border-box;
+}
+*/
+
+/* 입력 필드 안에 버튼이 있는 컨테이너 */
+.input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-inner-btn {
+    width: 100%;
+    padding-right: 120px; /* 버튼 공간 확보 */
+}
+
+.inner-profile-btn {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 3px 8px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.3s;
+    z-index: 1;
+}
+
+.inner-profile-btn:hover {
+    background-color: #0056b3;
+}
+
+.inner-profile-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* 기존 스타일 제거 및 수정 */
+.input-with-button {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.input-with-btn {
+    flex: 1;
+}
+
+.profile-btn {
+    padding: 4px 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.3s;
+}
+
+.profile-btn:hover {
+    background-color: #0056b3;
+}
+
+.profile-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
 /* 입력 필드 */
 .project-input,
 .project-textarea,

@@ -91,13 +91,24 @@
 .postmortem-section {
     margin-bottom: 30px;
 }
-
+/* h3 태그의 기본 마진 제거 */
+.postmortem-section h3.section-header {
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+/* 섹션 헤더 바로 다음의 테이블 마진 제거 */
+.postmortem-section .section-header + .postmortem-table {
+    margin-top: 0 !important;
+}
 /* 섹션 헤더 */
+/* 섹션 헤더의 마진 완전 제거 */
 .section-header {
     background-color: #f8f9fa;
     color: #333;
     padding: 8px 12px;
-    margin: 0;
+    margin: 0 !important;
+    margin-bottom: 0 !important;
     font-size: 14px;
     font-weight: bold;
 }
@@ -107,11 +118,12 @@
 }
 
 /* 테이블 스타일 */
+/* 기존 postmortem-table의 margin-top 제거 */
 .postmortem-table {
     width: 100%;
     border-collapse: collapse;
     border: 1px solid #333;
-    margin-top: 15px;
+    margin-top: 0px; /* 15px에서 0px로 변경 */
 }
 
 /* 테이블 헤더 */

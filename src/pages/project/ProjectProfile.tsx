@@ -15,6 +15,8 @@ interface ProjectProfile {
     submissionSchedule: string;
     expectedRevenue: string;
     expectedCompetitors: string;
+    scoreTable: string;
+    bidAmount: string;
 
     // 프로젝트 상세 정보
     purposeBackground: string;
@@ -47,6 +49,8 @@ const ProjectProfileForm: React.FC = () => {
         submissionSchedule: '',
         expectedRevenue: '',
         expectedCompetitors: '',
+        scoreTable: '',
+        bidAmount: '',
         purposeBackground: '',
         mainContent: '',
         coreRequirements: '',
@@ -195,25 +199,44 @@ const ProjectProfileForm: React.FC = () => {
                             </td>
                             <td className="table-cell table-cell-label">담당자</td>
                             <td className="table-cell-input">
-                                <input
-                                    type="text"
-                                    name="manager"
-                                    value={formData.manager}
-                                    onChange={handleInputChange}
-                                    className="profile-input"
-                                />
+                                <div className="input-container">
+                                    <input
+                                        type="text"
+                                        name="manager"
+                                        value={formData.manager}
+                                        onChange={handleInputChange}
+                                        className="profile-input input-with-inner-btn"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="inner-profile-btn"
+                                        onClick={() => {
+                                            console.log('광고주 Profile 버튼 클릭');
+                                            // TODO: 광고주 Profile 페이지로 이동 또는 모달 열기
+                                        }}
+                                    >
+                                        광고주 Profile
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         <tr>
                             <td className="table-cell table-cell-label">행사일</td>
                             <td className="table-cell-input">
                                 <input
-                                    type="text"
+                                    type="date"
                                     name="eventDate"
-                                    value={formData.eventDate}
-                                    onChange={handleInputChange}
-                                    placeholder="yyyy.mm.dd"
-                                    className="profile-input"
+                                    value={formData.eventDate ? formData.eventDate.replace(/\./g, '-') : ''}
+                                    onChange={(e) => {
+                                        const selectedDate = e.target.value;
+                                        if (selectedDate) {
+                                            const formattedDate = selectedDate.replace(/-/g, '.');
+                                            setFormData(prev => ({ ...prev, eventDate: formattedDate }));
+                                        } else {
+                                            setFormData(prev => ({ ...prev, eventDate: '' }));
+                                        }
+                                    }}
+                                    className="profile-date-input"
                                 />
                             </td>
                             <td className="table-cell table-cell-label">행사장소</td>
@@ -254,23 +277,37 @@ const ProjectProfileForm: React.FC = () => {
                             <td className="table-cell table-cell-label">OT 일정</td>
                             <td className="table-cell-input">
                                 <input
-                                    type="text"
+                                    type="date"
                                     name="otSchedule"
-                                    value={formData.otSchedule}
-                                    onChange={handleInputChange}
-                                    placeholder="yyyy.mm.dd"
-                                    className="profile-input"
+                                    value={formData.otSchedule ? formData.otSchedule.replace(/\./g, '-') : ''}
+                                    onChange={(e) => {
+                                        const selectedDate = e.target.value;
+                                        if (selectedDate) {
+                                            const formattedDate = selectedDate.replace(/-/g, '.');
+                                            setFormData(prev => ({ ...prev, otSchedule: formattedDate }));
+                                        } else {
+                                            setFormData(prev => ({ ...prev, otSchedule: '' }));
+                                        }
+                                    }}
+                                    className="profile-date-input"
                                 />
                             </td>
                             <td className="table-cell table-cell-label">제출 / PT 일정</td>
                             <td className="table-cell-input">
                                 <input
-                                    type="text"
+                                    type="date"
                                     name="submissionSchedule"
-                                    value={formData.submissionSchedule}
-                                    onChange={handleInputChange}
-                                    placeholder="yyyy.mm.dd"
-                                    className="profile-input"
+                                    value={formData.submissionSchedule ? formData.submissionSchedule.replace(/\./g, '-') : ''}
+                                    onChange={(e) => {
+                                        const selectedDate = e.target.value;
+                                        if (selectedDate) {
+                                            const formattedDate = selectedDate.replace(/-/g, '.');
+                                            setFormData(prev => ({ ...prev, submissionSchedule: formattedDate }));
+                                        } else {
+                                            setFormData(prev => ({ ...prev, submissionSchedule: '' }));
+                                        }
+                                    }}
+                                    className="profile-date-input"
                                 />
                             </td>
                         </tr>
@@ -297,6 +334,32 @@ const ProjectProfileForm: React.FC = () => {
                                     value={formData.expectedCompetitors}
                                     onChange={handleInputChange}
                                     placeholder="XX, YY 등 N개사"
+                                    className="profile-input"
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">배점표</td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="scoreTable"
+                                    value={formData.scoreTable}
+                                    onChange={handleInputChange}
+                                    className="profile-input"
+                                />
+                            </td>
+                            <td className="table-cell table-cell-label">
+                                제출/투찰 금액<br/>
+                                (단위:억원)
+                            </td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="bidAmount"
+                                    value={formData.bidAmount}
+                                    onChange={handleInputChange}
+                                    placeholder="XX.X, Y%"
                                     className="profile-input"
                                 />
                             </td>

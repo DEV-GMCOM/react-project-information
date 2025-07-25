@@ -103,13 +103,13 @@
 }
 
 /* 테이블 스타일 */
+/* 기존 checklist-table의 margin-top 제거 */
 .checklist-table {
     width: 100%;
     border-collapse: collapse;
     border: 1px solid #333;
-    margin-top: 15px;
+    margin-top: 0px; /* 15px에서 0px로 변경 */
 }
-
 /* 테이블 헤더 */
 .table-header {
     background-color: #333;

@@ -222,6 +222,52 @@
     height: 100px;
 }
 
+/* 입력 필드 안에 버튼이 있는 컨테이너 */
+.input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-inner-btn {
+    width: 100%;
+    padding-right: 120px; /* 버튼 공간 확보 */
+}
+
+.inner-profile-btn {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 3px 8px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.3s;
+    z-index: 1;
+}
+
+.inner-profile-btn:hover {
+    background-color: #0056b3;
+}
+
+.inner-profile-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* 날짜 입력 필드 */
+.kickoff-date-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 13px;
+}
+
 /* bullet point가 자동으로 추가되는 텍스트 영역 */
 .bullet-textarea {
     line-height: 1.4;
@@ -285,6 +331,254 @@
 
 .new-report-container {
     position: relative;
+}
+
+/* 토글 애니메이션 효과 */
+.profile-tables-container {
+    transition: all 1s ease-in-out;
+    overflow: hidden;
+}
+
+.profile-tables-enter {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-20px);
+}
+
+.profile-tables-enter-active {
+    opacity: 1;
+    max-height: 2000px; /* 충분히 큰 값 */
+    transform: translateY(0);
+}
+
+.profile-tables-exit {
+    opacity: 1;
+    max-height: 2000px;
+    transform: translateY(0);
+}
+
+.profile-tables-exit-active {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-20px);
+}
+
+/* 파일 업로드 섹션 */
+.file-upload-section {
+    margin: 20px 0;
+    padding: 0 10px;
+}
+
+.file-drop-zone {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    min-height: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+    background-color: #fafafa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.file-drop-zone:hover {
+    border-color: #007bff;
+    background-color: #f0f8ff;
+}
+
+.file-drop-zone.drag-over {
+    border-color: #007bff;
+    background-color: #e3f2fd;
+    transform: scale(1.02);
+}
+
+/* 빈 상태 메시지 */
+.drop-zone-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 160px;
+    text-align: center;
+}
+
+.drop-zone-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.drop-zone-text p {
+    margin: 4px 0;
+    color: #666;
+}
+
+.drop-zone-hint {
+    font-size: 12px;
+    color: #999;
+}
+
+/* 파일 리스트 */
+.file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 12px;
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    transition: box-shadow 0.2s ease;
+}
+
+.file-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.file-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.file-name {
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    word-break: break-all;
+}
+
+.file-details {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: #666;
+}
+
+.file-size {
+    font-weight: 500;
+}
+
+.file-dates {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 4px;
+}
+
+.file-date {
+    font-size: 11px;
+    color: #999;
+}
+
+.file-remove-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.file-remove-btn:hover {
+    background-color: #c82333;
+}
+
+.drop-zone-add-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    border: 1px dashed #007bff;
+    border-radius: 6px;
+    background-color: #f8f9ff;
+    color: #007bff;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.drop-zone-add-more:hover {
+    background-color: #e3f2fd;
+    border-color: #0056b3;
+}
+
+/* 반응형 파일 업로드 */
+@media (max-width: 768px) {
+    .file-details {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .file-dates {
+        flex-direction: column;
+    }
+
+    .file-item {
+        padding: 8px;
+    }
+
+    .drop-zone-icon {
+        font-size: 36px;
+    }
+
+    .drop-zone-message {
+        height: 120px;
+    }
+}
+
+/* 테이블 액션 버튼 섹션 */
+.table-action-section {
+    display: flex;
+    justify-content: flex-end;
+    margin: 15px 0;
+    padding: 0 10px;
+}
+
+.toggle-profile-btn {
+    padding: 8px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.toggle-profile-btn:hover {
+    background-color: #0056b3;
+}
+
+.rfp-attach-btn {
+    padding: 8px 20px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.rfp-attach-btn:hover {
+    background-color: #218838;
 }
 
 /* 버튼 섹션 */
@@ -470,4 +764,48 @@
 /* 멀티라인 라벨을 위한 특별 스타일 */
 .table-cell-label br {
     line-height: 1.2;
+}
+
+
+/* ProjectKickoff.css에 추가할 스타일 */
+
+/* 섹션 헤더의 상하 마진 완전 제거 */
+.section-header {
+    background-color: #f8f9fa;
+    color: #333;
+    padding: 8px 12px;
+    margin: 0 !important;  /* 모든 마진 강제 제거 */
+    margin-bottom: 0 !important;  /* 하단 마진 강제 제거 */
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* kickoff-table의 상단 마진도 제거 */
+.kickoff-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333;
+    margin-top: 0 !important;  /* 상단 마진 강제 제거 */
+}
+
+/* 토글 영역 내부의 섹션 헤더와 테이블 간격 제거 */
+.profile-tables-container .section-header {
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.profile-tables-container .kickoff-table {
+    margin-top: 0 !important;
+}
+
+/* kickoff-section 내부의 헤더와 테이블 사이 간격 제거 */
+.kickoff-section .section-header + .kickoff-table {
+    margin-top: 0 !important;
+}
+
+/* h3 태그 자체의 기본 마진 제거 */
+.kickoff-section h3.section-header {
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
 }
