@@ -164,9 +164,11 @@ const ProjectInformationForm: React.FC = () => {
                         <tbody>
                         <tr>
                             <td className="table-header">구분</td>
-                            <td className="table-header table-header-empty"></td>
                             <td className="table-header">내용</td>
-                            <td className="table-header table-header-empty"></td>
+                            <td className="table-header">구분</td>
+                            <td className="table-header">내용</td>
+                            {/*<td className="table-header table-header-empty"></td>*/}
+                            {/*<td className="table-header table-header-empty"></td>*/}
                         </tr>
                         <tr>
                             <td className="table-cell table-cell-label">프로젝트명</td>
