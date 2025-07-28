@@ -113,7 +113,7 @@ const CompanyProfileForm: React.FC = () => {
             <div className="profile-main">
                 <div className="profile-title-section">
                     <h2 className="profile-subtitle">
-                        - 광고주 Profile -
+                        광고주 Profile
                     </h2>
                     {/*<div className="profile-writer">*/}
                     {/*    <label className="writer-label">*/}

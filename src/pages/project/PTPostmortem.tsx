@@ -146,7 +146,7 @@ const PTPostmortemForm: React.FC = () => {
     return (
         <div className="pt-postmortem-container">
             <header className="postmortem-header">
-                <h1 className="postmortem-title">PT Postmortem</h1>
+                <h1 className="postmortem-title">별첨 2-4. PT Postmortem</h1>
                 <div className="postmortem-logo">GMC</div>
             </header>
 
@@ -154,7 +154,7 @@ const PTPostmortemForm: React.FC = () => {
                 <form onSubmit={handleSubmit}>
                     {/* PT 결과 보고서 타이틀 영역 */}
                     <div className="postmortem-title-section">
-                        <h2 className="postmortem-subtitle">PT 결과 보고서</h2>
+                        <h2 className="postmortem-subtitle">프로젝트 PT결과 사후분석</h2>
                         <div className="postmortem-writer">
                             <div className="writer-form">
                                 <div className="writer-field">

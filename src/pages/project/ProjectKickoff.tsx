@@ -226,7 +226,7 @@ const ProjectKickoffForm: React.FC = () => {
             <div className="kickoff-header">
                 <div>
                     <h1 className="kickoff-title">
-                        프로젝트 착수서
+                        별텀 2-3. 프로젝트 착수서 양식
                     </h1>
                 </div>
                 <div className="kickoff-logo">
@@ -238,7 +238,7 @@ const ProjectKickoffForm: React.FC = () => {
             <div className="kickoff-main">
                 <div className="kickoff-title-section">
                     <h2 className="kickoff-subtitle">
-                        - 프로젝트 착수서 -
+                        프로젝트 착수서
                     </h2>
                     <div className="kickoff-writer">
                         <div className="writer-form">

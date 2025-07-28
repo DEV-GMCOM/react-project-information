@@ -116,7 +116,7 @@ const ProjectInformationForm: React.FC = () => {
             <div className="project-header">
                 <div>
                     <h1 className="project-title">
-                        프로젝트 정보 수집 양식
+                        별첨 2-1. (프로젝트) 정보 수집 양식
                     </h1>
                 </div>
                 <div className="project-logo">
@@ -128,7 +128,7 @@ const ProjectInformationForm: React.FC = () => {
             <div className="project-main">
                 <div className="project-title-section">
                     <h2 className="project-subtitle">
-                        - 정보 수집 -
+                        정보 수집
                     </h2>
                     <div className="project-writer">
                         <div className="writer-form">

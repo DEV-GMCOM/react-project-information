@@ -108,7 +108,7 @@ const ProjectProfileForm: React.FC = () => {
             <div className="profile-header">
                 <div>
                     <h1 className="profile-title">
-                        프로젝트 Profile 양식
+                        별첨 2-2. 프로젝트 Profile 양식
                     </h1>
                 </div>
                 <div className="profile-logo">
@@ -120,7 +120,7 @@ const ProjectProfileForm: React.FC = () => {
             <div className="profile-main">
                 <div className="profile-title-section">
                     <h2 className="profile-subtitle">
-                        - 프로젝트 Profile -
+                        프로젝트 Profile
                     </h2>
                     <div className="profile-writer">
                         <div className="writer-form">

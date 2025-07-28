@@ -57,15 +57,28 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
 
           {/* 정보수집 */}
-          <Route path="/info-management/project" element={<ProjectPage />} />
-          <Route path="/info-management/advertiser" element={<AdvertiserPage />} />
+          {/*<Route path="/info-management/project" element={<ProjectPage />} />*/}
+          {/*<Route path="/info-management/advertiser" element={<AdvertiserPage />} />*/}
+          <Route path="/info-management/project" element={<ProjectInformation />} />
+          <Route path="/info-management/advertiser" element={<CompanyProfile />} />
 
           {/* 프로젝트 관련 페이지들 */}
-          <Route path="/project-profile" element={<ProjectProfilePage />} />
-          <Route path="/project-kickoff" element={<ProjectKickoffPage />} />
-          <Route path="/pt-checklist" element={<PTChecklistPage />} />
-          <Route path="/pt-postmortem" element={<PTPostmortemPage />} />
-          <Route path="/project-postmortem" element={<ProjectPostmortemPage />} />
+          {/*<Route path="/project-profile" element={<ProjectProfilePage />} />*/}
+          <Route path="/project-profile" element={<ProjectProfile />} />
+
+          <Route path="/project-evaluation" element={<ProjectKickoffChecklist />} />
+
+          {/*<Route path="/project-kickoff" element={<ProjectKickoffPage />} />*/}
+          <Route path="/project-kickoff" element={<ProjectKickoff />} />
+
+          {/*<Route path="/pt-checklist" element={<PTChecklistPage />} />*/}
+          <Route path="/pt-checklist" element={<PTChecklist />} />
+
+          {/*<Route path="/pt-postmortem" element={<PTPostmortemPage />} />*/}
+          <Route path="/pt-postmortem" element={<PTPostmortem />} />
+
+          {/*<Route path="/project-postmortem" element={<ProjectPostmortemPage />} />*/}
+          <Route path="/project-postmortem" element={<ProjectPostmortem />} />
 
           {/* 기존 업체 관리 (유지) */}
           <Route path="/company" element={<CompanyList />} />
@@ -73,6 +86,9 @@ function App() {
           <Route path="/company/regist" element={<CompanyRegistForm />} />
           <Route path="/company/:id/edit" element={<CompanyForm />} />
 
+          {/*<Route path="/company/profile" element={<CompanyProfile />} />*/}
+
+          <Route path="/company/information" element={<ProjectInformation />} />
           <Route path="/company/profile" element={<CompanyProfile />} />
 
           {/* 기존 인적자원 관리 (유지) */}

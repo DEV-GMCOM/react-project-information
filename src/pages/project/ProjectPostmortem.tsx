@@ -214,7 +214,7 @@ const ProjectPostmortemForm: React.FC = () => {
             <div className="postmortem-header">
                 <div>
                     <h1 className="postmortem-title">
-                        Project Postmortem 양식
+                        별첨 2-5. Project Postmortem
                     </h1>
                 </div>
                 <div className="postmortem-logo">
@@ -226,7 +226,7 @@ const ProjectPostmortemForm: React.FC = () => {
             <div className="postmortem-main">
                 <div className="postmortem-title-section">
                     <h2 className="postmortem-subtitle">
-                        -- Project Postmortem --
+                        프로젝트 실행결과 사후분석
                     </h2>
                     <div className="postmortem-writer">
                         <div className="writer-form">

@@ -34,36 +34,43 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     },
     {
       path: '/information',
-      name: '정보수집',
+      name: '[입력폼 샘플] 정보수집',
       icon: '📋',
       subMenus: [
-        { path: '/info-management/advertiser', name: '광고주' },
-        { path: '/info-management/project', name: '입찰' }
+        // { path: '/info-management/advertiser', name: '광고주' }
+        // ,{ path: '/info-management/project', name: '입찰' }
+        { path: '/info-management/advertiser', name: '[입력폼 샘플] 광고주(담당자) 프로파일' }
+        ,{ path: '/info-management/project', name: '[입력폼 샘플] 프로젝트 정보수집' }
       ]
     },
     {
+      path: '/project-evaluation',
+      name: '[입력폼 샘플] 프로젝트 평가 리스트',
+      icon: '✅'
+    },
+    {
       path: '/project-profile',
-      name: '프로젝트 기본 Profile 작성',
+      name: '[입력폼 샘플] 프로젝트 Profile 작성',
       icon: '📝'
     },
     {
       path: '/project-kickoff',
-      name: '프로젝트 착수서 작성',
+      name: '[입력폼 샘플] 프로젝트 착수서 작성',
       icon: '🚀'
     },
     {
       path: '/pt-checklist',
-      name: '제안서 PT 체크리스트',
+      name: '[입력폼 샘플] 제안서 PT 체크리스트',
       icon: '✅'
     },
     {
       path: '/pt-postmortem',
-      name: 'PT postmortem',
+      name: '[입력폼 샘플] PT postmortem',
       icon: '🔍'
     },
     {
       path: '/project-postmortem',
-      name: '프로젝트 결과 postmortem',
+      name: '[입력폼 샘플] Project postmortem',
       icon: '📊'
     }
   ];
@@ -78,7 +85,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { path: '/company', name: '업체 목록' },
         { path: '/company/new', name: '업체 등록' },
         { path: '/company/regist', name: '업체 신규등록' },
-        { path: '/company/profile', name: '[입력폼 샘플] 광고주(실무선) 정보' }
+        { path: '/company/information', name: '[입력폼 샘플] 프로젝트 정보수집' },
+        { path: '/company/profile', name: '[입력폼 샘플] 광고주(담당자) 프로파일' }
       ]
     },
     {
@@ -102,10 +110,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         ,{ path: '/project/kickoff-checklist', name: '[입력폼 샘플] 프로젝트 평가 체크리스트' }
         ,{ path: '/project/profile', name: '[입력폼 샘플] 프로젝트 프로파일' }
-        ,{ path: '/project/kickoff', name: '[입력폼 샘플] 프로젝트 진행여부 평가 체크리스트' }
-        ,{ path: '/project/postmortem-pt', name: '[입력폼 샘플] PT 사후분석' }
-        ,{ path: '/project/postmortem-project', name: '[입력폼 샘플] 프로젝트 진행결과 사후분석' }
+        ,{ path: '/project/kickoff', name: '[입력폼 샘플] 프로젝트 착수서' }
         ,{ path: '/project/pt-checklist', name: '[입력폼 샘플] PT 준비 체크리스트' }
+        ,{ path: '/project/postmortem-pt', name: '[입력폼 샘플] PT 사후분석' }
+        ,{ path: '/project/postmortem-project', name: '[입력폼 샘플] 프로젝트 실행 결과 사후분석' }
       ]
     }
   ];
@@ -221,12 +229,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               {/* 구분선 */}
               <div className="nav-divider"></div>
 
-              {/* 아래부분 - 신규 생성 메뉴 */}
-              <div className="nav-section nav-section-bottom">
-                <ul className="nav-list">
-                  {newMenuItems.map(renderMenuItem)}
-                </ul>
-              </div>
+              {/*/!* 아래부분 - 신규 생성 메뉴 *!/*/}
+              {/*<div className="nav-section nav-section-bottom">*/}
+              {/*  <ul className="nav-list">*/}
+              {/*    {newMenuItems.map(renderMenuItem)}*/}
+              {/*  </ul>*/}
+              {/*</div>*/}
             </nav>
           </aside>
 

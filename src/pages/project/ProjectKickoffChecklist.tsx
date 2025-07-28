@@ -108,7 +108,7 @@ const ProjectKickoffChecklistForm: React.FC = () => {
             <div className="checklist-header">
                 <div>
                     <h1 className="checklist-title">
-                        프로젝트 킥오프 체크리스트
+                        별첨3. 프로젝트 평가 체크리스트 양식
                     </h1>
                 </div>
                 <div className="checklist-logo">
@@ -120,7 +120,7 @@ const ProjectKickoffChecklistForm: React.FC = () => {
             <div className="checklist-main">
                 <div className="checklist-title-section">
                     <h2 className="checklist-subtitle">
-                        - 정보 수집 -
+                        프로젝트 평가 체크리스트
                     </h2>
                     <div className="checklist-writer">
                         <div className="writer-form">
