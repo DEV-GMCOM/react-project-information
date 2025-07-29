@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { handleApiError } from '../../api/utils/errorUtils';
+
 import '../../styles/ProjectList.css';
 import { apiService, Project } from '../../api';  // ✅ 수정
 import type { EmployeeCreate } from '../../api/types';  // ✅ 추가
@@ -25,8 +27,9 @@ const ProjectList: React.FC = () => {
             });
             setProjects(data);
         } catch (err: any) {
-            setError('프로젝트 목록을 불러오는데 실패했습니다.');
-            console.error('Projects loading error:', err);
+            const errorMessage = handleApiError(error);
+            setError(`프로젝트 목록을 불러오는데 실패했습니다: ${errorMessage}`);
+            console.error('Projects loading error:', errorMessage);
         } finally {
             setLoading(false);
         }

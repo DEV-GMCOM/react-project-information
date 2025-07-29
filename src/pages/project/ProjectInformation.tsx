@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { handleApiError } from '../../api/utils/errorUtils';
 import '../../styles/ProjectInformation.css';
 
 interface ProjectInformation {
@@ -71,31 +72,51 @@ const ProjectInformationForm: React.FC = () => {
         await searchProjects(1);
     };
 
-// API 검색 함수
+    // 수정된 searchProjects 함수
     const searchProjects = async (page: number) => {
         try {
             setSearchLoading(true);
 
-            const searchQuery = formData.projectName ?
-                `?search=${encodeURIComponent(formData.projectName)}&skip=${(page-1)*10}&limit=10` :
-                `?skip=${(page-1)*10}&limit=10`;
+            // URL 파라미터 구성 (URLSearchParams 사용)
+            const params = new URLSearchParams({
+                skip: ((page - 1) * 10).toString(),
+                limit: '10'
+            });
 
-            const response = await fetch(`http://localhost:8001/api/projects/${searchQuery}`);
-
-            if (response.ok) {
-                const data = await response.json();
-                setSearchResults(data);
-
-                // 총 개수 조회
-                const countResponse = await fetch(`http://localhost:8001/api/projects/count${searchQuery}`);
-                if (countResponse.ok) {
-                    const countData = await countResponse.json();
-                    setTotalPages(Math.ceil(countData.total_count / 10));
-                }
+            if (formData.projectName) {
+                params.append('search', formData.projectName);
             }
+
+            // 올바른 URL 구성
+            const listUrl = `http://localhost:8001/api/projects/?${params.toString()}`;
+            const countUrl = `http://localhost:8001/api/projects/count?${params.toString()}`;
+
+            console.log('요청 URL:', listUrl); // 디버깅용
+            console.log('카운트 URL:', countUrl); // 디버깅용
+
+            const response = await fetch(listUrl);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setSearchResults(data);
+
+            // 총 개수 조회
+            const countResponse = await fetch(countUrl);
+            if (countResponse.ok) {
+                const countData = await countResponse.json();
+                setTotalPages(Math.ceil(countData.total_count / 10));
+            } else {
+                console.warn('카운트 요청 실패, 기본값 사용');
+                setTotalPages(1);
+            }
+
         } catch (error) {
-            console.error('검색 오류:', error);
-            alert('검색 중 오류가 발생했습니다.');
+            const errorMessage = handleApiError(error);
+            console.error('검색 오류:', errorMessage);
+            alert(`검색 중 오류가 발생했습니다: ${errorMessage}`);
         } finally {
             setSearchLoading(false);
         }
