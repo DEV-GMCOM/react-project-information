@@ -10,12 +10,16 @@ export class ProjectService {
         status?: string;
         company_id?: number;
     }): Promise<Project[]> {
-        const response = await apiClient.get('/project/', { params });
+        // 기존: '/project/' ❌
+        // 수정: '/projects/' ✅
+        const response = await apiClient.get('/projects/', { params });
         return response.data;
     }
 
     async getProject(id: number): Promise<Project> {
-        const response = await apiClient.get(`/project/${id}`);
+        // 기존: '/project/${id}' ❌
+        // 수정: '/projects/${id}' ✅
+        const response = await apiClient.get(`/projects/${id}`);
         return response.data;
     }
 
@@ -31,12 +35,16 @@ export class ProjectService {
         manager_id: number | undefined;
         project_type: string | undefined
     }): Promise<Project> {
-        const response = await apiClient.post('/project/', data);
+        // 기존: '/project/' ❌
+        // 수정: '/projects/' ✅
+        const response = await apiClient.post('/projects/', data);
         return response.data;
     }
 
     async updateProject(id: number, data: Partial<Project>): Promise<Project> {
-        const response = await apiClient.put(`/project/${id}`, data);
+        // 기존: '/project/${id}' ❌
+        // 수정: '/projects/${id}' ✅
+        const response = await apiClient.put(`/projects/${id}`, data);
         return response.data;
     }
 }

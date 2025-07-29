@@ -29,6 +29,7 @@ interface ProjectInformation {
     }>;
 }
 
+
 const ProjectInformationForm: React.FC = () => {
     const [formData, setFormData] = useState<ProjectInformation>({
         projectName: '',
@@ -55,6 +56,66 @@ const ProjectInformationForm: React.FC = () => {
             { date: '', content: '' }
         ]
     });
+
+    // 상태 추가
+    const [showSearchModal, setShowSearchModal] = useState(false);
+    const [searchResults, setSearchResults] = useState([]);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+
+// 검색 함수
+    const handleProjectSearch = async () => {
+        setShowSearchModal(true);
+        setCurrentPage(1);
+        await searchProjects(1);
+    };
+
+// API 검색 함수
+    const searchProjects = async (page: number) => {
+        try {
+            setSearchLoading(true);
+
+            const searchQuery = formData.projectName ?
+                `?search=${encodeURIComponent(formData.projectName)}&skip=${(page-1)*10}&limit=10` :
+                `?skip=${(page-1)*10}&limit=10`;
+
+            const response = await fetch(`http://localhost:8001/api/projects/${searchQuery}`);
+
+            if (response.ok) {
+                const data = await response.json();
+                setSearchResults(data);
+
+                // 총 개수 조회
+                const countResponse = await fetch(`http://localhost:8001/api/projects/count${searchQuery}`);
+                if (countResponse.ok) {
+                    const countData = await countResponse.json();
+                    setTotalPages(Math.ceil(countData.total_count / 10));
+                }
+            }
+        } catch (error) {
+            console.error('검색 오류:', error);
+            alert('검색 중 오류가 발생했습니다.');
+        } finally {
+            setSearchLoading(false);
+        }
+    };
+
+// 프로젝트 선택 함수
+    const selectProject = (project: any) => {
+        setFormData(prev => ({
+            ...prev,
+            projectName: project.project_name,
+            inflowPath: project.inflow_path || '',
+            client: project.client || '',
+            manager: project.our_manager_name || '',
+            purposeBackground: project.project_overview || '',
+            mainContent: project.project_scope || '',
+            coreRequirements: project.special_requirements || '',
+            comparison: project.deliverables || ''
+        }));
+        setShowSearchModal(false);
+    };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -101,9 +162,43 @@ const ProjectInformationForm: React.FC = () => {
         }));
     };
 
-    const handleSubmit = () => {
-        console.log('프로젝트 정보 저장:', formData);
-        // TODO: API 연동
+    const handleSubmit = async () => {
+        try {
+            // 원본 formData를 백엔드 API 형식으로 변환
+            const apiData = {
+                writer_name: "담당자", // 원본에 writer 필드가 없으므로 임시값
+                writer_department: "영업팀",
+                project_name: formData.projectName,
+                inflow_path: formData.inflowPath,
+                client: formData.client,
+                our_manager_name: formData.manager,
+                project_overview: formData.purposeBackground,
+                project_scope: formData.mainContent,
+                special_requirements: formData.coreRequirements,
+                deliverables: formData.comparison,
+                status: "planning"
+            };
+
+            const response = await fetch('http://localhost:8001/api/projects/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(apiData)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                alert('프로젝트가 성공적으로 저장되었습니다!');
+                console.log('저장된 프로젝트:', result);
+            } else {
+                const errorData = await response.json();
+                alert('저장 실패: ' + (errorData.detail || '알 수 없는 오류'));
+            }
+        } catch (error) {
+            console.error('API 호출 오류:', error);
+            alert('저장 실패: 네트워크 오류');
+        }
     };
 
     const handlePrint = () => {
@@ -173,13 +268,30 @@ const ProjectInformationForm: React.FC = () => {
                         <tr>
                             <td className="table-cell table-cell-label">프로젝트명</td>
                             <td className="table-cell-input">
-                                <input
-                                    type="text"
-                                    name="projectName"
-                                    value={formData.projectName}
-                                    onChange={handleInputChange}
-                                    className="project-input"
-                                />
+                                <div className="input-with-search">
+                                    <input
+                                        type="text"
+                                        name="projectName"
+                                        value={formData.projectName}
+                                        onChange={handleInputChange}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault(); // 폼 제출 방지
+                                                handleProjectSearch();
+                                            }
+                                        }}
+                                        className="project-input"
+                                        placeholder="프로젝트명 입력 후 엔터 또는 🔍 클릭"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleProjectSearch}
+                                        className="search-btn"
+                                        title="프로젝트 검색"
+                                    >
+                                        🔍
+                                    </button>
+                                </div>
                             </td>
                             <td className="table-cell table-cell-label">유입경로</td>
                             <td className="table-cell-input">
@@ -457,11 +569,124 @@ const ProjectInformationForm: React.FC = () => {
                     <button onClick={handleSubmit} className="submit-btn">
                         저장
                     </button>
-                    <button onClick={handlePrint} className="print-btn">
-                        인쇄
-                    </button>
+                    {/*<button onClick={handlePrint} className="print-btn">*/}
+                    {/*    인쇄*/}
+                    {/*</button>*/}
                 </div>
             </div>
+
+            {showSearchModal && (
+                <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>프로젝트 검색</h3>
+                            <button
+                                className="modal-close-btn"
+                                onClick={() => setShowSearchModal(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="modal-body">
+                            {searchLoading ? (
+                                <div className="loading">검색 중...</div>
+                            ) : (
+                                <>
+                                    <div className="search-results">
+                                        {searchResults.length === 0 ? (
+                                            <div className="no-results">검색 결과가 없습니다.</div>
+                                        ) : (
+                                            <table className="search-table">
+                                                <thead>
+                                                <tr>
+                                                    <th>프로젝트명</th>
+                                                    <th>고객사</th>
+                                                    <th>상태</th>
+                                                    <th>등록일</th>
+                                                    <th>선택</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {searchResults.map((project: any) => (
+                                                    <tr key={project.project_id}>
+                                                        <td>{project.project_name}</td>
+                                                        <td>{project.client || '-'}</td>
+                                                        <td>
+                                                            <span className={`status-badge status-${project.status}`}>
+                                                                {project.status}
+                                                            </span>
+                                                        </td>
+                                                        <td>{new Date(project.created_at).toLocaleDateString()}</td>
+                                                        <td>
+                                                            <button
+                                                                className="select-btn"
+                                                                onClick={() => selectProject(project)}
+                                                            >
+                                                                선택
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                </tbody>
+                                            </table>
+                                        )}
+                                    </div>
+
+                                    {/* 페이지네이션 */}
+                                    {totalPages > 1 && (
+                                        <div className="pagination">
+                                            <button
+                                                disabled={currentPage === 1}
+                                                onClick={() => {
+                                                    setCurrentPage(1);
+                                                    searchProjects(1);
+                                                }}
+                                            >
+                                                처음
+                                            </button>
+                                            <button
+                                                disabled={currentPage === 1}
+                                                onClick={() => {
+                                                    const prevPage = currentPage - 1;
+                                                    setCurrentPage(prevPage);
+                                                    searchProjects(prevPage);
+                                                }}
+                                            >
+                                                이전
+                                            </button>
+
+                                            <span className="page-info">
+                                            {currentPage} / {totalPages}
+                                        </span>
+
+                                            <button
+                                                disabled={currentPage === totalPages}
+                                                onClick={() => {
+                                                    const nextPage = currentPage + 1;
+                                                    setCurrentPage(nextPage);
+                                                    searchProjects(nextPage);
+                                                }}
+                                            >
+                                                다음
+                                            </button>
+                                            <button
+                                                disabled={currentPage === totalPages}
+                                                onClick={() => {
+                                                    setCurrentPage(totalPages);
+                                                    searchProjects(totalPages);
+                                                }}
+                                            >
+                                                마지막
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
