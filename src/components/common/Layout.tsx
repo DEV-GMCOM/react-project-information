@@ -37,8 +37,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       name: '[입력폼 샘플] 정보수집',
       icon: '📋',
       subMenus: [
-        { path: '/info-management/project', name: '[입력폼 샘플] 프로젝트 정보수집' }
-        ,{ path: '/info-management/advertiser', name: '[입력폼 샘플] 광고주(담당자) 프로파일' }
+        { path: '/info-management/advertiser', name: '[입력폼 샘플] 광고주_기업 프로파일' }
+        ,{ path: '/info-management/advertiser-employee', name: '[입력폼 샘플] 광고주_담당자 프로파일' }
+        ,{ path: '/info-management/project', name: '[입력폼 샘플] 프로젝트 정보수집' }
       ]
     },
     {

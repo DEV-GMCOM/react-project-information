@@ -565,8 +565,237 @@
 }
 
 
+/* ProjectInformation.css에 추가할 스타일들 */
 
+/* 모달 관련 스타일 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
 
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    max-width: 800px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.modal-header button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-header button:hover {
+    color: #333;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+/* 검색 입력 스타일 */
+.search-input-container {
+    margin-bottom: 16px;
+}
+
+.search-input-container input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.search-input-container input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* 검색 결과 스타일 */
+.search-results {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.writer-result-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* 선택 버튼 스타일 */
+.select-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.select-btn:hover {
+    background-color: #0056b3;
+}
+
+/* 작성자 정보 표시 영역 스타일 */
+.writer-info-display {
+    background-color: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    margin-bottom: 16px;
+}
+
+.writer-info-display h4 {
+    margin: 0 0 8px 0;
+    color: #495057;
+    font-size: 14px;
+}
+
+/* 입력 필드 내 버튼 스타일 (기존에 있다면 확인) */
+.input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-inner-btn {
+    width: 100%;
+    padding-right: 90px; /* 버튼 공간 확보 */
+}
+
+.inner-profile-btn {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 3px 8px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.3s;
+    z-index: 1;
+}
+
+.inner-profile-btn:hover {
+    background-color: #0056b3;
+}
+
+.inner-profile-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* 상태 뱃지 스타일 (기존에 없다면 추가) */
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.status-planning {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-active {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.status-completed {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.status-cancelled {
+    background: #ffebee;
+    color: #c62828;
+}
+/* 작성자 정보 표시 영역 */
+.writer-info-display {
+    background-color: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    margin-bottom: 16px;
+}
+
+.writer-info-display h4 {
+    margin: 0 0 8px 0;
+    color: #495057;
+    font-size: 14px;
+}
+
+.writer-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 8px;
+    font-size: 13px;
+}
+
+.input-with-inner-btn {
+    padding-right: 80px;
+}
+
+.writer-field-input.readonly-input {
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+.writer-result-item {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+}
+
+.writer-result-item:hover {
+    background-color: #f8f9fa;
+}
 /* 인쇄 스타일 */
 @media print {
     .project-info-container {

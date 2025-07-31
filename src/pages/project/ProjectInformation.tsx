@@ -28,6 +28,37 @@ interface ProjectInformation {
         date: string;
         content: string;
     }>;
+
+    // 작성자 관련 추가 필드
+    writerEmpId?: number;
+}
+
+// 타입 정의 추가
+interface WriterInfo {
+    emp_id?: number;
+    name: string;
+    department?: string;
+    position?: string;
+    email?: string;
+    phone?: string;
+}
+
+interface ProjectData {
+    project_id: number;
+    project_name: string;
+    client?: string;
+    status: string;
+    contract_amount?: number;
+    project_period_start?: string;
+    project_period_end?: string;
+    created_at: string;
+    // DB에서 가져온 작성자 정보
+    writer_name: string;
+    writer_department?: string;
+    writer_position?: string;
+    writer_email?: string;
+    // 또는 단일 프로젝트 조회 시
+    writer_info?: WriterInfo;
 }
 
 
@@ -64,8 +95,14 @@ const ProjectInformationForm: React.FC = () => {
     const [searchLoading, setSearchLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    // 기존 상태들 아래에 추가
+    const [writerSearchModal, setWriterSearchModal] = useState(false);
+    const [writerSearchResults, setWriterSearchResults] = useState([]);
 
-// 검색 함수
+    // 컴포넌트 내부에 상태 추가
+    const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
+
+    // 검색 함수
     const handleProjectSearch = async () => {
         setShowSearchModal(true);
         setCurrentPage(1);
@@ -122,20 +159,140 @@ const ProjectInformationForm: React.FC = () => {
         }
     };
 
-// 프로젝트 선택 함수
-    const selectProject = (project: any) => {
-        setFormData(prev => ({
-            ...prev,
-            projectName: project.project_name,
-            inflowPath: project.inflow_path || '',
-            client: project.client || '',
-            manager: project.our_manager_name || '',
-            purposeBackground: project.project_overview || '',
-            mainContent: project.project_scope || '',
-            coreRequirements: project.special_requirements || '',
-            comparison: project.deliverables || ''
-        }));
-        setShowSearchModal(false);
+// 프로젝트 선택 함수 수정
+    const selectProject = async (project: ProjectData) => {
+        try {
+            // 단일 프로젝트 상세 정보 조회 (작성자 정보 포함)
+            const response = await fetch(`http://localhost:8001/api/projects/${project.project_id}`);
+
+            if (!response.ok) {
+                throw new Error('프로젝트 정보를 가져올 수 없습니다.');
+            }
+
+            const detailedProject = await response.json();
+
+            // 폼 데이터에 반영
+            setFormData(prev => ({
+                ...prev,
+                projectName: detailedProject.project_name,
+                client: detailedProject.client || '',
+                purposeBackground: detailedProject.project_overview || '',
+                mainContent: detailedProject.project_scope || '',
+                coreRequirements: detailedProject.special_requirements || '',
+                comparison: detailedProject.deliverables || ''
+            }));
+
+            // 작성자 정보 폼에 반영
+            // 작성자 정보 폼에 반영 부분을 다음으로 교체:
+            const writerInfo = detailedProject.writer_info;
+            if (writerInfo) {
+                const writerNameInput = document.querySelector('input[name="writerName"]') as HTMLInputElement;
+                const writerDeptInput = document.querySelector('input[name="writerDepartment"]') as HTMLInputElement;
+
+                if (writerNameInput) {
+                    writerNameInput.value = writerInfo.name || '';
+                    writerNameInput.readOnly = true;
+                    writerNameInput.className = 'writer-field-input readonly-input';
+                }
+
+                if (writerDeptInput) {
+                    writerDeptInput.value = writerInfo.department || '';
+                    writerDeptInput.readOnly = true;
+                    writerDeptInput.className = 'writer-field-input readonly-input';
+                }
+
+                setFormData(prev => ({
+                    ...prev,
+                    writerEmpId: writerInfo.emp_id
+                }));
+            }
+
+            setSelectedProject(detailedProject);
+            setShowSearchModal(false);
+
+            alert(`프로젝트 "${detailedProject.project_name}"이 선택되었습니다.`);
+
+        } catch (error) {
+            console.error('프로젝트 선택 오류:', error);
+            alert('프로젝트 정보를 가져오는데 실패했습니다.');
+        }
+    };
+
+    // 검색 결과 테이블에 작성자 정보 표시 수정
+    const renderSearchResults = () => {
+        if (searchLoading) {
+            return <div className="loading">검색 중...</div>;
+        }
+
+        if (searchResults.length === 0) {
+            return <div className="no-results">검색 결과가 없습니다.</div>;
+        }
+
+        return (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                <tr style={{ backgroundColor: '#f8f9fa' }}>
+                    <th style={{ padding: '8px', border: '1px solid #ddd' }}>프로젝트명</th>
+                    <th style={{ padding: '8px', border: '1px solid #ddd' }}>고객사</th>
+                    <th style={{ padding: '8px', border: '1px solid #ddd' }}>상태</th>
+                    <th style={{ padding: '8px', border: '1px solid #ddd' }}>작성자</th>
+                    <th style={{ padding: '8px', border: '1px solid #ddd' }}>부서</th>
+                    <th style={{ padding: '8px', border: '1px solid #ddd' }}>생성일</th>
+                    <th style={{ padding: '8px', border: '1px solid #ddd' }}>선택</th>
+                </tr>
+                </thead>
+                <tbody>
+                {searchResults.map((project: ProjectData) => (
+                    <tr key={project.project_id}>
+                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                            {project.project_name}
+                        </td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                            {project.client || '-'}
+                        </td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                            <span className={`status-badge status-${project.status}`}>
+                                {getStatusText(project.status)}
+                            </span>
+                        </td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                            {project.writer_name || '-'}
+                            {project.writer_position && (
+                                <small style={{ display: 'block', color: '#666' }}>
+                                    {project.writer_position}
+                                </small>
+                            )}
+                        </td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                            {project.writer_department || '-'}
+                        </td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                            {new Date(project.created_at).toLocaleDateString('ko-KR')}
+                        </td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                            <button
+                                className="select-btn"
+                                onClick={() => selectProject(project)}
+                            >
+                                선택
+                            </button>
+                        </td>
+                    </tr>
+                ))}
+                </tbody>
+            </table>
+        );
+    };
+
+    // 상태 텍스트 함수 추가
+    const getStatusText = (status: string): string => {
+        const statusMap: { [key: string]: string } = {
+            'planning': '기획중',
+            'active': '진행중',
+            'completed': '완료',
+            'cancelled': '취소'
+        };
+        return statusMap[status] || status;
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -185,10 +342,13 @@ const ProjectInformationForm: React.FC = () => {
 
     const handleSubmit = async () => {
         try {
-            // 원본 formData를 백엔드 API 형식으로 변환
+            const writerNameInput = document.querySelector('input[name="writerName"]') as HTMLInputElement;
+            const writerDeptInput = document.querySelector('input[name="writerDepartment"]') as HTMLInputElement;
+
             const apiData = {
-                writer_name: "담당자", // 원본에 writer 필드가 없으므로 임시값
-                writer_department: "영업팀",
+                writer_name: writerNameInput?.value || "담당자",
+                writer_department: writerDeptInput?.value || "영업팀",
+                writer_emp_id: formData.writerEmpId || null, // 선택된 직원 ID
                 project_name: formData.projectName,
                 inflow_path: formData.inflowPath,
                 client: formData.client,
@@ -226,6 +386,105 @@ const ProjectInformationForm: React.FC = () => {
         window.print();
     };
 
+    // 작성자 검색 함수 수정
+    const searchWriters = async (searchTerm: string) => {
+        try {
+            console.log('검색 시작:', searchTerm); // 디버깅용
+
+            const url = `http://localhost:8001/api/hr/?search=${encodeURIComponent(searchTerm)}&limit=20`;
+            console.log('요청 URL:', url); // 디버깅용
+
+            const response = await fetch(url);
+            console.log('응답 상태:', response.status); // 디버깅용
+
+            if (response.ok) {
+                const writers = await response.json();
+                console.log('받은 데이터:', writers); // 디버깅용
+                setWriterSearchResults(writers);
+            } else {
+                console.error('API 응답 오류:', response.status, response.statusText);
+            }
+        } catch (error) {
+            console.error('작성자 검색 오류:', error);
+        }
+    };
+
+// 작성자 선택 함수
+    const selectWriter = (writer: any) => {
+        const writerNameInput = document.querySelector('input[name="writerName"]') as HTMLInputElement;
+        const writerDeptInput = document.querySelector('input[name="writerDepartment"]') as HTMLInputElement;
+
+        if (writerNameInput) {
+            writerNameInput.value = writer.emp_name;
+            writerNameInput.readOnly = false;
+            writerNameInput.className = 'writer-field-input';
+        }
+
+        if (writerDeptInput) {
+            writerDeptInput.value = writer.division || '';
+            writerDeptInput.readOnly = false;
+            writerDeptInput.className = 'writer-field-input';
+        }
+
+        // 작성자 ID 저장
+        setFormData(prev => ({
+            ...prev,
+            writerEmpId: writer.emp_id
+        }));
+
+        setWriterSearchModal(false);
+    };
+
+// 직원 검색 모달 컴포넌트
+    const WriterSearchModal: React.FC = () => {
+        const [searchTerm, setSearchTerm] = useState('');
+
+        return writerSearchModal ? (
+            <div className="modal-overlay" onClick={() => setWriterSearchModal(false)}>
+                <div className="modal-content" onClick={e => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <h3>직원 검색</h3>
+                        <button onClick={() => setWriterSearchModal(false)}>×</button>
+                    </div>
+                    <div className="modal-body">
+                        <div className="search-input-container">
+                            <input
+                                type="text"
+                                placeholder="이름 또는 이메일 입력 시 자동검색 (1글자 이상)"
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    if (e.target.value.length >= 1) {
+                                        searchWriters(e.target.value);
+                                    }
+                                }}
+                            />
+                        </div>
+                        <div className="search-results">
+                            {writerSearchResults.map((writer: any) => (
+                                <div
+                                    key={writer.emp_id}
+                                    className="writer-result-item"
+                                    onClick={() => selectWriter(writer)}
+                                >
+                                    <div>
+                                        <strong>{writer.emp_name}</strong>
+                                        <div style={{ fontSize: '12px', color: '#676' }}>
+                                            {writer.division} {writer.position && `· ${writer.position}`}
+                                        </div>
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: '#666' }}>
+                                        {writer.email}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        ) : null;
+    };
+
     return (
         <div className="project-info-container">
             {/* 헤더 */}
@@ -247,18 +506,40 @@ const ProjectInformationForm: React.FC = () => {
                         정보 수집
                     </h2>
                     <div className="project-writer">
+                        {/* 선택된 프로젝트 작성자 정보 표시 */}
+                        {selectedProject?.writer_info && (
+                            <div className="writer-info-display">
+                                <h4>선택된 프로젝트 작성자 정보</h4>
+                                <div className="writer-info-grid">
+                                    <div><strong>이름:</strong> {selectedProject.writer_info.name}</div>
+                                    {selectedProject.writer_info.department && <div><strong>부서:</strong> {selectedProject.writer_info.department}</div>}
+                                    {selectedProject.writer_info.position && <div><strong>직급:</strong> {selectedProject.writer_info.position}</div>}
+                                    {selectedProject.writer_info.email && <div><strong>이메일:</strong> {selectedProject.writer_info.email}</div>}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="writer-form">
                             <div className="writer-field">
-                                <label className="writer-field-label">등록자 이름:</label>
-                                <input
-                                    type="text"
-                                    name="writerName"
-                                    placeholder="홍길동"
-                                    className="writer-field-input"
-                                />
+                                <label className="writer-field-label">작성자 이름:</label>
+                                <div className="input-container">
+                                    <input
+                                        type="text"
+                                        name="writerName"
+                                        placeholder="홍길동"
+                                        className="writer-field-input input-with-inner-btn"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="inner-profile-btn"
+                                        onClick={() => setWriterSearchModal(true)}
+                                    >
+                                        직원 검색
+                                    </button>
+                                </div>
                             </div>
                             <div className="writer-field">
-                                <label className="writer-field-label">부서:</label>
+                                <label className="writer-field-label">소속 부서:</label>
                                 <input
                                     type="text"
                                     name="writerDepartment"
@@ -624,6 +905,8 @@ const ProjectInformationForm: React.FC = () => {
                                                     <th>프로젝트명</th>
                                                     <th>고객사</th>
                                                     <th>상태</th>
+                                                    <th>작성자</th>
+                                                    <th>부서</th>
                                                     <th>등록일</th>
                                                     <th>선택</th>
                                                 </tr>
@@ -634,10 +917,19 @@ const ProjectInformationForm: React.FC = () => {
                                                         <td>{project.project_name}</td>
                                                         <td>{project.client || '-'}</td>
                                                         <td>
-                                                            <span className={`status-badge status-${project.status}`}>
-                                                                {project.status}
-                                                            </span>
+                <span className={`status-badge status-${project.status}`}>
+                    {project.status}
+                </span>
                                                         </td>
+                                                        <td>
+                                                            {project.writer_name || '-'}
+                                                            {project.writer_position && (
+                                                                <small style={{ display: 'block', color: '#676' }}>
+                                                                    {project.writer_position}
+                                                                </small>
+                                                            )}
+                                                        </td>
+                                                        <td>{project.writer_department || '-'}</td>
                                                         <td>{new Date(project.created_at).toLocaleDateString()}</td>
                                                         <td>
                                                             <button
@@ -708,6 +1000,8 @@ const ProjectInformationForm: React.FC = () => {
                     </div>
                 </div>
             )}
+            {/* 직원 검색 모달 */}
+            <WriterSearchModal />
         </div>
     );
 };

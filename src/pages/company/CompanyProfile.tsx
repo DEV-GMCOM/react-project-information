@@ -113,7 +113,7 @@ const CompanyProfileForm: React.FC = () => {
             <div className="profile-main">
                 <div className="profile-title-section">
                     <h2 className="profile-subtitle">
-                        광고주 Profile
+                        고객사 기업 정보
                     </h2>
                     {/*<div className="profile-writer">*/}
                     {/*    <label className="writer-label">*/}
@@ -127,7 +127,7 @@ const CompanyProfileForm: React.FC = () => {
                     {/*</div>*/}
                     <div className="profile-writer">
                         <div className="writer-form">
-                            <div className="writer-field">
+                            {/* <div className="writer-field">
                                 <label className="writer-field-label">등록자 이름:</label>
                                 <input
                                     type="text"
@@ -144,6 +144,9 @@ const CompanyProfileForm: React.FC = () => {
                                     placeholder="마케팅팀"
                                     className="writer-field-input"
                                 />
+                            </div> */}
+                            <div>
+                                최종 작성자 : 
                             </div>
                         </div>
                     </div>
@@ -234,6 +237,22 @@ const CompanyProfileForm: React.FC = () => {
                                     placeholder="대표전화/이메일/홈페이지"
                                     className="profile-input"
                                 />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">담당자</td>
+                            <td className="table-cell-input" colSpan={3}>
+                                <div style={{ textAlign: 'left' }}>href 연결한 담당자00</div>
+                                <div style={{ textAlign: 'left' }}>href 연결한 담당자01</div>
+                                <div style={{ textAlign: 'left' }}>href 연결한 담당자02</div>
+                                {/* <input
+                                    type="text"
+                                    name="businessCategory"
+                                    value={formData.businessCategory}
+                                    onChange={handleInputChange}
+                                    placeholder="삼성계열 광고대행사"
+                                    className="profile-input"
+                                /> */}
                             </td>
                         </tr>
                         </tbody>

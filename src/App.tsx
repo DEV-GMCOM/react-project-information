@@ -9,7 +9,8 @@ import Dashboard from './pages/Dashboard';
 import CompanyList from './pages/company/CompanyList';
 import CompanyForm from './pages/company/CompanyForm';
 import CompanyRegistForm from './pages/company/CompanyRegistForm';
-import CompanyProfile from './pages/company/CompanyProfile'; // 광고주(담당자) 프로파일
+import CompanyProfile from './pages/company/CompanyProfile'; // 광고주_기업 프로파일
+import CompanyEmployeeProfile from './pages/company/CompanyEmployeeProfile'; // 광고주_담당자 프로파일
 
 import EmployeeList from './pages/hr/EmployeeList';
 import EmployeeForm from './pages/hr/EmployeeForm';
@@ -26,14 +27,14 @@ import PTPostmortem from './pages/project/PTPostmortem'; // PT후 결과분석
 import ProjectPostmortem from './pages/project/ProjectPostmortem'; // 프로젝트 실행 후 결과분석
 import PTChecklist from './pages/project/PTChecklist'; // PT 준비 체크리스트
 
-// 새로운 페이지들
-import ProjectPage from './pages/information/ProjectLegacyPage.tsx';
-import AdvertiserPage from './pages/information/AdvertiserLegacyPage.tsx';
-import ProjectProfilePage from './pages/ProjectProfilePage';
-import ProjectKickoffPage from './pages/ProjectKickoffPage';
-import PTChecklistPage from './pages/PTChecklistPage';
-import PTPostmortemPage from './pages/PTPostmortemPage';
-import ProjectPostmortemPage from './pages/ProjectPostmortemPage';
+// // 새로운 페이지들
+// import ProjectPage from './pages/information/ProjectLegacyPage.tsx';
+// import AdvertiserPage from './pages/information/AdvertiserLegacyPage.tsx';
+// import ProjectProfilePage from './pages/ProjectProfilePage';
+// import ProjectKickoffPage from './pages/ProjectKickoffPage';
+// import PTChecklistPage from './pages/PTChecklistPage';
+// import PTPostmortemPage from './pages/PTPostmortemPage';
+// import ProjectPostmortemPage from './pages/ProjectPostmortemPage';
 
 // 기존 페이지들
 // import ProjectPage from './pages/information/ProjectPage.tsx';
@@ -59,8 +60,9 @@ function App() {
           {/* 정보수집 */}
           {/*<Route path="/info-management/project" element={<ProjectPage />} />*/}
           {/*<Route path="/info-management/advertiser" element={<AdvertiserPage />} />*/}
-          <Route path="/info-management/project" element={<ProjectInformation />} />
           <Route path="/info-management/advertiser" element={<CompanyProfile />} />
+          <Route path="/info-management/advertiser-employee" element={<CompanyEmployeeProfile />} />
+          <Route path="/info-management/project" element={<ProjectInformation />} />
 
           {/* 프로젝트 관련 페이지들 */}
           {/*<Route path="/project-profile" element={<ProjectProfilePage />} />*/}
@@ -88,8 +90,8 @@ function App() {
 
           {/*<Route path="/company/profile" element={<CompanyProfile />} />*/}
 
-          <Route path="/company/information" element={<ProjectInformation />} />
           <Route path="/company/profile" element={<CompanyProfile />} />
+          <Route path="/company/information" element={<ProjectInformation />} />
 
           {/* 기존 인적자원 관리 (유지) */}
           <Route path="/hr" element={<EmployeeList />} />
