@@ -220,11 +220,12 @@ const CompanyProfileForm: React.FC = () => {
         }
     };
 
-    // 검색 모달 컴포넌트
+    // 1. 기존 모달 컴포넌트 삭제 후 다음으로 교체:
+
     const CompanySearchModal: React.FC = () => {
         return showSearchModal ? (
             <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
-                <div className="modal-content company-search-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                     <div className="modal-header">
                         <h3>회사 검색</h3>
                         <button
@@ -241,77 +242,68 @@ const CompanyProfileForm: React.FC = () => {
                         </div>
 
                         {searchLoading ? (
-                            <div className="loading-container">
-                                <div className="loading-spinner"></div>
-                                <p>검색 중...</p>
-                            </div>
+                            <div className="loading">검색 중...</div>
                         ) : (
                             <>
                                 {searchResults.length === 0 ? (
-                                    <div className="no-results">
-                                        <p>검색 결과가 없습니다.</p>
-                                        <p>다른 검색어를 입력해보세요.</p>
-                                    </div>
+                                    <div className="no-results">검색 결과가 없습니다.</div>
                                 ) : (
-                                    <div className="search-results">
-                                        <div className="results-header">
-                                            <span>검색 결과: {searchResults.length}개</span>
-                                        </div>
-
-                                        <div className="results-list">
+                                    <>
+                                        <table className="search-table">
+                                            <thead>
+                                            <tr>
+                                                <th>회사명</th>
+                                                <th>대표자</th>
+                                                <th>업종</th>
+                                                <th>사업자번호</th>
+                                                <th>등록일</th>
+                                                <th>선택</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
                                             {searchResults.map((company) => (
-                                                <div
-                                                    key={company.id}
-                                                    className="result-item"
-                                                    onClick={() => selectCompany(company)}
-                                                >
-                                                    <div className="result-main">
-                                                        <div className="company-name">{company.company_name}</div>
-                                                        {company.business_number && (
-                                                            <div className="business-number">
-                                                                사업자번호: {company.business_number}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="result-details">
-                                                        {company.industry && (
-                                                            <span className="industry">업종: {company.industry}</span>
-                                                        )}
-                                                        {company.representative && (
-                                                            <span className="representative">대표: {company.representative}</span>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                                <tr key={company.id}>
+                                                    <td>{company.company_name}</td>
+                                                    <td>{company.representative || '-'}</td>
+                                                    <td>{company.industry || '-'}</td>
+                                                    <td>{company.business_number || '-'}</td>
+                                                    <td>{new Date(company.created_at).toLocaleDateString()}</td>
+                                                    <td>
+                                                        <button
+                                                            className="select-btn"
+                                                            onClick={() => selectCompany(company)}
+                                                        >
+                                                            선택
+                                                        </button>
+                                                    </td>
+                                                </tr>
                                             ))}
-                                        </div>
+                                            </tbody>
+                                        </table>
 
-                                        {/* 페이징 */}
-                                        {totalPages > 1 && (
-                                            <div className="pagination">
-                                                <button
-                                                    disabled={currentPage === 1}
-                                                    onClick={() => {
-                                                        const newPage = currentPage - 1;
-                                                        setCurrentPage(newPage);
-                                                        searchCompanies(newPage);
-                                                    }}
-                                                >
-                                                    이전
-                                                </button>
-                                                <span>{currentPage} / {totalPages}</span>
-                                                <button
-                                                    disabled={currentPage === totalPages}
-                                                    onClick={() => {
-                                                        const newPage = currentPage + 1;
-                                                        setCurrentPage(newPage);
-                                                        searchCompanies(newPage);
-                                                    }}
-                                                >
-                                                    다음
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
+                                        {/* 페이지네이션 */}
+                                        <div className="pagination">
+                                            <button
+                                                onClick={() => {
+                                                    setCurrentPage(prev => prev - 1);
+                                                    searchCompanies(currentPage - 1);
+                                                }}
+                                                disabled={currentPage <= 1}
+                                            >
+                                                이전
+                                            </button>
+                                            <span className="page-info">{currentPage} / {totalPages}</span>
+                                            <button
+                                                onClick={() => {
+                                                    setCurrentPage(prev => prev + 1);
+                                                    searchCompanies(currentPage + 1);
+                                                }}
+                                                disabled={currentPage >= totalPages}
+                                            >
+                                                다음
+                                            </button>
+                                        </div>
+                                    </>
                                 )}
                             </>
                         )}
