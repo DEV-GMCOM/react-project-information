@@ -56,6 +56,38 @@ interface CompanyData {
     created_at: string;
 }
 
+// 1. 타입 정의 추가 (기존 interface 아래에 추가)
+interface CompanyContactData {
+    id: number;
+    contact_name: string;
+    position?: string;
+    department?: string;
+    email?: string;
+    phone?: string;
+    is_primary: boolean;
+    responsibility?: string;
+    work_style?: string;
+    personal_info?: string;
+    organization_info?: string;
+    relationship_info?: string;
+    project_experience?: string;
+}
+
+interface CompanyData {
+    id: number;
+    company_name: string;
+    business_number?: string;
+    industry?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    representative?: string;
+    created_at: string;
+    contacts?: CompanyContactData[]; // 담당자 정보 추가
+}
+
+
+
 const CompanyProfileForm: React.FC = () => {
     const [formData, setFormData] = useState<CompanyProfile>({
         companyName: '',
@@ -96,8 +128,20 @@ const CompanyProfileForm: React.FC = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [selectedCompany, setSelectedCompany] = useState<CompanyData | null>(null);
 
+    // 2. 상태 추가 (기존 상태들 아래에 추가)
+    const [companyContacts, setCompanyContacts] = useState<CompanyContactData[]>([]);
+
+
+    // 7. 회사명 입력 필드 초기화 시 담당자 정보도 초기화 (handleInputChange 함수 수정)
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
+
+        // 회사명이 변경될 때 기존 선택된 회사 정보 및 담당자 정보 초기화
+        if (name === 'companyName') {
+            setSelectedCompany(null);
+            setCompanyContacts([]);
+        }
+
         setFormData(prev => ({
             ...prev,
             [name]: value
@@ -185,10 +229,10 @@ const CompanyProfileForm: React.FC = () => {
         }
     };
 
-    // 회사 선택 함수
+    // 3. selectCompany 함수 수정
     const selectCompany = async (company: CompanyData) => {
         try {
-            // 단일 회사 상세 정보 조회
+            // 단일 회사 상세 정보 조회 (담당자 정보 포함)
             const response = await fetch(`http://localhost:8001/api/company-profile/${company.id}`);
 
             if (!response.ok) {
@@ -209,10 +253,17 @@ const CompanyProfileForm: React.FC = () => {
                 selectedCompanyId: detailedCompany.id
             }));
 
+            // 담당자 정보 설정
+            if (detailedCompany.contacts && detailedCompany.contacts.length > 0) {
+                setCompanyContacts(detailedCompany.contacts);
+            } else {
+                setCompanyContacts([]);
+            }
+
             setSelectedCompany(detailedCompany);
             setShowSearchModal(false);
 
-            alert(`회사 "${detailedCompany.company_name}"이 선택되었습니다.`);
+            alert(`회사 "${detailedCompany.company_name}"이 선택되었습니다.${detailedCompany.contacts?.length ? ` (담당자 ${detailedCompany.contacts.length}명)` : ''}`);
 
         } catch (error) {
             console.error('회사 선택 오류:', error);
@@ -220,8 +271,26 @@ const CompanyProfileForm: React.FC = () => {
         }
     };
 
-    // 1. 기존 모달 컴포넌트 삭제 후 다음으로 교체:
+    // 4. 담당자 페이지로 이동하는 함수 추가
+    const handleAddContactPage = () => {
+        if (!selectedCompany) {
+            alert('먼저 회사를 선택해주세요.');
+            return;
+        }
 
+        // 담당자 추가 페이지로 이동 (실제 경로에 맞게 수정)
+        // 예: React Router 사용시
+        // navigate(`/company-contact/${selectedCompany.id}`);
+
+        // 또는 새 창으로 열기
+        window.open(`/company-contact?companyId=${selectedCompany.id}`, '_blank');
+
+        // 또는 현재 창에서 이동
+        // window.location.href = `/company-contact?companyId=${selectedCompany.id}`;
+    };
+
+
+    // 1. 기존 모달 컴포넌트 삭제 후 다음으로 교체:
     const CompanySearchModal: React.FC = () => {
         return showSearchModal ? (
             <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
@@ -473,9 +542,25 @@ const CompanyProfileForm: React.FC = () => {
                             <td className="table-cell-input" colSpan={3}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <div style={{ flex: 1 }}>
-                                        <div>href 연결한 담당자00</div>
-                                        <div>href 연결한 담당자01</div>
-                                        <div>href 연결한 담당자02</div>
+                                        {companyContacts.length > 0 ? (
+                                            <div className="contact-list">
+                                                {companyContacts.map((contact, index) => (
+                                                    <div key={contact.id} className="contact-item">
+                                <span className="contact-name">
+                                    {contact.contact_name}
+                                    {contact.is_primary && <span className="primary-badge"> (주담당)</span>}
+                                </span>
+                                                        {contact.position && <span className="contact-position"> - {contact.position}</span>}
+                                                        {contact.department && <span className="contact-department"> ({contact.department})</span>}
+                                                        {contact.phone && <span className="contact-phone"> / {contact.phone}</span>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="no-contacts">
+                                                {selectedCompany ? '등록된 담당자가 없습니다.' : '회사를 선택하면 담당자 정보가 표시됩니다.'}
+                                            </div>
+                                        )}
                                     </div>
                                     <button
                                         type="button"
@@ -485,7 +570,7 @@ const CompanyProfileForm: React.FC = () => {
                                             whiteSpace: 'nowrap',
                                             alignSelf: 'flex-start'
                                         }}
-                                        onClick={() => {/* 추후 담당자 페이지로 이동 */}}
+                                        onClick={handleAddContactPage}
                                     >
                                         담당자 추가 페이지로 이동
                                     </button>
