@@ -1,15 +1,17 @@
 // CompanyProfile.tsx - 완전히 새로 정리된 코드
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { handleApiError } from '../../api/utils/errorUtils';
 import '../../styles/CompanyProfile.css';
 
 // 담당자 데이터 타입 정의
+// --- 타입 정의 (기존과 동일) ---
 interface CompanyContactData {
     id: number;
     contact_name: string;
     position?: string;
     department?: string;
+
     email?: string;
     phone?: string;
     is_primary: boolean;
@@ -21,7 +23,6 @@ interface CompanyContactData {
     project_experience?: string;
 }
 
-// 회사 데이터 타입 정의 (담당자 정보 포함)
 interface CompanyData {
     id: number;
     company_name: string;
@@ -44,8 +45,13 @@ interface CompanyProfile {
     address: string;
     bankName: string;
     accountNumber: string;
+    // selectedCompanyId는 formData에 포함시키지 않고 별도 state로 관리하는 것이 더 명확합니다.
+}
+
+interface ContactProfile {
     department: string;
-    contactPerson: string;
+    contactName: string;
+    position: string;
     phone: string;
     email: string;
     responsibility: string;
@@ -54,193 +60,164 @@ interface CompanyProfile {
     organizationInfo: string;
     relationship: string;
     projectExperience: string;
-    notes: string;
-    existingReports: Array<{
-        date: string;
-        content: string;
-    }>;
-    newReportDate: string;
-    newReportContent: string;
-    selectedCompanyId?: number;
 }
 
-const CompanyProfileForm: React.FC = () => {
-    const [formData, setFormData] = useState<CompanyProfile>({
-        companyName: '',
-        basicOverview: '',
-        representative: '',
-        businessNumber: '',
-        contactInfo: '',
-        address: '',
-        bankName: '',
-        accountNumber: '',
-        department: '',
-        contactPerson: '',
-        phone: '',
-        email: '',
-        responsibility: '',
-        workStyle: '',
-        personalInfo: '',
-        organizationInfo: '',
-        relationship: '',
-        projectExperience: '',
-        notes: '',
-        existingReports: [
-            {
-                date: '2025.07.23',
-                content: '• 제목 및 안건: 현대자동차 EV 신차 발표회 프로모션의 건\n• 회의 및 내용: ...'
-            }
-        ],
-        newReportDate: '',
-        newReportContent: ''
-    });
+const initialCompanyState: CompanyProfile = {
+    companyName: '',
+    basicOverview: '',
+    representative: '',
+    businessNumber: '',
+    contactInfo: '',
+    address: '',
+    bankName: '',
+    accountNumber: '',
+};
 
-    // 상태 관리
+const initialContactState: ContactProfile = {
+    department: '',
+    contactName: '',
+    position: '',
+    phone: '',
+    email: '',
+    responsibility: '',
+    workStyle: '',
+    personalInfo: '',
+    organizationInfo: '',
+    relationship: '',
+    projectExperience: ''
+};
+
+const CompanyProfileForm: React.FC = () => {
+// --- 상태 관리 ---
+    const [formData, setFormData] = useState<CompanyProfile>(initialCompanyState);
+    const [contactFormData, setContactFormData] = useState<ContactProfile>(initialContactState);
+
+    // 원본 데이터 상태 (수정 감지용)
+    const [originalFormData, setOriginalFormData] = useState<CompanyProfile>(initialCompanyState);
+    const [originalContactData, setOriginalContactData] = useState<ContactProfile>(initialContactState);
+
+    // UI 및 로직 제어 상태
+    const [selectedCompany, setSelectedCompany] = useState<CompanyData | null>(null);
+    const [companyContacts, setCompanyContacts] = useState<CompanyContactData[]>([]);
+    const [selectedContact, setSelectedContact] = useState<CompanyContactData | null>(null);
     const [showContactInformations, setShowContactInformations] = useState(false);
+    const [isNewContact, setIsNewContact] = useState(false);
+    const [isFormDirty, setIsFormDirty] = useState(false); // **전체 폼 변경 감지 상태**
+
+    // 검색 관련 상태
     const [showSearchModal, setShowSearchModal] = useState(false);
     const [searchResults, setSearchResults] = useState<CompanyData[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
+    const [searchKeyword, setSearchKeyword] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [selectedCompany, setSelectedCompany] = useState<CompanyData | null>(null);
 
-    // 담당자 관련 상태
-    const [companyContacts, setCompanyContacts] = useState<CompanyContactData[]>([]);
-    const [selectedContact, setSelectedContact] = useState<CompanyContactData | null>(null);
+    // 컨택 리포트 상태
+    const [existingReports, setExistingReports] = useState<Array<{ date: string; content: string; }>>([]);
+    const [newReportDate, setNewReportDate] = useState('');
+    const [newReportContent, setNewReportContent] = useState('');
 
-    // 담당자 폼 데이터 상태 (신규/수정용)
-    const [contactFormData, setContactFormData] = useState({
-        department: '',
-        contactName: '',
-        position: '',
-        phone: '',
-        email: '',
-        responsibility: '',
-        workStyle: '',
-        personalInfo: '',
-        organizationInfo: '',
-        relationship: '',
-        projectExperience: ''
-    });
 
-    // 원본 데이터 (수정 감지용)
-    const [originalContactData, setOriginalContactData] = useState({
-        department: '',
-        contactName: '',
-        position: '',
-        phone: '',
-        email: '',
-        responsibility: '',
-        workStyle: '',
-        personalInfo: '',
-        organizationInfo: '',
-        relationship: '',
-        projectExperience: ''
-    });
+    // **[수정] 폼 전체의 변경사항을 감지하는 useEffect**
+    useEffect(() => {
+        const companyDataChanged = JSON.stringify(formData) !== JSON.stringify(originalFormData);
+        const contactDataChanged = JSON.stringify(contactFormData) !== JSON.stringify(originalContactData);
 
-    // 수정 상태 관리
-    const [hasChanges, setHasChanges] = useState(false);
-    const [isNewContact, setIsNewContact] = useState(false);
+        // 신규 담당자 등록 모드에서 입력이 시작되면 dirty로 간주
+        const isNewContactTyping = isNewContact && JSON.stringify(contactFormData) !== JSON.stringify(initialContactState);
 
-    // 수정 감지 함수
-    const checkForChanges = (newData: typeof contactFormData) => {
-        const changed = Object.keys(newData).some(key => {
-            return newData[key as keyof typeof newData] !== originalContactData[key as keyof typeof originalContactData];
-        });
-        setHasChanges(changed);
-    };
+        setIsFormDirty(companyDataChanged || contactDataChanged || isNewContactTyping);
+    }, [formData, contactFormData, originalFormData, originalContactData, isNewContact]);
 
-    // 담당자 폼 데이터 변경 핸들러
-    const handleContactFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        const newFormData = { ...contactFormData, [name]: value };
-        setContactFormData(newFormData);
-        checkForChanges(newFormData);
-    };
 
+    // --- 핸들러 함수들 ---
+
+    // 회사 정보 입력 핸들러
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-
-        // 회사명이 변경될 때 모든 관련 상태 초기화
-        if (name === 'companyName') {
-            setSelectedCompany(null);
-            setCompanyContacts([]);
-            setSelectedContact(null);
-            setShowContactInformations(false);
-            setHasChanges(false);
-        }
-
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        const {name, value} = e.target;
+        setFormData(prev => ({...prev, [name]: value}));
     };
 
+    // 담당자 정보 입력 핸들러
+    const handleContactFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const {name, value} = e.target;
+        setContactFormData(prev => ({...prev, [name]: value}));
+    };
+
+    // 컨택 리포트 추가
     const handleAddReport = () => {
-        if (formData.newReportDate && formData.newReportContent) {
-            setFormData(prev => ({
-                ...prev,
-                existingReports: [
-                    ...prev.existingReports,
-                    { date: prev.newReportDate, content: prev.newReportContent }
-                ],
-                newReportDate: '',
-                newReportContent: ''
-            }));
+        if (newReportDate && newReportContent) {
+            setExistingReports(prev => [...prev, {date: newReportDate, content: newReportContent}]);
+            setNewReportDate('');
+            setNewReportContent('');
+            // TODO: 컨택 리포트 저장 로직 필요 (별도 API or handleSubmit에 통합)
         }
     };
 
-    const handleSubmit = () => {
-        console.log('광고주 Profile 저장:', formData);
-        // TODO: API 연동
-    };
-
+    // 인쇄
     const handlePrint = () => {
         window.print();
     };
 
-    // 회사 검색 함수
+    // **[신규] 전체 변경사항 취소 핸들러**
+    const handleCancelAllChanges = () => {
+        if (window.confirm('수정 중인 모든 내용을 취소하고 원본 상태로 되돌리시겠습니까?')) {
+            setFormData(originalFormData);
+            setContactFormData(originalContactData);
+            setShowContactInformations(selectedContact !== null); // 기존 담당자 수정 중이었으면 창 유지, 신규였으면 닫기
+            setIsNewContact(false);
+            setIsFormDirty(false);
+        }
+    };
+
+
+    // --- API 연동 함수들 ---
+
+    // // 회사 검색 모달 열기
+    // const handleCompanySearch = async () => {
+    //     if (!formData.companyName) {
+    //         alert('검색어를 입력해주세요.');
+    //         return;
+    //     }
+    //     setSearchKeyword(formData.companyName);
+    //     setShowSearchModal(true);
+    //     setCurrentPage(1);
+    //     await searchCompanies(formData.companyName, 1);
+    // };
+    // // [수정] 회사 검색 모달 열기 (빈 문자열 검색 허용)
     const handleCompanySearch = async () => {
+        // 검색어 유무를 체크하던 if 문을 제거하여 항상 검색이 실행되도록 함
+        setSearchKeyword(formData.companyName);
         setShowSearchModal(true);
         setCurrentPage(1);
-        await searchCompanies(1);
+        await searchCompanies(formData.companyName, 1);
     };
 
     // 회사 검색 실행
-    const searchCompanies = async (page: number) => {
+    const searchCompanies = async (keyword: string, page: number) => {
         try {
             setSearchLoading(true);
-
             const params = new URLSearchParams({
+                search: keyword,
                 skip: ((page - 1) * 10).toString(),
                 limit: '10'
             });
 
-            if (formData.companyName) {
-                params.append('search', formData.companyName);
-            }
-
             const listUrl = `http://localhost:8001/api/company-profile/?${params.toString()}`;
             const countUrl = `http://localhost:8001/api/company-profile/count?${params.toString()}`;
 
-            const response = await fetch(listUrl);
+            const [listResponse, countResponse] = await Promise.all([fetch(listUrl), fetch(countUrl)]);
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const data = await response.json();
+            if (!listResponse.ok) throw new Error(`HTTP ${listResponse.status}`);
+            const data = await listResponse.json();
             setSearchResults(data);
 
-            // 총 개수 조회
-            const countResponse = await fetch(countUrl);
             if (countResponse.ok) {
                 const countData = await countResponse.json();
                 setTotalPages(Math.ceil(countData.total_count / 10));
             } else {
                 setTotalPages(1);
             }
-
         } catch (error) {
             const errorMessage = handleApiError(error);
             console.error('검색 오류:', errorMessage);
@@ -250,59 +227,49 @@ const CompanyProfileForm: React.FC = () => {
         }
     };
 
-    // 회사 선택 함수 (담당자 정보 포함)
-    const selectCompany = async (company: CompanyData) => {
+    // 회사 선택 (데이터 로드)
+    const selectCompany = async (companyId: number) => {
         try {
-            // 단일 회사 상세 정보 조회 (담당자 정보 포함)
-            const response = await fetch(`http://localhost:8001/api/company-profile/${company.id}`);
-
-            if (!response.ok) {
-                throw new Error('회사 정보를 가져올 수 없습니다.');
-            }
+            const response = await fetch(`http://localhost:8001/api/company-profile/${companyId}`);
+            if (!response.ok) throw new Error('회사 정보를 가져올 수 없습니다.');
 
             const detailedCompany = await response.json();
-
-            // 폼 데이터에 반영
-            setFormData(prev => ({
-                ...prev,
+            const newFormData = {
                 companyName: detailedCompany.company_name,
                 basicOverview: detailedCompany.industry || '',
                 representative: detailedCompany.representative || '',
                 businessNumber: detailedCompany.business_number || '',
                 contactInfo: [detailedCompany.phone, detailedCompany.email].filter(Boolean).join(' / '),
                 address: detailedCompany.address || '',
-                selectedCompanyId: detailedCompany.id
-            }));
+                bankName: '', // 은행 정보는 별도 API 가정
+                accountNumber: ''
+            };
 
-            // 담당자 정보 설정
-            if (detailedCompany.contacts && detailedCompany.contacts.length > 0) {
-                setCompanyContacts(detailedCompany.contacts);
-            } else {
-                setCompanyContacts([]);
-            }
+            setFormData(newFormData);
+            setOriginalFormData(newFormData); // **원본 데이터 설정**
 
-            // 선택 상태 초기화
+            setCompanyContacts(detailedCompany.contacts || []);
+            setSelectedCompany(detailedCompany);
+
+            // 모든 관련 상태 초기화
             setSelectedContact(null);
             setShowContactInformations(false);
-            setSelectedCompany(detailedCompany);
+            setContactFormData(initialContactState);
+            setOriginalContactData(initialContactState);
+            setIsFormDirty(false);
             setShowSearchModal(false);
 
-            alert(`회사 "${detailedCompany.company_name}"이 선택되었습니다.${detailedCompany.contacts?.length ? ` (담당자 ${detailedCompany.contacts.length}명)` : ''}`);
-
+            alert(`회사 "${detailedCompany.company_name}"이 선택되었습니다.`);
         } catch (error) {
-            console.error('회사 선택 오류:', error);
+            handleApiError(error);
             alert('회사 정보를 가져오는데 실패했습니다.');
         }
     };
 
-    // 담당자 선택 함수 (클릭 시 상세정보와 컨택리포트 모두 표시)
+    // 담당자 선택
     const handleContactSelect = (contact: CompanyContactData) => {
-        console.log('담당자 선택됨:', contact);
         setSelectedContact(contact);
-        setShowContactInformations(true);
-
-        // 선택된 담당자 정보를 폼에 설정
-        const formData = {
+        const newContactFormData = {
             department: contact.department || '',
             contactName: contact.contact_name || '',
             position: contact.position || '',
@@ -315,129 +282,200 @@ const CompanyProfileForm: React.FC = () => {
             relationship: contact.relationship_info || '',
             projectExperience: contact.project_experience || ''
         };
-
-        setContactFormData(formData);
-        setOriginalContactData(formData); // 원본 데이터로 설정
+        setContactFormData(newContactFormData);
+        setOriginalContactData(newContactFormData); // **원본 데이터 설정**
+        setShowContactInformations(true);
         setIsNewContact(false);
-        setHasChanges(false);
+        setIsFormDirty(false);
     };
 
-    // 담당자 신규 등록 버튼 함수
+    // 담당자 신규 등록 모드
     const handleNewContactRegistration = () => {
         if (!selectedCompany) {
             alert('먼저 회사를 선택해주세요.');
             return;
         }
-
-        // 항상 신규 등록 모드로 설정
         setSelectedContact(null);
+        setContactFormData(initialContactState);
+        setOriginalContactData(initialContactState); // **원본 데이터 설정 (빈 값)**
         setShowContactInformations(true);
-
-        // 빈 폼으로 초기화
-        const emptyFormData = {
-            department: '',
-            contactName: '',
-            position: '',
-            phone: '',
-            email: '',
-            responsibility: '',
-            workStyle: '',
-            personalInfo: '',
-            organizationInfo: '',
-            relationship: '',
-            projectExperience: ''
-        };
-
-        setContactFormData(emptyFormData);
-        setOriginalContactData(emptyFormData);
         setIsNewContact(true);
-        setHasChanges(false);
+        setIsFormDirty(false);
     };
 
-    // 회사 정보와 담당자 정보를 함께 조회하는 함수
-    const fetchCompanyDetailsWithContacts = async (companyId: number) => {
-        try {
-            const response = await fetch(`http://localhost:8001/api/company-profile/${companyId}`);
-            if (response.ok) {
-                const companyData = await response.json();
+    // **[수정] 메인 저장 함수 (모든 변경사항 처리)**
+    const handleSubmit = async () => {
+        // 저장 버튼 자체가 isFormDirty가 아닐 때 비활성화되지만, 방어코드로 남겨둡니다.
+        if (!isFormDirty) {
+            alert('변경된 내용이 없습니다.');
+            return;
+        }
 
-                // 담당자 정보 설정
-                if (companyData.contacts && companyData.contacts.length > 0) {
-                    setCompanyContacts(companyData.contacts);
-                } else {
-                    setCompanyContacts([]);
+        // --- 분기 시작: 신규 생성이냐, 기존 수정이냐? ---
+        if (!selectedCompany) {
+            // [신규] 1. 신규 회사 생성 로직
+            if (!formData.companyName) {
+                alert('회사명을 입력해주세요.');
+                return;
+            }
+
+            try {
+                const url = `http://localhost:8001/api/company-profile/`;
+
+                // 신규 회사 생성을 위한 페이로드 구성 (CompanyProfileCreate 스키마 준수)
+                const creationPayload: {
+                    company_name: string;
+                    basic_overview: string;
+                    representative: string;
+                    business_number: string;
+                    contact_info: string;
+                    address: string;
+                    bank_name: string;
+                    account_number: string;
+                    contacts: Array<{
+                        contact_name: string;
+                        position: string;
+                        department: string;
+                        phone: string;
+                        email: string;
+                        responsibility: string;
+                        work_style: string;
+                        personal_info: string;
+                        organization_info: string;
+                        relationship_info: string;
+                        project_experience: string;
+                        reports: any[];
+                    }>;
+                } = {
+                    // 타입 정의와 일치하는 속성 할당
+                    company_name: formData.companyName,
+                    basic_overview: formData.basicOverview,
+                    representative: formData.representative,
+                    business_number: formData.businessNumber,
+                    contact_info: formData.contactInfo,
+                    address: formData.address,
+                    bank_name: formData.bankName,
+                    account_number: formData.accountNumber,
+                    contacts: []
+                };
+
+                // 만약 신규 회사와 동시에 신규 담당자도 입력했다면, contacts 배열에 추가
+                const contactDataChanged = JSON.stringify(contactFormData) !== JSON.stringify(initialContactState);
+                if (isNewContact && contactDataChanged) {
+                    creationPayload.contacts.push({
+                        contact_name: contactFormData.contactName,
+                        position: contactFormData.position,
+                        department: contactFormData.department,
+                        phone: contactFormData.phone,
+                        email: contactFormData.email,
+                        responsibility: contactFormData.responsibility,
+                        work_style: contactFormData.workStyle,
+                        personal_info: contactFormData.personalInfo,
+                        organization_info: contactFormData.organizationInfo,
+                        relationship_info: contactFormData.relationship,
+                        project_experience: contactFormData.projectExperience,
+                        reports: [] // 컨택리포트는 별도 API로 관리하는 것이 일반적
+                    });
                 }
 
-                setSelectedCompany(companyData);
+                console.log("신규 회사 생성 API 호출:", url, creationPayload);
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(creationPayload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || '신규 회사 생성에 실패했습니다.');
+                }
+
+                const newlyCreatedCompany = await response.json();
+                alert(`"${newlyCreatedCompany.company_name}" 회사가 성공적으로 등록되었습니다.`);
+
+                // 생성된 회사 정보를 바로 화면에 로드
+                await selectCompany(newlyCreatedCompany.id);
+
+            } catch (error) {
+                console.error('신규 회사 생성 오류:', error);
+                alert(`저장 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
             }
-        } catch (error) {
-            console.error('회사 정보 조회 실패:', error);
+
+        } else {
+            // [기존] 2. 기존 회사 수정 로직
+            try {
+                const apiCalls = [];
+                const companyDataChanged = JSON.stringify(formData) !== JSON.stringify(originalFormData);
+                const contactDataChanged = JSON.stringify(contactFormData) !== JSON.stringify(originalContactData);
+
+                // 회사 정보 수정 API 호출 준비
+                if (companyDataChanged) {
+                    const companyUpdateUrl = `http://localhost:8001/api/company-profile/${selectedCompany.id}`;
+                    // ✅ [최적화된 페이로드] 백엔드 스키마에 정의된 필드만 포함
+                    const companyPayload = {
+                        company_name: formData.companyName,
+                        basic_overview: formData.basicOverview,
+                        representative: formData.representative,
+                        business_number: formData.businessNumber,
+                        contact_info: formData.contactInfo, // 개별 phone, email 대신 통합된 필드 사용
+                        address: formData.address,
+                        bank_name: formData.bankName,
+                        account_number: formData.accountNumber
+                    };
+
+                    apiCalls.push(fetch(companyUpdateUrl, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(companyPayload)
+                    }));
+                }
+
+                // 담당자 정보 생성/수정 API 호출 준비
+                if (contactDataChanged && (isNewContact || selectedContact)) {
+                    const contactUrl = isNewContact
+                        ? `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts`
+                        : `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts/${selectedContact!.id}`;
+                    const method = isNewContact ? 'POST' : 'PUT';
+                    const contactPayload = {
+                        contact_name: contactFormData.contactName,
+                        position: contactFormData.position,
+                        department: contactFormData.department,
+                        phone: contactFormData.phone,
+                        email: contactFormData.email,
+                        // ... 나머지 필드 ...
+                    };
+                    apiCalls.push(fetch(contactUrl, {
+                        method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(contactPayload)
+                    }));
+                }
+
+                if (apiCalls.length === 0) return;
+                const responses = await Promise.all(apiCalls);
+                for (const response of responses) {
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || '저장 중 오류가 발생했습니다.');
+                    }
+                }
+
+                alert('성공적으로 수정되었습니다.');
+                await selectCompany(selectedCompany.id);
+
+            } catch (error) {
+                console.error('기존 회사 수정 오류:', error);
+                alert(`수정 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+            }
         }
     };
 
-    // 담당자 저장 API 호출
-    const handleSaveContact = async () => {
-        if (!selectedCompany || !hasChanges) return;
 
-        try {
-            const apiData = {
-                companyId: selectedCompany.id,
-                contactData: {
-                    // 담당자 기본 정보 (company_contacts 테이블)
-                    contact_name: contactFormData.contactName,
-                    position: contactFormData.position,
-                    department: contactFormData.department,
-                    phone: contactFormData.phone,
-                    email: contactFormData.email,
-                    responsibility: contactFormData.responsibility,
-                    work_style: contactFormData.workStyle,
-                    personal_info: contactFormData.personalInfo,
-                    organization_info: contactFormData.organizationInfo,
-                    relationship_info: contactFormData.relationship,
-                    project_experience: contactFormData.projectExperience,
-                    is_primary: false // 기본값
-                },
-                isNew: isNewContact, // 신규/수정 구분
-                contactId: selectedContact?.id || null // 수정시 담당자 ID
-            };
-
-            const url = isNewContact
-                ? `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts`
-                : `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts/${selectedContact?.id}`;
-
-            const method = isNewContact ? 'POST' : 'PUT';
-
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(apiData)
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                console.log('담당자 저장 완료:', result);
-                alert(isNewContact ? '신규 담당자가 등록되었습니다.' : '담당자 정보가 수정되었습니다.');
-
-                // 회사 정보 다시 로드하여 담당자 리스트 갱신
-                await fetchCompanyDetailsWithContacts(selectedCompany.id);
-
-                // 폼 상태 초기화
-                setOriginalContactData(contactFormData);
-                setHasChanges(false);
-
-            } else {
-                const errorData = await response.json();
-                alert('저장 실패: ' + (errorData.detail || '알 수 없는 오류'));
-            }
-        } catch (error) {
-            console.error('담당자 저장 오류:', error);
-            alert('저장 실패: 네트워크 오류');
-        }
-    };
+// --- 렌더링 컴포넌트 ---
 
     // 검색 모달 컴포넌트
+// 검색 모달 컴포넌트
     const CompanySearchModal: React.FC = () => {
         return showSearchModal ? (
             <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
@@ -454,7 +492,7 @@ const CompanyProfileForm: React.FC = () => {
 
                     <div className="modal-body">
                         <div className="search-info">
-                            <p>검색어: "{formData.companyName}"</p>
+                            <p>검색어: "{searchKeyword || '전체'}"</p>
                         </div>
 
                         {searchLoading ? (
@@ -465,6 +503,7 @@ const CompanyProfileForm: React.FC = () => {
                                     <div className="no-results">검색 결과가 없습니다.</div>
                                 ) : (
                                     <>
+                                        {/* [확인] searchResults 변수를 사용하는 테이블 구조 */}
                                         <table className="search-table">
                                             <thead>
                                             <tr>
@@ -487,7 +526,7 @@ const CompanyProfileForm: React.FC = () => {
                                                     <td>
                                                         <button
                                                             className="select-btn"
-                                                            onClick={() => selectCompany(company)}
+                                                            onClick={() => selectCompany(company.id)}
                                                         >
                                                             선택
                                                         </button>
@@ -497,12 +536,13 @@ const CompanyProfileForm: React.FC = () => {
                                             </tbody>
                                         </table>
 
-                                        {/* 페이지네이션 */}
+                                        {/* [확인] 페이지네이션 원본 구조 및 변수 사용법 수정 */}
                                         <div className="pagination">
                                             <button
                                                 onClick={() => {
-                                                    setCurrentPage(prev => prev - 1);
-                                                    searchCompanies(currentPage - 1);
+                                                    const newPage = currentPage - 1;
+                                                    setCurrentPage(newPage);
+                                                    searchCompanies(searchKeyword, newPage);
                                                 }}
                                                 disabled={currentPage <= 1}
                                             >
@@ -511,8 +551,9 @@ const CompanyProfileForm: React.FC = () => {
                                             <span className="page-info">{currentPage} / {totalPages}</span>
                                             <button
                                                 onClick={() => {
-                                                    setCurrentPage(prev => prev + 1);
-                                                    searchCompanies(currentPage + 1);
+                                                    const newPage = currentPage + 1;
+                                                    setCurrentPage(newPage);
+                                                    searchCompanies(searchKeyword, newPage);
                                                 }}
                                                 disabled={currentPage >= totalPages}
                                             >
@@ -547,7 +588,7 @@ const CompanyProfileForm: React.FC = () => {
             <div className="profile-main">
                 <div className="profile-title-section">
                     <h2 className="profile-subtitle">
-                        고객사 기업 정보
+                        광고주 Profile
                     </h2>
                     <div className="profile-writer">
                         <div className="writer-form">
@@ -580,7 +621,16 @@ const CompanyProfileForm: React.FC = () => {
                                         type="text"
                                         name="companyName"
                                         value={formData.companyName}
-                                        onChange={handleInputChange}
+                                        onChange={(e) => {
+                                            // 회사명 직접 입력 시, 선택된 회사 정보와 연결 끊기
+                                            if (selectedCompany) {
+                                                setSelectedCompany(null);
+                                                setCompanyContacts([]);
+                                                setSelectedContact(null);
+                                                setShowContactInformations(false);
+                                            }
+                                            handleInputChange(e);
+                                        }}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') {
                                                 e.preventDefault();
@@ -690,13 +740,16 @@ const CompanyProfileForm: React.FC = () => {
                                                     className={`contact-item ${selectedContact?.id === contact.id ? 'selected' : ''}`}
                                                     onClick={() => handleContactSelect(contact)}
                                                 >
-                                                    <span className="contact-name">
-                                                        {contact.contact_name}
-                                                        {contact.is_primary && <span className="primary-badge">(주담당)</span>}
-                                                    </span>
-                                                    {contact.position && <span className="contact-position"> - {contact.position}</span>}
-                                                    {contact.department && <span className="contact-department"> ({contact.department})</span>}
-                                                    {contact.phone && <span className="contact-phone"> / {contact.phone}</span>}
+                                                <span className="contact-name">
+                                                    {contact.contact_name}
+                                                    {contact.is_primary && <span className="primary-badge">(주담당)</span>}
+                                                </span>
+                                                    {contact.position &&
+                                                        <span className="contact-position"> - {contact.position}</span>}
+                                                    {contact.department && <span
+                                                        className="contact-department"> ({contact.department})</span>}
+                                                    {contact.phone &&
+                                                        <span className="contact-phone"> / {contact.phone}</span>}
                                                 </div>
                                             ))}
                                         </div>
@@ -708,13 +761,31 @@ const CompanyProfileForm: React.FC = () => {
 
                                     {/* 담당자 신규 등록 버튼을 리스트 하단에 배치 */}
                                     <div className="add-contact-section">
+                                        {/* 왼쪽 공간을 채우기 위한 빈 div */}
+                                        <div style={{ flex: 1 }}></div>
+
+                                        {/* 가운데 정렬될 '담당자 신규 등록' 버튼 */}
                                         <button
                                             type="button"
                                             className="add-contact-btn"
                                             onClick={handleNewContactRegistration}
+                                            disabled={!selectedCompany}
+                                            style={{ flex: '0 1 auto' }} // 버튼 크기 자동 조절
                                         >
                                             담당자 신규 등록
                                         </button>
+
+                                        {/* 오른쪽에 정렬될 '담당자 찾기' 버튼 */}
+                                        <div style={{ flex: 1, textAlign: 'right' }}>
+                                            <button
+                                                type="button"
+                                                className="find-contact-btn" // 새로운 CSS 클래스
+                                                onClick={() => alert('담당자 찾기 기능 구현 필요')} // TODO: 담당자 찾기 기능 구현
+                                                disabled={!selectedCompany}
+                                            >
+                                                담당자 찾기
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </td>
@@ -753,7 +824,7 @@ const CompanyProfileForm: React.FC = () => {
                                     </td>
                                     <td className="table-cell table-cell-label">직책/이름</td>
                                     <td className="table-cell-input">
-                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                        <div style={{display: 'flex', gap: '8px'}}>
                                             <input
                                                 type="text"
                                                 name="position"
@@ -761,7 +832,7 @@ const CompanyProfileForm: React.FC = () => {
                                                 onChange={handleContactFormChange}
                                                 className="profile-input"
                                                 placeholder="직책"
-                                                style={{ flex: '0 0 80px' }}
+                                                style={{flex: '0 0 80px'}}
                                             />
                                             <input
                                                 type="text"
@@ -770,7 +841,7 @@ const CompanyProfileForm: React.FC = () => {
                                                 onChange={handleContactFormChange}
                                                 className="profile-input"
                                                 placeholder="이름"
-                                                style={{ flex: '1' }}
+                                                style={{flex: '1'}}
                                             />
                                         </div>
                                     </td>
@@ -800,45 +871,45 @@ const CompanyProfileForm: React.FC = () => {
                                 <tr>
                                     <td className="table-cell table-cell-label table-cell-top">담당 업무</td>
                                     <td className="table-cell-input" colSpan={3}>
-                                        <textarea
-                                            name="responsibility"
-                                            value={contactFormData.responsibility}
-                                            onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-medium"
-                                        />
+                                    <textarea
+                                        name="responsibility"
+                                        value={contactFormData.responsibility}
+                                        onChange={handleContactFormChange}
+                                        className="profile-textarea textarea-medium"
+                                    />
                                     </td>
                                 </tr>
                                 <tr>
                                     <td className="table-cell table-cell-label table-cell-top">업무 스타일</td>
                                     <td className="table-cell-input" colSpan={3}>
-                                        <textarea
-                                            name="workStyle"
-                                            value={contactFormData.workStyle}
-                                            onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-medium"
-                                        />
+                                    <textarea
+                                        name="workStyle"
+                                        value={contactFormData.workStyle}
+                                        onChange={handleContactFormChange}
+                                        className="profile-textarea textarea-medium"
+                                    />
                                     </td>
                                 </tr>
                                 <tr>
                                     <td className="table-cell table-cell-label table-cell-top">개별 특화정보</td>
                                     <td className="table-cell-input" colSpan={3}>
-                                        <textarea
-                                            name="personalInfo"
-                                            value={contactFormData.personalInfo}
-                                            onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-medium"
-                                        />
+                                    <textarea
+                                        name="personalInfo"
+                                        value={contactFormData.personalInfo}
+                                        onChange={handleContactFormChange}
+                                        className="profile-textarea textarea-medium"
+                                    />
                                     </td>
                                 </tr>
                                 <tr>
                                     <td className="table-cell table-cell-label table-cell-top">부서 및 조직정보</td>
                                     <td className="table-cell-input" colSpan={3}>
-                                        <textarea
-                                            name="organizationInfo"
-                                            value={contactFormData.organizationInfo}
-                                            onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-medium"
-                                        />
+                                    <textarea
+                                        name="organizationInfo"
+                                        value={contactFormData.organizationInfo}
+                                        onChange={handleContactFormChange}
+                                        className="profile-textarea textarea-medium"
+                                    />
                                     </td>
                                 </tr>
                                 </tbody>
@@ -858,30 +929,30 @@ const CompanyProfileForm: React.FC = () => {
                                 <tr>
                                     <td className="table-cell table-cell-label table-cell-top">관계성</td>
                                     <td className="table-cell-input">
-                                        <textarea
-                                            name="relationship"
-                                            value={contactFormData.relationship}
-                                            onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-large"
-                                        />
+                                    <textarea
+                                        name="relationship"
+                                        value={contactFormData.relationship}
+                                        onChange={handleContactFormChange}
+                                        className="profile-textarea textarea-large"
+                                    />
                                     </td>
                                 </tr>
                                 <tr>
                                     <td className="table-cell table-cell-label table-cell-top">프로젝트 경험성</td>
                                     <td className="table-cell-input">
-                                        <textarea
-                                            name="projectExperience"
-                                            value={contactFormData.projectExperience}
-                                            onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-large"
-                                        />
+                                    <textarea
+                                        name="projectExperience"
+                                        value={contactFormData.projectExperience}
+                                        onChange={handleContactFormChange}
+                                        className="profile-textarea textarea-large"
+                                    />
                                     </td>
                                 </tr>
                                 </tbody>
                             </table>
                         </div>
 
-                        {/* 컨택 리포트(회의록) - 선택된 담당자가 있을 때만 또는 신규 등록 모드일 때 */}
+                        {/* 컨택 리포트(회의록) */}
                         <div className="profile-section">
                             <h3 className="section-header section-header-margin">
                                 ■ 컨택 리포트(회의록) {selectedContact ? `- ${selectedContact.contact_name}` : '- 신규 등록'}
@@ -894,53 +965,42 @@ const CompanyProfileForm: React.FC = () => {
                                     <td className="table-header">내용</td>
                                 </tr>
 
-                                {/* 선택된 담당자가 있을 때만 기존 리포트 표시 (읽기 전용) */}
-                                {selectedContact && (
-                                    <tr>
-                                        <td className="contact-date-cell">
-                                            <div className="contact-date">2025.01.15</div>
-                                        </td>
+                                {/* 기존 리포트 렌더링 */}
+                                {existingReports.map((report, index) => (
+                                    <tr key={`report-${index}`}>
+                                        <td className="contact-date-cell">{report.date}</td>
                                         <td className="table-cell-input">
-                                            <div className="contact-content readonly-content" style={{
-                                                backgroundColor: '#f8f9fa',
-                                                padding: '8px',
-                                                borderRadius: '4px',
-                                                color: '#6c757d'
-                                            }}>
-                                                • 제목 및 안건: {selectedContact.contact_name}과의 프로젝트 논의{'\n'}
-                                                • 회의 및 내용: 담당 업무 범위 및 일정 협의{'\n'}
-                                                • 결과: 다음 주 세부 계획 수립 예정
+                                            <div className="readonly-content" style={{whiteSpace: 'pre-wrap'}}>
+                                                {report.content}
                                             </div>
                                         </td>
                                     </tr>
-                                )}
+                                ))}
 
-                                {/* 새 리포트 입력 행 - 항상 수정 가능 */}
+                                {/* 새 리포트 입력 행 */}
                                 <tr className="new-report-row">
                                     <td className="contact-date-cell">
                                         <input
                                             type="text"
-                                            name="newReportDate"
-                                            value={formData.newReportDate}
-                                            onChange={handleInputChange}
+                                            value={newReportDate}
+                                            onChange={(e) => setNewReportDate(e.target.value)}
                                             className="profile-date-input"
                                             placeholder="YYYY.MM.DD"
                                         />
                                     </td>
                                     <td className="table-cell-input">
                                         <div className="new-report-container">
-                                            <textarea
-                                                name="newReportContent"
-                                                value={formData.newReportContent}
-                                                onChange={handleInputChange}
-                                                className="profile-textarea textarea-large"
-                                                placeholder="• 제목 및 안건: &#10;• 회의 및 내용: "
-                                            />
+                                        <textarea
+                                            value={newReportContent}
+                                            onChange={(e) => setNewReportContent(e.target.value)}
+                                            className="profile-textarea textarea-large"
+                                            placeholder="• 제목 및 안건: &#10;• 회의 및 내용: "
+                                        />
                                             <button
                                                 type="button"
                                                 className="add-report-btn"
                                                 onClick={handleAddReport}
-                                                disabled={!formData.newReportDate || !formData.newReportContent}
+                                                disabled={!newReportDate || !newReportContent}
                                             >
                                                 추가
                                             </button>
@@ -950,48 +1010,26 @@ const CompanyProfileForm: React.FC = () => {
                                 </tbody>
                             </table>
                         </div>
-
-                        {/* 저장/취소 버튼 - 항상 표시 */}
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            gap: '10px',
-                            marginTop: '20px',
-                            paddingTop: '20px',
-                            borderTop: '1px solid #ddd'
-                        }}>
-                            <button
-                                type="button"
-                                className="submit-btn"
-                                onClick={handleSaveContact}
-                                disabled={!hasChanges}
-                                style={{
-                                    opacity: hasChanges ? 1 : 0.5,
-                                    cursor: hasChanges ? 'pointer' : 'not-allowed'
-                                }}
-                            >
-                                {isNewContact ? '신규 담당자 저장' : '담당자 수정 저장'}
-                            </button>
-                            <button
-                                type="button"
-                                className="print-btn"
-                                onClick={() => {
-                                    setShowContactInformations(false);
-                                    setSelectedContact(null);
-                                    setHasChanges(false);
-                                }}
-                                style={{ backgroundColor: '#6c757d' }}
-                            >
-                                취소
-                            </button>
-                        </div>
                     </>
                 )}
 
-                {/* 버튼 섹션 */}
+                {/* [수정] 메인 버튼 섹션 */}
                 <div className="button-section">
-                    <button type="button" className="submit-btn" onClick={handleSubmit}>
+                    <button
+                        type="button"
+                        className="submit-btn"
+                        onClick={handleSubmit}
+                        disabled={!isFormDirty}
+                    >
                         저장
+                    </button>
+                    <button
+                        type="button"
+                        className="cancel-btn" // CSS에 .cancel-btn 스타일 추가 필요
+                        onClick={handleCancelAllChanges}
+                        disabled={!isFormDirty}
+                    >
+                        취소
                     </button>
                     <button type="button" className="print-btn" onClick={handlePrint}>
                         인쇄
@@ -1000,7 +1038,7 @@ const CompanyProfileForm: React.FC = () => {
             </div>
 
             {/* 검색 모달 */}
-            <CompanySearchModal />
+            <CompanySearchModal/>
         </div>
     );
 };

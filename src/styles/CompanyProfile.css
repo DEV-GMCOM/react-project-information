@@ -57,16 +57,34 @@
     font-weight: bold;
 }
 
+/*.profile-writer {*/
+/*    margin-top: 10px;*/
+/*}*/
+
+/*.writer-form {*/
+/*    display: flex;*/
+/*    justify-content: center;*/
+/*    gap: 30px;*/
+/*    flex-wrap: wrap;*/
+/*}*/
+
 .profile-writer {
     margin-top: 10px;
+    display: flex;
+    justify-content: flex-end; /* 우측 정렬 */
+    padding-right: 15px; /* 필요에 따라 간격 조절 */
 }
 
 .writer-form {
     display: flex;
-    justify-content: center;
     gap: 30px;
     flex-wrap: wrap;
 }
+
+.writer-form > div { /* "최종 작성자 :" 와 실제 작성자 정보에 적용 */
+    text-align: right;
+}
+
 
 /* 섹션 */
 .profile-section {
@@ -281,14 +299,36 @@
 }
 
 /* 담당자 추가 버튼 섹션 - 리스트 하단에 위치 */
+/*.add-contact-section {*/
+/*    display: flex;*/
+/*    justify-content: center;*/
+/*    padding: 12px 0;*/
+/*    border-top: 2px solid #e9ecef;*/
+/*    margin-top: 5px;*/
+/*}*/
+
+/*.add-contact-btn {*/
+/*    padding: 10px 20px;*/
+/*    background-color: #28a745;*/
+/*    color: white;*/
+/*    border: none;*/
+/*    border-radius: 5px;*/
+/*    font-size: 13px;*/
+/*    font-weight: 600;*/
+/*    cursor: pointer;*/
+/*    transition: background-color 0.3s;*/
+/*}*/
+/* 담당자 추가 버튼 섹션 - 레이아웃 수정 */
 .add-contact-section {
-    display: flex;
-    justify-content: center;
+    display: flex; /* Flexbox 레이아웃으로 변경 */
+    justify-content: space-between; /* 요소들을 양 끝으로 배치 */
+    align-items: center; /* 수직 중앙 정렬 */
     padding: 12px 0;
     border-top: 2px solid #e9ecef;
     margin-top: 5px;
 }
 
+/* 담당자 신규 등록 버튼 (기존 스타일 유지) */
 .add-contact-btn {
     padding: 10px 20px;
     background-color: #28a745;
@@ -301,9 +341,37 @@
     transition: background-color 0.3s;
 }
 
-.add-contact-btn:hover {
+/*.add-contact-btn:hover {*/
+/*    background-color: #218838;*/
+/*}*/
+.add-contact-btn:hover:not(:disabled) {
     background-color: #218838;
 }
+
+/* [신규] 담당자 찾기 버튼 스타일 */
+.find-contact-btn {
+    padding: 10px 20px;
+    background-color: #17a2b8; /* 다른 색상 (info color) */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.find-contact-btn:hover:not(:disabled) {
+    background-color: #138496;
+}
+
+/* 비활성화 상태는 공통으로 적용 */
+.add-contact-btn:disabled,
+.find-contact-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 
 /* 읽기 전용 필드 스타일 */
 .readonly-field {
@@ -495,7 +563,8 @@
 }
 
 .submit-btn,
-.print-btn {
+.print-btn,
+.cancel-btn {
     padding: 10px 30px;
     font-size: 16px;
     font-weight: bold;
@@ -503,6 +572,16 @@
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s;
+}
+
+/* 취소 버튼 개별 스타일 */
+.cancel-btn {
+    background-color: #6c757d; /* 회색 계열 */
+    color: white;
+}
+
+.cancel-btn:hover:not(:disabled) {
+    background-color: #5a6268; /* 더 어두운 회색 */
 }
 
 .submit-btn {
@@ -521,4 +600,12 @@
 
 .print-btn:hover {
     background-color: #218838;
+}
+
+/* 모든 버튼의 비활성화(disabled) 상태 스타일 */
+.submit-btn:disabled,
+.print-btn:disabled,
+.cancel-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
