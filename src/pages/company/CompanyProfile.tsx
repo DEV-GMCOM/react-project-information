@@ -801,7 +801,7 @@ const CompanyProfileForm: React.FC = () => {
                                 `(${selectedContact.contact_name})` :
                                 '(신규 등록)'}
                             </h3>
-                            <table className="profile-table">
+                            <table className="profile-table" >
                                 <tbody>
                                 <tr>
                                     <td className="table-header">구분</td>
@@ -876,7 +876,7 @@ const CompanyProfileForm: React.FC = () => {
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td className="table-cell table-cell-label table-cell-top" rowSpan={3}>부가 정보</td>
+                                    <td className="table-cell table-cell-label table-cell-top" rowSpan={6}>부가 정보</td>
                                     <td className="table-cell table-cell-label table-cell-top">업무 스타일</td>
                                     <td className="table-cell-input" colSpan={3}>
                                     <textarea
@@ -909,59 +909,92 @@ const CompanyProfileForm: React.FC = () => {
                                         />
                                     </td>
                                 </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div className="profile-section contact-report-section">
-                            {/* 담당자 추가 정보 테이블 */}
-                            <h3 className="section-header section-header-attached">
-                                ■ 히스토리 {selectedContact ?
-                                `(${selectedContact.contact_name})` :
-                                '(신규 등록)'}
-                            </h3>
-                            <table className="profile-table">
-                                <tbody>
-                                <tr>
-                                    <td className="table-header">구분</td>
-                                    <td className="table-header">내용</td>
-                                </tr>
                                 <tr>
                                     <td className="table-cell table-cell-label table-cell-top">지엠컴과 관계성</td>
-                                    <td className="table-cell-input">
+                                    <td className="table-cell-input" colSpan={3}>
                                         <textarea
                                             name="relationship"
                                             value={contactFormData.relationship}
                                             onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-large"
+                                            className="profile-textarea textarea-medium"
                                         />
                                     </td>
                                 </tr>
                                 <tr>
                                     <td className="table-cell table-cell-label table-cell-top">프로젝트 경험성</td>
-                                    <td className="table-cell-input">
+                                    <td className="table-cell-input" colSpan={3}>
                                         <textarea
                                             name="projectExperience"
                                             value={contactFormData.projectExperience}
                                             onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-large"
+                                            className="profile-textarea textarea-medium"
                                         />
                                     </td>
                                 </tr>
                                 <tr>
                                     <td className="table-cell table-cell-label table-cell-top">비고 / 기타</td>
-                                    <td className="table-cell-input">
+                                    <td className="table-cell-input" colSpan={3}>
                                         <textarea
-                                            name="projectExperience"
+                                            name="etcInfo"
                                             value={contactFormData.etcInfo}
                                             onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-large"
+                                            className="profile-textarea textarea-medium"
                                         />
                                     </td>
                                 </tr>
                                 </tbody>
                             </table>
                         </div>
+
+                        {/*<div className="profile-section contact-report-section">*/}
+                        {/*    /!* 담당자 추가 정보 테이블 *!/*/}
+                        {/*    <h3 className="section-header section-header-attached">*/}
+                        {/*        ■ 히스토리 {selectedContact ?*/}
+                        {/*        `(${selectedContact.contact_name})` :*/}
+                        {/*        '(신규 등록)'}*/}
+                        {/*    </h3>*/}
+                        {/*    <table className="profile-table">*/}
+                        {/*        <tbody>*/}
+                        {/*        <tr>*/}
+                        {/*            <td className="table-header">구분</td>*/}
+                        {/*            <td className="table-header">내용</td>*/}
+                        {/*        </tr>*/}
+                        {/*        <tr>*/}
+                        {/*            <td className="table-cell table-cell-label table-cell-top">지엠컴과 관계성</td>*/}
+                        {/*            <td className="table-cell-input">*/}
+                        {/*                <textarea*/}
+                        {/*                    name="relationship"*/}
+                        {/*                    value={contactFormData.relationship}*/}
+                        {/*                    onChange={handleContactFormChange}*/}
+                        {/*                    className="profile-textarea textarea-large"*/}
+                        {/*                />*/}
+                        {/*            </td>*/}
+                        {/*        </tr>*/}
+                        {/*        <tr>*/}
+                        {/*            <td className="table-cell table-cell-label table-cell-top">프로젝트 경험성</td>*/}
+                        {/*            <td className="table-cell-input">*/}
+                        {/*                <textarea*/}
+                        {/*                    name="projectExperience"*/}
+                        {/*                    value={contactFormData.projectExperience}*/}
+                        {/*                    onChange={handleContactFormChange}*/}
+                        {/*                    className="profile-textarea textarea-large"*/}
+                        {/*                />*/}
+                        {/*            </td>*/}
+                        {/*        </tr>*/}
+                        {/*        <tr>*/}
+                        {/*            <td className="table-cell table-cell-label table-cell-top">비고 / 기타</td>*/}
+                        {/*            <td className="table-cell-input">*/}
+                        {/*                <textarea*/}
+                        {/*                    name="projectExperience"*/}
+                        {/*                    value={contactFormData.etcInfo}*/}
+                        {/*                    onChange={handleContactFormChange}*/}
+                        {/*                    className="profile-textarea textarea-large"*/}
+                        {/*                />*/}
+                        {/*            </td>*/}
+                        {/*        </tr>*/}
+                        {/*        </tbody>*/}
+                        {/*    </table>*/}
+                        {/*</div>*/}
 
                         {/* 컨택 리포트(회의록) */}
                         <div className="profile-section contact-report-section">
