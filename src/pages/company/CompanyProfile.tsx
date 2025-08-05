@@ -57,6 +57,7 @@ interface ContactProfile {
     organizationInfo: string;
     relationship: string;
     projectExperience: string;
+    etcInfo?: string;
 }
 
 // 👉 NEW: API 요청용 타입 정의 추가
@@ -804,13 +805,13 @@ const CompanyProfileForm: React.FC = () => {
                                 <tbody>
                                 <tr>
                                     <td className="table-header">구분</td>
-                                    <td className="table-header">내용</td>
-                                    <td className="table-header">구분</td>
-                                    <td className="table-header">내용</td>
+                                    <td className="table-header" colSpan={4}>내용</td>
+                                    {/*<td className="table-header">구분</td>*/}
+                                    {/*<td className="table-header">내용</td>*/}
                                 </tr>
                                 <tr>
                                     <td className="table-cell table-cell-label">소속/부서</td>
-                                    <td className="table-cell-input">
+                                    <td className="table-cell-input" colSpan={2}>
                                         <input
                                             type="text"
                                             name="department"
@@ -819,7 +820,7 @@ const CompanyProfileForm: React.FC = () => {
                                             className="profile-input"
                                         />
                                     </td>
-                                    <td className="table-cell table-cell-label">직책/이름</td>
+                                    <td className="table-cell table-cell-label">이름/직책</td>
                                     <td className="table-cell-input">
                                         <input
                                             type="text"
@@ -832,7 +833,7 @@ const CompanyProfileForm: React.FC = () => {
                                 </tr>
                                 <tr>
                                     <td className="table-cell table-cell-label">직급</td>
-                                    <td className="table-cell-input">
+                                    <td className="table-cell-input" colSpan={2}>
                                         <input
                                             type="text"
                                             name="position"
@@ -854,7 +855,7 @@ const CompanyProfileForm: React.FC = () => {
                                 </tr>
                                 <tr>
                                     <td className="table-cell table-cell-label">이메일</td>
-                                    <td className="table-cell-input">
+                                    <td className="table-cell-input" colSpan={2}>
                                         <input
                                             type="email"
                                             name="email"
@@ -871,6 +872,40 @@ const CompanyProfileForm: React.FC = () => {
                                             value={contactFormData.responsibility}
                                             onChange={handleContactFormChange}
                                             className="profile-input"
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="table-cell table-cell-label table-cell-top" rowSpan={3}>부가 정보</td>
+                                    <td className="table-cell table-cell-label table-cell-top">업무 스타일</td>
+                                    <td className="table-cell-input" colSpan={3}>
+                                    <textarea
+                                        name="workStyle"
+                                        value={contactFormData.workStyle}
+                                        onChange={handleContactFormChange}
+                                        className="profile-textarea textarea-medium"
+                                    />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="table-cell table-cell-label table-cell-top">개별 특화정보</td>
+                                    <td className="table-cell-input" colSpan={3}>
+                                        <textarea
+                                            name="personalInfo"
+                                            value={contactFormData.personalInfo}
+                                            onChange={handleContactFormChange}
+                                            className="profile-textarea textarea-medium"
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="table-cell table-cell-label table-cell-top">부서 및 조직정보</td>
+                                    <td className="table-cell-input" colSpan={3}>
+                                        <textarea
+                                            name="organizationInfo"
+                                            value={contactFormData.organizationInfo}
+                                            onChange={handleContactFormChange}
+                                            className="profile-textarea textarea-medium"
                                         />
                                     </td>
                                 </tr>
@@ -892,40 +927,7 @@ const CompanyProfileForm: React.FC = () => {
                                     <td className="table-header">내용</td>
                                 </tr>
                                 <tr>
-                                    <td className="table-cell table-cell-label table-cell-top">업무 스타일</td>
-                                    <td className="table-cell-input">
-                                        <textarea
-                                            name="workStyle"
-                                            value={contactFormData.workStyle}
-                                            onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-medium"
-                                        />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label table-cell-top">개별 특화정보</td>
-                                    <td className="table-cell-input">
-                                        <textarea
-                                            name="personalInfo"
-                                            value={contactFormData.personalInfo}
-                                            onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-medium"
-                                        />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label table-cell-top">부서 및 조직정보</td>
-                                    <td className="table-cell-input">
-                                        <textarea
-                                            name="organizationInfo"
-                                            value={contactFormData.organizationInfo}
-                                            onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-medium"
-                                        />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label table-cell-top">관계성</td>
+                                    <td className="table-cell table-cell-label table-cell-top">지엠컴과 관계성</td>
                                     <td className="table-cell-input">
                                         <textarea
                                             name="relationship"
@@ -946,6 +948,17 @@ const CompanyProfileForm: React.FC = () => {
                                         />
                                     </td>
                                 </tr>
+                                <tr>
+                                    <td className="table-cell table-cell-label table-cell-top">비고 / 기타</td>
+                                    <td className="table-cell-input">
+                                        <textarea
+                                            name="projectExperience"
+                                            value={contactFormData.etcInfo}
+                                            onChange={handleContactFormChange}
+                                            className="profile-textarea textarea-large"
+                                        />
+                                    </td>
+                                </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -961,7 +974,7 @@ const CompanyProfileForm: React.FC = () => {
                             {/* 기존 리포트 목록 */}
                             {existingReports.length > 0 && (
                                 <div className="existing-reports">
-                                    <h4>기존 컨택 리포트</h4>
+                                    {/*<h4>기존 컨택 리포트</h4>*/}
                                     {existingReports.map((report, index) => (
                                         <div key={index} className="report-item">
                                             <div className="report-date">{report.date}</div>
@@ -975,12 +988,12 @@ const CompanyProfileForm: React.FC = () => {
                             <table className="profile-table">
                                 <tbody>
                                 <tr>
-                                    <td className="table-header">구분</td>
-                                    <td className="table-header">내용</td>
+                                    <td className="table-header">날짜</td>
+                                    <td className="table-header">주요 내용</td>
                                 </tr>
                                 <tr>
-                                    <td className="table-cell table-cell-label">컨택 날짜</td>
-                                    <td className="table-cell-input">
+                                    {/*<td className="table-cell table-cell-label">컨택 날짜</td>*/}
+                                    <td className="table-cell table-cell-label table-cell-top">
                                         <input
                                             type="date"
                                             value={newReportDate}
@@ -988,9 +1001,6 @@ const CompanyProfileForm: React.FC = () => {
                                             className="profile-date-input"
                                         />
                                     </td>
-                                </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label table-cell-top">미팅 회의록</td>
                                     <td className="table-cell-input">
                                         <textarea
                                             value={newReportContent}
