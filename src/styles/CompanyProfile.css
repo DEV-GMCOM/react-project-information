@@ -1,4 +1,4 @@
-/* CompanyProfile.css - 완전히 새로 작성된 스타일 */
+/* CompanyProfile.css - 완전한 스타일 시트 (요구사항 반영) */
 
 /* 메인 컨테이너 */
 .company-profile-container {
@@ -57,22 +57,11 @@
     font-weight: bold;
 }
 
-/*.profile-writer {*/
-/*    margin-top: 10px;*/
-/*}*/
-
-/*.writer-form {*/
-/*    display: flex;*/
-/*    justify-content: center;*/
-/*    gap: 30px;*/
-/*    flex-wrap: wrap;*/
-/*}*/
-
 .profile-writer {
     margin-top: 10px;
     display: flex;
-    justify-content: flex-end; /* 우측 정렬 */
-    padding-right: 15px; /* 필요에 따라 간격 조절 */
+    justify-content: flex-end;
+    padding-right: 15px;
 }
 
 .writer-form {
@@ -81,10 +70,9 @@
     flex-wrap: wrap;
 }
 
-.writer-form > div { /* "최종 작성자 :" 와 실제 작성자 정보에 적용 */
+.writer-form > div {
     text-align: right;
 }
-
 
 /* 섹션 */
 .profile-section {
@@ -101,8 +89,21 @@
     font-weight: bold;
 }
 
-.section-header-margin {
-    margin-top: 20px;
+/* 👉 NEW: 섹션 헤더와 테이블 붙이기 */
+.section-header-attached {
+    margin-bottom: 0;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+}
+
+.contact-detail-section .profile-table,
+.contact-report-section .profile-table {
+    margin-top: 0;
+    border-top: none;
+}
+
+.contact-detail-section .profile-table:first-of-type {
+    border-top: 1px solid #333;
 }
 
 /* 테이블 스타일 */
@@ -213,17 +214,59 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.2s ease;
 }
 
 .search-btn:hover {
-    background: #e9ecef;
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+    transform: scale(1.05);
 }
 
-/* === 새로운 담당자 관련 스타일 === */
+.search-btn:active {
+    transform: scale(0.95);
+}
+
+/* === 담당자 관련 스타일 === */
 
 /* 담당자 섹션 컨테이너 */
 .contact-section {
     width: 100%;
+    min-height: 150px;
+}
+
+/* 👉 NEW: 담당자 검색 필드 스타일 */
+.contact-search-field {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #e9ecef;
+}
+
+.contact-search-field .profile-input {
+    background-color: white;
+}
+
+.contact-search-visible {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.contact-search-hidden {
+    display: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* 담당자 리스트 */
@@ -234,7 +277,7 @@
     margin-bottom: 15px;
 }
 
-/* 담당자 항목 */
+/* 담당자 항목 - 한 줄 레이아웃 */
 .contact-item {
     padding: 12px 16px;
     background-color: #f8f9fa;
@@ -257,9 +300,24 @@
     box-shadow: 0 2px 4px rgba(0, 123, 255, 0.15);
 }
 
+/* 👉 NEW: 한 줄 담당자 정보 레이아웃 */
+.contact-info-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.contact-separator {
+    color: #ddd;
+    font-weight: bold;
+}
+
 .contact-name {
     font-weight: 600;
     color: #333;
+    display: flex;
+    align-items: center;
 }
 
 .primary-badge {
@@ -298,37 +356,17 @@
     margin-bottom: 15px;
 }
 
-/* 담당자 추가 버튼 섹션 - 리스트 하단에 위치 */
-/*.add-contact-section {*/
-/*    display: flex;*/
-/*    justify-content: center;*/
-/*    padding: 12px 0;*/
-/*    border-top: 2px solid #e9ecef;*/
-/*    margin-top: 5px;*/
-/*}*/
-
-/*.add-contact-btn {*/
-/*    padding: 10px 20px;*/
-/*    background-color: #28a745;*/
-/*    color: white;*/
-/*    border: none;*/
-/*    border-radius: 5px;*/
-/*    font-size: 13px;*/
-/*    font-weight: 600;*/
-/*    cursor: pointer;*/
-/*    transition: background-color 0.3s;*/
-/*}*/
-/* 담당자 추가 버튼 섹션 - 레이아웃 수정 */
+/* 👉 수정된 담당자 추가 버튼 섹션 - 중앙 정렬 */
 .add-contact-section {
-    display: flex; /* Flexbox 레이아웃으로 변경 */
-    justify-content: space-between; /* 요소들을 양 끝으로 배치 */
-    align-items: center; /* 수직 중앙 정렬 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
     padding: 12px 0;
     border-top: 2px solid #e9ecef;
     margin-top: 5px;
 }
 
-/* 담당자 신규 등록 버튼 (기존 스타일 유지) */
+/* 담당자 신규 등록 버튼 */
 .add-contact-btn {
     padding: 10px 20px;
     background-color: #28a745;
@@ -341,37 +379,15 @@
     transition: background-color 0.3s;
 }
 
-/*.add-contact-btn:hover {*/
-/*    background-color: #218838;*/
-/*}*/
 .add-contact-btn:hover:not(:disabled) {
     background-color: #218838;
 }
 
-/* [신규] 담당자 찾기 버튼 스타일 */
-.find-contact-btn {
-    padding: 10px 20px;
-    background-color: #17a2b8; /* 다른 색상 (info color) */
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.find-contact-btn:hover:not(:disabled) {
-    background-color: #138496;
-}
-
-/* 비활성화 상태는 공통으로 적용 */
-.add-contact-btn:disabled,
-.find-contact-btn:disabled {
-    opacity: 0.5;
+.add-contact-btn:disabled {
+    background-color: #6c757d;
     cursor: not-allowed;
+    opacity: 0.5;
 }
-
 
 /* 읽기 전용 필드 스타일 */
 .readonly-field {
@@ -383,6 +399,142 @@
 .readonly-field:focus {
     background-color: #f8f9fa !important;
     box-shadow: none;
+}
+
+/* === 컨택 리포트 스타일 === */
+.existing-reports {
+    margin-bottom: 20px;
+}
+
+.existing-reports h4 {
+    margin-bottom: 10px;
+    color: #333;
+    font-size: 14px;
+}
+
+.report-item {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 8px;
+}
+
+.report-date {
+    font-weight: bold;
+    color: #007bff;
+    margin-bottom: 4px;
+}
+
+.report-content {
+    line-height: 1.4;
+    white-space: pre-line;
+    color: #333;
+}
+
+.report-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.add-report-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.add-report-btn:hover:not(:disabled) {
+    background-color: #218838;
+}
+
+.add-report-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* === 하단 액션 버튼 스타일 === */
+.profile-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #e9ecef;
+}
+
+.action-group {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.action-btn {
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 100px;
+}
+
+.save-btn {
+    background-color: #007bff;
+    color: white;
+}
+
+.save-btn:hover:not(:disabled) {
+    background-color: #0056b3;
+    transform: translateY(-1px);
+}
+
+.cancel-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+.cancel-btn:hover:not(:disabled) {
+    background-color: #5a6268;
+    transform: translateY(-1px);
+}
+
+.print-btn {
+    background-color: #28a745;
+    color: white;
+}
+
+.print-btn:hover:not(:disabled) {
+    background-color: #218838;
+    transform: translateY(-1px);
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.action-btn:disabled:hover {
+    transform: none;
+}
+
+/* 변경사항 알림 */
+.dirty-indicator {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: 1px solid #ffeaa7;
+    font-size: 13px;
+    font-weight: 500;
 }
 
 /* === 모달 스타일 === */
@@ -406,6 +558,7 @@
     max-width: 800px;
     max-height: 80vh;
     overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .modal-header {
@@ -414,6 +567,13 @@
     align-items: center;
     padding: 16px 20px;
     border-bottom: 1px solid #eee;
+    background-color: #f8f9fa;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
 }
 
 .modal-close-btn {
@@ -421,6 +581,19 @@
     border: none;
     font-size: 24px;
     cursor: pointer;
+    color: #6c757d;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.modal-close-btn:hover {
+    background-color: #e9ecef;
 }
 
 .modal-body {
@@ -432,8 +605,15 @@
 .search-info {
     margin-bottom: 20px;
     padding: 10px;
-    background: #f8f9fa;
+    background: #e3f2fd;
     border-radius: 4px;
+    border-left: 4px solid #007bff;
+}
+
+.search-info p {
+    margin: 0;
+    font-weight: 500;
+    color: #0056b3;
 }
 
 /* 검색 테이블 */
@@ -441,18 +621,29 @@
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 20px;
+    border: 1px solid #e9ecef;
 }
 
 .search-table th,
 .search-table td {
     padding: 12px;
     text-align: left;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #e9ecef;
 }
 
 .search-table th {
     background: #f8f9fa;
     font-weight: 600;
+    font-size: 13px;
+    color: #333;
+}
+
+.search-table td {
+    font-size: 13px;
+}
+
+.search-table tr:hover {
+    background-color: #f8f9fa;
 }
 
 .select-btn {
@@ -463,6 +654,7 @@
     border-radius: 4px;
     cursor: pointer;
     font-size: 12px;
+    transition: background-color 0.2s;
 }
 
 .select-btn:hover {
@@ -475,137 +667,129 @@
     justify-content: center;
     align-items: center;
     gap: 8px;
+    margin-top: 20px;
 }
 
-.pagination button {
+.page-btn {
     padding: 8px 12px;
     border: 1px solid #ddd;
     background: white;
     cursor: pointer;
     border-radius: 4px;
+    font-size: 13px;
+    transition: all 0.2s;
 }
 
-.pagination button:disabled {
+.page-btn:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #007bff;
+}
+
+.page-btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.page-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
-.pagination button:hover:not(:disabled) {
-    background: #f8f9fa;
-}
-
-.page-info {
-    margin: 0 16px;
-    font-weight: 500;
-}
-
+/* 로딩 및 빈 결과 */
 .loading, .no-results {
     text-align: center;
     padding: 40px;
     color: #666;
+    font-style: italic;
 }
 
-/* === 기존 컨택 리포트 스타일 === */
-.contact-date-cell {
-    width: 120px;
-    text-align: center;
-    vertical-align: middle;
+.loading::before {
+    content: "🔄 ";
+    animation: spin 1s linear infinite;
 }
 
-.contact-date {
-    font-weight: bold;
-    color: #333;
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
-.contact-content {
-    line-height: 1.4;
-    white-space: pre-line;
+/* === 반응형 디자인 === */
+@media (max-width: 768px) {
+    .company-profile-container {
+        padding: 10px;
+    }
+
+    .profile-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+
+    .action-group {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .action-btn {
+        width: 100%;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 10px;
+    }
+
+    .search-table {
+        font-size: 12px;
+    }
+
+    .search-table th,
+    .search-table td {
+        padding: 8px;
+    }
 }
 
-.new-report-row {
-    background-color: #fafafa;
+@media (max-width: 480px) {
+    .profile-title {
+        font-size: 20px;
+    }
+
+    .profile-subtitle {
+        font-size: 18px;
+    }
+
+    .table-cell-label {
+        width: 80px;
+        font-size: 12px;
+    }
+
+    .contact-item {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
 }
 
-.new-report-container {
-    position: relative;
-}
+/* === 인쇄 스타일 === */
+@media print {
+    .company-profile-container {
+        background-color: white;
+        box-shadow: none;
+        padding: 0;
+    }
 
-.add-report-btn {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    cursor: pointer;
-}
+    .profile-actions,
+    .modal-overlay,
+    .search-btn,
+    .add-contact-btn {
+        display: none !important;
+    }
 
-.add-report-btn:hover:not(:disabled) {
-    background-color: #218838;
-}
+    .profile-table {
+        break-inside: avoid;
+    }
 
-.add-report-btn:disabled {
-    background-color: #6c757d;
-    cursor: not-allowed;
-}
-
-/* 버튼 섹션 */
-.button-section {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid #ddd;
-}
-
-.submit-btn,
-.print-btn,
-.cancel-btn {
-    padding: 10px 30px;
-    font-size: 16px;
-    font-weight: bold;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-/* 취소 버튼 개별 스타일 */
-.cancel-btn {
-    background-color: #6c757d; /* 회색 계열 */
-    color: white;
-}
-
-.cancel-btn:hover:not(:disabled) {
-    background-color: #5a6268; /* 더 어두운 회색 */
-}
-
-.submit-btn {
-    background-color: #007bff;
-    color: white;
-}
-
-.submit-btn:hover {
-    background-color: #0056b3;
-}
-
-.print-btn {
-    background-color: #28a745;
-    color: white;
-}
-
-.print-btn:hover {
-    background-color: #218838;
-}
-
-/* 모든 버튼의 비활성화(disabled) 상태 스타일 */
-.submit-btn:disabled,
-.print-btn:disabled,
-.cancel-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    .contact-item {
+        break-inside: avoid;
+    }
 }
