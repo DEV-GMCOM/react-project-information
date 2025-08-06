@@ -1,6 +1,7 @@
 // CompanyProfile.tsx - 완전한 소스 코드 (요구사항 반영)
 
 import React, { useState, useEffect } from 'react';
+import clsx from 'clsx';
 import { handleApiError } from '../../api/utils/errorUtils';
 import '../../styles/CompanyProfile.css';
 
@@ -832,7 +833,10 @@ const CompanyProfileForm: React.FC = () => {
                                         name="companyName"
                                         value={formData.companyName}
                                         onChange={handleInputChange}
-                                        className="profile-input"
+                                        // className="profile-input"
+                                        className={clsx('profile-input', {
+                                            'input-modified': formData.companyName !== originalFormData.companyName
+                                        })}
                                         placeholder="회사명을 입력하고 검색하세요"
                                     />
                                     <button
@@ -852,7 +856,10 @@ const CompanyProfileForm: React.FC = () => {
                                     name="basicOverview"
                                     value={formData.basicOverview}
                                     onChange={handleInputChange}
-                                    className="profile-input"
+                                    // className="profile-input"
+                                    className={clsx('profile-input', {
+                                        'input-modified': formData.basicOverview !== originalFormData.basicOverview
+                                    })}
                                     placeholder="삼성계열 광고대행사, 외국계 유한회사 등등.."
                                 />
                             </td>
@@ -865,7 +872,10 @@ const CompanyProfileForm: React.FC = () => {
                                     name="representative"
                                     value={formData.representative}
                                     onChange={handleInputChange}
-                                    className="profile-input"
+                                    // className="profile-input"
+                                    className={clsx('profile-input', {
+                                        'input-modified': formData.representative !== originalFormData.representative
+                                    })}
                                 />
                             </td>
                             <td className="table-cell table-cell-label">사업자번호</td>
@@ -875,7 +885,10 @@ const CompanyProfileForm: React.FC = () => {
                                     name="businessNumber"
                                     value={formData.businessNumber}
                                     onChange={handleInputChange}
-                                    className="profile-input"
+                                    // className="profile-input"
+                                    className={clsx('profile-input', {
+                                        'input-modified': formData.businessNumber !== originalFormData.businessNumber
+                                    })}
                                     placeholder="사업자번호 형식 검증은 추후 적용 예정"
                                 />
                             </td>
@@ -888,7 +901,10 @@ const CompanyProfileForm: React.FC = () => {
                                     name="contactInfo"
                                     value={formData.contactInfo}
                                     onChange={handleInputChange}
-                                    className="profile-input"
+                                    // className="profile-input"
+                                    className={clsx('profile-input', {
+                                        'input-modified': formData.contactInfo !== originalFormData.contactInfo
+                                    })}
                                 />
                             </td>
                             <td className="table-cell table-cell-label">주소</td>
@@ -898,7 +914,10 @@ const CompanyProfileForm: React.FC = () => {
                                     name="address"
                                     value={formData.address}
                                     onChange={handleInputChange}
-                                    className="profile-input"
+                                    // className="profile-input"
+                                    className={clsx('profile-input', {
+                                        'input-modified': formData.address !== originalFormData.address
+                                    })}
                                 />
                             </td>
                         </tr>
@@ -910,7 +929,10 @@ const CompanyProfileForm: React.FC = () => {
                                     name="bankName"
                                     value={formData.bankName}
                                     onChange={handleInputChange}
-                                    className="profile-input"
+                                    // className="profile-input"
+                                    className={clsx('profile-input', {
+                                        'input-modified': formData.bankName !== originalFormData.bankName
+                                    })}
                                 />
                             </td>
                             <td className="table-cell table-cell-label">계좌번호</td>
@@ -920,7 +942,10 @@ const CompanyProfileForm: React.FC = () => {
                                     name="accountNumber"
                                     value={formData.accountNumber}
                                     onChange={handleInputChange}
-                                    className="profile-input"
+                                    // className="profile-input"
+                                    className={clsx('profile-input', {
+                                        'input-modified': formData.accountNumber !== originalFormData.accountNumber
+                                    })}
                                 />
                             </td>
                         </tr>
@@ -1034,7 +1059,10 @@ const CompanyProfileForm: React.FC = () => {
                                             name="department"
                                             value={contactFormData.department}
                                             onChange={handleContactFormChange}
-                                            className="profile-input"
+                                            // className="profile-input"
+                                            className={clsx('profile-input', {
+                                                'input-modified': contactFormData.department !== originalContactData.department
+                                            })}
                                         />
                                     </td>
                                     <td className="table-cell table-cell-label">이름/직책</td>
@@ -1044,7 +1072,10 @@ const CompanyProfileForm: React.FC = () => {
                                             name="contactName"
                                             value={contactFormData.contactName}
                                             onChange={handleContactFormChange}
-                                            className="profile-input"
+                                            // className="profile-input"
+                                            className={clsx('profile-input', {
+                                                'input-modified': contactFormData.contactName !== originalContactData.contactName
+                                            })}
                                         />
                                     </td>
                                 </tr>
@@ -1056,7 +1087,10 @@ const CompanyProfileForm: React.FC = () => {
                                             name="position"
                                             value={contactFormData.position}
                                             onChange={handleContactFormChange}
-                                            className="profile-input"
+                                            // className="profile-input"
+                                            className={clsx('profile-input', {
+                                                'input-modified': contactFormData.position !== originalContactData.position
+                                            })}
                                         />
                                     </td>
                                     <td className="table-cell table-cell-label">연락처</td>
@@ -1066,7 +1100,10 @@ const CompanyProfileForm: React.FC = () => {
                                             name="phone"
                                             value={contactFormData.phone}
                                             onChange={handleContactFormChange}
-                                            className="profile-input"
+                                            // className="profile-input"
+                                            className={clsx('profile-input', {
+                                                'input-modified': contactFormData.phone !== originalContactData.phone
+                                            })}
                                         />
                                     </td>
                                 </tr>
@@ -1078,7 +1115,10 @@ const CompanyProfileForm: React.FC = () => {
                                             name="email"
                                             value={contactFormData.email}
                                             onChange={handleContactFormChange}
-                                            className="profile-input"
+                                            // className="profile-input"
+                                            className={clsx('profile-input', {
+                                                'input-modified': contactFormData.email !== originalContactData.email
+                                            })}
                                         />
                                     </td>
                                     <td className="table-cell table-cell-label">담당업무</td>
@@ -1088,7 +1128,10 @@ const CompanyProfileForm: React.FC = () => {
                                             name="responsibility"
                                             value={contactFormData.responsibility}
                                             onChange={handleContactFormChange}
-                                            className="profile-input"
+                                            // className="profile-input"
+                                            className={clsx('profile-input', {
+                                                'input-modified': contactFormData.responsibility !== originalContactData.responsibility
+                                            })}
                                         />
                                     </td>
                                 </tr>
@@ -1100,7 +1143,10 @@ const CompanyProfileForm: React.FC = () => {
                                         name="workStyle"
                                         value={contactFormData.workStyle}
                                         onChange={handleContactFormChange}
-                                        className="profile-textarea textarea-medium"
+                                        // className="profile-textarea textarea-medium"
+                                        className={clsx('profile-textarea', 'textarea-medium', {
+                                            'input-modified': contactFormData.workStyle !== originalContactData.workStyle
+                                        })}
                                     />
                                     </td>
                                 </tr>
@@ -1111,7 +1157,10 @@ const CompanyProfileForm: React.FC = () => {
                                             name="personalInfo"
                                             value={contactFormData.personalInfo}
                                             onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-medium"
+                                            // className="profile-textarea textarea-medium"
+                                            className={clsx('profile-textarea', 'textarea-medium', {
+                                                'input-modified': contactFormData.personalInfo !== originalContactData.personalInfo
+                                            })}
                                         />
                                     </td>
                                 </tr>
@@ -1122,7 +1171,10 @@ const CompanyProfileForm: React.FC = () => {
                                             name="organizationInfo"
                                             value={contactFormData.organizationInfo}
                                             onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-medium"
+                                            // className="profile-textarea textarea-medium"
+                                            className={clsx('profile-textarea', 'textarea-medium', {
+                                                'input-modified': contactFormData.organizationInfo !== originalContactData.organizationInfo
+                                            })}
                                         />
                                     </td>
                                 </tr>
@@ -1133,7 +1185,10 @@ const CompanyProfileForm: React.FC = () => {
                                             name="relationship"
                                             value={contactFormData.relationship}
                                             onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-medium"
+                                            // className="profile-textarea textarea-medium"
+                                            className={clsx('profile-textarea', 'textarea-medium', {
+                                                'input-modified': contactFormData.relationship !== originalContactData.relationship
+                                            })}
                                         />
                                     </td>
                                 </tr>
@@ -1144,7 +1199,10 @@ const CompanyProfileForm: React.FC = () => {
                                             name="projectExperience"
                                             value={contactFormData.projectExperience}
                                             onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-medium"
+                                            // className="profile-textarea textarea-medium"
+                                            className={clsx('profile-textarea', 'textarea-medium', {
+                                                'input-modified': contactFormData.projectExperience !== originalContactData.projectExperience
+                                            })}
                                         />
                                     </td>
                                 </tr>
@@ -1155,7 +1213,10 @@ const CompanyProfileForm: React.FC = () => {
                                             name="notes"
                                             value={contactFormData.notes}
                                             onChange={handleContactFormChange}
-                                            className="profile-textarea textarea-medium"
+                                            // className="profile-textarea textarea-medium"
+                                            className={clsx('profile-textarea', 'textarea-medium', {
+                                                'input-modified': contactFormData.notes !== originalContactData.notes
+                                            })}
                                         />
                                     </td>
                                 </tr>
