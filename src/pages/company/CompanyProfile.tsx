@@ -464,23 +464,21 @@ const CompanyProfileForm: React.FC = () => {
     };
 
     // 메인 저장 함수
+    // 메인 저장 함수 (수정된 버전)
     const handleSubmit = async () => {
         if (!isFormDirty) {
             alert('변경된 내용이 없습니다.');
             return;
         }
 
-        // 신규 회사 생성 로직
+        // 신규 회사 생성 로직 (이 부분은 기존 로직과 유사하게 유지하되, 저장 후 상태 처리를 개선합니다)
         if (!selectedCompany) {
             if (!formData.companyName) {
                 alert('회사명을 입력해주세요.');
                 return;
             }
-
             try {
                 const url = `http://localhost:8001/api/company-profile/`;
-
-                // 👉 FIX: 명시적 타입 사용
                 const creationPayload: CompanyCreatePayload = {
                     company_name: formData.companyName,
                     basic_overview: formData.basicOverview,
@@ -490,7 +488,7 @@ const CompanyProfileForm: React.FC = () => {
                     address: formData.address,
                     bank_name: formData.bankName,
                     account_number: formData.accountNumber,
-                    contacts: [] // 이제 ContactCreatePayload[] 타입으로 명시됨
+                    contacts: []
                 };
 
                 const contactDataChanged = JSON.stringify(contactFormData) !== JSON.stringify(initialContactState);
@@ -524,22 +522,49 @@ const CompanyProfileForm: React.FC = () => {
                     throw new Error(errorData.detail || '신규 회사 생성에 실패했습니다.');
                 }
 
-                const newlyCreatedCompany = await response.json();
+                const newlyCreatedCompany: CompanyData = await response.json();
                 alert(`"${newlyCreatedCompany.company_name}" 회사가 성공적으로 등록되었습니다.`);
 
-                await selectCompany(newlyCreatedCompany.id);
+                // 👉 수정: selectCompany 대신 상태를 직접 업데이트하여 UI 연속성 유지
+                const newFormData = {
+                    companyName: newlyCreatedCompany.company_name,
+                    basicOverview: (newlyCreatedCompany as any).basic_overview || '', // 백엔드 응답 타입에 맞게 조정 필요
+                    representative: newlyCreatedCompany.representative || '',
+                    businessNumber: newlyCreatedCompany.business_number || '',
+                    contactInfo: (newlyCreatedCompany as any).contact_info || '',
+                    address: newlyCreatedCompany.address || '',
+                    bankName: (newlyCreatedCompany as any).bank_name || '',
+                    accountNumber: (newlyCreatedCompany as any).account_number || ''
+                };
+                setFormData(newFormData);
+                setOriginalFormData(newFormData);
+                setSelectedCompany(newlyCreatedCompany);
+                setCompanyContacts(newlyCreatedCompany.contacts || []);
+
+                // 만약 담당자도 함께 생성되었다면, 그 담당자를 선택 상태로 만듭니다.
+                if (newlyCreatedCompany.contacts && newlyCreatedCompany.contacts.length > 0) {
+                    const newContact = newlyCreatedCompany.contacts[0];
+                    selectContact(newContact); // selectContact는 폼을 채우고 상태를 동기화합니다.
+                } else {
+                    // 담당자가 없다면 상세 정보 폼을 닫고 상태를 초기화합니다.
+                    setShowContactInformations(false);
+                    setContactFormData(initialContactState);
+                    setOriginalContactData(initialContactState);
+                    setIsNewContact(false);
+                }
+                setIsFormDirty(false); // isFormDirty는 selectContact 내부에서 false가 되므로 여기서 한번 더 확실히 처리
 
             } catch (error) {
                 console.error('신규 회사 생성 오류:', error);
                 alert(`저장 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
             }
         } else {
-            // 기존 회사 수정 로직
+            // --- 기존 회사 및 담당자 수정 로직 (핵심 수정 부분) ---
             try {
-                const apiCalls = [];
                 const companyDataChanged = JSON.stringify(formData) !== JSON.stringify(originalFormData);
                 const contactDataChanged = JSON.stringify(contactFormData) !== JSON.stringify(originalContactData);
 
+                // 1. 회사 정보 수정 API 호출 (필요한 경우)
                 if (companyDataChanged) {
                     const companyUpdateUrl = `http://localhost:8001/api/company-profile/${selectedCompany.id}`;
                     const companyPayload = {
@@ -552,14 +577,20 @@ const CompanyProfileForm: React.FC = () => {
                         bank_name: formData.bankName,
                         account_number: formData.accountNumber
                     };
-
-                    apiCalls.push(fetch(companyUpdateUrl, {
+                    const response = await fetch(companyUpdateUrl, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(companyPayload)
-                    }));
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`회사 정보 수정 실패: ${errorData.detail || '알 수 없는 오류'}`);
+                    }
+                    // 회사 정보 수정 성공 시, 원본 데이터를 현재 데이터와 동기화
+                    setOriginalFormData(formData);
                 }
 
+                // 2. 담당자 정보 수정/생성 API 호출 (필요한 경우)
                 if (contactDataChanged && (isNewContact || selectedContact)) {
                     const contactUrl = isNewContact
                         ? `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts`
@@ -571,6 +602,7 @@ const CompanyProfileForm: React.FC = () => {
                         department: contactFormData.department,
                         phone: contactFormData.phone,
                         email: contactFormData.email,
+                        is_primary: selectedContact ? selectedContact.is_primary : false, // 주담당자 여부는 별도 로직으로 관리해야 함
                         responsibility: contactFormData.responsibility,
                         work_style: contactFormData.workStyle,
                         personal_info: contactFormData.personalInfo,
@@ -579,27 +611,39 @@ const CompanyProfileForm: React.FC = () => {
                         project_experience: contactFormData.projectExperience,
                         notes: contactFormData.notes
                     };
-                    apiCalls.push(fetch(contactUrl, {
+
+                    const response = await fetch(contactUrl, {
                         method,
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(contactPayload)
-                    }));
-                }
+                    });
 
-                if (apiCalls.length === 0) return;
-                const responses = await Promise.all(apiCalls);
-                for (const response of responses) {
                     if (!response.ok) {
                         const errorData = await response.json();
-                        throw new Error(errorData.detail || '저장 중 오류가 발생했습니다.');
+                        throw new Error(`담당자 정보 저장 실패: ${errorData.detail || '알 수 없는 오류'}`);
                     }
+
+                    const savedContact: CompanyContactData = await response.json();
+
+                    // 3. 상태 직접 업데이트
+                    if (isNewContact) {
+                        // 새 담당자 추가 시: 담당자 목록에 추가
+                        setCompanyContacts(prev => [...prev, savedContact]);
+                    } else {
+                        // 기존 담당자 수정 시: 담당자 목록에서 해당 항목 교체
+                        setCompanyContacts(prev => prev.map(c => c.id === savedContact.id ? savedContact : c));
+                    }
+
+                    // 방금 저장된 담당자를 선택된 상태로 유지하고 폼 데이터 업데이트
+                    selectContact(savedContact);
                 }
 
-                alert('성공적으로 수정되었습니다.');
-                await selectCompany(selectedCompany.id);
+                alert('성공적으로 저장되었습니다.');
+                setIsFormDirty(false); // 모든 저장이 완료된 후 dirty 상태 해제
+                setIsNewContact(false); // 신규 등록 모드 해제
 
             } catch (error) {
-                console.error('기존 회사 수정 오류:', error);
+                console.error('기존 회사/담당자 수정 오류:', error);
                 alert(`수정 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
             }
         }
