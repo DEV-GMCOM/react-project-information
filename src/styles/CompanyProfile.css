@@ -770,6 +770,43 @@
     }
 }
 
+/* CompanyProfile.css에 추가 */
+
+/* 담당자 검색 결과 테이블 스타일 */
+.search-table .primary-badge {
+    background-color: #007bff;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 500;
+    margin-left: 6px;
+}
+
+/* 담당자 검색 결과 강조 */
+.search-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.search-table td strong {
+    color: #007bff;
+}
+
+/* 검색 정보 스타일 개선 */
+.search-info {
+    margin-bottom: 20px;
+    padding: 12px;
+    background: #e3f2fd;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
+}
+
+.search-info p {
+    margin: 0;
+    font-weight: 600;
+    color: #0056b3;
+}
+
 /* === 인쇄 스타일 === */
 @media print {
     .company-profile-container {

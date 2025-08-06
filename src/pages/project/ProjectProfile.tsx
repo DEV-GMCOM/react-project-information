@@ -1,6 +1,17 @@
 import React, { useState } from 'react';
 import '../../styles/ProjectProfile.css';
 
+
+// 한글 상태와 CSS 클래스명을 매핑하는 객체
+const statusClassMap = {
+    '논의중': 'discussion',
+    '취소': 'canceled',
+    '진행중': 'inprogress',
+    '완료': 'completed',
+    '보류': 'onhold',
+};
+
+
 interface ProjectProfile {
     // 프로젝트 기본 정보
     projectName: string;
@@ -17,6 +28,8 @@ interface ProjectProfile {
     expectedCompetitors: string;
     scoreTable: string;
     bidAmount: string;
+    // projectStatus: string;
+    projectStatus: keyof typeof statusClassMap;
 
     // 프로젝트 상세 정보
     purposeBackground: string;
@@ -51,6 +64,8 @@ const ProjectProfileForm: React.FC = () => {
         expectedCompetitors: '',
         scoreTable: '',
         bidAmount: '',
+        // projectStatus: Object.keys(statusClassMap)[0],
+        projectStatus: "논의중",
         purposeBackground: '',
         mainContent: '',
         coreRequirements: '',
@@ -167,15 +182,29 @@ const ProjectProfileForm: React.FC = () => {
                             {/*<td className="table-header table-header-empty"></td>*/}
                         </tr>
                         <tr>
-                            <td className="table-cell table-cell-label">프로젝트명</td>
+                            <td className="table-cell table-cell-label">프로젝트명 (상태)</td>
                             <td className="table-cell-input">
-                                <input
-                                    type="text"
-                                    name="projectName"
-                                    value={formData.projectName}
-                                    onChange={handleInputChange}
-                                    className="profile-input"
-                                />
+                                <div className="input-with-search">
+                                    <input
+                                        type="text"
+                                        name="projectName"
+                                        value={formData.projectName}
+                                        onChange={handleInputChange}
+                                        className="profile-input"
+                                    />
+                                    {/*<button*/}
+                                    {/*    type="button"*/}
+                                    {/*    className="search-btn"*/}
+                                    {/*    title="프로젝트 진행 상태"*/}
+                                    {/*>*/}
+                                    {/*    🔍*/}
+                                    {/*</button>*/}
+                                    {/* 상태 값을 표시할 span 태그 */}
+                                    <span className={`status-badge ${statusClassMap[formData.projectStatus] || 'default'}`}>
+                                        {formData.projectStatus}
+                                    </span>
+                                </div>
+
                             </td>
                             <td className="table-cell table-cell-label">유입경로</td>
                             <td className="table-cell-input">
@@ -418,7 +447,7 @@ const ProjectProfileForm: React.FC = () => {
                             </td>
                         </tr>
                         <tr>
-                            <td className="table-cell table-cell-label">비교</td>
+                            <td className="table-cell table-cell-label">비 고</td>
                             <td className="table-cell-input">
                                 <textarea
                                     name="comparison"
@@ -488,6 +517,18 @@ const ProjectProfileForm: React.FC = () => {
                                     value={formData.writerOpinion}
                                     onChange={handleBulletTextChange}
                                     placeholder="프로젝트 진행여부 판단 의견 요약"
+                                    className="profile-textarea textarea-large bullet-textarea"
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">진행 가부 사유</td>
+                            <td className="table-cell-input">
+                                <textarea
+                                    name="writerOpinion"
+                                    value={formData.writerOpinion}
+                                    onChange={handleBulletTextChange}
+                                    placeholder="프로젝트 진행 가부에 대한 분석 및 의견"
                                     className="profile-textarea textarea-large bullet-textarea"
                                 />
                             </td>

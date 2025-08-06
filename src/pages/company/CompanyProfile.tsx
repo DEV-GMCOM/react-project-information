@@ -19,6 +19,7 @@ interface CompanyContactData {
     organization_info?: string;
     relationship_info?: string;
     project_experience?: string;
+    notes?: string;
 }
 
 interface CompanyData {
@@ -57,7 +58,30 @@ interface ContactProfile {
     organizationInfo: string;
     relationship: string;
     projectExperience: string;
-    etcInfo?: string;
+    notes?: string;
+}
+
+// 👉 담당자 검색 결과 전용 타입 (기존 ContactSearchResult 대신)
+// 불필요한 타입들 제거하고 정리
+interface ContactSearchData {
+    id: number;
+    contact_name: string;
+    position?: string;
+    department?: string;
+    phone?: string;
+    email?: string;
+    is_primary: boolean;
+    responsibility?: string;
+    work_style?: string;
+    personal_info?: string;
+    organization_info?: string;
+    relationship_info?: string;
+    project_experience?: string;
+    company: {
+        id: number;
+        company_name: string;
+    };
+    notes?: string;
 }
 
 // 👉 NEW: API 요청용 타입 정의 추가
@@ -73,6 +97,7 @@ interface ContactCreatePayload {
     organization_info: string;
     relationship_info: string;
     project_experience: string;
+    notes?: string;
     reports?: any[];
 }
 
@@ -130,7 +155,7 @@ const CompanyProfileForm: React.FC = () => {
     const [isNewContact, setIsNewContact] = useState(false);
     const [isFormDirty, setIsFormDirty] = useState(false);
 
-    // 검색 관련 상태
+    // 회사 검색 관련 상태
     const [showSearchModal, setShowSearchModal] = useState(false);
     const [searchResults, setSearchResults] = useState<CompanyData[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
@@ -138,8 +163,15 @@ const CompanyProfileForm: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
-    // 👉 NEW: 담당자 검색 관련 상태
+    // 👉 담당자 검색 관련 상태 추가
     const [contactSearchTerm, setContactSearchTerm] = useState('');
+    //const [contactSearchResults, setContactSearchResults] = useState<CompanyContactData[]>([]);
+    const [contactSearchResults, setContactSearchResults] = useState<ContactSearchData[]>([]);  // 👈 타입 변경
+
+    const [contactSearchLoading, setContactSearchLoading] = useState(false);
+    const [showContactSearchModal, setShowContactSearchModal] = useState(false);
+    const [contactSearchCurrentPage, setContactSearchCurrentPage] = useState(1);
+    const [contactSearchTotalPages, setContactSearchTotalPages] = useState(1);
 
     // 컨택 리포트 상태
     const [existingReports, setExistingReports] = useState<Array<{ date: string; content: string; }>>([]);
@@ -181,19 +213,106 @@ const CompanyProfileForm: React.FC = () => {
         setContactSearchTerm(e.target.value);
     };
 
+    // 👉 NEW: 담당자 검색 실행
+// 수정 후
     const handleContactSearch = async () => {
-        if (!contactSearchTerm.trim()) {
-            alert('검색어를 입력해주세요.');
-            return;
-        }
+        // 검색어가 비어있든 아니든 항상 검색을 실행합니다.
+        setShowContactSearchModal(true);
+        setContactSearchCurrentPage(1);
+        await searchContacts(contactSearchTerm, 1);
+    };
 
+    // // 검색된 담당자 선택
+    // const selectSearchedContact = async (contact: ContactSearchResult) => {
+    //     try {
+    //         // 해당 담당자의 회사를 선택
+    //         await selectCompany(contact.company.id);
+    //
+    //         // 담당자 선택
+    //         selectContact(contact);
+    //
+    //         // 검색 모달 닫기
+    //         setShowContactSearchModal(false);
+    //         setContactSearchTerm('');
+    //
+    //         alert(`${contact.contact_name}(${contact.company.company_name}) 담당자가 선택되었습니다.`);
+    //     } catch (error) {
+    //         console.error('담당자 선택 오류:', error);
+    //         alert('담당자 선택 중 오류가 발생했습니다.');
+    //     }
+    // };
+
+    // 👉 NEW: 담당자 검색 API 호출
+    // 담당자 검색 실행 (타입 수정)
+    const searchContacts = async (keyword: string, page: number) => {
         try {
-            // TODO: 담당자 검색 API 호출
-            console.log('담당자 검색:', contactSearchTerm);
-            alert(`'${contactSearchTerm}' 담당자 검색 기능을 구현해주세요.`);
+            setContactSearchLoading(true);
+            const params = new URLSearchParams({
+                search: keyword,
+                skip: ((page - 1) * 10).toString(),
+                limit: '10'
+            });
+
+            const listUrl = `http://localhost:8001/api/company-profile/contacts/search?${params.toString()}`;
+            const countUrl = `http://localhost:8001/api/company-profile/contacts/search/count?${params.toString()}`;
+
+            const [listResponse, countResponse] = await Promise.all([
+                fetch(listUrl),
+                fetch(countUrl)
+            ]);
+
+            if (!listResponse.ok) throw new Error(`HTTP ${listResponse.status}`);
+            const contacts: ContactSearchData[] = await listResponse.json();  // 👈 타입 명시
+            setContactSearchResults(contacts);
+
+            if (countResponse.ok) {
+                const countData = await countResponse.json();
+                setContactSearchTotalPages(Math.ceil(countData.total_count / 10));
+            } else {
+                setContactSearchTotalPages(1);
+            }
         } catch (error) {
             console.error('담당자 검색 오류:', error);
             alert('담당자 검색 중 오류가 발생했습니다.');
+        } finally {
+            setContactSearchLoading(false);
+        }
+    };
+
+// 검색된 담당자 선택 (타입 수정)
+    const selectSearchedContact = async (contact: ContactSearchData) => {  // 👈 타입 변경
+        try {
+            // 해당 담당자의 회사를 선택
+            await selectCompany(contact.company.id);
+
+            // ContactSearchData를 CompanyContactData로 변환하여 선택
+            const contactData: CompanyContactData = {
+                id: contact.id,
+                contact_name: contact.contact_name,
+                position: contact.position,
+                department: contact.department,
+                phone: contact.phone,
+                email: contact.email,
+                is_primary: contact.is_primary,
+                responsibility: contact.responsibility,
+                work_style: contact.work_style,
+                personal_info: contact.personal_info,
+                organization_info: contact.organization_info,
+                relationship_info: contact.relationship_info,
+                project_experience: contact.project_experience,
+                notes: contact.notes
+            };
+
+            selectContact(contactData);
+
+            // 검색 모달 닫기
+            setShowContactSearchModal(false);
+            setContactSearchTerm('');
+
+            alert(`${contact.contact_name}(${contact.company.company_name}) 담당자가 선택되었습니다.`);
+        } catch (error) {
+            console.error('담당자 선택 오류:', error);
+            alert('담당자 선택 중 오류가 발생했습니다.');
         }
     };
 
@@ -319,7 +438,8 @@ const CompanyProfileForm: React.FC = () => {
             personalInfo: contact.personal_info || '',
             organizationInfo: contact.organization_info || '',
             relationship: contact.relationship_info || '',
-            projectExperience: contact.project_experience || ''
+            projectExperience: contact.project_experience || '',
+            notes: contact.notes || ''
         };
         setContactFormData(newContactFormData);
         setOriginalContactData(newContactFormData);
@@ -386,6 +506,7 @@ const CompanyProfileForm: React.FC = () => {
                         organization_info: contactFormData.organizationInfo,
                         relationship_info: contactFormData.relationship,
                         project_experience: contactFormData.projectExperience,
+                        notes: contactFormData.notes,
                         reports: []
                     };
                     creationPayload.contacts.push(contactPayload);
@@ -454,7 +575,8 @@ const CompanyProfileForm: React.FC = () => {
                         personal_info: contactFormData.personalInfo,
                         organization_info: contactFormData.organizationInfo,
                         relationship_info: contactFormData.relationship,
-                        project_experience: contactFormData.projectExperience
+                        project_experience: contactFormData.projectExperience,
+                        notes: contactFormData.notes
                     };
                     apiCalls.push(fetch(contactUrl, {
                         method,
@@ -483,6 +605,97 @@ const CompanyProfileForm: React.FC = () => {
     };
 
     // --- 렌더링 컴포넌트 ---
+
+    // 담당자 검색 모달 컴포넌트 (타입 수정)
+    const ContactSearchModal: React.FC = () => {
+        return showContactSearchModal ? (
+            <div className="modal-overlay" onClick={() => setShowContactSearchModal(false)}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <h3>담당자 검색</h3>
+                        <button
+                            className="modal-close-btn"
+                            onClick={() => setShowContactSearchModal(false)}
+                        >
+                            ✕
+                        </button>
+                    </div>
+
+                    <div className="modal-body">
+                        <div className="search-info">
+                            <p>검색어: "{contactSearchTerm}"</p>
+                        </div>
+
+                        {contactSearchLoading ? (
+                            <div className="loading">검색 중...</div>
+                        ) : (
+                            <>
+                                {contactSearchResults.length === 0 ? (
+                                    <div className="no-results">검색 결과가 없습니다.</div>
+                                ) : (
+                                    <table className="search-table">
+                                        <thead>
+                                        <tr>
+                                            <th>담당자명</th>
+                                            <th>직책</th>
+                                            <th>부서</th>
+                                            <th>회사명</th>
+                                            <th>연락처</th>
+                                            <th>선택</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {contactSearchResults.map((contact: ContactSearchData) => (  // 👈 타입 명시
+                                            <tr key={contact.id}>
+                                                <td>
+                                                    <strong>{contact.contact_name}</strong>
+                                                    {contact.is_primary &&
+                                                        <span className="primary-badge">주담당자</span>
+                                                    }
+                                                </td>
+                                                <td>{contact.position || '-'}</td>
+                                                <td>{contact.department || '-'}</td>
+                                                {/*<td>{contact.company.company_name}</td>*/}
+                                                <td>{contact.company ? contact.company.company_name : '회사 정보 없음'}</td>
+                                                <td>{contact.phone || '-'}</td>
+                                                <td>
+                                                    <button
+                                                        className="select-btn"
+                                                        onClick={() => selectSearchedContact(contact)}
+                                                    >
+                                                        선택
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        </tbody>
+                                    </table>
+                                )}
+
+                                {/* 페이지네이션 */}
+                                {contactSearchTotalPages > 1 && (
+                                    <div className="pagination">
+                                        {Array.from({ length: contactSearchTotalPages }, (_, i) => i + 1).map(page => (
+                                            <button
+                                                key={page}
+                                                className={`page-btn ${contactSearchCurrentPage === page ? 'active' : ''}`}
+                                                onClick={() => {
+                                                    setContactSearchCurrentPage(page);  // 👈 올바른 변수명
+                                                    searchContacts(contactSearchTerm, page);
+                                                }}
+                                            >
+                                                {page}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+        ) : null;
+    };
 
     // 검색 모달 컴포넌트
     const CompanySearchModal: React.FC = () => {
@@ -620,7 +833,7 @@ const CompanyProfileForm: React.FC = () => {
                                         value={formData.companyName}
                                         onChange={handleInputChange}
                                         className="profile-input"
-                                        placeholder="회사명을 입력하세요"
+                                        placeholder="회사명을 입력하고 검색하세요"
                                     />
                                     <button
                                         type="button"
@@ -640,6 +853,7 @@ const CompanyProfileForm: React.FC = () => {
                                     value={formData.basicOverview}
                                     onChange={handleInputChange}
                                     className="profile-input"
+                                    placeholder="삼성계열 광고대행사, 외국계 유한회사 등등.."
                                 />
                             </td>
                         </tr>
@@ -662,6 +876,7 @@ const CompanyProfileForm: React.FC = () => {
                                     value={formData.businessNumber}
                                     onChange={handleInputChange}
                                     className="profile-input"
+                                    placeholder="사업자번호 형식 검증은 추후 적용 예정"
                                 />
                             </td>
                         </tr>
@@ -780,6 +995,8 @@ const CompanyProfileForm: React.FC = () => {
                                             className="add-contact-btn"
                                             onClick={handleNewContactRegistration}
                                             disabled={!selectedCompany}
+                                            style={{ flex: '0 1 auto' }}
+                                            title={!selectedCompany ? "먼저 담당자가 등록될 회사를 선택하세요" : "담당자 정보를 새롭게 입력 합니다"}
                                         >
                                             담당자 신규 등록
                                         </button>
@@ -935,8 +1152,8 @@ const CompanyProfileForm: React.FC = () => {
                                     <td className="table-cell table-cell-label table-cell-top">비고 / 기타</td>
                                     <td className="table-cell-input" colSpan={3}>
                                         <textarea
-                                            name="etcInfo"
-                                            value={contactFormData.etcInfo}
+                                            name="notes"
+                                            value={contactFormData.notes}
                                             onChange={handleContactFormChange}
                                             className="profile-textarea textarea-medium"
                                         />
@@ -1068,6 +1285,7 @@ const CompanyProfileForm: React.FC = () => {
                             className="action-btn save-btn"
                             onClick={handleSubmit}
                             disabled={!isFormDirty}
+                            title={!isFormDirty ? "변경된 데이터가 있어야만 저장 가능합니다." : ""}
                         >
                             💾 저장
                         </button>
@@ -1097,8 +1315,9 @@ const CompanyProfileForm: React.FC = () => {
                 </div>
             </div>
 
-            {/* 검색 모달 */}
+            {/* 검색 모달들 */}
             <CompanySearchModal />
+            <ContactSearchModal />  {/* 👈 추가 */}
         </div>
     );
 };
