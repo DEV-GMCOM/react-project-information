@@ -172,6 +172,20 @@
     border: 1px solid #ddd;
 }
 
+/* 담당자 검색 모달의 접두사 텍스트 스타일 */
+.search-prefix {
+    color: #007bff; /* 파란색 */
+    font-weight: bold; /* 볼드체 */
+    white-space: nowrap; /* 줄바꿈 방지 */
+    margin-right: 8px; /* 오른쪽 입력 필드와의 간격 */
+}
+
+/* input-with-search 클래스에 align-items 속성 추가 (정렬 개선) */
+.input-with-search {
+    display: flex;
+    align-items: center;
+}
+
 /* 날짜 입력 필드 (CompanyProfile 방식) */
 .project-date-input {
     width: 100%;
@@ -824,6 +838,220 @@
         margin-bottom: 20px;
     }
 }
+
+/* [요구사항 1] 최종 수정자 표시 영역 스타일 */
+.writer-display {
+    font-size: 13px;
+    color: #555;
+    text-align: right;
+    padding: 10px 15px 0 0;
+    height: 42px; /* 기존 writer-field의 높이와 유사하게 맞춤 */
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.writer-display span:first-child {
+    font-weight: bold;
+    margin-right: 5px;
+}
+/* CompanyProfile에서 가져온 담당자 섹션 스타일 */
+.contact-section {
+    width: 100%;
+}
+.contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+.contact-item {
+    padding: 12px 16px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 2px solid #e9ecef;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.contact-item:hover {
+    background-color: #e9ecef;
+    border-color: #007bff;
+}
+.contact-item.selected {
+    background-color: #e3f2fd;
+    border-color: #007bff;
+}
+.contact-info-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.contact-separator { color: #ddd; }
+.contact-name { font-weight: 600; }
+.primary-badge {
+    background-color: #007bff;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    margin-left: 6px;
+}
+.contact-position { color: #666; }
+.contact-phone { color: #007bff; }
+.no-contacts {
+    color: #999;
+    padding: 16px;
+    text-align: center;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+.add-contact-section {
+    display: flex;
+    justify-content: center;
+    padding-top: 12px;
+    border-top: 1px solid #e9ecef;
+}
+.add-contact-btn {
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.add-contact-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+.readonly-field {
+    background-color: #f8f9fa !important;
+    color: #6c757d !important;
+    cursor: not-allowed;
+}
+
+.input-with-search .search-btn {
+    flex-shrink: 0;
+}
+
+
+/* 선택된 담당자 버튼 스타일 */
+.selected-contact-btn {
+    width: 100%;
+    padding: 6px 10px;
+    background-color: #e3f2fd;
+    border: 1px solid #007bff;
+    color: #0056b3;
+    border-radius: 4px;
+    text-align: left;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.selected-contact-btn:hover {
+    background-color: #d1eaff;
+}
+
+/* 상세 정보 모달 스타일 */
+.modal-content.wide-modal {
+    max-width: 800px;
+}
+.detail-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+.detail-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.detail-section h4 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 16px;
+    border-left: 3px solid #007bff;
+    padding-left: 8px;
+    color: #333;
+}
+.detail-section p {
+    margin: 6px 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+.report-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #f0f0f0;
+    border-radius: 4px;
+    padding: 10px;
+}
+.report-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+}
+.report-item:last-child {
+    border-bottom: none;
+}
+
+/* 담당자 검색 버튼만 있을 때의 컨테이너 */
+.contact-search-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* 버튼을 가운데 정렬 */
+    min-height: 35px; /* 기존 input과 높이를 맞춤 */
+}
+
+/* 선택된 담당자를 표시하는 컨테이너 */
+.selected-contact-container {
+    display: flex;
+    align-items: center;
+    min-height: 35px;
+    padding: 2px 0;
+}
+
+/* 선택된 담당자 버튼 (status-badge와 유사한 스타일) */
+.contact-badge {
+    background: #e3f2fd;
+    color: #1976d2;
+    font-weight: 500;
+    border: 1px solid #bde0fe;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    /* 버튼 크기를 키우기 위해 padding 값을 늘립니다. */
+    padding: 6px 12px;
+
+    /* 버튼 내 텍스트 크기를 키웁니다. */
+    font-size: 13px;
+}
+
+.contact-badge:hover {
+    background-color: #d1eaff;
+}
+
+/*!* 담당자 항목의 새 컨테이너 스타일 *!*/
+/*.contact-input-wrapper {*/
+/*    display: flex;*/
+/*    !* 이 속성이 내부 요소들을 세로축 가운데로 정렬합니다. *!*/
+/*    align-items: center;*/
+/*    gap: 8px; !* 버튼과 뱃지 사이의 간격 *!*/
+/*    min-height: 35px;*/
+/*}*/
+
+/* 상세 정보 모달 스타일 */
+.modal-content.wide-modal { max-width: 800px; }
+.detail-section { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+.detail-section:last-child { border-bottom: none; }
+.detail-section h4 { margin-top: 0; margin-bottom: 12px; font-size: 16px; border-left: 3px solid #007bff; padding-left: 8px; }
+.detail-section p { margin: 6px 0; font-size: 14px; }
+.report-list { max-height: 200px; overflow-y: auto; border: 1px solid #f0f0f0; padding: 10px; border-radius: 4px; }
+.report-item { padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+.report-item:last-child { border-bottom: none; }
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
