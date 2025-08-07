@@ -1,4 +1,4 @@
-// CompanyProfile.tsx - 완전한 소스 코드 (요구사항 반영)
+// CompanyProfile.tsx - 완전한 소스 코드 (모든 수정 사항 반영)
 
 import React, { useState, useEffect } from 'react';
 import clsx from 'clsx';
@@ -6,6 +6,21 @@ import { handleApiError } from '../../api/utils/errorUtils';
 import '../../styles/CompanyProfile.css';
 
 // --- 타입 정의 ---
+// API 응답용 (ID 항상 존재)
+interface ContactReportResponse {
+    id: number;
+    contact_date: string;
+    content: string;
+    created_at: string;
+    updated_at?: string;
+}
+
+// 생성 요청용 (ID 없음)
+interface ContactReportCreate {
+    contact_date: string;
+    content: string;
+}
+
 interface CompanyContactData {
     id: number;
     contact_name: string;
@@ -21,6 +36,7 @@ interface CompanyContactData {
     relationship_info?: string;
     project_experience?: string;
     notes?: string;
+    reports?: ContactReportResponse[];
 }
 
 interface CompanyData {
@@ -59,11 +75,10 @@ interface ContactProfile {
     organizationInfo: string;
     relationship: string;
     projectExperience: string;
-    notes?: string;
+    notes: string;
 }
 
-// 👉 담당자 검색 결과 전용 타입 (기존 ContactSearchResult 대신)
-// 불필요한 타입들 제거하고 정리
+// 담당자 검색 결과 전용 타입
 interface ContactSearchData {
     id: number;
     contact_name: string;
@@ -82,10 +97,10 @@ interface ContactSearchData {
         id: number;
         company_name: string;
     };
-    notes?: string;
+    notes?: string; // 👈 수정: optional로 변경
 }
 
-// 👉 NEW: API 요청용 타입 정의 추가
+// API 요청용 타입 정의
 interface ContactCreatePayload {
     contact_name: string;
     position: string;
@@ -136,7 +151,8 @@ const initialContactState: ContactProfile = {
     personalInfo: '',
     organizationInfo: '',
     relationship: '',
-    projectExperience: ''
+    projectExperience: '',
+    notes: ''
 };
 
 const CompanyProfileForm: React.FC = () => {
@@ -164,31 +180,36 @@ const CompanyProfileForm: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
-    // 👉 담당자 검색 관련 상태 추가
+    // 담당자 검색 관련 상태
     const [contactSearchTerm, setContactSearchTerm] = useState('');
-    //const [contactSearchResults, setContactSearchResults] = useState<CompanyContactData[]>([]);
-    const [contactSearchResults, setContactSearchResults] = useState<ContactSearchData[]>([]);  // 👈 타입 변경
-
+    const [contactSearchResults, setContactSearchResults] = useState<ContactSearchData[]>([]);
     const [contactSearchLoading, setContactSearchLoading] = useState(false);
     const [showContactSearchModal, setShowContactSearchModal] = useState(false);
     const [contactSearchCurrentPage, setContactSearchCurrentPage] = useState(1);
     const [contactSearchTotalPages, setContactSearchTotalPages] = useState(1);
 
-    // 컨택 리포트 상태
-    const [existingReports, setExistingReports] = useState<Array<{ date: string; content: string; }>>([]);
+    // 컨택 리포트 관련 상태
+    const [contactReports, setContactReports] = useState<ContactReportResponse[]>([]);
     const [newReportDate, setNewReportDate] = useState('');
     const [newReportContent, setNewReportContent] = useState('');
+    const [reportLoading, setReportLoading] = useState(false);
+    // 👉 추가: 임시 리포트 목록 (아직 저장되지 않은 리포트들)
+    const [tempReports, setTempReports] = useState<Array<{id: string, contact_date: string, content: string, isTemp: boolean}>>([]);
+    // 👉 추가: 리포트 원본 상태 (수정 감지용)
+    const [originalTempReports, setOriginalTempReports] = useState<Array<{id: string, contact_date: string, content: string, isTemp: boolean}>>([]);
 
     // --- useEffect ---
     useEffect(() => {
         const companyDataChanged = JSON.stringify(formData) !== JSON.stringify(originalFormData);
         const contactDataChanged = JSON.stringify(contactFormData) !== JSON.stringify(originalContactData);
         const isNewContactTyping = isNewContact && JSON.stringify(contactFormData) !== JSON.stringify(initialContactState);
+        // 👉 수정: 임시 리포트 변경 감지
+        const tempReportChanged = JSON.stringify(tempReports) !== JSON.stringify(originalTempReports);
 
-        setIsFormDirty(companyDataChanged || contactDataChanged || isNewContactTyping);
-    }, [formData, contactFormData, originalFormData, originalContactData, isNewContact]);
+        setIsFormDirty(companyDataChanged || contactDataChanged || isNewContactTyping || tempReportChanged);
+    }, [formData, contactFormData, originalFormData, originalContactData, isNewContact, tempReports, originalTempReports]);
 
-    // 👉 NEW: 회사명 변경 시 담당자 검색 초기화
+    // 회사명 변경 시 담당자 검색 초기화
     useEffect(() => {
         if (formData.companyName) {
             setContactSearchTerm('');
@@ -209,42 +230,19 @@ const CompanyProfileForm: React.FC = () => {
         setContactFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // 👉 NEW: 담당자 검색 핸들러
+    // 담당자 검색 핸들러
     const handleContactSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setContactSearchTerm(e.target.value);
     };
 
-    // 👉 NEW: 담당자 검색 실행
-// 수정 후
+    // 담당자 검색 실행
     const handleContactSearch = async () => {
-        // 검색어가 비어있든 아니든 항상 검색을 실행합니다.
         setShowContactSearchModal(true);
         setContactSearchCurrentPage(1);
         await searchContacts(contactSearchTerm, 1);
     };
 
-    // // 검색된 담당자 선택
-    // const selectSearchedContact = async (contact: ContactSearchResult) => {
-    //     try {
-    //         // 해당 담당자의 회사를 선택
-    //         await selectCompany(contact.company.id);
-    //
-    //         // 담당자 선택
-    //         selectContact(contact);
-    //
-    //         // 검색 모달 닫기
-    //         setShowContactSearchModal(false);
-    //         setContactSearchTerm('');
-    //
-    //         alert(`${contact.contact_name}(${contact.company.company_name}) 담당자가 선택되었습니다.`);
-    //     } catch (error) {
-    //         console.error('담당자 선택 오류:', error);
-    //         alert('담당자 선택 중 오류가 발생했습니다.');
-    //     }
-    // };
-
-    // 👉 NEW: 담당자 검색 API 호출
-    // 담당자 검색 실행 (타입 수정)
+    // 담당자 검색 API 호출
     const searchContacts = async (keyword: string, page: number) => {
         try {
             setContactSearchLoading(true);
@@ -263,7 +261,7 @@ const CompanyProfileForm: React.FC = () => {
             ]);
 
             if (!listResponse.ok) throw new Error(`HTTP ${listResponse.status}`);
-            const contacts: ContactSearchData[] = await listResponse.json();  // 👈 타입 명시
+            const contacts: ContactSearchData[] = await listResponse.json();
             setContactSearchResults(contacts);
 
             if (countResponse.ok) {
@@ -280,8 +278,8 @@ const CompanyProfileForm: React.FC = () => {
         }
     };
 
-// 검색된 담당자 선택 (타입 수정)
-    const selectSearchedContact = async (contact: ContactSearchData) => {  // 👈 타입 변경
+    // 검색된 담당자 선택
+    const selectSearchedContact = async (contact: ContactSearchData) => {
         try {
             // 해당 담당자의 회사를 선택
             await selectCompany(contact.company.id);
@@ -317,13 +315,112 @@ const CompanyProfileForm: React.FC = () => {
         }
     };
 
-    // 컨택 리포트 추가
+    // 컨택 리포트 추가 - 👉 수정: 화면 리스트에 즉시 추가, DB 저장은 나중에
     const handleAddReport = () => {
-        if (newReportDate && newReportContent) {
-            setExistingReports(prev => [...prev, { date: newReportDate, content: newReportContent }]);
-            setNewReportDate('');
-            setNewReportContent('');
+        if (!newReportDate || !newReportContent) {
+            alert('날짜와 내용을 모두 입력해주세요.');
+            return;
         }
+
+        // 임시 ID 생성 (현재 시간 기준)
+        const tempId = `temp_${Date.now()}`;
+
+        // 임시 리포트 객체 생성
+        const newTempReport = {
+            id: tempId,
+            contact_date: newReportDate,
+            content: newReportContent,
+            isTemp: true
+        };
+
+        // 임시 리포트 목록에 추가하고 날짜순 정렬
+        setTempReports(prev => {
+            const updated = [...prev, newTempReport];
+            // 날짜 오름차순 정렬 (과거순)
+            return updated.sort((a, b) => new Date(a.contact_date).getTime() - new Date(b.contact_date).getTime());
+        });
+
+        // 입력 필드 초기화
+        setNewReportDate('');
+        setNewReportContent('');
+
+        alert('리포트가 목록에 추가되었습니다. 저장 버튼을 눌러 최종 저장해주세요.');
+    };
+
+    // 컨택 리포트 로드 함수
+    const loadContactReports = async (contactId: number) => {
+        if (!selectedCompany) return;
+
+        try {
+            setReportLoading(true);
+            const response = await fetch(
+                `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts/${contactId}/reports`
+            );
+
+            if (response.ok) {
+                const reports = await response.json();
+                setContactReports(reports);
+            }
+        } catch (error) {
+            console.error('리포트 로드 오류:', error);
+        } finally {
+            setReportLoading(false);
+        }
+    };
+
+    // 👉 수정: 여러 임시 리포트를 실제로 저장하는 함수
+    const saveTempReports = async () => {
+        if (!selectedCompany || !selectedContact || tempReports.length === 0) {
+            return; // 저장할 리포트가 없으면 그냥 리턴
+        }
+
+        try {
+            // 모든 임시 리포트를 순차적으로 저장
+            for (const tempReport of tempReports) {
+                const response = await fetch(
+                    `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts/${selectedContact.id}/reports`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contact_date: tempReport.contact_date,
+                            content: tempReport.content
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`리포트 저장 실패: ${errorData.detail}`);
+                }
+            }
+
+            // 저장 완료 후 리포트 목록 다시 로드
+            await loadContactReports(selectedContact.id);
+
+            // 임시 리포트 목록 초기화
+            setTempReports([]);
+            setOriginalTempReports([]);
+
+            return true;
+        } catch (error) {
+            console.error('리포트 저장 오류:', error);
+            throw error;
+        }
+    };
+
+    // 👉 추가: 전체 리포트 목록 생성 함수 (DB 리포트 + 임시 리포트 합쳐서 정렬)
+    const getAllReports = () => {
+        // DB에서 가져온 리포트와 임시 리포트를 합치고 날짜순 정렬
+        const dbReports = contactReports.map(report => ({
+            ...report,
+            isTemp: false
+        }));
+
+        const allReports = [...dbReports, ...tempReports];
+
+        // 날짜 내림차순 정렬 (최신순)
+        return allReports.sort((a, b) => new Date(a.contact_date).getTime() - new Date(b.contact_date).getTime());
     };
 
     // 인쇄
@@ -339,6 +436,11 @@ const CompanyProfileForm: React.FC = () => {
             setShowContactInformations(selectedContact !== null);
             setIsNewContact(false);
             setIsFormDirty(false);
+
+            // 👉 수정: 임시 리포트도 원본으로 되돌리기
+            setTempReports(originalTempReports);
+            setNewReportDate('');
+            setNewReportContent('');
         }
     };
 
@@ -418,6 +520,14 @@ const CompanyProfileForm: React.FC = () => {
             setIsFormDirty(false);
             setShowSearchModal(false);
 
+            // 👉 수정: 리포트 상태 초기화 추가
+            setContactReports([]);
+            setTempReports([]);
+            setOriginalTempReports([]);
+            setNewReportDate('');
+            setNewReportContent('');
+            setReportLoading(false);
+
             alert(`회사 "${detailedCompany.company_name}"이 선택되었습니다.`);
         } catch (error) {
             handleApiError(error);
@@ -425,7 +535,7 @@ const CompanyProfileForm: React.FC = () => {
         }
     };
 
-    // 👉 수정된 담당자 선택 함수 (selectContact)
+    // 담당자 선택 함수
     const selectContact = (contact: CompanyContactData) => {
         setSelectedContact(contact);
         const newContactFormData = {
@@ -447,6 +557,13 @@ const CompanyProfileForm: React.FC = () => {
         setShowContactInformations(true);
         setIsNewContact(false);
         setIsFormDirty(false);
+
+        // 컨택 리포트 로드
+        loadContactReports(contact.id);
+
+        // 👉 수정: 임시 리포트 원본 상태 설정 (기존 담당자 선택 시는 빈 상태가 원본)
+        setTempReports([]);
+        setOriginalTempReports([]);
     };
 
     // 담당자 신규 등록 모드
@@ -461,17 +578,23 @@ const CompanyProfileForm: React.FC = () => {
         setShowContactInformations(true);
         setIsNewContact(true);
         setIsFormDirty(false);
+
+        // 👉 수정: 리포트 상태 초기화 추가
+        setContactReports([]);
+        setTempReports([]);
+        setOriginalTempReports([]);
+        setNewReportDate('');
+        setNewReportContent('');
     };
 
     // 메인 저장 함수
-    // 메인 저장 함수 (수정된 버전)
     const handleSubmit = async () => {
         if (!isFormDirty) {
             alert('변경된 내용이 없습니다.');
             return;
         }
 
-        // 신규 회사 생성 로직 (이 부분은 기존 로직과 유사하게 유지하되, 저장 후 상태 처리를 개선합니다)
+        // 신규 회사 생성 로직
         if (!selectedCompany) {
             if (!formData.companyName) {
                 alert('회사명을 입력해주세요.');
@@ -525,10 +648,10 @@ const CompanyProfileForm: React.FC = () => {
                 const newlyCreatedCompany: CompanyData = await response.json();
                 alert(`"${newlyCreatedCompany.company_name}" 회사가 성공적으로 등록되었습니다.`);
 
-                // 👉 수정: selectCompany 대신 상태를 직접 업데이트하여 UI 연속성 유지
+                // 상태를 직접 업데이트하여 UI 연속성 유지
                 const newFormData = {
                     companyName: newlyCreatedCompany.company_name,
-                    basicOverview: (newlyCreatedCompany as any).basic_overview || '', // 백엔드 응답 타입에 맞게 조정 필요
+                    basicOverview: (newlyCreatedCompany as any).basic_overview || '',
                     representative: newlyCreatedCompany.representative || '',
                     businessNumber: newlyCreatedCompany.business_number || '',
                     contactInfo: (newlyCreatedCompany as any).contact_info || '',
@@ -544,7 +667,7 @@ const CompanyProfileForm: React.FC = () => {
                 // 만약 담당자도 함께 생성되었다면, 그 담당자를 선택 상태로 만듭니다.
                 if (newlyCreatedCompany.contacts && newlyCreatedCompany.contacts.length > 0) {
                     const newContact = newlyCreatedCompany.contacts[0];
-                    selectContact(newContact); // selectContact는 폼을 채우고 상태를 동기화합니다.
+                    selectContact(newContact);
                 } else {
                     // 담당자가 없다면 상세 정보 폼을 닫고 상태를 초기화합니다.
                     setShowContactInformations(false);
@@ -552,14 +675,14 @@ const CompanyProfileForm: React.FC = () => {
                     setOriginalContactData(initialContactState);
                     setIsNewContact(false);
                 }
-                setIsFormDirty(false); // isFormDirty는 selectContact 내부에서 false가 되므로 여기서 한번 더 확실히 처리
+                setIsFormDirty(false);
 
             } catch (error) {
                 console.error('신규 회사 생성 오류:', error);
                 alert(`저장 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
             }
         } else {
-            // --- 기존 회사 및 담당자 수정 로직 (핵심 수정 부분) ---
+            // 기존 회사 및 담당자 수정 로직
             try {
                 const companyDataChanged = JSON.stringify(formData) !== JSON.stringify(originalFormData);
                 const contactDataChanged = JSON.stringify(contactFormData) !== JSON.stringify(originalContactData);
@@ -602,7 +725,7 @@ const CompanyProfileForm: React.FC = () => {
                         department: contactFormData.department,
                         phone: contactFormData.phone,
                         email: contactFormData.email,
-                        is_primary: selectedContact ? selectedContact.is_primary : false, // 주담당자 여부는 별도 로직으로 관리해야 함
+                        is_primary: selectedContact ? selectedContact.is_primary : false,
                         responsibility: contactFormData.responsibility,
                         work_style: contactFormData.workStyle,
                         personal_info: contactFormData.personalInfo,
@@ -638,9 +761,18 @@ const CompanyProfileForm: React.FC = () => {
                     selectContact(savedContact);
                 }
 
+                // 👉 수정: 임시 리포트 저장 처리
+                if (tempReports.length > 0 && selectedContact) {
+                    try {
+                        await saveTempReports();
+                    } catch (error) {
+                        throw new Error(`리포트 저장 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+                    }
+                }
+
                 alert('성공적으로 저장되었습니다.');
-                setIsFormDirty(false); // 모든 저장이 완료된 후 dirty 상태 해제
-                setIsNewContact(false); // 신규 등록 모드 해제
+                setIsFormDirty(false);
+                setIsNewContact(false);
 
             } catch (error) {
                 console.error('기존 회사/담당자 수정 오류:', error);
@@ -649,9 +781,50 @@ const CompanyProfileForm: React.FC = () => {
         }
     };
 
+    // 새 컨택 리포트 추가
+    const addContactReport = async () => {
+        if (!selectedCompany || !selectedContact || !newReportDate || !newReportContent) {
+            alert('날짜와 내용을 모두 입력해주세요.');
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts/${selectedContact.id}/reports`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contact_date: newReportDate,
+                        content: newReportContent
+                    })
+                }
+            );
+
+            if (response.ok) {
+                const newReport = await response.json();
+                setContactReports(prev => [newReport, ...prev]);
+                setNewReportDate('');
+                setNewReportContent('');
+                alert('리포트가 추가되었습니다.');
+            } else {
+                const errorData = await response.json();
+                alert(`리포트 추가 실패: ${errorData.detail}`);
+            }
+        } catch (error) {
+            console.error('리포트 추가 오류:', error);
+            alert('리포트 추가 중 오류가 발생했습니다.');
+        }
+    };
+
+    // 컨택 리포트 삭제 - 삭제 기능 제거됨
+    // const deleteContactReport = async (reportId: number) => {
+    //     // 삭제 기능은 지원하지 않음 (요구사항에 따라 INSERT와 READ만 지원)
+    // };
+
     // --- 렌더링 컴포넌트 ---
 
-    // 담당자 검색 모달 컴포넌트 (타입 수정)
+    // 담당자 검색 모달 컴포넌트
     const ContactSearchModal: React.FC = () => {
         return showContactSearchModal ? (
             <div className="modal-overlay" onClick={() => setShowContactSearchModal(false)}>
@@ -690,7 +863,7 @@ const CompanyProfileForm: React.FC = () => {
                                         </tr>
                                         </thead>
                                         <tbody>
-                                        {contactSearchResults.map((contact: ContactSearchData) => (  // 👈 타입 명시
+                                        {contactSearchResults.map((contact: ContactSearchData) => (
                                             <tr key={contact.id}>
                                                 <td>
                                                     <strong>{contact.contact_name}</strong>
@@ -700,7 +873,6 @@ const CompanyProfileForm: React.FC = () => {
                                                 </td>
                                                 <td>{contact.position || '-'}</td>
                                                 <td>{contact.department || '-'}</td>
-                                                {/*<td>{contact.company.company_name}</td>*/}
                                                 <td>{contact.company ? contact.company.company_name : '회사 정보 없음'}</td>
                                                 <td>{contact.phone || '-'}</td>
                                                 <td>
@@ -725,7 +897,7 @@ const CompanyProfileForm: React.FC = () => {
                                                 key={page}
                                                 className={`page-btn ${contactSearchCurrentPage === page ? 'active' : ''}`}
                                                 onClick={() => {
-                                                    setContactSearchCurrentPage(page);  // 👈 올바른 변수명
+                                                    setContactSearchCurrentPage(page);
                                                     searchContacts(contactSearchTerm, page);
                                                 }}
                                             >
@@ -877,7 +1049,6 @@ const CompanyProfileForm: React.FC = () => {
                                         name="companyName"
                                         value={formData.companyName}
                                         onChange={handleInputChange}
-                                        // className="profile-input"
                                         className={clsx('profile-input', {
                                             'input-modified': formData.companyName !== originalFormData.companyName
                                         })}
@@ -900,7 +1071,6 @@ const CompanyProfileForm: React.FC = () => {
                                     name="basicOverview"
                                     value={formData.basicOverview}
                                     onChange={handleInputChange}
-                                    // className="profile-input"
                                     className={clsx('profile-input', {
                                         'input-modified': formData.basicOverview !== originalFormData.basicOverview
                                     })}
@@ -916,7 +1086,6 @@ const CompanyProfileForm: React.FC = () => {
                                     name="representative"
                                     value={formData.representative}
                                     onChange={handleInputChange}
-                                    // className="profile-input"
                                     className={clsx('profile-input', {
                                         'input-modified': formData.representative !== originalFormData.representative
                                     })}
@@ -929,7 +1098,6 @@ const CompanyProfileForm: React.FC = () => {
                                     name="businessNumber"
                                     value={formData.businessNumber}
                                     onChange={handleInputChange}
-                                    // className="profile-input"
                                     className={clsx('profile-input', {
                                         'input-modified': formData.businessNumber !== originalFormData.businessNumber
                                     })}
@@ -945,7 +1113,6 @@ const CompanyProfileForm: React.FC = () => {
                                     name="contactInfo"
                                     value={formData.contactInfo}
                                     onChange={handleInputChange}
-                                    // className="profile-input"
                                     className={clsx('profile-input', {
                                         'input-modified': formData.contactInfo !== originalFormData.contactInfo
                                     })}
@@ -958,7 +1125,6 @@ const CompanyProfileForm: React.FC = () => {
                                     name="address"
                                     value={formData.address}
                                     onChange={handleInputChange}
-                                    // className="profile-input"
                                     className={clsx('profile-input', {
                                         'input-modified': formData.address !== originalFormData.address
                                     })}
@@ -973,7 +1139,6 @@ const CompanyProfileForm: React.FC = () => {
                                     name="bankName"
                                     value={formData.bankName}
                                     onChange={handleInputChange}
-                                    // className="profile-input"
                                     className={clsx('profile-input', {
                                         'input-modified': formData.bankName !== originalFormData.bankName
                                     })}
@@ -986,7 +1151,6 @@ const CompanyProfileForm: React.FC = () => {
                                     name="accountNumber"
                                     value={formData.accountNumber}
                                     onChange={handleInputChange}
-                                    // className="profile-input"
                                     className={clsx('profile-input', {
                                         'input-modified': formData.accountNumber !== originalFormData.accountNumber
                                     })}
@@ -994,12 +1158,12 @@ const CompanyProfileForm: React.FC = () => {
                             </td>
                         </tr>
 
-                        {/* 👉 수정된 담당자 섹션 */}
+                        {/* 담당자 섹션 */}
                         <tr>
                             <td className="table-cell table-cell-label table-cell-top">담당자</td>
                             <td className="table-cell-input" colSpan={3}>
                                 <div className="contact-section">
-                                    {/* 👉 수정: 담당자 검색 필드를 상시 노출 */}
+                                    {/* 담당자 검색 필드 */}
                                     <div className="input-with-search contact-search-field contact-search-visible">
                                         <input
                                             type="text"
@@ -1032,7 +1196,6 @@ const CompanyProfileForm: React.FC = () => {
                                                     className={`contact-item ${selectedContact?.id === contact.id ? 'selected' : ''}`}
                                                     onClick={() => selectContact(contact)}
                                                 >
-                                                    {/* 👉 수정: 한 줄에 모든 정보 표시 */}
                                                     <div className="contact-info-line">
                                                         <span className="contact-name">
                                                             {contact.contact_name}
@@ -1057,7 +1220,7 @@ const CompanyProfileForm: React.FC = () => {
                                         </div>
                                     )}
 
-                                    {/* 👉 수정: '담당자 찾기' 버튼 제거, '담당자 신규 등록'만 중앙 정렬 */}
+                                    {/* 담당자 신규 등록 버튼 */}
                                     <div className="add-contact-section">
                                         <button
                                             type="button"
@@ -1087,13 +1250,11 @@ const CompanyProfileForm: React.FC = () => {
                                 `(${selectedContact.contact_name})` :
                                 '(신규 등록)'}
                             </h3>
-                            <table className="profile-table" >
+                            <table className="profile-table">
                                 <tbody>
                                 <tr>
                                     <td className="table-header">구분</td>
                                     <td className="table-header" colSpan={4}>내용</td>
-                                    {/*<td className="table-header">구분</td>*/}
-                                    {/*<td className="table-header">내용</td>*/}
                                 </tr>
                                 <tr>
                                     <td className="table-cell table-cell-label">소속/부서</td>
@@ -1103,7 +1264,6 @@ const CompanyProfileForm: React.FC = () => {
                                             name="department"
                                             value={contactFormData.department}
                                             onChange={handleContactFormChange}
-                                            // className="profile-input"
                                             className={clsx('profile-input', {
                                                 'input-modified': contactFormData.department !== originalContactData.department
                                             })}
@@ -1116,7 +1276,6 @@ const CompanyProfileForm: React.FC = () => {
                                             name="contactName"
                                             value={contactFormData.contactName}
                                             onChange={handleContactFormChange}
-                                            // className="profile-input"
                                             className={clsx('profile-input', {
                                                 'input-modified': contactFormData.contactName !== originalContactData.contactName
                                             })}
@@ -1131,7 +1290,6 @@ const CompanyProfileForm: React.FC = () => {
                                             name="position"
                                             value={contactFormData.position}
                                             onChange={handleContactFormChange}
-                                            // className="profile-input"
                                             className={clsx('profile-input', {
                                                 'input-modified': contactFormData.position !== originalContactData.position
                                             })}
@@ -1144,7 +1302,6 @@ const CompanyProfileForm: React.FC = () => {
                                             name="phone"
                                             value={contactFormData.phone}
                                             onChange={handleContactFormChange}
-                                            // className="profile-input"
                                             className={clsx('profile-input', {
                                                 'input-modified': contactFormData.phone !== originalContactData.phone
                                             })}
@@ -1159,7 +1316,6 @@ const CompanyProfileForm: React.FC = () => {
                                             name="email"
                                             value={contactFormData.email}
                                             onChange={handleContactFormChange}
-                                            // className="profile-input"
                                             className={clsx('profile-input', {
                                                 'input-modified': contactFormData.email !== originalContactData.email
                                             })}
@@ -1172,7 +1328,6 @@ const CompanyProfileForm: React.FC = () => {
                                             name="responsibility"
                                             value={contactFormData.responsibility}
                                             onChange={handleContactFormChange}
-                                            // className="profile-input"
                                             className={clsx('profile-input', {
                                                 'input-modified': contactFormData.responsibility !== originalContactData.responsibility
                                             })}
@@ -1187,7 +1342,6 @@ const CompanyProfileForm: React.FC = () => {
                                         name="workStyle"
                                         value={contactFormData.workStyle}
                                         onChange={handleContactFormChange}
-                                        // className="profile-textarea textarea-medium"
                                         className={clsx('profile-textarea', 'textarea-medium', {
                                             'input-modified': contactFormData.workStyle !== originalContactData.workStyle
                                         })}
@@ -1201,7 +1355,6 @@ const CompanyProfileForm: React.FC = () => {
                                             name="personalInfo"
                                             value={contactFormData.personalInfo}
                                             onChange={handleContactFormChange}
-                                            // className="profile-textarea textarea-medium"
                                             className={clsx('profile-textarea', 'textarea-medium', {
                                                 'input-modified': contactFormData.personalInfo !== originalContactData.personalInfo
                                             })}
@@ -1215,7 +1368,6 @@ const CompanyProfileForm: React.FC = () => {
                                             name="organizationInfo"
                                             value={contactFormData.organizationInfo}
                                             onChange={handleContactFormChange}
-                                            // className="profile-textarea textarea-medium"
                                             className={clsx('profile-textarea', 'textarea-medium', {
                                                 'input-modified': contactFormData.organizationInfo !== originalContactData.organizationInfo
                                             })}
@@ -1229,7 +1381,6 @@ const CompanyProfileForm: React.FC = () => {
                                             name="relationship"
                                             value={contactFormData.relationship}
                                             onChange={handleContactFormChange}
-                                            // className="profile-textarea textarea-medium"
                                             className={clsx('profile-textarea', 'textarea-medium', {
                                                 'input-modified': contactFormData.relationship !== originalContactData.relationship
                                             })}
@@ -1243,7 +1394,6 @@ const CompanyProfileForm: React.FC = () => {
                                             name="projectExperience"
                                             value={contactFormData.projectExperience}
                                             onChange={handleContactFormChange}
-                                            // className="profile-textarea textarea-medium"
                                             className={clsx('profile-textarea', 'textarea-medium', {
                                                 'input-modified': contactFormData.projectExperience !== originalContactData.projectExperience
                                             })}
@@ -1257,7 +1407,6 @@ const CompanyProfileForm: React.FC = () => {
                                             name="notes"
                                             value={contactFormData.notes}
                                             onChange={handleContactFormChange}
-                                            // className="profile-textarea textarea-medium"
                                             className={clsx('profile-textarea', 'textarea-medium', {
                                                 'input-modified': contactFormData.notes !== originalContactData.notes
                                             })}
@@ -1268,117 +1417,78 @@ const CompanyProfileForm: React.FC = () => {
                             </table>
                         </div>
 
-                        {/*<div className="profile-section contact-report-section">*/}
-                        {/*    /!* 담당자 추가 정보 테이블 *!/*/}
-                        {/*    <h3 className="section-header section-header-attached">*/}
-                        {/*        ■ 히스토리 {selectedContact ?*/}
-                        {/*        `(${selectedContact.contact_name})` :*/}
-                        {/*        '(신규 등록)'}*/}
-                        {/*    </h3>*/}
-                        {/*    <table className="profile-table">*/}
-                        {/*        <tbody>*/}
-                        {/*        <tr>*/}
-                        {/*            <td className="table-header">구분</td>*/}
-                        {/*            <td className="table-header">내용</td>*/}
-                        {/*        </tr>*/}
-                        {/*        <tr>*/}
-                        {/*            <td className="table-cell table-cell-label table-cell-top">지엠컴과 관계성</td>*/}
-                        {/*            <td className="table-cell-input">*/}
-                        {/*                <textarea*/}
-                        {/*                    name="relationship"*/}
-                        {/*                    value={contactFormData.relationship}*/}
-                        {/*                    onChange={handleContactFormChange}*/}
-                        {/*                    className="profile-textarea textarea-large"*/}
-                        {/*                />*/}
-                        {/*            </td>*/}
-                        {/*        </tr>*/}
-                        {/*        <tr>*/}
-                        {/*            <td className="table-cell table-cell-label table-cell-top">프로젝트 경험성</td>*/}
-                        {/*            <td className="table-cell-input">*/}
-                        {/*                <textarea*/}
-                        {/*                    name="projectExperience"*/}
-                        {/*                    value={contactFormData.projectExperience}*/}
-                        {/*                    onChange={handleContactFormChange}*/}
-                        {/*                    className="profile-textarea textarea-large"*/}
-                        {/*                />*/}
-                        {/*            </td>*/}
-                        {/*        </tr>*/}
-                        {/*        <tr>*/}
-                        {/*            <td className="table-cell table-cell-label table-cell-top">비고 / 기타</td>*/}
-                        {/*            <td className="table-cell-input">*/}
-                        {/*                <textarea*/}
-                        {/*                    name="projectExperience"*/}
-                        {/*                    value={contactFormData.etcInfo}*/}
-                        {/*                    onChange={handleContactFormChange}*/}
-                        {/*                    className="profile-textarea textarea-large"*/}
-                        {/*                />*/}
-                        {/*            </td>*/}
-                        {/*        </tr>*/}
-                        {/*        </tbody>*/}
-                        {/*    </table>*/}
-                        {/*</div>*/}
+                        {/* 컨택 리포트는 기존 담당자에 대해서만 표시 */}
+                        {selectedContact && !isNewContact && (
+                            <div className="profile-section contact-report-section">
+                                <h3 className="section-header section-header-attached">
+                                    ■ 컨택 리포트(회의록) ({selectedContact.contact_name})
+                                </h3>
 
-                        {/* 컨택 리포트(회의록) */}
-                        <div className="profile-section contact-report-section">
-                            <h3 className="section-header section-header-attached">
-                                ■ 컨택 리포트(회의록) {selectedContact ?
-                                `(${selectedContact.contact_name})` :
-                                '(신규 등록)'}
-                            </h3>
+                                {/* 기존 리포트 목록 */}
+                                {reportLoading ? (
+                                    <div className="loading">리포트 로딩 중...</div>
+                                ) : getAllReports().length > 0 && (
+                                    <div className="existing-reports">
+                                        {getAllReports().map((report) => (
+                                            <div
+                                                key={report.id}
+                                                className="report-item"
+                                                style={{
+                                                    border: report.isTemp ? '2px solid #dc3545' : '1px solid #ddd',
+                                                    borderRadius: '4px',
+                                                    marginBottom: '8px'
+                                                }}
+                                            >
+                                                <div className="report-date">{report.contact_date}</div>
+                                                <div className="report-content" style={{ fontSize: '12px', lineHeight: '1.4' }}>
+                                                    {report.content}
+                                                    {report.isTemp && <span style={{ color: '#dc3545', fontSize: '10px', marginLeft: '8px' }}>(저장 대기중)</span>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
 
-                            {/* 기존 리포트 목록 */}
-                            {existingReports.length > 0 && (
-                                <div className="existing-reports">
-                                    {/*<h4>기존 컨택 리포트</h4>*/}
-                                    {existingReports.map((report, index) => (
-                                        <div key={index} className="report-item">
-                                            <div className="report-date">{report.date}</div>
-                                            <div className="report-content">{report.content}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* 신규 리포트 작성 */}
-                            <table className="profile-table">
-                                <tbody>
-                                <tr>
-                                    <td className="table-header">날짜</td>
-                                    <td className="table-header">주요 내용</td>
-                                </tr>
-                                <tr>
-                                    {/*<td className="table-cell table-cell-label">컨택 날짜</td>*/}
-                                    <td className="table-cell table-cell-label table-cell-top">
-                                        <input
-                                            type="date"
-                                            value={newReportDate}
-                                            onChange={(e) => setNewReportDate(e.target.value)}
-                                            className="profile-date-input"
-                                        />
-                                    </td>
-                                    <td className="table-cell-input">
+                                {/* 신규 리포트 작성 */}
+                                <table className="profile-table">
+                                    <tbody>
+                                    <tr>
+                                        <td className="table-header">날짜</td>
+                                        <td className="table-header">주요 내용</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="table-cell table-cell-label table-cell-top">
+                                            <input
+                                                type="date"
+                                                value={newReportDate}
+                                                onChange={(e) => setNewReportDate(e.target.value)}
+                                                className="profile-date-input"
+                                            />
+                                        </td>
+                                        <td className="table-cell-input">
                                         <textarea
                                             value={newReportContent}
                                             onChange={(e) => setNewReportContent(e.target.value)}
                                             className="profile-textarea textarea-large"
                                             placeholder="미팅 내용을 입력하세요..."
                                         />
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
 
-                            <div className="report-actions">
-                                <button
-                                    type="button"
-                                    className="add-report-btn"
-                                    onClick={handleAddReport}
-                                    disabled={!newReportDate || !newReportContent}
-                                >
-                                    리포트 추가
-                                </button>
+                                <div className="report-actions">
+                                    <button
+                                        type="button"
+                                        className="add-report-btn"
+                                        onClick={handleAddReport}
+                                        disabled={!newReportDate || !newReportContent}
+                                    >
+                                        리포트 추가
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </>
                 )}
 
@@ -1422,7 +1532,7 @@ const CompanyProfileForm: React.FC = () => {
 
             {/* 검색 모달들 */}
             <CompanySearchModal />
-            <ContactSearchModal />  {/* 👈 추가 */}
+            <ContactSearchModal />
         </div>
     );
 };
