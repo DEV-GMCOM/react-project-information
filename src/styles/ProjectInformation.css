@@ -186,6 +186,30 @@
     align-items: center;
 }
 
+
+/* 선택된 회사(발주처) 버튼 스타일 */
+.company-badge {
+    background: #d4edda; /* 초록색 계열 */
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    cursor: pointer;
+    font-weight: 500;
+    padding: 6px 12px;
+    font-size: 13px;
+    transition: background-color 0.2s;
+    border-radius: 16px;
+}
+
+.company-badge:hover {
+    background-color: #c3e6cb;
+}
+
+/* 비활성화된 검색 버튼 스타일 */
+.search-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
 /* 날짜 입력 필드 (CompanyProfile 방식) */
 .project-date-input {
     width: 100%;
@@ -1052,6 +1076,38 @@
 .report-list { max-height: 200px; overflow-y: auto; border: 1px solid #f0f0f0; padding: 10px; border-radius: 4px; }
 .report-item { padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
 .report-item:last-child { border-bottom: none; }
+
+
+/* 선택된 회사(발주처) 버튼 스타일 */
+.company-badge {
+    background: #d4edda; /* 초록색 계열 */
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    cursor: pointer;
+    font-weight: 500;
+    padding: 6px 12px;
+    font-size: 13px;
+    transition: background-color 0.2s;
+    border-radius: 16px; /* 둥근 뱃지 형태 */
+}
+
+.company-badge:hover {
+    background-color: #c3e6cb;
+}
+
+/* 비활성화된 검색 버튼 스타일 */
+.search-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* 읽기전용 필드 스타일 (이미 있다면 생략 가능) */
+.readonly-field {
+    background-color: #f8f9fa !important;
+    color: #6c757d !important;
+    cursor: not-allowed;
+}
+
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
