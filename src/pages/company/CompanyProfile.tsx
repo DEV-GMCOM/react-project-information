@@ -252,8 +252,10 @@ const CompanyProfileForm: React.FC = () => {
                 limit: '10'
             });
 
-            const listUrl = `http://localhost:8001/api/company-profile/contacts/search?${params.toString()}`;
-            const countUrl = `http://localhost:8001/api/company-profile/contacts/search/count?${params.toString()}`;
+            // const listUrl = `http://localhost:8001/api/company-profile/contacts/search?${params.toString()}`;
+            // const countUrl = `http://localhost:8001/api/company-profile/contacts/search/count?${params.toString()}`;
+            const listUrl = `/api/company-profile/contacts/search?${params.toString()}`;
+            const countUrl = `/api/company-profile/contacts/search/count?${params.toString()}`;
 
             const [listResponse, countResponse] = await Promise.all([
                 fetch(listUrl),
@@ -354,7 +356,8 @@ const CompanyProfileForm: React.FC = () => {
         try {
             setReportLoading(true);
             const response = await fetch(
-                `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts/${contactId}/reports`
+                // `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts/${contactId}/reports`
+                `/api/company-profile/${selectedCompany.id}/contacts/${contactId}/reports`
             );
 
             if (response.ok) {
@@ -378,7 +381,8 @@ const CompanyProfileForm: React.FC = () => {
             // 모든 임시 리포트를 순차적으로 저장
             for (const tempReport of tempReports) {
                 const response = await fetch(
-                    `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts/${selectedContact.id}/reports`,
+                    // `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts/${selectedContact.id}/reports`,
+                    `/api/company-profile/${selectedCompany.id}/contacts/${selectedContact.id}/reports`,
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -464,8 +468,10 @@ const CompanyProfileForm: React.FC = () => {
                 limit: '10'
             });
 
-            const listUrl = `http://localhost:8001/api/company-profile/?${params.toString()}`;
-            const countUrl = `http://localhost:8001/api/company-profile/count?${params.toString()}`;
+            // const listUrl = `http://localhost:8001/api/company-profile/?${params.toString()}`;
+            // const countUrl = `http://localhost:8001/api/company-profile/count?${params.toString()}`;
+            const listUrl = `/api/company-profile/?${params.toString()}`;
+            const countUrl = `/api/company-profile/count?${params.toString()}`;
 
             const [listResponse, countResponse] = await Promise.all([fetch(listUrl), fetch(countUrl)]);
 
@@ -491,7 +497,8 @@ const CompanyProfileForm: React.FC = () => {
     // 회사 선택 (데이터 로드)
     const selectCompany = async (companyId: number) => {
         try {
-            const response = await fetch(`http://localhost:8001/api/company-profile/${companyId}`);
+            // const response = await fetch(`http://localhost:8001/api/company-profile/${companyId}`);
+            const response = await fetch(`/api/company-profile/${companyId}`);
             if (!response.ok) throw new Error('회사 정보를 가져올 수 없습니다.');
 
             const detailedCompany = await response.json();
@@ -601,7 +608,8 @@ const CompanyProfileForm: React.FC = () => {
                 return;
             }
             try {
-                const url = `http://localhost:8001/api/company-profile/`;
+                // const url = `http://localhost:8001/api/company-profile/`;
+                const url = `/api/company-profile/`;
                 const creationPayload: CompanyCreatePayload = {
                     company_name: formData.companyName,
                     basic_overview: formData.basicOverview,
@@ -689,7 +697,8 @@ const CompanyProfileForm: React.FC = () => {
 
                 // 1. 회사 정보 수정 API 호출 (필요한 경우)
                 if (companyDataChanged) {
-                    const companyUpdateUrl = `http://localhost:8001/api/company-profile/${selectedCompany.id}`;
+                    // const companyUpdateUrl = `http://localhost:8001/api/company-profile/${selectedCompany.id}`;
+                    const companyUpdateUrl = `/api/company-profile/${selectedCompany.id}`;
                     const companyPayload = {
                         company_name: formData.companyName,
                         basic_overview: formData.basicOverview,
@@ -716,8 +725,10 @@ const CompanyProfileForm: React.FC = () => {
                 // 2. 담당자 정보 수정/생성 API 호출 (필요한 경우)
                 if (contactDataChanged && (isNewContact || selectedContact)) {
                     const contactUrl = isNewContact
-                        ? `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts`
-                        : `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts/${selectedContact!.id}`;
+                        // ? `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts`
+                        // : `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts/${selectedContact!.id}`;
+                        ? `/api/company-profile/${selectedCompany.id}/contacts`
+                        : `/api/company-profile/${selectedCompany.id}/contacts/${selectedContact!.id}`;
                     const method = isNewContact ? 'POST' : 'PUT';
                     const contactPayload = {
                         contact_name: contactFormData.contactName,
@@ -790,7 +801,8 @@ const CompanyProfileForm: React.FC = () => {
 
         try {
             const response = await fetch(
-                `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts/${selectedContact.id}/reports`,
+                // `http://localhost:8001/api/company-profile/${selectedCompany.id}/contacts/${selectedContact.id}/reports`,
+                `/api/company-profile/${selectedCompany.id}/contacts/${selectedContact.id}/reports`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1024,6 +1036,7 @@ const CompanyProfileForm: React.FC = () => {
                             </div>
                         </div>
                     </div>
+
                 </div>
 
                 {/* 클라이언트 기업 정보 테이블 */}

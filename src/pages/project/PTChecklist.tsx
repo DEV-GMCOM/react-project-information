@@ -154,7 +154,7 @@ const PTChecklistForm: React.FC = () => {
             <div className="checklist-main">
                 <div className="checklist-title-section">
                     <h2 className="checklist-subtitle">
-                        -- PT 준비 체크리스트 --
+                        PT 준비 체크리스트
                     </h2>
                     <div className="checklist-writer">
                         <div className="writer-form">

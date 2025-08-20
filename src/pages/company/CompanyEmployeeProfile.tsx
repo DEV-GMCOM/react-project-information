@@ -127,7 +127,8 @@ const CompanyEmployeeProfileForm: React.FC = () => {
     // 회사 정보 조회
     const fetchCompanyDetails = async (companyId: number) => {
         try {
-            const response = await fetch(`http://localhost:8001/api/company-profile/${companyId}`);
+            // const response = await fetch(`http://localhost:8001/api/company-profile/${companyId}`);
+            const response = await fetch(`/api/company-profile/${companyId}`);
             if (response.ok) {
                 const companyData = await response.json();
 
@@ -170,8 +171,10 @@ const CompanyEmployeeProfileForm: React.FC = () => {
                 params.append('search', formData.companyName);
             }
 
-            const listUrl = `http://localhost:8001/api/company-profile/?${params.toString()}`;
-            const countUrl = `http://localhost:8001/api/company-profile/count?${params.toString()}`;
+            // const listUrl = `http://localhost:8001/api/company-profile/?${params.toString()}`;
+            // const countUrl = `http://localhost:8001/api/company-profile/count?${params.toString()}`;
+            const listUrl = `/api/company-profile/?${params.toString()}`;
+            const countUrl = `/api/company-profile/count?${params.toString()}`;
 
             const response = await fetch(listUrl);
             if (!response.ok) {
@@ -199,7 +202,8 @@ const CompanyEmployeeProfileForm: React.FC = () => {
 
     const selectCompany = async (company: CompanyData) => {
         try {
-            const response = await fetch(`http://localhost:8001/api/company-profile/${company.id}`);
+            // const response = await fetch(`http://localhost:8001/api/company-profile/${company.id}`);
+            const response = await fetch(`/api/company-profile/${company.id}`);
             if (!response.ok) {
                 throw new Error('회사 정보를 가져올 수 없습니다.');
             }

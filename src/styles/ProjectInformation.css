@@ -1108,6 +1108,71 @@
     cursor: not-allowed;
 }
 
+/* ProjectInformation.css */
+
+.badge-container {
+    display: flex;
+    align-items: center;
+    gap: 6px; /* 뱃지와 'x' 버튼 사이 간격 */
+}
+
+.reset-badge-btn {
+    background: #6c757d; /* 중립적인 회색 */
+    color: white;
+    border: none;
+    border-radius: 50%; /* 원 모양 */
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 20px; /* 'x' 글자 수직 중앙 정렬 */
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.reset-badge-btn:hover {
+    background-color: #dc3545; /* 마우스 올리면 빨간색 */
+}
+
+/* ProjectInformation.css */
+
+/* 기존 company-badge를 수정하고 새로운 스타일 추가 */
+.company-badge.with-reset {
+    display: flex;
+    justify-content: space-between; /* 텍스트와 아이콘을 양쪽 끝으로 분리 */
+    align-items: center;
+    width: auto; /* 버튼 너비를 내용에 맞게 조절 */
+    min-width: 120px; /* 최소 너비 지정 */
+    padding: 6px 8px 6px 12px; /* 오른쪽 패딩을 줄여 아이콘 공간 확보 */
+}
+
+.badge-text {
+    /* 텍스트 관련 스타일 (필요 시 추가) */
+    margin-right: 8px;
+}
+
+.badge-reset-icon {
+    background: rgba(0,0,0,0.1);
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.badge-reset-icon:hover {
+    background-color: rgba(220, 53, 69, 0.8); /* 마우스 올리면 빨간색 */
+    color: white;
+}
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {

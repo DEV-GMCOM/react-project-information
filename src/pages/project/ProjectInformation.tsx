@@ -2,8 +2,79 @@ import React, { useState, useEffect } from 'react';
 import { handleApiError } from '../../api/utils/errorUtils';
 import '../../styles/ProjectInformation.css';
 
-// --- 타입 정의 (사용자가 제공한 원본 파일과 동일) ---
-interface ProjectInformation {
+/** 직원의 간단한 정보를 나타냅니다. (작성자, 수정자 등) */
+interface WriterInfo {
+    emp_id: number;
+    name: string;
+    department?: string;
+    position?: string;
+    email?: string;
+}
+
+/** 고객사 담당자의 상세 정보를 나타냅니다. */
+interface CompanyContactData {
+    id: number;
+    contact_name: string;
+    position?: string;
+    department?: string;
+    email?: string;
+    phone?: string;
+    is_primary: boolean;
+}
+
+/** 회사의 상세 정보와 소속된 모든 담당자 목록을 포함합니다. */
+interface CompanyProfileData {
+    id: number;
+    company_name: string;
+    contacts: CompanyContactData[]; // 해당 회사의 모든 담당자 목록
+}
+
+
+/** [API 응답용] API로부터 받는 프로젝트의 최종 데이터 구조입니다. */
+interface ProjectData {
+    // --- 프로젝트 기본 속성 (DB 컬럼과 일치) ---
+    project_id: number;
+    project_name: string;
+    status: string;
+    created_at: string;
+    inflow_path?: string;
+    client?: string;
+    project_period_start?: string;
+    project_period_end?: string;
+
+    // --- 💡 [추가] 누락되었던 모든 상세 정보 필드를 여기에 선언합니다. ---
+    event_location?: string;
+    attendees?: string;
+    event_nature?: string;
+    ot_schedule?: string;
+    contract_amount?: number;
+    expected_competitors?: string;
+    project_overview?: string;
+    project_scope?: string;
+    deliverables?: string;
+    special_requirements?: string;
+    project_background?: string;
+    expected_effects?: string;
+    risk_factors?: string;
+    business_type?: string; // 💡 이 필드를 추가합니다.
+
+    // --- 💡 [추가] 새로 만든 리포트(정보수집 추가사항) 배열을 선언합니다. ---
+    reports?: Array<{
+        id: number;
+        report_date: string;
+        content: string;
+    }>;
+
+    // --- 관계를 통해 표현되는 중첩 객체 ---
+    writer_info?: WriterInfo;
+    updater_info?: WriterInfo;
+    company_profile?: CompanyProfileData;
+    selected_contact?: CompanyContactData;
+}
+
+
+/** [폼 상태 관리용] 화면의 입력 필드 상태를 관리하는 인터페이스입니다. */
+interface ProjectInformationFormData {
     projectName: string;
     inflowPath: string;
     client: string;
@@ -24,46 +95,15 @@ interface ProjectInformation {
         date: string;
         content: string;
     }>;
-    writerEmpId?: number;
-    clientContactId?: number;
-    companyId?: number;
 }
+// (참고) 기존 `ProjectInformation` 인터페이스는 `ProjectInformationFormData`로
+// 이름을 변경하여 역할(폼 데이터 관리)을 명확히 하고, ID 필드는 제거했습니다.
+// useState<ProjectInformation> 부분을 useState<ProjectInformationFormData>로 변경해주세요.
+// 예: const [formData, setFormData] = useState<ProjectInformationFormData>({ ... });
 
-interface WriterInfo {
-    emp_id?: number;
-    name: string;
-    department?: string;
-    position?: string;
-    email?: string;
-    phone?: string;
-}
+// [추가할 인터페이스] 이 코드 블록을 기존 interface 선언부에 추가하세요.
 
-interface ProjectData {
-    project_id: number;
-    project_name: string;
-    client?: string;
-    status: string;
-    contract_amount?: number;
-    project_period_start?: string;
-    project_period_end?: string;
-    created_at: string;
-    writer_name: string;
-    writer_department?: string;
-    writer_position?: string;
-    writer_email?: string;
-    writer_info?: WriterInfo;
-    // [요구사항 1] 최종 수정자 정보를 API 응답에서 받는다고 가정
-    updater_info?: WriterInfo;
-
-    // [추가된 부분] API가 프로젝트 상세 정보와 함께 연관된 회사/담당자 정보를 보내준다고 가정
-    company_profile?: {
-        id: number;
-        company_name: string;
-        contacts: CompanyContactData[];
-    };
-    selected_contact?: CompanyContactData;
-}
-
+/** 담당자 검색 결과 항목의 타입을 정의합니다. */
 interface ContactSearchData {
     id: number;
     contact_name: string;
@@ -73,53 +113,36 @@ interface ContactSearchData {
     };
 }
 
-// [이 코드 블록을 타입 정의 영역에 새로 추가하세요]
-interface ContactDetailData {
-    id: number;
-    contact_name: string;
-    position?: string;
-    department?: string;
-
-    // 상세 정보
-    email?: string;
-    phone?: string;
-
-    // 연관 정보
-    company: {
-        id: number;
-        company_name: string;
-        address?: string; // 회사 정보
-    };
-    reports?: Array<{ // 컨택 리포트
-        contact_date: string;
-        content: string;
-    }>;
-}
-
-// [이 코드 블록을 타입 정의 영역에 새로 추가하세요]
+/** 회사(발주처) 검색 결과 항목의 타입을 정의합니다. */
 interface CompanyData {
     id: number;
     company_name: string;
     representative?: string;
     business_number?: string;
-    // created_at: string;
 }
 
-// [이 코드 블록을 interface ProjectData 아래에 추가하세요]
-
-interface CompanyContactData {
+/** 담당자 상세 정보 모달에 사용될 데이터 타입을 정의합니다. */
+interface ContactDetailData {
     id: number;
     contact_name: string;
     position?: string;
     department?: string;
     email?: string;
     phone?: string;
-    is_primary: boolean;
+    company: {
+        id: number;
+        company_name: string;
+        address?: string;
+    };
+    reports?: Array<{
+        contact_date: string;
+        content: string;
+    }>;
 }
 
 const ProjectInformationForm: React.FC = () => {
     // --- 기존 상태(state) 정의는 그대로 유지 ---
-    const [formData, setFormData] = useState<ProjectInformation>({
+    const [formData, setFormData] = useState<ProjectInformationFormData>({
         projectName: '',
         inflowPath: '',
         client: '',
@@ -175,6 +198,9 @@ const ProjectInformationForm: React.FC = () => {
     const [saveMode, setSaveMode] = useState<'insert' | 'update'>('insert');    const [clientCompanyContacts, setClientCompanyContacts] = useState<CompanyContactData[]>([]);
     const [selectedContact, setSelectedContact] = useState<CompanyContactData | null>(null);
 
+    // ... 다른 useState 선언부 아래에 추가
+    const [selectedCompany, setSelectedCompany] = useState<CompanyProfileData | null>(null);
+
     // --- 기존 함수들은 모두 그대로 유지하며, 필요한 부분만 수정합니다 ---
     // [이 코드 블록을 새로 추가하세요]
     useEffect(() => {
@@ -192,7 +218,7 @@ const ProjectInformationForm: React.FC = () => {
                 ...prev,
                 client: '',
                 manager: '',
-                clientContactId: undefined
+                // clientContactId: undefined
             }));
         }
     }, [formData.projectName]); // formData.projectName이 변경될 때마다 이 함수가 실행됩니다.
@@ -216,8 +242,10 @@ const ProjectInformationForm: React.FC = () => {
                 params.append('search', formData.projectName);
             }
 
-            const listUrl = `http://localhost:8001/api/projects/?${params.toString()}`;
-            const countUrl = `http://localhost:8001/api/projects/count?${params.toString()}`;
+            // const listUrl = `http://localhost:8001/api/projects/?${params.toString()}`;
+            // const countUrl = `http://localhost:8001/api/projects/count?${params.toString()}`;
+            const listUrl = `/api/projects/?${params.toString()}`;
+            const countUrl = `/api/projects/count?${params.toString()}`;
 
             const response = await fetch(listUrl);
 
@@ -246,22 +274,115 @@ const ProjectInformationForm: React.FC = () => {
         }
     };
 
-    // [새로운 selectProject 함수]
+    // const selectProject = async (project: ProjectData) => {
+    //     try {
+    //         const response = await fetch(`/api/projects/${project.project_id}`);
+    //         if (!response.ok) throw new Error('프로젝트 정보를 가져올 수 없습니다.');
+    //         const detailedProject: ProjectData = await response.json();
+    //
+    //         // 💡 [핵심 수정] API 응답 객체의 모든 필드를 formData 상태에 매핑합니다.
+    //         // 🔥 기존 reports 데이터 처리 - 항상 마지막에 빈 행 보장
+    //         let additionalInfoData: Array<{ date: string; content: string }> = [];
+    //
+    //         if (detailedProject.reports && detailedProject.reports.length > 0) {
+    //             // 기존 데이터가 있는 경우
+    //             additionalInfoData = detailedProject.reports.map(report => ({
+    //                 date: report.report_date,
+    //                 content: report.content || ''
+    //             }));
+    //         }
+    //
+    //         // 🔥 핵심: 마지막 행이 빈 행이 아니면 새로운 빈 행 추가
+    //         const lastItem = additionalInfoData[additionalInfoData.length - 1];
+    //         if (additionalInfoData.length === 0 ||
+    //             (lastItem && lastItem.date && lastItem.content)) {
+    //             additionalInfoData.push({ date: '', content: '' });
+    //         }
+    //
+    //         setFormData(prev => ({
+    //             ...prev,
+    //             projectName: detailedProject.project_name || '',
+    //             inflowPath: detailedProject.inflow_path || '',
+    //             client: detailedProject.company_profile?.company_name || detailedProject.client || '',
+    //             manager: detailedProject.selected_contact?.contact_name || '', // ⬅️ '담당자'
+    //             eventDate: detailedProject.project_period_start || '',
+    //             submissionSchedule: detailedProject.project_period_end || '',
+    //             eventLocation: detailedProject.event_location || '',
+    //             attendees: detailedProject.attendees || '',
+    //             eventNature: detailedProject.business_type || '', // ⬅️ '성격'
+    //             otSchedule: detailedProject.ot_schedule || '',
+    //             expectedRevenue: detailedProject.contract_amount?.toString() || '',
+    //             expectedCompetitors: detailedProject.expected_competitors || '', // ⬅️ '예상경쟁사'
+    //             purposeBackground: detailedProject.project_overview || '',
+    //             mainContent: detailedProject.project_scope || '',
+    //             comparison: detailedProject.deliverables || '',
+    //             coreRequirements: detailedProject.special_requirements || '',
+    //             additionalInfo: detailedProject.reports?.map(report => ({
+    //                 date: report.report_date,
+    //                 content: report.content || ''
+    //             })) || [{ date: '', content: '' }]
+    //         }));
+    //
+    //         // --- 관계형 데이터 상태 업데이트 (이 부분은 잘 구현되어 있습니다) ---
+    //         setLastUpdater(detailedProject.updater_info || detailedProject.writer_info || null);
+    //         setClientCompanyContacts(detailedProject.company_profile?.contacts || []);
+    //         setSelectedContact(detailedProject.selected_contact || null);
+    //         setSelectedProject(detailedProject);
+    //         setSaveMode('update');
+    //         setShowSearchModal(false);
+    //
+    //     } catch (error) {
+    //         handleApiError(error);
+    //     }
+    // };
+    // ProjectInformation.tsx
+
     const selectProject = async (project: ProjectData) => {
         try {
-            const response = await fetch(`http://localhost:8001/api/projects/${project.project_id}`);
+            const response = await fetch(`/api/projects/${project.project_id}`);
             if (!response.ok) throw new Error('프로젝트 정보를 가져올 수 없습니다.');
             const detailedProject: ProjectData = await response.json();
 
+            // --- 💡 [핵심 수정] additionalInfo 데이터를 미리 가공하는 로직 ---
+            // 1. API 응답의 reports를 기본 형태로 변환합니다. 데이터가 없으면 빈 배열이 됩니다.
+            const reportsData = detailedProject.reports?.map(report => ({
+                date: report.report_date,
+                content: report.content || ''
+            })) || [];
+
+            // 2. 마지막 항목을 확인합니다.
+            const lastReport = reportsData[reportsData.length - 1];
+
+            // 3. 데이터가 아예 없거나, 마지막 항목이 비어있지 않으면 새로운 빈 행을 추가합니다.
+            if (reportsData.length === 0 || (lastReport && (lastReport.date || lastReport.content))) {
+                reportsData.push({ date: '', content: '' });
+            }
+            // ----------------------------------------------------------------
+
             setFormData(prev => ({
                 ...prev,
-                projectName: detailedProject.project_name,
-                // [핵심 수정] company_profile 객체 또는 client 필드 양쪽 모두에서 값을 찾도록 수정
+                projectName: detailedProject.project_name || '',
+                inflowPath: detailedProject.inflow_path || '',
                 client: detailedProject.company_profile?.company_name || detailedProject.client || '',
                 manager: detailedProject.selected_contact?.contact_name || '',
-                clientContactId: detailedProject.selected_contact?.id
+                eventDate: detailedProject.project_period_start || '',
+                submissionSchedule: detailedProject.project_period_end || '',
+                eventLocation: detailedProject.event_location || '',
+                attendees: detailedProject.attendees || '',
+                eventNature: detailedProject.business_type || '',
+                otSchedule: detailedProject.ot_schedule || '',
+                expectedRevenue: detailedProject.contract_amount?.toString() || '',
+                expectedCompetitors: detailedProject.expected_competitors || '',
+                purposeBackground: detailedProject.project_overview || '',
+                mainContent: detailedProject.project_scope || '',
+                comparison: detailedProject.deliverables || '',
+                coreRequirements: detailedProject.special_requirements || '',
+
+                // 💡 위에서 가공한 최종 데이터를 상태에 반영합니다.
+                additionalInfo: reportsData
             }));
 
+            // --- 나머지 상태 업데이트 로직은 그대로 ---
             setLastUpdater(detailedProject.updater_info || detailedProject.writer_info || null);
             setClientCompanyContacts(detailedProject.company_profile?.contacts || []);
             setSelectedContact(detailedProject.selected_contact || null);
@@ -302,8 +423,19 @@ const ProjectInformationForm: React.FC = () => {
                         <td style={{ padding: '8px', border: '1px solid #ddd' }}>{project.project_name}</td>
                         <td style={{ padding: '8px', border: '1px solid #ddd' }}>{project.client || '-'}</td>
                         <td style={{ padding: '8px', border: '1px solid #ddd' }}><span className={`status-badge status-${project.status}`}>{getStatusText(project.status)}</span></td>
-                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>{project.writer_name || '-'}{project.writer_position && (<small style={{ display: 'block', color: '#666' }}>{project.writer_position}</small>)}</td>
-                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>{project.writer_department || '-'}</td>
+                        {/*<td style={{ padding: '8px', border: '1px solid #ddd' }}>{project.writer_name || '-'}{project.writer_position && (<small style={{ display: 'block', color: '#666' }}>{project.writer_position}</small>)}</td>*/}
+                        {/*<td style={{ padding: '8px', border: '1px solid #ddd' }}>{project.writer_department || '-'}</td>*/}
+                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                            {project.writer_info?.name || '-'}
+                            {project.writer_info?.position && (
+                                <small style={{ display: 'block', color: '#666' }}>
+                                    {project.writer_info.position}
+                                </small>
+                            )}
+                        </td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                            {project.writer_info?.department || '-'}
+                        </td>
                         <td style={{ padding: '8px', border: '1px solid #ddd' }}>{new Date(project.created_at).toLocaleDateString('ko-KR')}</td>
                         <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}><button className="select-btn" onClick={() => selectProject(project)}>선택</button></td>
                     </tr>
@@ -325,14 +457,55 @@ const ProjectInformationForm: React.FC = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    // 🔥 추가: handleAdditionalInfoChange 함수도 개선하여 동적 행 추가를 더 안정적으로 만들기
     const handleAdditionalInfoChange = (index: number, field: 'date' | 'content', value: string) => {
         const updatedInfo = [...formData.additionalInfo];
         updatedInfo[index][field] = value;
 
-        if (index === updatedInfo.length - 1 && updatedInfo[index].date && updatedInfo[index].content) {
+        // 🔥 개선: 마지막 행이 채워지면 새로운 빈 행 추가
+        const isLastRow = index === updatedInfo.length - 1;
+        const currentRowFilled = updatedInfo[index].date.trim() && updatedInfo[index].content.trim();
+
+        if (isLastRow && currentRowFilled) {
             updatedInfo.push({ date: '', content: '' });
         }
-        setFormData(prev => ({ ...prev, additionalInfo: updatedInfo }));
+
+        setFormData(prev => ({
+            ...prev,
+            additionalInfo: updatedInfo
+        }));
+    };
+
+    // 🔥 추가 기능: 수동으로 새 행 추가하는 함수 (옵션)
+    const addNewAdditionalInfo = () => {
+        setFormData(prev => ({
+            ...prev,
+            additionalInfo: [...prev.additionalInfo, { date: '', content: '' }]
+        }));
+    };
+
+    // 🔥 추가 기능: 행 삭제 함수 (옵션)
+    const removeAdditionalInfo = (index: number) => {
+        if (formData.additionalInfo.length <= 1) {
+            // 최소 1개 행은 유지
+            setFormData(prev => ({
+                ...prev,
+                additionalInfo: [{ date: '', content: '' }]
+            }));
+            return;
+        }
+
+        const updatedInfo = formData.additionalInfo.filter((_, i) => i !== index);
+        // 삭제 후 빈 행이 없으면 추가
+        const lastItem = updatedInfo[updatedInfo.length - 1];
+        if (updatedInfo.length === 0 || (lastItem && lastItem.date && lastItem.content)) {
+            updatedInfo.push({ date: '', content: '' });
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            additionalInfo: updatedInfo
+        }));
     };
 
     const formatWithBullets = (text: string): string => {
@@ -362,7 +535,8 @@ const ProjectInformationForm: React.FC = () => {
         }
 
         let action = saveMode;
-        let url = 'http://localhost:8001/api/projects/';
+        // let url = 'http://localhost:8001/api/projects/';
+        let url = '/api/projects/';
         let method = 'POST';
 
         // 2. 프로젝트명 변경 감지 및 사용자 선택 처리
@@ -375,46 +549,50 @@ const ProjectInformationForm: React.FC = () => {
             }
         }
 
-        // 3. API로 보낼 데이터(apiData) 구성
-        // 더 이상 DOM에서 값을 읽어오지 않고, formData 상태를 기반으로 데이터를 구성합니다.
+        // 💡 1. 실제로는 인증 라이브러리나 전역 상태에서 가져와야 합니다.
+        // 테스트를 위해 임시로 객체를 선언합니다.
+        const currentUser = { id: 1, name: "테스트유저" }; // ❗ 이 부분은 실제 로직으로 대체 필요
+
         const apiData = {
-            // writer_name은 필수값이므로, lastUpdater 정보나 기본값을 사용합니다.
-            writer_name: lastUpdater?.name || '관리자',
-
-            // // Foreign Keys
-            // company_id: formData.companyId || null,
-            // our_manager_emp_id: formData.clientContactId || null, // 담당자 ID
-            // // 신규 생성 시 writer_emp_id는 백엔드에서 현재 로그인 유저로 처리하거나,
-            // // 별도의 작성자 선택 UI가 필요합니다. 여기서는 기존 프로젝트의 작성자 ID를 사용합니다.
-            // writer_emp_id: selectedProject?.writer_info?.emp_id || null,
-
-            // [수정] ID 값들이 유효할 때만 동적으로 프로퍼티를 추가합니다.
-            ...(formData.companyId && { company_id: formData.companyId }),
-            ...(formData.clientContactId && { our_manager_emp_id: formData.clientContactId }),
-            ...(selectedProject?.writer_info?.emp_id && { writer_emp_id: selectedProject.writer_info.emp_id }),
-
-            // 프로젝트 기본 정보
+            // --- 1. 기본/상세 정보 ---
             project_name: formData.projectName,
             inflow_path: formData.inflowPath,
-            client: formData.client, // 발주처 이름
-            project_period_start: formData.eventDate || null,
-            project_period_end: formData.submissionSchedule || null,
-
-            // 담당자 정보 (텍스트)
-            client_manager_name: formData.manager,
-
-            // 프로젝트 상세 정보
+            client: formData.client,
+            client_manager_name: formData.manager, // ⬅️ '담당자' 이름
+            business_type: formData.eventNature,   // ⬅️ '성격'
+            expected_competitors: formData.expectedCompetitors, // ⬅️ '예상경쟁사'
+            event_location: formData.eventLocation,
+            attendees: formData.attendees,
+            contract_amount: parseFloat(formData.expectedRevenue) || null,
             project_overview: formData.purposeBackground,
             project_scope: formData.mainContent,
             deliverables: formData.comparison,
             special_requirements: formData.coreRequirements,
 
-            // 백엔드 모델에 없는 필드들은 주석 처리하거나, 모델에 추가 후 사용해야 합니다.
-            // event_location: formData.eventLocation,
-            // attendees: formData.attendees,
-            // ot_schedule: formData.otSchedule,
-            // expected_revenue: formData.expectedRevenue,
-            // expected_competitors: formData.expectedCompetitors,
+            // --- 2. 날짜 필드 ---
+            project_period_start: formData.eventDate ? formData.eventDate.replace(/\./g, '-') : null,
+            project_period_end: formData.submissionSchedule ? formData.submissionSchedule.replace(/\./g, '-') : null,
+            ot_schedule: formData.otSchedule ? formData.otSchedule.replace(/\./g, '-') : null,
+
+            // --- 3. 관계 ID ---
+            // company_id: selectedProject?.company_profile?.id,
+            // 💡 [수정] company_id를 selectedProject가 아닌 selectedCompany 상태에서 가져옵니다.
+            company_id: selectedCompany?.id,
+
+            client_contact_id: selectedContact?.id, // ⬅️ [수정] '담당자' ID
+            writer_emp_id: selectedProject?.writer_info?.emp_id || currentUser.id,
+
+            // --- 💡 [핵심] 누락된 writer_name 필드 추가 ---
+            // 수정 모드일 때는 lastUpdater의 이름을, 신규 생성 모드일 때는 현재 로그인 유저의 이름을 사용합니다.
+            writer_name: lastUpdater?.name || currentUser.name,
+
+            // --- 4. 리포트 정보 ---
+            reports: formData.additionalInfo
+                .filter(info => info.date || info.content)
+                .map(info => ({
+                    report_date: info.date ? info.date.replace(/\./g, '-') : null,
+                    content: info.content
+                }))
         };
 
         if (action === 'update') {
@@ -432,7 +610,21 @@ const ProjectInformationForm: React.FC = () => {
 
             if (response.ok) {
                 const result = await response.json();
-                alert(`프로젝트가 성공적으로 ${action === 'update' ? '수정' : '생성'}되었습니다!`);
+                alert(`프로젝트가 성공적으로 ${action === 'update' ? '수정' : '생성'}되었습니다!`)
+
+                // --- 💡 [핵심 추가] 저장 성공 후 상태를 업데이트하는 로직 ---
+                // 1. 폼의 모드를 'update'로 변경합니다.
+                setSaveMode('update');
+
+                // 2. 서버로부터 받은 최신 데이터를 selectedProject 상태에 저장합니다.
+                //    이렇게 하면 이제 이 폼은 '저장된' 프로젝트를 다루게 됩니다.
+                setSelectedProject(result);
+
+                // 3. (선택적이지만 권장) 최종 수정자, 담당자 목록 등 관련 상태도 함께 업데이트합니다.
+                setLastUpdater(result.updater_info || result.writer_info || null);
+                setClientCompanyContacts(result.company_profile?.contacts || []);
+                setSelectedContact(result.selected_contact || null);
+
             } else {
                 const errorData = await response.json();
                 const errorDetail = errorData.detail ? JSON.stringify(errorData.detail) : '알 수 없는 오류';
@@ -448,7 +640,8 @@ const ProjectInformationForm: React.FC = () => {
 
     const searchWriters = async (searchTerm: string) => {
         try {
-            const url = `http://localhost:8001/api/hr/?search=${encodeURIComponent(searchTerm)}&limit=20`;
+            // const url = `http://localhost:8001/api/hr/?search=${encodeURIComponent(searchTerm)}&limit=20`;
+            const url = `/api/hr/?search=${encodeURIComponent(searchTerm)}&limit=20`;
             const response = await fetch(url);
             if (response.ok) {
                 const writers = await response.json();
@@ -483,64 +676,66 @@ const ProjectInformationForm: React.FC = () => {
 
     // [새로운 handleContactSearchAPI 함수]
     const handleContactSearchAPI = async () => {
-        // setContactSearchLoading(true);
-        // try {
-        //     // 1. API는 담당자 이름으로만 검색하여 전체 결과를 요청합니다.
-        //     const url = `http://localhost:8001/api/company-profile/contacts/search?search=${encodeURIComponent(contactSearchTerm)}`;
-        //     const response = await fetch(url);
-        //
-        //     if (!response.ok) throw new Error('담당자 검색에 실패했습니다.');
-        //
-        //     let results: ContactSearchData[] = await response.json();
-        //
-        //     // 2. [핵심] 발주처(formData.client)에 값이 있을 경우, React가 직접 결과를 필터링합니다.
-        //     if (formData.client) {
-        //         results = results.filter(contact =>
-        //             contact.company.company_name === formData.client
-        //         );
-        //     }
-        //
-        //     // 3. 필터링된 최종 결과를 상태에 저장합니다.
-        //     setContactSearchResults(results);
-        //
-        // } catch (error) {
-        //     handleApiError(error);
-        // } finally {
-        //     setContactSearchLoading(false);
-        // }
-
         // 사용자가 입력한 검색어(contactSearchTerm)로 검색 함수를 호출합니다.
         await searchContacts(contactSearchTerm);
     };
 
-    // const selectContact = (contact: ContactSearchData) => {
-    //     // 담당자를 선택하면 '발주처'와 '담당자' 필드를 업데이트
+    // const selectContact = (contact: ContactSearchData) => { // 💡 타입을 ContactSearchData로 변경
+    //     // 1. 폼 UI 필드를 업데이트합니다.
     //     setFormData(prev => ({
     //         ...prev,
-    //         client: contact.company.company_name,
+    //         client: contact.company.company_name, // 'contact.company' 접근 가능
     //         manager: contact.contact_name,
     //     }));
-    //     setShowContactSearchModal(false); // 모달 닫기
+    //
+    //     // 2. 💡 선택된 담당자 상태(selectedContact)를 업데이트합니다.
+    //     // ContactSearchData에는 없는 is_primary 같은 필드는 기본값을 넣어줍니다.
+    //     setSelectedContact({
+    //         id: contact.id,
+    //         contact_name: contact.contact_name,
+    //         is_primary: false, // 기본값 설정
+    //         // position, department 등은 검색 결과에 없으므로 비워둡니다.
+    //     });
+    //
+    //     // 3. 모달을 닫습니다.
+    //     setShowContactSearchModal(false);
     // };
     const selectContact = (contact: ContactSearchData) => {
+        // 💡 [추가] 담당자 정보에 포함된 회사 정보로 selectedCompany 상태도 함께 업데이트합니다.
+        setSelectedCompany({
+            id: contact.company.id,
+            company_name: contact.company.company_name,
+            contacts: [], // 이 시점에서는 전체 목록을 모르므로 비워두거나 기존 목록 유지
+        });
+
+        // 선택된 담당자 정보를 상태에 저장합니다.
+        setSelectedContact({
+            id: contact.id,
+            contact_name: contact.contact_name,
+            is_primary: false,
+        });
+
+        // 폼 UI 필드를 업데이트합니다.
         setFormData(prev => ({
             ...prev,
             client: contact.company.company_name,
             manager: contact.contact_name,
-            clientContactId: contact.id, // 이 줄을 추가하세요
         }));
+
         setShowContactSearchModal(false);
     };
 
     // [이 코드 블록을 새로 추가하세요]
     const handleOpenContactDetailModal = async () => {
-        if (!formData.clientContactId) return;
+        // if (!formData.clientContactId) return;
+        if (!selectedContact?.id) return;
 
         // 실제로는 로딩 상태를 true로 설정하는 것이 좋습니다.
         setShowContactDetailModal(true);
         try {
             // 이 API는 백엔드에 담당자의 모든 상세 정보를 내려주도록 구현해야 합니다.
-            const response = await fetch(`http://localhost:8001/api/company-contacts/${formData.clientContactId}/details`);
+            const response = await fetch(`/api/company-contacts/${selectedContact.id}/details`);
+
             if (!response.ok) throw new Error('담당자 상세 정보 조회에 실패했습니다.');
 
             const data: ContactDetailData = await response.json();
@@ -563,7 +758,8 @@ const ProjectInformationForm: React.FC = () => {
         setContactSearchLoading(true);
         try {
             // API는 우선 담당자 이름으로 검색합니다 (초기 검색 시 searchTerm은 '' 입니다).
-            const url = `http://localhost:8001/api/company-profile/contacts/search?search=${encodeURIComponent(searchTerm)}`;
+            // const url = `http://localhost:8001/api/company-profile/contacts/search?search=${encodeURIComponent(searchTerm)}`;
+            const url = `/api/company-profile/contacts/search?search=${encodeURIComponent(searchTerm)}`;
             const response = await fetch(url);
 
             if (!response.ok) throw new Error('담당자 검색에 실패했습니다.');
@@ -591,7 +787,8 @@ const ProjectInformationForm: React.FC = () => {
         setCompanySearchLoading(true);
         try {
             // CompanyProfile 검색과 동일한 API 엔드포인트를 사용합니다.
-            const response = await fetch(`http://localhost:8001/api/company-profile/?search=${encodeURIComponent(searchTerm)}`);
+            // const response = await fetch(`http://localhost:8001/api/company-profile/?search=${encodeURIComponent(searchTerm)}`);
+            const response = await fetch(`/api/company-profile/?search=${encodeURIComponent(searchTerm)}`);
             if (!response.ok) throw new Error('회사 검색에 실패했습니다.');
             const data: CompanyData[] = await response.json();
             setCompanySearchResults(data);
@@ -602,31 +799,79 @@ const ProjectInformationForm: React.FC = () => {
         }
     };
 
+    // const selectCompany = async (company: CompanyData) => {
+    //     // 회사 상세 정보를 불러와 담당자 목록까지 업데이트합니다.
+    //     try {
+    //         // const response = await fetch(`http://localhost:8001/api/company-profile/${company.id}`);
+    //         const response = await fetch(`/api/company-profile/${company.id}`);
+    //         if (!response.ok) throw new Error('회사 상세 정보 조회에 실패했습니다.');
+    //         const detailedCompany = await response.json();
+    //
+    //         // 발주처 필드 업데이트
+    //         setFormData(prev => ({
+    //             ...prev,
+    //             client: detailedCompany.company_name,
+    //             // 이전에 선택했던 담당자 정보는 초기화합니다.
+    //             // companyId: detailedCompany.id,
+    //             manager: '',
+    //             // clientContactId: undefined,
+    //         }));
+    //
+    //         // 담당자 목록 상태를 새로 불러온 회사 정보로 업데이트합니다.
+    //         setClientCompanyContacts(detailedCompany.contacts || []);
+    //         setSelectedContact(null); // 기존 담당자 선택 해제
+    //
+    //         setShowCompanySearchModal(false); // 모달 닫기
+    //     } catch (error) {
+    //         handleApiError(error);
+    //     }
+    // };
     const selectCompany = async (company: CompanyData) => {
-        // 회사 상세 정보를 불러와 담당자 목록까지 업데이트합니다.
         try {
-            const response = await fetch(`http://localhost:8001/api/company-profile/${company.id}`);
+            const response = await fetch(`/api/company-profile/${company.id}`);
             if (!response.ok) throw new Error('회사 상세 정보 조회에 실패했습니다.');
-            const detailedCompany = await response.json();
+            const detailedCompany: CompanyProfileData = await response.json();
 
-            // 발주처 필드 업데이트
+            // 💡 [추가] 선택된 회사 정보를 새 상태에 저장합니다.
+            setSelectedCompany(detailedCompany);
+
+            // 담당자 목록 상태를 업데이트하고, 기존 담당자 선택은 해제합니다.
+            setClientCompanyContacts(detailedCompany.contacts || []);
+            setSelectedContact(null);
+
+            // 폼 UI를 업데이트합니다.
             setFormData(prev => ({
                 ...prev,
                 client: detailedCompany.company_name,
-                // 이전에 선택했던 담당자 정보는 초기화합니다.
-                companyId: detailedCompany.id,
-                manager: '',
-                clientContactId: undefined,
+                manager: '', // 발주처를 바꾸면 담당자는 초기화
             }));
 
-            // 담당자 목록 상태를 새로 불러온 회사 정보로 업데이트합니다.
-            setClientCompanyContacts(detailedCompany.contacts || []);
-            setSelectedContact(null); // 기존 담당자 선택 해제
-
-            setShowCompanySearchModal(false); // 모달 닫기
+            setShowCompanySearchModal(false);
         } catch (error) {
             handleApiError(error);
         }
+    };
+
+    const resetClientAndContact = () => {
+        // 1. 선택된 회사와 담당자 객체 상태를 null로 초기화합니다.
+        setSelectedCompany(null);
+        setSelectedContact(null);
+
+        // 2. 담당자 목록을 비웁니다.
+        setClientCompanyContacts([]);
+
+        // 3. 폼 데이터에서 발주처와 담당자 이름 필드를 비웁니다.
+        setFormData(prev => ({
+            ...prev,
+            client: '',
+            manager: '',
+        }));
+    };
+
+    const handleResetClick = (e: React.MouseEvent) => {
+        // 부모 버튼의 onClick(검색 모달 열기)이 실행되지 않도록 이벤트 전파를 막습니다.
+        e.stopPropagation();
+        resetClientAndContact();
     };
 
     const WriterSearchModal: React.FC = () => {
@@ -654,13 +899,11 @@ const ProjectInformationForm: React.FC = () => {
             <div className="project-main">
                 <div className="project-title-section">
                     <h2 className="project-subtitle">정보 수집</h2>
-                    {/* [수정된 부분]
-                      기존의 복잡했던 작성자 입력 폼을 아래의 간단한 표시 영역으로 교체했습니다.
-                    */}
+                    {/* [수정된 부분] 기존의 복잡했던 작성자 입력 폼을 아래의 간단한 표시 영역으로 교체했습니다. */}
                     <div className="project-writer">
                         <div className="writer-display">
                             <span>최종 수정: </span>
-                            <span>{lastUpdater ? `${lastUpdater.name} (${lastUpdater.department || '부서 미지정'})` : '정보 없음'}</span>
+                            <span>{lastUpdater ? `${lastUpdater.name} (${lastUpdater.department || '작성자 미지정'})` : '정보 없음'}</span>
                         </div>
                     </div>
                 </div>
@@ -717,13 +960,20 @@ const ProjectInformationForm: React.FC = () => {
                                                 {formData.client && (
                                                     <button
                                                         type="button"
-                                                        className="status-badge company-badge"
+                                                        className="status-badge company-badge with-reset"
                                                         onClick={handleOpenCompanySearchModal}
                                                         title="발주처 변경"
                                                     >
-                                                        {formData.client}
-                                                    </button>
-                                                )}
+                                                    {/* 발주처 이름 */}
+                                                    <span className="badge-text">{formData.client}</span>
+
+                                                    {/* 'x' 리셋 아이콘 */}
+                                                    <span className="badge-reset-icon" onClick={handleResetClick} title="발주처 초기화">
+                                                        ×
+                                                    </span>
+                                            </button>
+
+                                        )}
 
                                                 {/* 항상 보이는 검색 버튼: 우측 정렬되어 항상 표시 */}
                                                 <button
@@ -740,12 +990,24 @@ const ProjectInformationForm: React.FC = () => {
                                     }
                                 })()}
                             </td>
+
                             <td className="table-cell table-cell-label">담당자</td>
                             {/* [새로운 담당자 UI] */}
                             <td className="table-cell-input">
                                 <div className="input-with-search">
                                     {/* 조건부 뱃지: 선택된 담당자가 있으면 왼쪽에 뱃지로 표시 */}
-                                    {formData.clientContactId && (
+                                    {/*{formData.clientContactId && (*/}
+                                    {/*    <button*/}
+                                    {/*        type="button"*/}
+                                    {/*        className="status-badge contact-badge"*/}
+                                    {/*        onClick={handleOpenContactDetailModal}*/}
+                                    {/*        title="담당자 상세 정보 보기"*/}
+                                    {/*    >*/}
+                                    {/*        {formData.manager}*/}
+                                    {/*    </button>*/}
+                                    {/*)}*/}
+                                    {/* 💡 조건문을 selectedContact로 변경 */}
+                                    {selectedContact && (
                                         <button
                                             type="button"
                                             className="status-badge contact-badge"
