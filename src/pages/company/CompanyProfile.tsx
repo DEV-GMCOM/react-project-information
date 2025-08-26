@@ -1347,49 +1347,49 @@ const CompanyProfileForm: React.FC = () => {
                                         />
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label table-cell-top" rowSpan={6}>부가 정보</td>
-                                    <td className="table-cell table-cell-label table-cell-top">업무 스타일</td>
-                                    <td className="table-cell-input" colSpan={3}>
-                                    <textarea
-                                        name="workStyle"
-                                        value={contactFormData.workStyle}
-                                        onChange={handleContactFormChange}
-                                        className={clsx('profile-textarea', 'textarea-medium', {
-                                            'input-modified': contactFormData.workStyle !== originalContactData.workStyle
-                                        })}
-                                    />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label table-cell-top">개별 특화정보</td>
-                                    <td className="table-cell-input" colSpan={3}>
-                                        <textarea
-                                            name="personalInfo"
-                                            value={contactFormData.personalInfo}
-                                            onChange={handleContactFormChange}
-                                            className={clsx('profile-textarea', 'textarea-medium', {
-                                                'input-modified': contactFormData.personalInfo !== originalContactData.personalInfo
-                                            })}
-                                        />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label table-cell-top">부서 및 조직정보</td>
-                                    <td className="table-cell-input" colSpan={3}>
-                                        <textarea
-                                            name="organizationInfo"
-                                            value={contactFormData.organizationInfo}
-                                            onChange={handleContactFormChange}
-                                            className={clsx('profile-textarea', 'textarea-medium', {
-                                                'input-modified': contactFormData.organizationInfo !== originalContactData.organizationInfo
-                                            })}
-                                        />
-                                    </td>
-                                </tr>
+                                {/*<tr>*/}
+                                {/*    <td className="table-cell table-cell-label table-cell-top" rowSpan={6}>부가 정보</td>*/}
+                                {/*    <td className="table-cell table-cell-label table-cell-top">업무 스타일</td>*/}
+                                {/*    <td className="table-cell-input" colSpan={3}>*/}
+                                {/*    <textarea*/}
+                                {/*        name="workStyle"*/}
+                                {/*        value={contactFormData.workStyle}*/}
+                                {/*        onChange={handleContactFormChange}*/}
+                                {/*        className={clsx('profile-textarea', 'textarea-medium', {*/}
+                                {/*            'input-modified': contactFormData.workStyle !== originalContactData.workStyle*/}
+                                {/*        })}*/}
+                                {/*    />*/}
+                                {/*    </td>*/}
+                                {/*</tr>*/}
+                                {/*<tr>*/}
+                                {/*    <td className="table-cell table-cell-label table-cell-top">개별 특화정보</td>*/}
+                                {/*    <td className="table-cell-input" colSpan={3}>*/}
+                                {/*        <textarea*/}
+                                {/*            name="personalInfo"*/}
+                                {/*            value={contactFormData.personalInfo}*/}
+                                {/*            onChange={handleContactFormChange}*/}
+                                {/*            className={clsx('profile-textarea', 'textarea-medium', {*/}
+                                {/*                'input-modified': contactFormData.personalInfo !== originalContactData.personalInfo*/}
+                                {/*            })}*/}
+                                {/*        />*/}
+                                {/*    </td>*/}
+                                {/*</tr>*/}
+                                {/*<tr>*/}
+                                {/*    <td className="table-cell table-cell-label table-cell-top">부서 및 조직정보</td>*/}
+                                {/*    <td className="table-cell-input" colSpan={3}>*/}
+                                {/*        <textarea*/}
+                                {/*            name="organizationInfo"*/}
+                                {/*            value={contactFormData.organizationInfo}*/}
+                                {/*            onChange={handleContactFormChange}*/}
+                                {/*            className={clsx('profile-textarea', 'textarea-medium', {*/}
+                                {/*                'input-modified': contactFormData.organizationInfo !== originalContactData.organizationInfo*/}
+                                {/*            })}*/}
+                                {/*        />*/}
+                                {/*    </td>*/}
+                                {/*</tr>*/}
                                 <tr>
                                     <td className="table-cell table-cell-label table-cell-top">지엠컴과 관계성</td>
-                                    <td className="table-cell-input" colSpan={3}>
+                                    <td className="table-cell-input" colSpan={4}>
                                         <textarea
                                             name="relationship"
                                             value={contactFormData.relationship}
@@ -1402,7 +1402,7 @@ const CompanyProfileForm: React.FC = () => {
                                 </tr>
                                 <tr>
                                     <td className="table-cell table-cell-label table-cell-top">프로젝트 경험성</td>
-                                    <td className="table-cell-input" colSpan={3}>
+                                    <td className="table-cell-input" colSpan={4}>
                                         <textarea
                                             name="projectExperience"
                                             value={contactFormData.projectExperience}
@@ -1415,7 +1415,7 @@ const CompanyProfileForm: React.FC = () => {
                                 </tr>
                                 <tr>
                                     <td className="table-cell table-cell-label table-cell-top">비고 / 기타</td>
-                                    <td className="table-cell-input" colSpan={3}>
+                                    <td className="table-cell-input" colSpan={4}>
                                         <textarea
                                             name="notes"
                                             value={contactFormData.notes}
@@ -1483,7 +1483,7 @@ const CompanyProfileForm: React.FC = () => {
                                             value={newReportContent}
                                             onChange={(e) => setNewReportContent(e.target.value)}
                                             className="profile-textarea textarea-large"
-                                            placeholder="미팅 내용을 입력하세요..."
+                                            placeholder="- 미팅 안건, 협의 / 논의했던 내용등을 기재&#10;- 프로젝트와 연계된 내용 위주로 작성 ( 개인정보, 개인성향 등 지양 )"
                                         />
                                         </td>
                                     </tr>

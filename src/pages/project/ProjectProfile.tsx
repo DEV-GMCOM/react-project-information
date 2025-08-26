@@ -139,30 +139,37 @@ const ProjectProfileForm: React.FC = () => {
                     </h2>
                     <div className="profile-writer">
                         <div className="writer-form">
-                            <div className="writer-field">
-                                <label className="writer-field-label">등록자 이름:</label>
-                                <input
-                                    type="text"
-                                    name="writerName"
-                                    value={formData.writerName}
-                                    onChange={handleInputChange}
-                                    placeholder="홍길동"
-                                    className="writer-field-input"
-                                />
-                            </div>
-                            <div className="writer-field">
-                                <label className="writer-field-label">부서:</label>
-                                <input
-                                    type="text"
-                                    name="writerDepartment"
-                                    value={formData.writerDepartment}
-                                    onChange={handleInputChange}
-                                    placeholder="영업팀"
-                                    className="writer-field-input"
-                                />
+                            <div>
+                                최종 작성자 :
                             </div>
                         </div>
                     </div>
+                    {/*<div className="profile-writer">*/}
+                    {/*    <div className="writer-form">*/}
+                    {/*        <div className="writer-field">*/}
+                    {/*            <label className="writer-field-label">등록자 이름:</label>*/}
+                    {/*            <input*/}
+                    {/*                type="text"*/}
+                    {/*                name="writerName"*/}
+                    {/*                value={formData.writerName}*/}
+                    {/*                onChange={handleInputChange}*/}
+                    {/*                placeholder="홍길동"*/}
+                    {/*                className="writer-field-input"*/}
+                    {/*            />*/}
+                    {/*        </div>*/}
+                    {/*        <div className="writer-field">*/}
+                    {/*            <label className="writer-field-label">부서:</label>*/}
+                    {/*            <input*/}
+                    {/*                type="text"*/}
+                    {/*                name="writerDepartment"*/}
+                    {/*                value={formData.writerDepartment}*/}
+                    {/*                onChange={handleInputChange}*/}
+                    {/*                placeholder="영업팀"*/}
+                    {/*                className="writer-field-input"*/}
+                    {/*            />*/}
+                    {/*        </div>*/}
+                    {/*    </div>*/}
+                    {/*</div>*/}
                 </div>
 
                 {/* 프로젝트 기본 정보 (8x4 테이블) */}
@@ -429,7 +436,7 @@ const ProjectProfileForm: React.FC = () => {
                                     name="mainContent"
                                     value={formData.mainContent}
                                     onChange={handleBulletTextChange}
-                                    placeholder="주요 과제, 행사 맥락"
+                                    placeholder="주요 과제, 행사 맥락, 주요 프로그램 등"
                                     className="profile-textarea textarea-large bullet-textarea"
                                 />
                             </td>
@@ -441,7 +448,7 @@ const ProjectProfileForm: React.FC = () => {
                                     name="coreRequirements"
                                     value={formData.coreRequirements}
                                     onChange={handleBulletTextChange}
-                                    placeholder="- 용역 제안범위&#10;- 운영 및 기타 필수 사항"
+                                    placeholder="- 과업의 제안범위, 제출금액, 운영시 필수 고려사항 등"
                                     className="profile-textarea textarea-large bullet-textarea"
                                 />
                             </td>
@@ -453,6 +460,7 @@ const ProjectProfileForm: React.FC = () => {
                                     name="comparison"
                                     value={formData.comparison}
                                     onChange={handleInputChange}
+                                    placeholder="- 특이사항 및 중요사항 등 추가 기재"
                                     className="profile-textarea textarea-medium"
                                 />
                             </td>
@@ -474,61 +482,61 @@ const ProjectProfileForm: React.FC = () => {
                             <td className="table-header">내용</td>
                         </tr>
                         <tr>
-                            <td className="table-cell table-cell-label">SWOT 분석</td>
+                            <td className="table-cell table-cell-label blue-highlight-label">SWOT 분석</td>
                             <td className="table-cell-input">
                                 <textarea
                                     name="swotAnalysis"
                                     value={formData.swotAnalysis}
                                     onChange={handleBulletTextChange}
-                                    placeholder="강점: 독보적 경험과 노하우 활요, 높은 수주가능성&#10;약점: 내수율 저조&#10;기회: 매출달성에 기여, 차기 Proj 기약&#10;위험: 내정자에 따른 휴먼 리소스 소모"
+                                    placeholder="- 강점: 독보적 경험과 노하우 활요, 높은 수주가능성&#10;- 약점: 내수율 저조&#10;- 기회: 매출달성에 기여, 차기 Proj 기약&#10;- 위험: 내정자에 따른 휴먼 리소스 소모"
                                     className="profile-textarea textarea-xlarge bullet-textarea"
                                 />
                             </td>
                         </tr>
                         <tr>
-                            <td className="table-cell table-cell-label">추진방향</td>
+                            <td className="table-cell table-cell-label blue-highlight-label">추진방향</td>
                             <td className="table-cell-input">
                                 <textarea
                                     name="direction"
                                     value={formData.direction}
                                     onChange={handleBulletTextChange}
-                                    placeholder="프로젝트 추진 방향성&#10;리소스 활용방법"
+                                    placeholder="- 프로젝트 추진 방향성&#10;- 내외부 리소스 활용방법"
                                     className="profile-textarea textarea-large bullet-textarea"
                                 />
                             </td>
                         </tr>
                         <tr>
-                            <td className="table-cell table-cell-label">리소스 활용방안</td>
+                            <td className="table-cell table-cell-label blue-highlight-label">리소스 활용방안</td>
                             <td className="table-cell-input">
                                 <textarea
                                     name="resourcePlan"
                                     value={formData.resourcePlan}
                                     onChange={handleBulletTextChange}
-                                    placeholder="내부 전담조직 및 참여자 역량&#10;협업 조직: XX사 3D 디자인, 영상팀"
+                                    placeholder="- 내부 전담조직 및 참여자 역량&#10;- 협업 조직: XX사 3D 디자인, 영상팀"
                                     className="profile-textarea textarea-large bullet-textarea"
                                 />
                             </td>
                         </tr>
                         <tr>
-                            <td className="table-cell table-cell-label">작성자 의견</td>
+                            <td className="table-cell table-cell-label blue-highlight-label">작성자 의견</td>
                             <td className="table-cell-input">
                                 <textarea
                                     name="writerOpinion"
                                     value={formData.writerOpinion}
                                     onChange={handleBulletTextChange}
-                                    placeholder="프로젝트 진행여부 판단 의견 요약"
+                                    placeholder="- 프로젝트 진행여부 판단 의견 요약 ( 팀원들의 첨언 포함 )&#10;- 평가등급 기재 (A~C)&#10;      A : 프로젝트 추진&#10;      B : 재검토후 추진여부 결정&#10;      C : 추진 중지"
                                     className="profile-textarea textarea-large bullet-textarea"
                                 />
                             </td>
                         </tr>
                         <tr>
-                            <td className="table-cell table-cell-label">진행 가부 사유</td>
+                            <td className="table-cell table-cell-label blue-highlight-label">진행 가부 사유</td>
                             <td className="table-cell-input">
                                 <textarea
                                     name="writerOpinion"
                                     value={formData.writerOpinion}
                                     onChange={handleBulletTextChange}
-                                    placeholder="프로젝트 진행 가부에 대한 분석 및 의견"
+                                    placeholder="내부협의를 통해 진행여부 최종 결정사항 기재&#10;     Y : 가결 사유 기재 -> 착수서 단계로 이동&#10;     N : 부결 사유 기재 -> 프로젝트 종료"
                                     className="profile-textarea textarea-large bullet-textarea"
                                 />
                             </td>

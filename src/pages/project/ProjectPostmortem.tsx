@@ -228,32 +228,39 @@ const ProjectPostmortemForm: React.FC = () => {
                     <h2 className="postmortem-subtitle">
                         프로젝트 실행결과 사후분석
                     </h2>
-                    <div className="postmortem-writer">
+                    <div className="profile-writer">
                         <div className="writer-form">
-                            <div className="writer-field">
-                                <label className="writer-field-label">등록자 이름:</label>
-                                <input
-                                    type="text"
-                                    name="writerName"
-                                    value={formData.writerName}
-                                    onChange={handleInputChange}
-                                    placeholder="홍길동"
-                                    className="writer-field-input"
-                                />
-                            </div>
-                            <div className="writer-field">
-                                <label className="writer-field-label">부서:</label>
-                                <input
-                                    type="text"
-                                    name="writerDepartment"
-                                    value={formData.writerDepartment}
-                                    onChange={handleInputChange}
-                                    placeholder="기획팀"
-                                    className="writer-field-input"
-                                />
+                            <div>
+                                최종 작성자 :
                             </div>
                         </div>
                     </div>
+                    {/*<div className="postmortem-writer">*/}
+                    {/*    <div className="writer-form">*/}
+                    {/*        <div className="writer-field">*/}
+                    {/*            <label className="writer-field-label">등록자 이름:</label>*/}
+                    {/*            <input*/}
+                    {/*                type="text"*/}
+                    {/*                name="writerName"*/}
+                    {/*                value={formData.writerName}*/}
+                    {/*                onChange={handleInputChange}*/}
+                    {/*                placeholder="홍길동"*/}
+                    {/*                className="writer-field-input"*/}
+                    {/*            />*/}
+                    {/*        </div>*/}
+                    {/*        <div className="writer-field">*/}
+                    {/*            <label className="writer-field-label">부서:</label>*/}
+                    {/*            <input*/}
+                    {/*                type="text"*/}
+                    {/*                name="writerDepartment"*/}
+                    {/*                value={formData.writerDepartment}*/}
+                    {/*                onChange={handleInputChange}*/}
+                    {/*                placeholder="기획팀"*/}
+                    {/*                className="writer-field-input"*/}
+                    {/*            />*/}
+                    {/*        </div>*/}
+                    {/*    </div>*/}
+                    {/*</div>*/}
                 </div>
 
                 {/* 프로젝트 기본 정보 (8x4 테이블) */}

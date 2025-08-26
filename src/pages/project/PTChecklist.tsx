@@ -156,32 +156,40 @@ const PTChecklistForm: React.FC = () => {
                     <h2 className="checklist-subtitle">
                         PT 준비 체크리스트
                     </h2>
-                    <div className="checklist-writer">
+                    <div className="profile-writer">
                         <div className="writer-form">
-                            <div className="writer-field">
-                                <label className="writer-field-label">등록자 이름:</label>
-                                <input
-                                    type="text"
-                                    name="writerName"
-                                    value={formData.writerName}
-                                    onChange={handleInputChange}
-                                    placeholder="홍길동"
-                                    className="writer-field-input"
-                                />
-                            </div>
-                            <div className="writer-field">
-                                <label className="writer-field-label">부서:</label>
-                                <input
-                                    type="text"
-                                    name="writerDepartment"
-                                    value={formData.writerDepartment}
-                                    onChange={handleInputChange}
-                                    placeholder="기획팀"
-                                    className="writer-field-input"
-                                />
+                            <div>
+                                최종 작성자 :
                             </div>
                         </div>
                     </div>
+
+                    {/*<div className="checklist-writer">*/}
+                    {/*    <div className="writer-form">*/}
+                    {/*        <div className="writer-field">*/}
+                    {/*            <label className="writer-field-label">등록자 이름:</label>*/}
+                    {/*            <input*/}
+                    {/*                type="text"*/}
+                    {/*                name="writerName"*/}
+                    {/*                value={formData.writerName}*/}
+                    {/*                onChange={handleInputChange}*/}
+                    {/*                placeholder="홍길동"*/}
+                    {/*                className="writer-field-input"*/}
+                    {/*            />*/}
+                    {/*        </div>*/}
+                    {/*        <div className="writer-field">*/}
+                    {/*            <label className="writer-field-label">부서:</label>*/}
+                    {/*            <input*/}
+                    {/*                type="text"*/}
+                    {/*                name="writerDepartment"*/}
+                    {/*                value={formData.writerDepartment}*/}
+                    {/*                onChange={handleInputChange}*/}
+                    {/*                placeholder="기획팀"*/}
+                    {/*                className="writer-field-input"*/}
+                    {/*            />*/}
+                    {/*        </div>*/}
+                    {/*    </div>*/}
+                    {/*</div>*/}
                 </div>
 
                 {/* 프로젝트 체크사항 (18x2 테이블) */}

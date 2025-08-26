@@ -155,30 +155,38 @@ const PTPostmortemForm: React.FC = () => {
                     {/* PT 결과 보고서 타이틀 영역 */}
                     <div className="postmortem-title-section">
                         <h2 className="postmortem-subtitle">프로젝트 PT결과 사후분석</h2>
-                        <div className="postmortem-writer">
+                        <div className="profile-writer">
                             <div className="writer-form">
-                                <div className="writer-field">
-                                    <label className="writer-field-label">작성자:</label>
-                                    <input
-                                        type="text"
-                                        name="writerName"
-                                        value={formData.writerName}
-                                        onChange={handleInputChange}
-                                        className="writer-field-input"
-                                    />
-                                </div>
-                                <div className="writer-field">
-                                    <label className="writer-field-label">부서:</label>
-                                    <input
-                                        type="text"
-                                        name="writerDepartment"
-                                        value={formData.writerDepartment}
-                                        onChange={handleInputChange}
-                                        className="writer-field-input"
-                                    />
+                                <div>
+                                    최종 작성자 :
                                 </div>
                             </div>
                         </div>
+
+                        {/*<div className="postmortem-writer">*/}
+                        {/*    <div className="writer-form">*/}
+                        {/*        <div className="writer-field">*/}
+                        {/*            <label className="writer-field-label">작성자:</label>*/}
+                        {/*            <input*/}
+                        {/*                type="text"*/}
+                        {/*                name="writerName"*/}
+                        {/*                value={formData.writerName}*/}
+                        {/*                onChange={handleInputChange}*/}
+                        {/*                className="writer-field-input"*/}
+                        {/*            />*/}
+                        {/*        </div>*/}
+                        {/*        <div className="writer-field">*/}
+                        {/*            <label className="writer-field-label">부서:</label>*/}
+                        {/*            <input*/}
+                        {/*                type="text"*/}
+                        {/*                name="writerDepartment"*/}
+                        {/*                value={formData.writerDepartment}*/}
+                        {/*                onChange={handleInputChange}*/}
+                        {/*                className="writer-field-input"*/}
+                        {/*            />*/}
+                        {/*        </div>*/}
+                        {/*    </div>*/}
+                        {/*</div>*/}
                     </div>
 
                     {/* 프로젝트 기본 정보 (8x4 테이블) */}

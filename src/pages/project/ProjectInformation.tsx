@@ -160,10 +160,10 @@ const ProjectInformationForm: React.FC = () => {
         coreRequirements: '',
         comparison: '',
         additionalInfo: [
-            {
-                date: '2025.07.23',
-                content: '• 제목 및 안건 : 현대자동차 EV 신차 발표회 프로모션의 건\n• 협의 및 내용 : '
-            },
+            // {
+            //     date: '2025.07.23',
+            //     content: '• 제목 및 안건 : 현대자동차 EV 신차 발표회 프로모션의 건\n• 협의 및 내용 : '
+            // },
             { date: '', content: '' }
         ]
     });
@@ -900,12 +900,20 @@ const ProjectInformationForm: React.FC = () => {
                 <div className="project-title-section">
                     <h2 className="project-subtitle">정보 수집</h2>
                     {/* [수정된 부분] 기존의 복잡했던 작성자 입력 폼을 아래의 간단한 표시 영역으로 교체했습니다. */}
-                    <div className="project-writer">
-                        <div className="writer-display">
-                            <span>최종 수정: </span>
-                            <span>{lastUpdater ? `${lastUpdater.name} (${lastUpdater.department || '작성자 미지정'})` : '정보 없음'}</span>
+                    {/*<div className="project-writer">*/}
+                    {/*    <div className="writer-display">*/}
+                    {/*        <span>최종 수정: </span>*/}
+                    {/*        <span>{lastUpdater ? `${lastUpdater.name} (${lastUpdater.department || '작성자 미지정'})` : '정보 없음'}</span>*/}
+                    {/*    </div>*/}
+                    {/*</div>*/}
+                    <div className="profile-writer">
+                        <div className="writer-form">
+                            <div>
+                                최종 작성자 :
+                            </div>
                         </div>
                     </div>
+
                 </div>
 
                 {/* --- 아래의 모든 JSX 코드는 원본 파일과 완전히 동일합니다. --- */}
@@ -1065,9 +1073,9 @@ const ProjectInformationForm: React.FC = () => {
                         <tbody>
                         <tr><td className="table-header">구분</td><td className="table-header">내용</td></tr>
                         <tr><td className="table-cell table-cell-label">목적 및 배경</td><td className="table-cell-input"><textarea name="purposeBackground" value={formData.purposeBackground} onChange={handleInputChange} className="project-textarea textarea-medium"/></td></tr>
-                        <tr><td className="table-cell table-cell-label">주요 내용</td><td className="table-cell-input"><textarea name="mainContent" value={formData.mainContent} onChange={handleBulletTextChange} placeholder="주요 과제, 행사 맥락" className="project-textarea textarea-large bullet-textarea"/></td></tr>
-                        <tr><td className="table-cell table-cell-label">핵심 요구사항</td><td className="table-cell-input"><textarea name="coreRequirements" value={formData.coreRequirements} onChange={handleBulletTextChange} placeholder="- 용역 제안범위&#10;- 운영 및 기타 필수 사항" className="project-textarea textarea-large bullet-textarea"/></td></tr>
-                        <tr><td className="table-cell table-cell-label">비 고</td><td className="table-cell-input"><textarea name="comparison" value={formData.comparison} onChange={handleInputChange} className="project-textarea textarea-medium"/></td></tr>
+                        <tr><td className="table-cell table-cell-label">주요 내용</td><td className="table-cell-input"><textarea name="mainContent" value={formData.mainContent} onChange={handleBulletTextChange} placeholder="주요 과제, 행사 맥락, 주요 프로그램 등" className="project-textarea textarea-large bullet-textarea"/></td></tr>
+                        <tr><td className="table-cell table-cell-label">핵심 요구사항</td><td className="table-cell-input"><textarea name="coreRequirements" value={formData.coreRequirements} onChange={handleBulletTextChange} placeholder="- 과업 제안범위, 제출금액, 운영 시 필수 고려사항등" className="project-textarea textarea-large bullet-textarea"/></td></tr>
+                        <tr><td className="table-cell table-cell-label">비 고</td><td className="table-cell-input"><textarea name="comparison" value={formData.comparison} onChange={handleInputChange} placeholder="- 특이사항 및 중요사항등 추가 기재" className="project-textarea textarea-medium"/></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1080,7 +1088,7 @@ const ProjectInformationForm: React.FC = () => {
                         {formData.additionalInfo.map((info, index) => (
                             <tr key={index}>
                                 <td className="table-cell contact-date-cell">{index === 0 && info.date === '2025.07.23' ? (<div className="contact-date">{info.date}</div>) : (<input type="date" value={info.date ? info.date.replace(/\./g, '-') : ''} onChange={(e) => { const selectedDate = e.target.value; const formattedDate = selectedDate ? selectedDate.replace(/-/g, '.') : ''; handleAdditionalInfoChange(index, 'date', formattedDate);}} className="project-date-input"/>)}</td>
-                                <td className="table-cell-input"><div className="info-content-container"><textarea value={info.content} onChange={(e) => handleAdditionalInfoChange(index, 'content', e.target.value)} className="project-textarea textarea-large bullet-textarea" style={{ whiteSpace: 'pre-line' }}/></div></td>
+                                <td className="table-cell-input"><div className="info-content-container"><textarea value={info.content} onChange={(e) => handleAdditionalInfoChange(index, 'content', e.target.value)} placeholder="- 미팅 안건, 협의/논의 했던 내용등을 기재 &#10;- 프로젝트와 연계된 내용 위주로 작성 ( 개인정보, 개인성향 등 지양 )" className="project-textarea textarea-large bullet-textarea" style={{ whiteSpace: 'pre-line' }}/></div></td>
                             </tr>
                         ))}
                         </tbody>
