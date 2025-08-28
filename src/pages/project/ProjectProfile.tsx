@@ -227,6 +227,10 @@ const ProjectProfileForm: React.FC = () => {
     // URL에서 project_id 가져오기 (기존 코드와 동일한 방식)
     const [searchParams] = useSearchParams();
     const projectId = searchParams.get('project_id');
+    const urlProjectId = searchParams.get('project_id');
+    const [selectedProjectId, setSelectedProjectId] = useState<number | null>(
+        urlProjectId ? parseInt(urlProjectId) : null
+    );
 
     // 컴포넌트 마운트 시 기존 프로파일 데이터 로드
     useEffect(() => {
@@ -241,7 +245,7 @@ const ProjectProfileForm: React.FC = () => {
     const loadExistingProfile = async (projectId: number) => {
         try {
             setLoading(true);
-            const response = await fetch(`/api/project-profiles/${projectId}`);
+            const response = await fetch(`/api/project-profile/${projectId}`);
 
             if (response.ok) {
                 const profile = await response.json();
@@ -251,10 +255,10 @@ const ProjectProfileForm: React.FC = () => {
                     setFormData(prev => ({
                         ...prev,
                         swotAnalysis: profile.swot_analysis || '',
-                        marketSize: profile.market_size || '',
-                        competitorAnalysis: profile.competitor_analysis || '',
-                        coreSuccessFactors: profile.core_success_factors || '',
-                        otherNotes: profile.other_notes || ''
+                        direction: profile.direction || '',
+                        resourcePlan: profile.resource_plan || '',
+                        writerOpinion: profile.writer_opinion || '',
+                        proceedDecision: profile.proceed_decision || ''
                     }));
                 }
             } else if (response.status !== 404) {
@@ -292,6 +296,18 @@ const ProjectProfileForm: React.FC = () => {
     };
 
     const handleProjectSearch = async () => {
+
+        // 🔥 검색 모달 열 때 프로파일 필드 초기화
+        setFormData(prev => ({
+            ...prev,
+            swotAnalysis: '',
+            direction: '',
+            resourcePlan: '',
+            writerOpinion: '',
+            proceedDecision: ''
+        }));
+        setExistingProfileId(null);
+
         setShowSearchModal(true);
         setCurrentPage(1);
         await searchProjects(1);
@@ -343,6 +359,12 @@ const ProjectProfileForm: React.FC = () => {
     };
 
     const selectProject = async (project: ProjectData) => {
+        console.log('🔍 프로젝트 선택됨:', {
+            project_id: project.project_id,
+            project_name: project.project_name,
+            urlProjectId: urlProjectId,
+            selectedProjectId: selectedProjectId
+        });
         try {
             const response = await fetch(`/api/projects/${project.project_id}`);
             if (!response.ok) throw new Error('프로젝트 정보를 가져올 수 없습니다.');
@@ -392,8 +414,18 @@ const ProjectProfileForm: React.FC = () => {
             setClientCompanyContacts(detailedProject.company_profile?.contacts || []);
             setSelectedContact(detailedProject.selected_contact || null);
             setSelectedProject(detailedProject);
+            setSelectedProjectId(project.project_id);
             setSaveMode('update');
+
+            // 🔥 해당 프로젝트의 프로파일 데이터도 함께 로드
+            await loadExistingProfile(project.project_id);
+
             setShowSearchModal(false);
+
+            console.log('✅ 프로젝트 선택 완료:', {
+                새로_설정된_selectedProjectId: project.project_id,
+                detailedProject: detailedProject.project_name
+            });
 
         } catch (error) {
             handleApiError(error);
@@ -629,7 +661,26 @@ const ProjectProfileForm: React.FC = () => {
      * 프로젝트 프로파일 저장 함수 (기존 handleSubmit 함수 대체)
      */
     const handleSubmit = async () => {
-        if (!projectId) {
+        console.log('💾 저장 버튼 클릭됨:', {
+            urlProjectId: urlProjectId,
+            selectedProjectId: selectedProjectId,
+            selectedProject_id: selectedProject?.project_id,
+            existingProfileId: existingProfileId,
+            formData_projectName: formData.projectName
+        });
+
+        // 우선순위: selectedProject.project_id > selectedProjectId > urlProjectId
+        const finalProjectId = selectedProject?.project_id ||
+            selectedProjectId ||
+            (urlProjectId ? parseInt(urlProjectId) : null);
+        console.log('🎯 사용할 프로젝트 ID:', finalProjectId);
+
+        if (!finalProjectId) {
+            console.error('❌ 프로젝트 ID 없음 - 모든 값들:', {
+                selectedProjectId,
+                urlProjectId,
+                selectedProject: selectedProject?.project_id
+            });
             setError('프로젝트 ID가 필요합니다.');
             return;
         }
@@ -639,35 +690,24 @@ const ProjectProfileForm: React.FC = () => {
             setError('');
 
             const profileData = {
-                project_id: parseInt(projectId),
+                // project_id: parseInt(projectId),
+                project_id: finalProjectId,
                 swot_analysis: formData.swotAnalysis || null,
-                market_size: formData.marketSize || null,
-                competitor_analysis: formData.competitorAnalysis || null,
-                core_success_factors: formData.coreSuccessFactors || null,
-                other_notes: formData.otherNotes || null
+                direction: formData.direction || null,
+                resource_plan: formData.resourcePlan || null,
+                writer_opinion: formData.writerOpinion || null,
+                proceed_decision: formData.proceedDecision || null
             };
 
-            let response;
+            const method = existingProfileId ? 'PUT' : 'POST';
+            const response = await fetch(`/api/project-profile/${finalProjectId}`, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(profileData),
+            });
 
-            if (existingProfileId) {
-                // 기존 프로파일 업데이트
-                response = await fetch(`/api/project-profiles/${projectId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(profileData),
-                });
-            } else {
-                // 새 프로파일 생성
-                response = await fetch(`/api/project-profiles/${projectId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(profileData),
-                });
-            }
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -1021,9 +1061,9 @@ const ProjectProfileForm: React.FC = () => {
                     >
                         {loading ? '저장 중...' : (existingProfileId ? '업데이트' : '저장')}
                     </button>
-                    <button onClick={handlePrint} className="print-btn" disabled={loading}>
-                        인쇄
-                    </button>
+                    {/*<button onClick={handlePrint} className="print-btn" disabled={loading}>*/}
+                    {/*    인쇄*/}
+                    {/*</button>*/}
                 </div>
             </div>
 
