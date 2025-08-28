@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import '../../styles/ProjectProfile.css';
-// import {handleApiError} from "@/api/utils/errorUtils.ts";
 import { handleApiError } from '../../api/utils/errorUtils';
 
 
@@ -76,16 +76,92 @@ interface ProjectProfile {
     coreRequirements: string;
     comparison: string;
 
-    // 프로젝트 검토
+    // 프로젝트 검토 - 🔥 누락된 필드들 추가
     swotAnalysis: string;
+    marketSize?: string;           // 새로 추가
+    competitorAnalysis?: string;   // 새로 추가
+    coreSuccessFactors?: string;   // 새로 추가
+    otherNotes?: string;           // 새로 추가
     direction: string;
     resourcePlan: string;
     writerOpinion: string;
+    proceedDecision?: string;
 
     // 작성자 정보
     writerName: string;
     writerDepartment: string;
 }
+
+
+/** [API 응답용] API로부터 받는 프로젝트의 최종 데이터 구조입니다. */
+interface ProjectData {
+    // --- 프로젝트 기본 속성 (DB 컬럼과 일치) ---
+    project_id: number;
+    project_name: string;
+    status: string;
+    created_at: string;
+    inflow_path?: string;
+    client?: string;
+    project_period_start?: string;
+    project_period_end?: string;
+
+    // --- 💡 [추가] 누락되었던 모든 상세 정보 필드를 여기에 선언합니다. ---
+    event_location?: string;
+    attendees?: string;
+    event_nature?: string;
+    ot_schedule?: string;
+    contract_amount?: number;
+    expected_competitors?: string;
+    project_overview?: string;
+    project_scope?: string;
+    deliverables?: string;
+    special_requirements?: string;
+    project_background?: string;
+    expected_effects?: string;
+    risk_factors?: string;
+    business_type?: string; // 💡 이 필드를 추가합니다.
+
+    // --- 💡 [추가] 새로 만든 리포트(정보수집 추가사항) 배열을 선언합니다. ---
+    reports?: Array<{
+        id: number;
+        report_date: string;
+        content: string;
+    }>;
+
+    // --- 관계를 통해 표현되는 중첩 객체 ---
+    writer_info?: WriterInfo;
+    updater_info?: WriterInfo;
+    company_profile?: CompanyProfileData;
+    selected_contact?: CompanyContactData;
+}
+
+/** 회사(발주처) 검색 결과 항목의 타입을 정의합니다. */
+interface CompanyData {
+    id: number;
+    company_name: string;
+    representative?: string;
+    business_number?: string;
+}
+
+/** 담당자 상세 정보 모달에 사용될 데이터 타입을 정의합니다. */
+interface ContactDetailData {
+    id: number;
+    contact_name: string;
+    position?: string;
+    department?: string;
+    email?: string;
+    phone?: string;
+    company: {
+        id: number;
+        company_name: string;
+        address?: string;
+    };
+    reports?: Array<{
+        contact_date: string;
+        content: string;
+    }>;
+}
+
 
 const ProjectProfileForm: React.FC = () => {
     const [formData, setFormData] = useState<ProjectProfile>({
@@ -113,78 +189,11 @@ const ProjectProfileForm: React.FC = () => {
         direction: '',
         resourcePlan: '',
         writerOpinion: '',
+        proceedDecision: '',
         writerName: '',
         writerDepartment: ''
     });
 
-    /** [API 응답용] API로부터 받는 프로젝트의 최종 데이터 구조입니다. */
-    interface ProjectData {
-        // --- 프로젝트 기본 속성 (DB 컬럼과 일치) ---
-        project_id: number;
-        project_name: string;
-        status: string;
-        created_at: string;
-        inflow_path?: string;
-        client?: string;
-        project_period_start?: string;
-        project_period_end?: string;
-
-        // --- 💡 [추가] 누락되었던 모든 상세 정보 필드를 여기에 선언합니다. ---
-        event_location?: string;
-        attendees?: string;
-        event_nature?: string;
-        ot_schedule?: string;
-        contract_amount?: number;
-        expected_competitors?: string;
-        project_overview?: string;
-        project_scope?: string;
-        deliverables?: string;
-        special_requirements?: string;
-        project_background?: string;
-        expected_effects?: string;
-        risk_factors?: string;
-        business_type?: string; // 💡 이 필드를 추가합니다.
-
-        // --- 💡 [추가] 새로 만든 리포트(정보수집 추가사항) 배열을 선언합니다. ---
-        reports?: Array<{
-            id: number;
-            report_date: string;
-            content: string;
-        }>;
-
-        // --- 관계를 통해 표현되는 중첩 객체 ---
-        writer_info?: WriterInfo;
-        updater_info?: WriterInfo;
-        company_profile?: CompanyProfileData;
-        selected_contact?: CompanyContactData;
-    }
-
-    /** 회사(발주처) 검색 결과 항목의 타입을 정의합니다. */
-    interface CompanyData {
-        id: number;
-        company_name: string;
-        representative?: string;
-        business_number?: string;
-    }
-
-    /** 담당자 상세 정보 모달에 사용될 데이터 타입을 정의합니다. */
-    interface ContactDetailData {
-        id: number;
-        contact_name: string;
-        position?: string;
-        department?: string;
-        email?: string;
-        phone?: string;
-        company: {
-            id: number;
-            company_name: string;
-            address?: string;
-        };
-        reports?: Array<{
-            contact_date: string;
-            content: string;
-        }>;
-    }
 
 
     const [showSearchModal, setShowSearchModal] = useState(false);
@@ -210,6 +219,55 @@ const ProjectProfileForm: React.FC = () => {
     const [contactSearchLoading, setContactSearchLoading] = useState(false);
 
     const [lastUpdater, setLastUpdater] = useState<WriterInfo | null>(null);
+
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string>('');
+    const [existingProfileId, setExistingProfileId] = useState<number | null>(null);
+
+    // URL에서 project_id 가져오기 (기존 코드와 동일한 방식)
+    const [searchParams] = useSearchParams();
+    const projectId = searchParams.get('project_id');
+
+    // 컴포넌트 마운트 시 기존 프로파일 데이터 로드
+    useEffect(() => {
+        if (projectId) {
+            loadExistingProfile(parseInt(projectId));
+        }
+    }, [projectId]);
+
+    /**
+     * 기존 프로파일 데이터 로드
+     */
+    const loadExistingProfile = async (projectId: number) => {
+        try {
+            setLoading(true);
+            const response = await fetch(`/api/project-profiles/${projectId}`);
+
+            if (response.ok) {
+                const profile = await response.json();
+                if (profile) {
+                    setExistingProfileId(profile.id);
+                    // 기존 데이터로 form 채우기
+                    setFormData(prev => ({
+                        ...prev,
+                        swotAnalysis: profile.swot_analysis || '',
+                        marketSize: profile.market_size || '',
+                        competitorAnalysis: profile.competitor_analysis || '',
+                        coreSuccessFactors: profile.core_success_factors || '',
+                        otherNotes: profile.other_notes || ''
+                    }));
+                }
+            } else if (response.status !== 404) {
+                // 404가 아닌 다른 에러인 경우에만 에러 처리
+                throw new Error('프로파일 데이터를 불러오는 중 오류가 발생했습니다.');
+            }
+        } catch (error) {
+            console.error('프로파일 로드 중 오류:', error);
+            setError('기존 프로파일 데이터를 불러오는 중 오류가 발생했습니다.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -567,9 +625,87 @@ const ProjectProfileForm: React.FC = () => {
         }
     };
 
-    const handleSubmit = () => {
-        console.log('프로젝트 Profile 저장:', formData);
-        // TODO: API 연동
+    /**
+     * 프로젝트 프로파일 저장 함수 (기존 handleSubmit 함수 대체)
+     */
+    const handleSubmit = async () => {
+        if (!projectId) {
+            setError('프로젝트 ID가 필요합니다.');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError('');
+
+            const profileData = {
+                project_id: parseInt(projectId),
+                swot_analysis: formData.swotAnalysis || null,
+                market_size: formData.marketSize || null,
+                competitor_analysis: formData.competitorAnalysis || null,
+                core_success_factors: formData.coreSuccessFactors || null,
+                other_notes: formData.otherNotes || null
+            };
+
+            let response;
+
+            if (existingProfileId) {
+                // 기존 프로파일 업데이트
+                response = await fetch(`/api/project-profiles/${projectId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(profileData),
+                });
+            } else {
+                // 새 프로파일 생성
+                response = await fetch(`/api/project-profiles/${projectId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(profileData),
+                });
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('프로젝트 프로파일 저장 완료:', result);
+
+            // 새로 생성한 경우 ID 업데이트
+            if (!existingProfileId) {
+                setExistingProfileId(result.id);
+            }
+
+            alert('프로젝트 프로파일이 성공적으로 저장되었습니다.');
+
+        } catch (error) {
+            console.error('프로파일 저장 중 오류:', error);
+            const errorMessage = error instanceof Error ? error.message : '저장 중 오류가 발생했습니다.';
+            setError(errorMessage);
+            alert(`저장 실패: ${errorMessage}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // handleApiError 함수 추가 (다른 컴포넌트와 동일한 패턴)
+    const handleApiError = (error: any): string => {
+        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+            return '서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.';
+        }
+        if (error?.response?.data?.detail) {
+            return error.response.data.detail;
+        }
+        if (error?.message) {
+            return error.message;
+        }
+        return '알 수 없는 오류가 발생했습니다.';
     };
 
     const handlePrint = () => {
@@ -860,8 +996,8 @@ const ProjectProfileForm: React.FC = () => {
                             <td className="table-cell table-cell-label blue-highlight-label">진행 가부 사유</td>
                             <td className="table-cell-input">
                                 <textarea
-                                    name="writerOpinion"
-                                    value={formData.writerOpinion}
+                                    name="proceedDecision"
+                                    value={formData.proceedDecision}
                                     onChange={handleBulletTextChange}
                                     placeholder="내부협의를 통해 진행여부 최종 결정사항 기재&#10;     Y : 가결 사유 기재 -> 착수서 단계로 이동&#10;     N : 부결 사유 기재 -> 프로젝트 종료"
                                     className="profile-textarea textarea-large bullet-textarea"
@@ -874,10 +1010,18 @@ const ProjectProfileForm: React.FC = () => {
 
                 {/* 버튼 영역 */}
                 <div className="button-section">
-                    <button onClick={handleSubmit} className="submit-btn">
-                        저장
+                    <button
+                        onClick={handleSubmit}
+                        className="submit-btn"
+                        disabled={loading}
+                        style={{
+                            opacity: loading ? 0.6 : 1,
+                            cursor: loading ? 'not-allowed' : 'pointer'
+                        }}
+                    >
+                        {loading ? '저장 중...' : (existingProfileId ? '업데이트' : '저장')}
                     </button>
-                    <button onClick={handlePrint} className="print-btn">
+                    <button onClick={handlePrint} className="print-btn" disabled={loading}>
                         인쇄
                     </button>
                 </div>
@@ -1030,6 +1174,20 @@ const ProjectProfileForm: React.FC = () => {
                             )}
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* 에러 메시지 표시 */}
+            {error && (
+                <div className="error-message" style={{
+                    color: '#d32f2f',
+                    backgroundColor: '#ffebee',
+                    padding: '12px',
+                    borderRadius: '4px',
+                    margin: '10px 0',
+                    border: '1px solid #ffcdd2'
+                }}>
+                    <strong>오류:</strong> {error}
                 </div>
             )}
 
