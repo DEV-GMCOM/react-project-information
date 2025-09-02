@@ -15,7 +15,7 @@ const statusClassMap = {
 };
 
 /** 직원의 간단한 정보를 나타냅니다. (작성자, 수정자 등) */
-interface WriterInfo {
+export interface WriterInfo {
     emp_id: number;
     name: string;
     department?: string;
@@ -34,7 +34,7 @@ interface ContactSearchData {
 }
 
 /** 고객사 담당자의 상세 정보를 나타냅니다. */
-interface CompanyContactData {
+export interface CompanyContactData {
     id: number;
     contact_name: string;
     position?: string;
@@ -45,7 +45,7 @@ interface CompanyContactData {
 }
 
 /** 회사의 상세 정보와 소속된 모든 담당자 목록을 포함합니다. */
-interface CompanyProfileData {
+export interface CompanyProfileData {
     id: number;
     company_name: string;
     contacts: CompanyContactData[]; // 해당 회사의 모든 담당자 목록

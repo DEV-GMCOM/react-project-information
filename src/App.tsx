@@ -27,6 +27,8 @@ import PTPostmortem from './pages/project/PTPostmortem'; // PT후 결과분석
 import ProjectPostmortem from './pages/project/ProjectPostmortem'; // 프로젝트 실행 후 결과분석
 import PTChecklist from './pages/project/PTChecklist'; // PT 준비 체크리스트
 
+import ProjectBasicInfoTest from './pages/project/ProjectBasicInforTest'; // PT 준비 체크리스트
+
 // // 새로운 페이지들
 // import ProjectPage from './pages/information/ProjectLegacyPage.tsx';
 // import AdvertiserPage from './pages/information/AdvertiserLegacyPage.tsx';
@@ -111,6 +113,8 @@ function App() {
           <Route path="/project/pt-checklist" element={<PTChecklist />} />
           <Route path="/project/postmortem-pt" element={<PTPostmortem />} />
           <Route path="/project/postmortem-project" element={<ProjectPostmortem />} />
+
+            <Route path="/test/project-basic-info" element={<ProjectBasicInfoTest />} />
 
           {/* 404 처리 - 대시보드로 리다이렉트 */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -1,4 +1,6 @@
 import React, { useState, useRef } from 'react';
+import ProjectBasicInfoForm from '../../components/common/ProjectBasicInfoForm';
+import { ProjectBasicInfo } from '../../types/project';
 import '../../styles/ProjectKickoff.css';
 
 interface UploadedFile {
@@ -181,6 +183,13 @@ const ProjectKickoffForm: React.FC = () => {
         writerDepartment: ''
     });
 
+    const handleBasicInfoChange = (name: keyof ProjectBasicInfo, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -276,224 +285,212 @@ const ProjectKickoffForm: React.FC = () => {
                     {/*</div>*/}
                 </div>
 
-                {/* 프로젝트 기본 정보 (8x4 테이블) */}
-                <div className="kickoff-section">
-                    <h3 className="section-header">
-                        ■ 프로젝트 기본 정보
-                    </h3>
+                {/*/!* 프로젝트 기본 정보 (8x4 테이블) *!/*/}
+                {/*<div className="kickoff-section">*/}
+                {/*    <h3 className="section-header">*/}
+                {/*        ■ 프로젝트 기본 정보*/}
+                {/*    </h3>*/}
 
-                    <table className="kickoff-table">
-                        <tbody>
-                        <tr>
-                            <td className="table-header">구분</td>
-                            <td className="table-header">내용</td>
-                            <td className="table-header">구분</td>
-                            <td className="table-header">내용</td>
-                            {/*<td className="table-header table-header-empty"></td>*/}
-                            {/*<td className="table-header table-header-empty"></td>*/}
-                        </tr>
-                        <tr>
-                            <td className="table-cell table-cell-label">프로젝트명</td>
-                            <td className="table-cell-input">
-                                <input
-                                    type="text"
-                                    name="projectName"
-                                    value={formData.projectName}
-                                    onChange={handleInputChange}
-                                    className="kickoff-input"
-                                />
-                            </td>
-                            <td className="table-cell table-cell-label">유입경로</td>
-                            <td className="table-cell-input">
-                                <input
-                                    type="text"
-                                    name="inflowPath"
-                                    value={formData.inflowPath}
-                                    onChange={handleInputChange}
-                                    className="kickoff-input"
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="table-cell table-cell-label">발주처</td>
-                            <td className="table-cell-input">
-                                <input
-                                    type="text"
-                                    name="client"
-                                    value={formData.client}
-                                    onChange={handleInputChange}
-                                    className="kickoff-input"
-                                />
-                            </td>
-                            <td className="table-cell table-cell-label">담당자</td>
-                            <td className="table-cell-input">
-                                <div className="input-container">
-                                    <input
-                                        type="text"
-                                        name="manager"
-                                        value={formData.manager}
-                                        onChange={handleInputChange}
-                                        className="kickoff-input input-with-inner-btn"
-                                    />
-                                    <button
-                                        type="button"
-                                        className="inner-profile-btn"
-                                        onClick={() => {
-                                            console.log('광고주 Profile 버튼 클릭');
-                                            // TODO: 광고주 Profile 페이지로 이동 또는 모달 열기
-                                        }}
-                                    >
-                                        광고주 Profile
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="table-cell table-cell-label">행사일</td>
-                            <td className="table-cell-input">
-                                <input
-                                    type="date"
-                                    name="eventDate"
-                                    value={formData.eventDate ? formData.eventDate.replace(/\./g, '-') : ''}
-                                    onChange={(e) => {
-                                        const selectedDate = e.target.value;
-                                        if (selectedDate) {
-                                            const formattedDate = selectedDate.replace(/-/g, '.');
-                                            setFormData(prev => ({ ...prev, eventDate: formattedDate }));
-                                        } else {
-                                            setFormData(prev => ({ ...prev, eventDate: '' }));
-                                        }
-                                    }}
-                                    className="kickoff-date-input"
-                                />
-                            </td>
-                            <td className="table-cell table-cell-label">행사장소</td>
-                            <td className="table-cell-input">
-                                <input
-                                    type="text"
-                                    name="eventLocation"
-                                    value={formData.eventLocation}
-                                    onChange={handleInputChange}
-                                    className="kickoff-input"
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="table-cell table-cell-label">참석대상</td>
-                            <td className="table-cell-input">
-                                <input
-                                    type="text"
-                                    name="attendees"
-                                    value={formData.attendees}
-                                    onChange={handleInputChange}
-                                    placeholder="VIP XX명, 약 XX명 예상"
-                                    className="kickoff-input"
-                                />
-                            </td>
-                            <td className="table-cell table-cell-label">행사성격</td>
-                            <td className="table-cell-input">
-                                <input
-                                    type="text"
-                                    name="eventNature"
-                                    value={formData.eventNature}
-                                    onChange={handleInputChange}
-                                    className="kickoff-input"
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="table-cell table-cell-label">OT 일정</td>
-                            <td className="table-cell-input">
-                                <input
-                                    type="date"
-                                    name="otSchedule"
-                                    value={formData.otSchedule ? formData.otSchedule.replace(/\./g, '-') : ''}
-                                    onChange={(e) => {
-                                        const selectedDate = e.target.value;
-                                        if (selectedDate) {
-                                            const formattedDate = selectedDate.replace(/-/g, '.');
-                                            setFormData(prev => ({ ...prev, otSchedule: formattedDate }));
-                                        } else {
-                                            setFormData(prev => ({ ...prev, otSchedule: '' }));
-                                        }
-                                    }}
-                                    className="kickoff-date-input"
-                                />
-                            </td>
-                            <td className="table-cell table-cell-label">제출 / PT 일정</td>
-                            <td className="table-cell-input">
-                                <input
-                                    type="date"
-                                    name="submissionSchedule"
-                                    value={formData.submissionSchedule ? formData.submissionSchedule.replace(/\./g, '-') : ''}
-                                    onChange={(e) => {
-                                        const selectedDate = e.target.value;
-                                        if (selectedDate) {
-                                            const formattedDate = selectedDate.replace(/-/g, '.');
-                                            setFormData(prev => ({ ...prev, submissionSchedule: formattedDate }));
-                                        } else {
-                                            setFormData(prev => ({ ...prev, submissionSchedule: '' }));
-                                        }
-                                    }}
-                                    className="kickoff-date-input"
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="table-cell table-cell-label">
-                                예상매출<br/>
-                                ( 단위 : 억원 )
-                            </td>
-                            <td className="table-cell-input">
-                                <input
-                                    type="text"
-                                    name="expectedRevenue"
-                                    value={formData.expectedRevenue}
-                                    onChange={handleInputChange}
-                                    placeholder="XX.X [ 수익 X.X ]"
-                                    className="kickoff-input"
-                                />
-                            </td>
-                            <td className="table-cell table-cell-label">예상 경쟁사</td>
-                            <td className="table-cell-input">
-                                <input
-                                    type="text"
-                                    name="expectedCompetitors"
-                                    value={formData.expectedCompetitors}
-                                    onChange={handleInputChange}
-                                    placeholder="XX, YY 등 N개사"
-                                    className="kickoff-input"
-                                />
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="table-cell table-cell-label">배점표</td>
-                            <td className="table-cell-input">
-                                <input
-                                    type="text"
-                                    name="scoreTable"
-                                    value={formData.scoreTable}
-                                    onChange={handleInputChange}
-                                    className="kickoff-input"
-                                />
-                            </td>
-                            <td className="table-cell table-cell-label">
-                                제출/투찰 금액<br/>
-                                (단위:억원)
-                            </td>
-                            <td className="table-cell-input">
-                                <input
-                                    type="text"
-                                    name="bidAmount"
-                                    value={formData.bidAmount}
-                                    onChange={handleInputChange}
-                                    placeholder="XX.X, Y%"
-                                    className="kickoff-input"
-                                />
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
+                {/*    <table className="kickoff-table">*/}
+                {/*        <tbody>*/}
+                {/*        <tr>*/}
+                {/*            <td className="table-header">구분</td>*/}
+                {/*            <td className="table-header">내용</td>*/}
+                {/*            <td className="table-header">구분</td>*/}
+                {/*            <td className="table-header">내용</td>*/}
+                {/*            /!*<td className="table-header table-header-empty"></td>*!/*/}
+                {/*            /!*<td className="table-header table-header-empty"></td>*!/*/}
+                {/*        </tr>*/}
+                {/*        <tr>*/}
+                {/*            <td className="table-cell table-cell-label">프로젝트명</td>*/}
+                {/*            <td className="table-cell-input">*/}
+                {/*                <input*/}
+                {/*                    type="text"*/}
+                {/*                    name="projectName"*/}
+                {/*                    value={formData.projectName}*/}
+                {/*                    onChange={handleInputChange}*/}
+                {/*                    className="kickoff-input"*/}
+                {/*                />*/}
+                {/*            </td>*/}
+                {/*            <td className="table-cell table-cell-label">유입경로</td>*/}
+                {/*            <td className="table-cell-input">*/}
+                {/*                <input*/}
+                {/*                    type="text"*/}
+                {/*                    name="inflowPath"*/}
+                {/*                    value={formData.inflowPath}*/}
+                {/*                    onChange={handleInputChange}*/}
+                {/*                    className="kickoff-input"*/}
+                {/*                />*/}
+                {/*            </td>*/}
+                {/*        </tr>*/}
+                {/*        <tr>*/}
+                {/*            <td className="table-cell table-cell-label">발주처</td>*/}
+                {/*            <td className="table-cell-input">*/}
+                {/*                <input*/}
+                {/*                    type="text"*/}
+                {/*                    name="client"*/}
+                {/*                    value={formData.client}*/}
+                {/*                    onChange={handleInputChange}*/}
+                {/*                    className="kickoff-input"*/}
+                {/*                />*/}
+                {/*            </td>*/}
+                {/*            <td className="table-cell table-cell-label">담당자</td>*/}
+                {/*            <td className="table-cell-input">*/}
+                {/*                <div className="input-container">*/}
+                {/*                    <input*/}
+                {/*                        type="text"*/}
+                {/*                        name="manager"*/}
+                {/*                        value={formData.manager}*/}
+                {/*                        onChange={handleInputChange}*/}
+                {/*                        className="kickoff-input input-with-inner-btn"*/}
+                {/*                    />*/}
+                {/*                    <button*/}
+                {/*                        type="button"*/}
+                {/*                        className="inner-profile-btn"*/}
+                {/*                        onClick={() => {*/}
+                {/*                            console.log('광고주 Profile 버튼 클릭');*/}
+                {/*                            // TODO: 광고주 Profile 페이지로 이동 또는 모달 열기*/}
+                {/*                        }}*/}
+                {/*                    >*/}
+                {/*                        광고주 Profile*/}
+                {/*                    </button>*/}
+                {/*                </div>*/}
+                {/*            </td>*/}
+                {/*        </tr>*/}
+                {/*        <tr>*/}
+                {/*            <td className="table-cell table-cell-label">행사일</td>*/}
+                {/*            <td className="table-cell-input">*/}
+                {/*                <input*/}
+                {/*                    type="date"*/}
+                {/*                    name="eventDate"*/}
+                {/*                    value={formData.eventDate ? formData.eventDate.replace(/\./g, '-') : ''}*/}
+                {/*                    onChange={(e) => {*/}
+                {/*                        const selectedDate = e.target.value;*/}
+                {/*                        if (selectedDate) {*/}
+                {/*                            const formattedDate = selectedDate.replace(/-/g, '.');*/}
+                {/*                            setFormData(prev => ({ ...prev, eventDate: formattedDate }));*/}
+                {/*                        } else {*/}
+                {/*                            setFormData(prev => ({ ...prev, eventDate: '' }));*/}
+                {/*                        }*/}
+                {/*                    }}*/}
+                {/*                    className="kickoff-date-input"*/}
+                {/*                />*/}
+                {/*            </td>*/}
+                {/*            <td className="table-cell table-cell-label">행사장소</td>*/}
+                {/*            <td className="table-cell-input">*/}
+                {/*                <input*/}
+                {/*                    type="text"*/}
+                {/*                    name="eventLocation"*/}
+                {/*                    value={formData.eventLocation}*/}
+                {/*                    onChange={handleInputChange}*/}
+                {/*                    className="kickoff-input"*/}
+                {/*                />*/}
+                {/*            </td>*/}
+                {/*        </tr>*/}
+                {/*        <tr>*/}
+                {/*            <td className="table-cell table-cell-label">참석대상</td>*/}
+                {/*            <td className="table-cell-input">*/}
+                {/*                <input*/}
+                {/*                    type="text"*/}
+                {/*                    name="attendees"*/}
+                {/*                    value={formData.attendees}*/}
+                {/*                    onChange={handleInputChange}*/}
+                {/*                    placeholder="VIP XX명, 약 XX명 예상"*/}
+                {/*                    className="kickoff-input"*/}
+                {/*                />*/}
+                {/*            </td>*/}
+                {/*            <td className="table-cell table-cell-label">행사성격</td>*/}
+                {/*            <td className="table-cell-input">*/}
+                {/*                <input*/}
+                {/*                    type="text"*/}
+                {/*                    name="eventNature"*/}
+                {/*                    value={formData.eventNature}*/}
+                {/*                    onChange={handleInputChange}*/}
+                {/*                    className="kickoff-input"*/}
+                {/*                />*/}
+                {/*            </td>*/}
+                {/*        </tr>*/}
+                {/*        <tr>*/}
+                {/*            <td className="table-cell table-cell-label">OT 일정</td>*/}
+                {/*            <td className="table-cell-input">*/}
+                {/*                <input*/}
+                {/*                    type="date"*/}
+                {/*                    name="otSchedule"*/}
+                {/*                    value={formData.otSchedule ? formData.otSchedule.replace(/\./g, '-') : ''}*/}
+                {/*                    onChange={(e) => {*/}
+                {/*                        const selectedDate = e.target.value;*/}
+                {/*                        if (selectedDate) {*/}
+                {/*                            const formattedDate = selectedDate.replace(/-/g, '.');*/}
+                {/*                            setFormData(prev => ({ ...prev, otSchedule: formattedDate }));*/}
+                {/*                        } else {*/}
+                {/*                            setFormData(prev => ({ ...prev, otSchedule: '' }));*/}
+                {/*                        }*/}
+                {/*                    }}*/}
+                {/*                    className="kickoff-date-input"*/}
+                {/*                />*/}
+                {/*            </td>*/}
+                {/*            <td className="table-cell table-cell-label">제출 / PT 일정</td>*/}
+                {/*            <td className="table-cell-input">*/}
+                {/*                <input*/}
+                {/*                    type="date"*/}
+                {/*                    name="submissionSchedule"*/}
+                {/*                    value={formData.submissionSchedule ? formData.submissionSchedule.replace(/\./g, '-') : ''}*/}
+                {/*                    onChange={(e) => {*/}
+                {/*                        const selectedDate = e.target.value;*/}
+                {/*                        if (selectedDate) {*/}
+                {/*                            const formattedDate = selectedDate.replace(/-/g, '.');*/}
+                {/*                            setFormData(prev => ({ ...prev, submissionSchedule: formattedDate }));*/}
+                {/*                        } else {*/}
+                {/*                            setFormData(prev => ({ ...prev, submissionSchedule: '' }));*/}
+                {/*                        }*/}
+                {/*                    }}*/}
+                {/*                    className="kickoff-date-input"*/}
+                {/*                />*/}
+                {/*            </td>*/}
+                {/*        </tr>*/}
+                {/*        <tr>*/}
+                {/*            <td className="table-cell table-cell-label">*/}
+                {/*                예상매출<br/>*/}
+                {/*                ( 단위 : 억원 )*/}
+                {/*            </td>*/}
+                {/*            <td className="table-cell-input">*/}
+                {/*                <input*/}
+                {/*                    type="text"*/}
+                {/*                    name="expectedRevenue"*/}
+                {/*                    value={formData.expectedRevenue}*/}
+                {/*                    onChange={handleInputChange}*/}
+                {/*                    placeholder="XX.X [ 수익 X.X ]"*/}
+                {/*                    className="kickoff-input"*/}
+                {/*                />*/}
+                {/*            </td>*/}
+                {/*            <td className="table-cell table-cell-label">예상 경쟁사</td>*/}
+                {/*            <td className="table-cell-input">*/}
+                {/*                <input*/}
+                {/*                    type="text"*/}
+                {/*                    name="expectedCompetitors"*/}
+                {/*                    value={formData.expectedCompetitors}*/}
+                {/*                    onChange={handleInputChange}*/}
+                {/*                    placeholder="XX, YY 등 N개사"*/}
+                {/*                    className="kickoff-input"*/}
+                {/*                />*/}
+                {/*            </td>*/}
+                {/*        </tr>*/}
+                {/*        </tbody>*/}
+                {/*    </table>*/}
+                {/*</div>*/}
+                <div className="profile-main">
+                    {/* 공통 컴포넌트 사용 */}
+                    <ProjectBasicInfoForm
+                        formData={formData}
+                        onChange={handleBasicInfoChange}
+                        // onProjectSearch={handleProjectSearch}
+                        // onCompanySearch={handleCompanySearch}
+                        // onContactSearch={handleContactSearch}
+                        showSearch={true}
+                        className="project-section"
+                        tableClassName="project-table"
+                        inputClassName="project-input"
+                    />
                 </div>
 
                 {/* Project Profile 토글 버튼 */}
@@ -506,6 +503,7 @@ const ProjectKickoffForm: React.FC = () => {
                         Project Profile {showProfileTables ? '숨기기' : '보기'}
                     </button>
                 </div>
+
 
                 {/* 프로젝트 상세 정보 (5x2 테이블) - 토글 애니메이션 */}
                 <div
