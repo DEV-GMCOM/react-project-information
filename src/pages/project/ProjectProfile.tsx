@@ -949,7 +949,9 @@ const ProjectProfileForm: React.FC = () => {
                             <td className="table-cell-input"><input type="date" name="submissionSchedule" value={formData.submissionSchedule ? formData.submissionSchedule.replace(/\./g, '-') : ''} onChange={(e) => { const selectedDate = e.target.value; if (selectedDate) { const formattedDate = selectedDate.replace(/-/g, '.'); setFormData(prev => ({ ...prev, submissionSchedule: formattedDate }));} else { setFormData(prev => ({ ...prev, submissionSchedule: '' }));}}} className="project-date-input"/></td>
                         </tr>
                         <tr>
-                            <td className="table-cell table-cell-label">예상매출 ( 단위 : 억원 )</td>
+                            <td className="table-cell table-cell-label">
+                                예 산<br/>( 단위 : 천만원 )
+                            </td>
                             <td className="table-cell-input"><input type="text" name="expectedRevenue" value={formData.expectedRevenue} onChange={handleInputChange} placeholder="XX.X [ 수익 X.X ]" className="project-input"/></td>
                             <td className="table-cell table-cell-label">예상 경쟁사</td>
                             <td className="table-cell-input"><input type="text" name="expectedCompetitors" value={formData.expectedCompetitors} onChange={handleInputChange} className="project-input"/></td>
@@ -964,8 +966,8 @@ const ProjectProfileForm: React.FC = () => {
                         <tbody>
                         <tr><td className="table-header">구분</td><td className="table-header">내용</td></tr>
                         <tr><td className="table-cell table-cell-label">목적 및 배경</td><td className="table-cell-input"><textarea name="purposeBackground" value={formData.purposeBackground} onChange={handleInputChange} className="project-textarea textarea-medium"/></td></tr>
-                        <tr><td className="table-cell table-cell-label">주요 내용</td><td className="table-cell-input"><textarea name="mainContent" value={formData.mainContent} onChange={handleBulletTextChange} placeholder="주요 과제, 행사 맥락, 주요 프로그램 등" className="project-textarea textarea-large bullet-textarea"/></td></tr>
-                        <tr><td className="table-cell table-cell-label">핵심 요구사항</td><td className="table-cell-input"><textarea name="coreRequirements" value={formData.coreRequirements} onChange={handleBulletTextChange} placeholder="- 과업 제안범위, 제출금액, 운영 시 필수 고려사항등" className="project-textarea textarea-large bullet-textarea"/></td></tr>
+                        <tr><td className="table-cell table-cell-label">주요 내용<br/>및<br/>핵심 요구사항</td><td className="table-cell-input"><textarea name="mainContent" value={formData.mainContent} onChange={handleBulletTextChange} placeholder="- 주요 과제, 행사 맥락, 주요 프로그램 등&#10;- 과업 제안범위, 제출금액, 운영 시 필수 고려사항등&#10;- 프로젝트 추진 방향성&#10;- 내외부 리소스 활용방법" className="project-textarea textarea-large bullet-textarea"/></td></tr>
+                        {/*<tr><td className="table-cell table-cell-label">핵심 요구사항</td><td className="table-cell-input"><textarea name="coreRequirements" value={formData.coreRequirements} onChange={handleBulletTextChange} placeholder="- 과업 제안범위, 제출금액, 운영 시 필수 고려사항등" className="project-textarea textarea-large bullet-textarea"/></td></tr>*/}
                         <tr><td className="table-cell table-cell-label">비 고</td><td className="table-cell-input"><textarea name="comparison" value={formData.comparison} onChange={handleInputChange} placeholder="- 특이사항 및 중요사항등 추가 기재" className="project-textarea textarea-medium"/></td></tr>
                         </tbody>
                     </table>
@@ -996,18 +998,18 @@ const ProjectProfileForm: React.FC = () => {
                                 />
                             </td>
                         </tr>
-                        <tr>
-                            <td className="table-cell table-cell-label blue-highlight-label">추진방향</td>
-                            <td className="table-cell-input">
-                                <textarea
-                                    name="direction"
-                                    value={formData.direction}
-                                    onChange={handleBulletTextChange}
-                                    placeholder="- 프로젝트 추진 방향성&#10;- 내외부 리소스 활용방법"
-                                    className="profile-textarea textarea-large bullet-textarea"
-                                />
-                            </td>
-                        </tr>
+                        {/*<tr>*/}
+                        {/*    <td className="table-cell table-cell-label blue-highlight-label">추진방향</td>*/}
+                        {/*    <td className="table-cell-input">*/}
+                        {/*        <textarea*/}
+                        {/*            name="direction"*/}
+                        {/*            value={formData.direction}*/}
+                        {/*            onChange={handleBulletTextChange}*/}
+                        {/*            placeholder="- 프로젝트 추진 방향성&#10;- 내외부 리소스 활용방법"*/}
+                        {/*            className="profile-textarea textarea-large bullet-textarea"*/}
+                        {/*        />*/}
+                        {/*    </td>*/}
+                        {/*</tr>*/}
                         <tr>
                             <td className="table-cell table-cell-label blue-highlight-label">리소스 활용방안</td>
                             <td className="table-cell-input">
@@ -1033,13 +1035,13 @@ const ProjectProfileForm: React.FC = () => {
                             </td>
                         </tr>
                         <tr>
-                            <td className="table-cell table-cell-label blue-highlight-label">진행 가부 사유</td>
+                            <td className="table-cell table-cell-label blue-highlight-label">진행 부결 사유</td>
                             <td className="table-cell-input">
                                 <textarea
                                     name="proceedDecision"
                                     value={formData.proceedDecision}
                                     onChange={handleBulletTextChange}
-                                    placeholder="내부협의를 통해 진행여부 최종 결정사항 기재&#10;     Y : 가결 사유 기재 -> 착수서 단계로 이동&#10;     N : 부결 사유 기재 -> 프로젝트 종료"
+                                    placeholder="부결 사유 기재"
                                     className="profile-textarea textarea-large bullet-textarea"
                                 />
                             </td>

@@ -684,8 +684,7 @@ const ProjectKickoffForm: React.FC = () => {
                         </tr>
                         <tr>
                             <td className="table-cell table-cell-label">
-                                투입인력 및<br/>
-                                역할, 기여도
+                                기획자
                             </td>
                             <td className="table-cell-input">
                                 <textarea
@@ -709,18 +708,18 @@ const ProjectKickoffForm: React.FC = () => {
                                 />
                             </td>
                         </tr>
-                        <tr>
-                            <td className="table-cell table-cell-label">기획 예상경비</td>
-                            <td className="table-cell-input">
-                                <textarea
-                                    name="plannedExpense"
-                                    value={formData.plannedExpense}
-                                    onChange={handleBulletTextChange}
-                                    placeholder="출장, 야근택시비, 용역비 등"
-                                    className="kickoff-textarea textarea-medium bullet-textarea"
-                                />
-                            </td>
-                        </tr>
+                        {/*<tr>*/}
+                        {/*    <td className="table-cell table-cell-label">기획 예상경비</td>*/}
+                        {/*    <td className="table-cell-input">*/}
+                        {/*        <textarea*/}
+                        {/*            name="plannedExpense"*/}
+                        {/*            value={formData.plannedExpense}*/}
+                        {/*            onChange={handleBulletTextChange}*/}
+                        {/*            placeholder="출장, 야근택시비, 용역비 등"*/}
+                        {/*            className="kickoff-textarea textarea-medium bullet-textarea"*/}
+                        {/*        />*/}
+                        {/*    </td>*/}
+                        {/*</tr>*/}
                         <tr>
                             <td className="table-cell table-cell-label">추진 일정</td>
                             <td className="table-cell-input">

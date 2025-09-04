@@ -1387,45 +1387,45 @@ const CompanyProfileForm: React.FC = () => {
                                 {/*        />*/}
                                 {/*    </td>*/}
                                 {/*</tr>*/}
-                                <tr>
-                                    <td className="table-cell table-cell-label table-cell-top">지엠컴과 관계성</td>
-                                    <td className="table-cell-input" colSpan={4}>
-                                        <textarea
-                                            name="relationship"
-                                            value={contactFormData.relationship}
-                                            onChange={handleContactFormChange}
-                                            className={clsx('profile-textarea', 'textarea-medium', {
-                                                'input-modified': contactFormData.relationship !== originalContactData.relationship
-                                            })}
-                                        />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label table-cell-top">프로젝트 경험성</td>
-                                    <td className="table-cell-input" colSpan={4}>
-                                        <textarea
-                                            name="projectExperience"
-                                            value={contactFormData.projectExperience}
-                                            onChange={handleContactFormChange}
-                                            className={clsx('profile-textarea', 'textarea-medium', {
-                                                'input-modified': contactFormData.projectExperience !== originalContactData.projectExperience
-                                            })}
-                                        />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label table-cell-top">비고 / 기타</td>
-                                    <td className="table-cell-input" colSpan={4}>
-                                        <textarea
-                                            name="notes"
-                                            value={contactFormData.notes}
-                                            onChange={handleContactFormChange}
-                                            className={clsx('profile-textarea', 'textarea-medium', {
-                                                'input-modified': contactFormData.notes !== originalContactData.notes
-                                            })}
-                                        />
-                                    </td>
-                                </tr>
+                                {/*<tr>*/}
+                                {/*    <td className="table-cell table-cell-label table-cell-top">지엠컴과 관계성</td>*/}
+                                {/*    <td className="table-cell-input" colSpan={4}>*/}
+                                {/*        <textarea*/}
+                                {/*            name="relationship"*/}
+                                {/*            value={contactFormData.relationship}*/}
+                                {/*            onChange={handleContactFormChange}*/}
+                                {/*            className={clsx('profile-textarea', 'textarea-medium', {*/}
+                                {/*                'input-modified': contactFormData.relationship !== originalContactData.relationship*/}
+                                {/*            })}*/}
+                                {/*        />*/}
+                                {/*    </td>*/}
+                                {/*</tr>*/}
+                                {/*<tr>*/}
+                                {/*    <td className="table-cell table-cell-label table-cell-top">프로젝트 경험성</td>*/}
+                                {/*    <td className="table-cell-input" colSpan={4}>*/}
+                                {/*        <textarea*/}
+                                {/*            name="projectExperience"*/}
+                                {/*            value={contactFormData.projectExperience}*/}
+                                {/*            onChange={handleContactFormChange}*/}
+                                {/*            className={clsx('profile-textarea', 'textarea-medium', {*/}
+                                {/*                'input-modified': contactFormData.projectExperience !== originalContactData.projectExperience*/}
+                                {/*            })}*/}
+                                {/*        />*/}
+                                {/*    </td>*/}
+                                {/*</tr>*/}
+                                {/*<tr>*/}
+                                {/*    <td className="table-cell table-cell-label table-cell-top">비고 / 기타</td>*/}
+                                {/*    <td className="table-cell-input" colSpan={4}>*/}
+                                {/*        <textarea*/}
+                                {/*            name="notes"*/}
+                                {/*            value={contactFormData.notes}*/}
+                                {/*            onChange={handleContactFormChange}*/}
+                                {/*            className={clsx('profile-textarea', 'textarea-medium', {*/}
+                                {/*                'input-modified': contactFormData.notes !== originalContactData.notes*/}
+                                {/*            })}*/}
+                                {/*        />*/}
+                                {/*    </td>*/}
+                                {/*</tr>*/}
                                 </tbody>
                             </table>
                         </div>

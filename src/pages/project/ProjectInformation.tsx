@@ -1058,7 +1058,9 @@ const ProjectInformationForm: React.FC = () => {
                             <td className="table-cell-input"><input type="date" name="submissionSchedule" value={formData.submissionSchedule ? formData.submissionSchedule.replace(/\./g, '-') : ''} onChange={(e) => { const selectedDate = e.target.value; if (selectedDate) { const formattedDate = selectedDate.replace(/-/g, '.'); setFormData(prev => ({ ...prev, submissionSchedule: formattedDate }));} else { setFormData(prev => ({ ...prev, submissionSchedule: '' }));}}} className="project-date-input"/></td>
                         </tr>
                         <tr>
-                            <td className="table-cell table-cell-label">예상매출 ( 단위 : 억원 )</td>
+                            <td className="table-cell table-cell-label">
+                                예 산<br/>( 단위 : 천만원 )
+                            </td>
                             <td className="table-cell-input"><input type="text" name="expectedRevenue" value={formData.expectedRevenue} onChange={handleInputChange} placeholder="XX.X [ 수익 X.X ]" className="project-input"/></td>
                             <td className="table-cell table-cell-label">예상 경쟁사</td>
                             <td className="table-cell-input"><input type="text" name="expectedCompetitors" value={formData.expectedCompetitors} onChange={handleInputChange} className="project-input"/></td>

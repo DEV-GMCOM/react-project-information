@@ -222,7 +222,7 @@ const AdvertiserPage: React.FC = () => {
                                     name="annualRevenue"
                                     value={formData.annualRevenue}
                                     onChange={handleInputChange}
-                                    placeholder="예: 100억원"
+                                    placeholder="예: 1000 천만원"
                                 />
                             </div>
 

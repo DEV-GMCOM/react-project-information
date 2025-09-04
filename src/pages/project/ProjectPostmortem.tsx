@@ -426,8 +426,7 @@ const ProjectPostmortemForm: React.FC = () => {
                         </tr>
                         <tr>
                             <td className="table-cell table-cell-label">
-                                예상매출<br/>
-                                ( 단위 : 억원 )
+                                예 산<br/>( 단위 : 천만원 )
                             </td>
                             <td className="table-cell-input">
                                 <input
@@ -464,7 +463,7 @@ const ProjectPostmortemForm: React.FC = () => {
                             </td>
                             <td className="table-cell table-cell-label">
                                 제출/투찰 금액<br/>
-                                (단위:억원)
+                                (단위 : 천만원)
                             </td>
                             <td className="table-cell-input">
                                 <input

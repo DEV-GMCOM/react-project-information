@@ -196,10 +196,13 @@ const ProjectKickoffChecklistForm: React.FC = () => {
                             <td className="table-cell table-cell-content">
                                 <div className="bullet-content">
                                     • 수주가능성 : 유착관계, 당사 리스크 등<br/>
-                                    • 당사 동원 인력의 역량 및 활용상황
+                                    • 당사 동원 인력의 역량 및 활용상황<br/>
+                                    • 참여조건, 심사기준 등의 적합성<br/>
+                                    • 당사 단독 준비 가능여부, 협업 필요성등<br/>
+                                    • 수주 가능성 분석 : 유착관계, 당사 리스크 등
                                 </div>
                             </td>
-                            <td className="table-cell table-cell-weight">20</td>
+                            <td className="table-cell table-cell-weight">30</td>
                             <td className="table-cell-input">
                                 <input
                                     type="number"
@@ -211,27 +214,27 @@ const ProjectKickoffChecklistForm: React.FC = () => {
                                 />
                             </td>
                         </tr>
-                        <tr>
-                            <td className="table-cell table-cell-label">RFP 검토</td>
-                            <td className="table-cell table-cell-content">
-                                <div className="bullet-content">
-                                    • 참여조건, 심사기준 등의 적합성<br/>
-                                    • 당사 단독 준비 가능여부, 협업 필요성등<br/>
-                                    • 수주 가능성 분석 : 유착관계, 당사 리스크 등
-                                </div>
-                            </td>
-                            <td className="table-cell table-cell-weight">10</td>
-                            <td className="table-cell-input">
-                                <input
-                                    type="number"
-                                    min="0"
-                                    max="10"
-                                    value={formData.scores.rfpReview}
-                                    onChange={(e) => handleScoreChange('rfpReview', e.target.value, 10)}
-                                    className="checklist-score-input"
-                                />
-                            </td>
-                        </tr>
+                        {/*<tr>*/}
+                        {/*    <td className="table-cell table-cell-label">RFP 검토</td>*/}
+                        {/*    <td className="table-cell table-cell-content">*/}
+                        {/*        <div className="bullet-content">*/}
+                        {/*            • 참여조건, 심사기준 등의 적합성<br/>*/}
+                        {/*            • 당사 단독 준비 가능여부, 협업 필요성등<br/>*/}
+                        {/*            • 수주 가능성 분석 : 유착관계, 당사 리스크 등*/}
+                        {/*        </div>*/}
+                        {/*    </td>*/}
+                        {/*    <td className="table-cell table-cell-weight">10</td>*/}
+                        {/*    <td className="table-cell-input">*/}
+                        {/*        <input*/}
+                        {/*            type="number"*/}
+                        {/*            min="0"*/}
+                        {/*            max="10"*/}
+                        {/*            value={formData.scores.rfpReview}*/}
+                        {/*            onChange={(e) => handleScoreChange('rfpReview', e.target.value, 10)}*/}
+                        {/*            className="checklist-score-input"*/}
+                        {/*        />*/}
+                        {/*    </td>*/}
+                        {/*</tr>*/}
                         <tr>
                             <td className="table-cell table-cell-label">미래가치성</td>
                             <td className="table-cell table-cell-content">
@@ -282,7 +285,7 @@ const ProjectKickoffChecklistForm: React.FC = () => {
                         </tr>
                         <tr className="grade-row">
                             <td className="table-cell table-cell-merged" colSpan={2}>
-                                종합 등급 ( C:~70 B:~80 A:~100 )
+                                종합 등급&emsp;&emsp;( C:0~70&emsp;&emsp;&emsp;B:71~80&emsp;&emsp;&emsp;A:81~100 )
                             </td>
                             <td className="table-cell table-cell-dash">-</td>
                             <td className="table-cell table-cell-grade">
@@ -306,29 +309,29 @@ const ProjectKickoffChecklistForm: React.FC = () => {
                     <table className="checklist-table opinion-table">
                         <tbody>
                         <tr>
-                            <td className="table-cell table-cell-label opinion-label">담당자 의견</td>
+                            <td className="table-cell table-cell-label opinion-label">담당자 의견 / 평가</td>
                             <td className="table-cell-input">
                                 <textarea
                                     name="managerOpinion"
                                     value={formData.managerOpinion}
                                     onChange={handleInputChange}
                                     className="checklist-textarea textarea-large"
-                                    placeholder="프로젝트에 대한 전반적인 의견을 입력해주세요..."
+                                    placeholder="프로젝트에 대한 전반적인 의견&#10;혹은 프로젝트 진행에 대한 최종 평가를 입력해주세요..."
                                 />
                             </td>
                         </tr>
-                        <tr>
-                            <td className="table-cell table-cell-label opinion-label">담당자 평가</td>
-                            <td className="table-cell-input">
-                                <textarea
-                                    name="managerEvaluation"
-                                    value={formData.managerEvaluation}
-                                    onChange={handleInputChange}
-                                    className="checklist-textarea textarea-large"
-                                    placeholder="프로젝트 진행에 대한 최종 평가를 입력해주세요..."
-                                />
-                            </td>
-                        </tr>
+                        {/*<tr>*/}
+                        {/*    <td className="table-cell table-cell-label opinion-label">담당자 평가</td>*/}
+                        {/*    <td className="table-cell-input">*/}
+                        {/*        <textarea*/}
+                        {/*            name="managerEvaluation"*/}
+                        {/*            value={formData.managerEvaluation}*/}
+                        {/*            onChange={handleInputChange}*/}
+                        {/*            className="checklist-textarea textarea-large"*/}
+                        {/*            placeholder="프로젝트 진행에 대한 최종 평가를 입력해주세요..."*/}
+                        {/*        />*/}
+                        {/*    </td>*/}
+                        {/*</tr>*/}
                         </tbody>
                     </table>
                 </div>
@@ -338,9 +341,9 @@ const ProjectKickoffChecklistForm: React.FC = () => {
                     <button onClick={handleSubmit} className="submit-btn">
                         저장
                     </button>
-                    <button onClick={handlePrint} className="print-btn">
-                        인쇄
-                    </button>
+                    {/*<button onClick={handlePrint} className="print-btn">*/}
+                    {/*    인쇄*/}
+                    {/*</button>*/}
                 </div>
             </div>
         </div>
