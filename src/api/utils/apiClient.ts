@@ -122,7 +122,7 @@ apiClient.interceptors.response.use(
             // 로그인 페이지가 아닌 경우에만 리다이렉트
             if (!window.location.pathname.includes('/login')) {
                 localStorage.removeItem('session_id');
-                window.location.href = '/login';
+                window.location.href = '/information/login';
             }
 
             enhancedError.userMessage = '인증이 만료되었습니다. 다시 로그인해주세요.';
