@@ -26,6 +26,7 @@ export const apiClient = axios.create({
         'X-Requested-With': 'XMLHttpRequest',
         ...(APP_TITLE && { 'X-App-Name': APP_TITLE }),
     },
+    withCredentials: true,  // 쿠키 자동 포함
     // 개발 환경에서만 자세한 에러 정보 포함
     validateStatus: (status) => {
         return status >= 200 && status < 300;
@@ -46,6 +47,17 @@ apiClient.interceptors.request.use(
 
         // 요청 시간 기록 (성능 모니터링용)
         config.metadata = { startTime: Date.now() };
+
+        // 세션 ID를 헤더에 추가 (쿠키와 함께)
+        const sessionId = localStorage.getItem('session_id');
+        if (sessionId) {
+            config.headers['X-Session-Id'] = sessionId;
+        }
+
+        // 로깅
+        if (import.meta.env.DEV) {
+            console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+        }
 
         return config;
     },
@@ -107,6 +119,12 @@ apiClient.interceptors.response.use(
 
         // 사용자 친화적 에러 메시지 추가
         if (error.response?.status === 401) {
+            // 로그인 페이지가 아닌 경우에만 리다이렉트
+            if (!window.location.pathname.includes('/login')) {
+                localStorage.removeItem('session_id');
+                window.location.href = '/login';
+            }
+
             enhancedError.userMessage = '인증이 만료되었습니다. 다시 로그인해주세요.';
         } else if (error.response?.status === 403) {
             enhancedError.userMessage = '접근 권한이 없습니다.';

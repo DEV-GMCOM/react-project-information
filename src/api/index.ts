@@ -51,3 +51,7 @@ export const apiService = {
     getEmployeesByDepartment: dashboardService.getEmployeesByDepartment.bind(dashboardService),
     healthCheck: dashboardService.healthCheck.bind(dashboardService),
 };
+
+// Auth 서비스 추가
+export { authService } from './services/authService';
+export type { LoginRequest, User, LoginResponse } from './services/authService';
