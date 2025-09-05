@@ -40,7 +40,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             icon: '📋',
             subMenus: [
                 { path: '/info-management/advertiser', name: '[입력폼 샘플] 광고주_기업 프로파일' },
-                { path: '/info-management/advertiser-employee', name: '[입력폼 샘플] 광고주_담당자 프로파일' },
+                // { path: '/info-management/advertiser-employee', name: '[입력폼 샘플] 광고주_담당자 프로파일' },
                 { path: '/info-management/project', name: '[입력폼 샘플] 프로젝트 정보수집' }
             ]
         },
@@ -244,26 +244,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <nav className="sidebar-nav">
                         {/* 윗부분 - 기존 시스템 메뉴 */}
                         <div className="nav-section nav-section-top">
-                            <div className="section-header">
-                                <div className="section-title">기존 시스템</div>
-                            </div>
+                            {/*<div className="section-header">*/}
+                            {/*    <div className="section-title">기존 시스템</div>*/}
+                            {/*</div>*/}
                             <ul className="nav-list">
                                 {legacyMenuItems.map(renderMenuItem)}
                             </ul>
                         </div>
 
-                        {/* 구분선 */}
-                        <div className="nav-divider"></div>
+                        {/*/!* 구분선 *!/*/}
+                        {/*<div className="nav-divider"></div>*/}
 
-                        {/* 아래부분 - 신규 생성 메뉴 */}
-                        <div className="nav-section nav-section-bottom">
-                            <div className="section-header">
-                                <div className="section-title">신규 시스템</div>
-                            </div>
-                            <ul className="nav-list">
-                                {newMenuItems.map(renderMenuItem)}
-                            </ul>
-                        </div>
+                        {/*/!* 아래부분 - 신규 생성 메뉴 *!/*/}
+                        {/*<div className="nav-section nav-section-bottom">*/}
+                        {/*    <div className="section-header">*/}
+                        {/*        <div className="section-title">신규 시스템</div>*/}
+                        {/*    </div>*/}
+                        {/*    <ul className="nav-list">*/}
+                        {/*        {newMenuItems.map(renderMenuItem)}*/}
+                        {/*    </ul>*/}
+                        {/*</div>*/}
                     </nav>
                 </aside>
 
