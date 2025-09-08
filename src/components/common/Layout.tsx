@@ -27,8 +27,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
 
-    // 기존 시스템 메뉴 (윗부분)
-    const legacyMenuItems: MenuItem[] = [
+    // 기본 메뉴 항목들
+    const mainMenuItems: MenuItem[] = [
         {
             path: '/dashboard',
             name: '대시보드',
@@ -40,7 +40,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             icon: '📋',
             subMenus: [
                 { path: '/info-management/advertiser', name: '[입력폼 샘플] 광고주_기업 프로파일' },
-                // { path: '/info-management/advertiser-employee', name: '[입력폼 샘플] 광고주_담당자 프로파일' },
                 { path: '/info-management/project', name: '[입력폼 샘플] 프로젝트 정보수집' }
             ]
         },
@@ -73,11 +72,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             path: '/project-postmortem',
             name: '[입력폼 샘플] Project postmortem',
             icon: '📊'
-        }
+        },
     ];
 
-    // 신규 생성 메뉴 (아래부분)
-    const newMenuItems: MenuItem[] = [
+    // 관리자 메뉴 항목들
+    const adminMenuItems: MenuItem[] = [
+        {
+            path: '/admin/users',
+            name: '사용자 관리',
+            icon: '👤',
+            subMenus: [
+                { path: '/admin/users', name: '사용자 목록' },
+                { path: '/admin/users/permissions', name: '권한 관리' },
+                { path: '/admin/users/roles', name: '역할 관리' }
+            ]
+        },
         {
             path: '/company',
             name: '업체 관리',
@@ -114,6 +123,36 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 { path: '/project/pt-checklist', name: '[입력폼 샘플] PT 준비 체크리스트' },
                 { path: '/project/postmortem-pt', name: '[입력폼 샘플] PT 사후분석' },
                 { path: '/project/postmortem-project', name: '[입력폼 샘플] 프로젝트 실행 결과 사후분석' }
+            ]
+        },
+        {
+            path: '/admin/system',
+            name: '시스템 관리',
+            icon: '⚙️',
+            subMenus: [
+                { path: '/admin/system/settings', name: '시스템 설정' },
+                { path: '/admin/system/logs', name: '시스템 로그' },
+                { path: '/admin/system/backup', name: '백업 관리' }
+            ]
+        },
+        {
+            path: '/admin/database',
+            name: '데이터베이스 관리',
+            icon: '🗄️',
+            subMenus: [
+                { path: '/admin/database/maintenance', name: '데이터베이스 유지보수' },
+                { path: '/admin/database/migration', name: '데이터 마이그레이션' },
+                { path: '/admin/database/monitoring', name: '성능 모니터링' }
+            ]
+        },
+        {
+            path: '/admin/analytics',
+            name: '분석 및 리포트',
+            icon: '📈',
+            subMenus: [
+                { path: '/admin/analytics/usage', name: '사용량 분석' },
+                { path: '/admin/analytics/performance', name: '성능 분석' },
+                { path: '/admin/analytics/reports', name: '통계 리포트' }
             ]
         }
     ];
@@ -221,11 +260,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <div className="header-right">
                     {user ? (
                         <>
-              <span className="user-info">
-                {user.emp_name}
-                  {user.position && ` (${user.position})`}
-                  {user.team && ` - ${user.team}`}
-              </span>
+                            <span className="user-info">
+                                {user.emp_name}
+                                {user.position && ` (${user.position})`}
+                                {user.team && ` - ${user.team}`}
+                            </span>
                             <button
                                 className="logout-btn"
                                 onClick={handleLogout}
@@ -242,28 +281,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="main-container">
                 <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
                     <nav className="sidebar-nav">
-                        {/* 윗부분 - 기존 시스템 메뉴 */}
-                        <div className="nav-section nav-section-top">
-                            {/*<div className="section-header">*/}
-                            {/*    <div className="section-title">기존 시스템</div>*/}
-                            {/*</div>*/}
+                        {/* 메인 메뉴 섹션 */}
+                        <div className="nav-section nav-section-main">
                             <ul className="nav-list">
-                                {legacyMenuItems.map(renderMenuItem)}
+                                {mainMenuItems.map(renderMenuItem)}
                             </ul>
                         </div>
 
-                        {/*/!* 구분선 *!/*/}
-                        {/*<div className="nav-divider"></div>*/}
+                        {/* 구분선 */}
+                        <div className="nav-divider"></div>
 
-                        {/*/!* 아래부분 - 신규 생성 메뉴 *!/*/}
-                        {/*<div className="nav-section nav-section-bottom">*/}
-                        {/*    <div className="section-header">*/}
-                        {/*        <div className="section-title">신규 시스템</div>*/}
-                        {/*    </div>*/}
-                        {/*    <ul className="nav-list">*/}
-                        {/*        {newMenuItems.map(renderMenuItem)}*/}
-                        {/*    </ul>*/}
-                        {/*</div>*/}
+                        {/* 관리자 메뉴 섹션 */}
+                        <div className="nav-section nav-section-admin">
+                            {sidebarOpen && (
+                                <div className="section-header">
+                                    <div className="section-title">관리자 메뉴</div>
+                                </div>
+                            )}
+                            <ul className="nav-list">
+                                {adminMenuItems.map(renderMenuItem)}
+                            </ul>
+                        </div>
                     </nav>
                 </aside>
 

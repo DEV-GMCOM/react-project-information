@@ -824,6 +824,55 @@
     outline: none;
 }
 
+/* src/styles/CompanyProfile.css에 추가할 스타일 */
+
+/* 재무 정보 섹션 스타일 */
+.form-section h3 {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+}
+
+/* 재무 접근 거부 메시지 */
+.finance-access-denied {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+    text-align: center;
+}
+
+.finance-access-denied p {
+    color: #6c757d;
+    margin: 0;
+    font-style: italic;
+}
+
+/* 읽기 전용 필드 스타일 */
+.form-group input:disabled {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
+    border-color: #dee2e6;
+}
+
+/* 재무 정보 보안 표시 */
+.finance-field {
+    position: relative;
+}
+
+.finance-field::after {
+    content: "🔒";
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    opacity: 0.5;
+}
+
 /* === 인쇄 스타일 === */
 @media print {
     .company-profile-container {

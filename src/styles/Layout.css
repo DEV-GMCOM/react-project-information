@@ -319,3 +319,98 @@
 .sidebar::-webkit-scrollbar-thumb:hover {
     background: #3d566e;
 }
+
+
+/* src/styles/Layout.css - 관리자 섹션 부분만 추가/수정 */
+
+/* 기존 CSS는 유지하고 아래 부분만 추가/수정 */
+
+/* 섹션 스타일 */
+.nav-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-section-main {
+    /* 메인 메뉴 섹션 */
+    flex: 1;
+}
+
+.nav-section-admin {
+    /* 관리자 메뉴 섹션 */
+    background-color: rgba(0, 0, 0, 0.15);
+    border-top: 2px solid rgba(255, 255, 255, 0.1);
+    margin-top: auto; /* 하단에 고정 */
+}
+
+/* 섹션 헤더 스타일 */
+.section-header {
+    padding: 12px 20px 8px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 5px;
+}
+
+.section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #95a5a6;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 구분선 */
+.nav-divider {
+    height: 2px;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
+    margin: 10px 0;
+    flex-shrink: 0;
+}
+
+/* 관리자 메뉴 특별 스타일 */
+.nav-section-admin .nav-link,
+.nav-section-admin .nav-button {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-left: 3px solid transparent;
+}
+
+.nav-section-admin .nav-link:hover,
+.nav-section-admin .nav-button:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-left-color: #e67e22;
+}
+
+.nav-section-admin .nav-link.active,
+.nav-section-admin .nav-button.active {
+    background-color: #e67e22;
+    border-left-color: #f39c12;
+}
+
+.nav-section-admin .sub-nav-list {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.nav-section-admin .sub-nav-link.active {
+    background-color: rgba(230, 126, 34, 0.2);
+    color: #f39c12;
+    border-left-color: #f39c12;
+}
+
+/* 사이드바가 닫혔을 때 섹션 제목 숨기기 */
+.sidebar.closed .section-title {
+    display: none;
+}
+
+.sidebar.closed .section-header {
+    display: none;
+}
+
+/* 반응형: 모바일에서 관리자 메뉴 구분 유지 */
+@media (max-width: 768px) {
+    .nav-section-admin {
+        background-color: rgba(0, 0, 0, 0.2);
+    }
+
+    .nav-divider {
+        margin: 5px 0;
+    }
+}

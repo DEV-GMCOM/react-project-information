@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import clsx from 'clsx';
 import { handleApiError } from '../../api/utils/errorUtils';
+import { usePermissions } from '../../hooks/usePermissions';
 import '../../styles/CompanyProfile.css';
 
 // --- 타입 정의 ---
@@ -156,6 +157,8 @@ const initialContactState: ContactProfile = {
 };
 
 const CompanyProfileForm: React.FC = () => {
+    const { hasFinanceAccess, canEditFinance, canAccessField } = usePermissions();
+
     // --- 상태 관리 ---
     const [formData, setFormData] = useState<CompanyProfile>(initialCompanyState);
     const [contactFormData, setContactFormData] = useState<ContactProfile>(initialContactState);
@@ -1542,6 +1545,47 @@ const CompanyProfileForm: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            {/* 재무 정보 섹션 - 조건부 렌더링 */}
+            {hasFinanceAccess() && (
+                <div className="form-section">
+                    <h3>💰 재무 정보</h3>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label htmlFor="bankName">거래은행:</label>
+                            <input
+                                type="text"
+                                id="bankName"
+                                name="bankName"
+                                value={formData.bankName}
+                                onChange={handleInputChange}
+                                disabled={!canEditFinance()}
+                                placeholder="거래은행을 입력하세요"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="accountNumber">계좌번호:</label>
+                            <input
+                                type="text"
+                                id="accountNumber"
+                                name="accountNumber"
+                                value={formData.accountNumber}
+                                onChange={handleInputChange}
+                                disabled={!canEditFinance()}
+                                placeholder="계좌번호를 입력하세요"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 권한이 없을 때 메시지 표시 */}
+            {!hasFinanceAccess() && (
+                <div className="finance-access-denied">
+                    <p>💡 재무 정보는 재무부서 또는 임원진만 열람할 수 있습니다.</p>
+                </div>
+            )}
+
 
             {/* 검색 모달들 */}
             <CompanySearchModal />
