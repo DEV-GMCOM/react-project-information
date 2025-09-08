@@ -37,7 +37,8 @@ const mode = import.meta.env.MODE;
 
 
 // let currentBaseURL = 'http://localhost:8001/api'; // 기본값
-let currentBaseURL = 'http://172.16.3.23:8001/api'; // 기본값
+// let currentBaseURL = 'http://172.16.3.23:8001/api'; // 기본값
+let currentBaseURL = '/api'; // 기본값
 
 const getApiBaseUrl = () => {
     // 환경변수가 명시적으로 설정된 경우 우선 사용
@@ -59,7 +60,8 @@ const getApiBaseUrl = () => {
     // }
     console.log('!!!!!! hostname: ', hostname);
 
-    return 'http://172.16.3.23:8001/api';
+    // return 'http://172.16.3.23:8001/api';
+    return '/api';
 };
 
 // 초기 URL 설정
