@@ -1526,21 +1526,21 @@ const CompanyProfileForm: React.FC = () => {
                         >
                             💾 저장
                         </button>
-                        <button
-                            type="button"
-                            className="action-btn cancel-btn"
-                            onClick={handleCancelAllChanges}
-                            disabled={!isFormDirty}
-                        >
-                            ↩️ 취소
-                        </button>
-                        <button
-                            type="button"
-                            className="action-btn print-btn"
-                            onClick={handlePrint}
-                        >
-                            🖨️ 인쇄
-                        </button>
+                        {/*<button*/}
+                        {/*    type="button"*/}
+                        {/*    className="action-btn cancel-btn"*/}
+                        {/*    onClick={handleCancelAllChanges}*/}
+                        {/*    disabled={!isFormDirty}*/}
+                        {/*>*/}
+                        {/*    ↩️ 취소*/}
+                        {/*</button>*/}
+                        {/*<button*/}
+                        {/*    type="button"*/}
+                        {/*    className="action-btn print-btn"*/}
+                        {/*    onClick={handlePrint}*/}
+                        {/*>*/}
+                        {/*    🖨️ 인쇄*/}
+                        {/*</button>*/}
                     </div>
 
                     {/* 변경사항 알림 */}
