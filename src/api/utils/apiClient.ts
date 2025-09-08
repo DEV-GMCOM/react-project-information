@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Vite 환경변수 접근 (import.meta.env 사용)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
+// const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
 const APP_TITLE = import.meta.env.VITE_APP_TITLE || 'ERP Information Module';
 
 // 개발 환경 여부 확인
@@ -10,16 +10,65 @@ const isDevelopment = import.meta.env.DEV;
 const isProduction = import.meta.env.PROD;
 const mode = import.meta.env.MODE;
 
-console.log('🔧 API Client 설정:', {
-    API_BASE_URL,
-    APP_TITLE,
-    mode,
-    isDevelopment,
-    isProduction
-});
+// const getApiBaseUrl = () => {
+//     // 환경변수가 명시적으로 설정된 경우 우선 사용
+//     if (import.meta.env.VITE_API_URL) {
+//         return import.meta.env.VITE_API_URL;
+//     }
+//
+//     const hostname = window.location.hostname;
+//
+//     // ngrok을 통한 외부 접근인 경우
+//     if (hostname.includes('ngrok-free.app') || hostname.includes('ngrok.io')) {
+//         // 내부 IP로 API 호출 (서버 PC의 실제 IP 주소)
+//         return 'http://172.16.3.23:8001/api';  // 👈 실제 서버 IP로 변경
+//     }
+//
+//     // 로컬 개발 환경
+//     if (hostname === 'localhost' || hostname === '127.0.0.1') {
+//         return 'http://localhost:8001/api';
+//     }
+//
+//     // 기본값
+//     return 'http://localhost:8001/api';
+// };
+//
+// const API_BASE_URL = getApiBaseUrl();
+
+
+// let currentBaseURL = 'http://localhost:8001/api'; // 기본값
+let currentBaseURL = 'http://172.16.3.23:8001/api'; // 기본값
+
+const getApiBaseUrl = () => {
+    // 환경변수가 명시적으로 설정된 경우 우선 사용
+    // if (import.meta.env.VITE_API_URL) {
+    //     console.log('!!!!!! API_BASE_URL: ', import.meta.env.VITE_API_URL);
+    //     return import.meta.env.VITE_API_URL;
+    // }
+
+    const hostname = window.location.hostname;
+
+    // // ngrok을 통한 외부 접근인 경우
+    // if (hostname.includes('ngrok-free.app') || hostname.includes('ngrok.io')) {
+    //     return 'http://172.16.3.23:8001/api';
+    // }
+    //
+    // // 로컬 개발 환경
+    // if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    //     return 'http://localhost:8001/api';
+    // }
+    console.log('!!!!!! hostname: ', hostname);
+
+    return 'http://172.16.3.23:8001/api';
+};
+
+// 초기 URL 설정
+currentBaseURL = getApiBaseUrl();
+
 
 export const apiClient = axios.create({
-    baseURL: API_BASE_URL,
+    // baseURL: API_BASE_URL,
+    baseURL: currentBaseURL,
     timeout: 300000, // 5분 타임아웃
     headers: {
         'Content-Type': 'application/json',
@@ -32,6 +81,28 @@ export const apiClient = axios.create({
         return status >= 200 && status < 300;
     }
 });
+
+// API 베이스 URL 설정 함수
+export const setApiBaseUrl = () => {
+    currentBaseURL = getApiBaseUrl();
+    apiClient.defaults.baseURL = currentBaseURL;
+
+    console.log('🔄 API Base URL 업데이트:', currentBaseURL);
+};
+
+// 초기 설정
+setApiBaseUrl();
+
+
+console.log('🔧 API Client 설정:', {
+    // API_BASE_URL,
+    currentBaseURL,
+    APP_TITLE,
+    mode,
+    isDevelopment,
+    isProduction
+});
+
 
 // 요청 인터셉터
 apiClient.interceptors.request.use(
@@ -157,7 +228,8 @@ export const apiUtils = {
     // 현재 설정 정보 반환
     getConfig() {
         return {
-            baseURL: API_BASE_URL,
+            // baseURL: API_BASE_URL,
+            baseURL: currentBaseURL,
             appTitle: APP_TITLE,
             mode,
             isDevelopment,

@@ -1,5 +1,5 @@
 // App.tsx
-import React from 'react';
+import React, {useEffect} from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 import { AuthProvider } from './contexts/AuthContext';
@@ -52,7 +52,17 @@ import ProjectBasicInfoTest from './pages/project/ProjectBasicInforTest'; // PT 
 
 import './styles/App.css';
 
+
+import { setApiBaseUrl } from './api/utils/apiClient';
+
+
 function App() {
+
+    // 앱 시작 시 한 번만 호출
+    useEffect(() => {
+        setApiBaseUrl();
+    }, []);
+
   // return (
   //     <Layout>
   //       <Routes>
