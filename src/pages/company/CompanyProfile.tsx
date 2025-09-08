@@ -1179,32 +1179,6 @@ const CompanyProfileForm: React.FC = () => {
                                 </td>
                             </tr>
                         )}
-                        {/*<tr>*/}
-                        {/*    <td className="table-cell table-cell-label">거래은행</td>*/}
-                        {/*    <td className="table-cell-input">*/}
-                        {/*        <input*/}
-                        {/*            type="text"*/}
-                        {/*            name="bankName"*/}
-                        {/*            value={formData.bankName}*/}
-                        {/*            onChange={handleInputChange}*/}
-                        {/*            className={clsx('profile-input', {*/}
-                        {/*                'input-modified': formData.bankName !== originalFormData.bankName*/}
-                        {/*            })}*/}
-                        {/*        />*/}
-                        {/*    </td>*/}
-                        {/*    <td className="table-cell table-cell-label">계좌번호</td>*/}
-                        {/*    <td className="table-cell-input">*/}
-                        {/*        <input*/}
-                        {/*            type="text"*/}
-                        {/*            name="accountNumber"*/}
-                        {/*            value={formData.accountNumber}*/}
-                        {/*            onChange={handleInputChange}*/}
-                        {/*            className={clsx('profile-input', {*/}
-                        {/*                'input-modified': formData.accountNumber !== originalFormData.accountNumber*/}
-                        {/*            })}*/}
-                        {/*        />*/}
-                        {/*    </td>*/}
-                        {/*</tr>*/}
 
                         {/* 담당자 섹션 */}
                         <tr>
@@ -1578,46 +1552,12 @@ const CompanyProfileForm: React.FC = () => {
                 </div>
             </div>
 
-            {/*/!* 재무 정보 섹션 - 조건부 렌더링 *!/*/}
-            {/*{hasFinanceAccess() && (*/}
-            {/*    <div className="form-section">*/}
-            {/*        <h3>💰 재무 정보</h3>*/}
-            {/*        <div className="form-row">*/}
-            {/*            <div className="form-group">*/}
-            {/*                <label htmlFor="bankName">거래은행:</label>*/}
-            {/*                <input*/}
-            {/*                    type="text"*/}
-            {/*                    id="bankName"*/}
-            {/*                    name="bankName"*/}
-            {/*                    value={formData.bankName}*/}
-            {/*                    onChange={handleInputChange}*/}
-            {/*                    disabled={!canEditFinance()}*/}
-            {/*                    placeholder="거래은행을 입력하세요"*/}
-            {/*                />*/}
-            {/*            </div>*/}
-            {/*            <div className="form-group">*/}
-            {/*                <label htmlFor="accountNumber">계좌번호:</label>*/}
-            {/*                <input*/}
-            {/*                    type="text"*/}
-            {/*                    id="accountNumber"*/}
-            {/*                    name="accountNumber"*/}
-            {/*                    value={formData.accountNumber}*/}
-            {/*                    onChange={handleInputChange}*/}
-            {/*                    disabled={!canEditFinance()}*/}
-            {/*                    placeholder="계좌번호를 입력하세요"*/}
-            {/*                />*/}
-            {/*            </div>*/}
-            {/*        </div>*/}
-            {/*    </div>*/}
-            {/*)}*/}
-
             {/*/!* 권한이 없을 때 메시지 표시 *!/*/}
             {/*{!hasFinanceAccess() && (*/}
             {/*    <div className="finance-access-denied">*/}
             {/*        <p>💡 재무 정보는 재무부서 또는 임원진만 열람할 수 있습니다.</p>*/}
             {/*    </div>*/}
             {/*)}*/}
-
 
             {/* 검색 모달들 */}
             <CompanySearchModal />
