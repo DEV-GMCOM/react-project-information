@@ -188,7 +188,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
             // const data = await response.json();
             // setSearchResults(data);
 
-            const response = await apiClient(listUrl);
+            const response = await apiClient(listUrlAxios);
             setSearchResults(response.data);
 
             const countResponse = await fetch(countUrl);
