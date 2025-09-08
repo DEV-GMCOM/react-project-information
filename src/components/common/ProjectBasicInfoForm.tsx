@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 import { ProjectBasicInfo, ProjectData, WriterInfo, CompanyContactData, CompanyProfileData } from '../../types/project';
 import { handleApiError } from '../../api/utils/errorUtils';
 
+// apiClient 사용으로 변경
+import apiClient from '../../api/utils/apiClient';
+
 interface CompanyData {
     id: number;
     company_name: string;
@@ -177,13 +180,16 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
             }
 
             const listUrl = `/api/projects/?${params.toString()}`;
+            const listUrlAxios = `/projects/?${params.toString()}`;
             const countUrl = `/api/projects/count?${params.toString()}`;
 
-            const response = await fetch(listUrl);
-            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            // const response = await fetch(listUrl);
+            // if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            // const data = await response.json();
+            // setSearchResults(data);
 
-            const data = await response.json();
-            setSearchResults(data);
+            const response = await apiClient(listUrl);
+            setSearchResults(response.data);
 
             const countResponse = await fetch(countUrl);
             if (countResponse.ok) {

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import '../../styles/ProjectProfile.css';
 import { handleApiError } from '../../api/utils/errorUtils';
 
+import apiClient from '../../api/utils/apiClient';
 
 
 // 한글 상태와 CSS 클래스명을 매핑하는 객체
@@ -329,15 +330,28 @@ const ProjectProfileForm: React.FC = () => {
             // const listUrl = `http://localhost:8001/api/projects/?${params.toString()}`;
             // const countUrl = `http://localhost:8001/api/projects/count?${params.toString()}`;
             const listUrl = `/api/projects/?${params.toString()}`;
+            const listUrlAxios = `/projects/?${params.toString()}`;
+
             const countUrl = `/api/projects/count?${params.toString()}`;
 
-            const response = await fetch(listUrl);
+            // const response = await fetch(listUrl);
+            const response = await apiClient.get(listUrlAxios)
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
+            // const response = await fetch(listUrl, {
+            //     headers: {
+            //         'Authorization': `Bearer ${sessionId}`, // 또는
+            //         'X-Session-Id': sessionId,
+            //         'Content-Type': 'application/json'
+            //     }
+            // });
 
-            const data = await response.json();
+            // axios는 응답 구조가 다르므로 이 부분들 제거
+            // if (!response.ok) {
+            //     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            // }
+
+            // const data = await response.json();
+            const data = response.data; // axios는 .data에 파싱된 데이터가 있음
             setSearchResults(data);
 
             const countResponse = await fetch(countUrl);
