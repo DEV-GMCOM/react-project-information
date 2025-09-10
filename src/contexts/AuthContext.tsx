@@ -69,24 +69,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }, {
                 withCredentials: true
             });
-
-            // 백엔드 응답에 role 정보가 포함되어 오면 설정
-            setUser({
-                emp_id: response.data.emp_id,
-                emp_name: response.data.emp_name,
-                email: response.data.email,
-                division: response.data.division,
-                team: response.data.team,
-                position: response.data.position,
-                role_id: response.data.role_id,
-                role: response.data.role
-            });
-
-            // 세션 ID를 localStorage에도 저장 (기존 로직 유지)
+            setUser(response.data);
             if (response.data.session_id) {
                 localStorage.setItem('session_id', response.data.session_id);
             }
         } catch (error: any) {
+            // [핵심 수정] 에러의 상태 코드를 확인하여 분기 처리합니다.
+            if (error.response && error.response.status === 412) {
+                // 412 에러일 경우, Login 컴포넌트가 식별할 수 있는 특별한 에러 메시지를 던집니다.
+                throw new Error('INITIAL_PASSWORD_SETUP_REQUIRED');
+            }
+            // 그 외의 모든 에러는 기존과 동일하게 처리합니다.
             throw new Error(error.response?.data?.detail || '로그인 실패');
         }
     };

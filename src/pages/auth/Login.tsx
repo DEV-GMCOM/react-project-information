@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { authService } from '../../api'; // authService 직접 호출을 위해 경로 수정
+import { authService } from '../../api'; // 경로를 /api/index.ts로 변경하는 것이 좋습니다.
 import '../../styles/Login.css';
 
 const Login: React.FC = () => {
-    // 1. 'mode' 및 '최초 비밀번호 설정'을 위한 state 추가
+    // UI 모드 및 비밀번호 설정 입력을 위한 상태
     const [mode, setMode] = useState<'login' | 'setPassword'>('login');
     const [birthDate, setBirthDate] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
-    // 2. 기존 state 및 로직은 그대로 유지
+    // 기존 상태 변수
     const navigate = useNavigate();
     const location = useLocation();
     const { login } = useAuth();
     const [formData, setFormData] = useState({
         login_id: '',
-        password: ''
+        password: '',
     });
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -26,33 +26,34 @@ const Login: React.FC = () => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
+            [e.target.name]: e.target.value,
         });
+        setError('');
     };
 
-    // 3. 기존 handleSubmit을 handleLogin으로 변경하고, 412 에러 처리 로직 추가
-    const handleLogin = async (e: React.FormEvent) => {
+    // [핵심 수정] handleSubmit 함수
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
 
         try {
-            // AuthContext의 login 함수를 그대로 사용
+            // 기존과 동일하게 AuthContext의 login 함수를 호출합니다.
             await login(formData.login_id, formData.password);
             navigate(from, { replace: true });
         } catch (err: any) {
-            // [핵심] 서버로부터 412 코드를 받으면 비밀번호 설정 모드로 전환
-            if (err.response && err.response.status === 412) {
+            // AuthContext가 던진 특별한 에러 메시지를 확인합니다.
+            if (err.message === 'INITIAL_PASSWORD_SETUP_REQUIRED') {
                 setMode('setPassword');
             } else {
-                setError(err.message || '로그인에 실패했습니다.');
+                setError(err.message);
             }
         } finally {
             setIsLoading(false);
         }
     };
 
-    // 4. 최초 비밀번호 설정을 위한 핸들러 추가
+    // 최초 비밀번호 설정을 위한 핸들러
     const handleSetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
         if (newPassword !== confirmPassword) {
@@ -63,32 +64,31 @@ const Login: React.FC = () => {
         setError('');
         try {
             const response = await authService.setInitialPassword({
-                login_id: formData.login_id, // 기존 formData의 login_id 사용
+                login_id: formData.login_id,
                 birth_date: birthDate,
                 new_password: newPassword,
             });
             alert(response.message);
-            setMode('login'); // 성공 시 다시 로그인 폼으로 전환
-            // 폼 초기화
+            setMode('login');
             setFormData(prev => ({ ...prev, password: '' }));
             setBirthDate('');
             setNewPassword('');
             setConfirmPassword('');
         } catch (err: any) {
-            setError(err.response?.data?.detail || '인증에 실패했습니다. 생년월일을 확인해주세요.');
+            setError(err.response?.data?.detail || '인증에 실패했거나 오류가 발생했습니다.');
         } finally {
             setIsLoading(false);
         }
     };
 
-    // 5. JSX를 mode에 따라 조건부로 렌더링
+    // JSX 렌더링 부분은 이전 답변과 동일하게 유지
     return (
         <div className="login-container">
             <div className="login-box">
                 {mode === 'login' ? (
                     <>
                         <h2 className="login-title">GMCOM Information System</h2>
-                        <form onSubmit={handleLogin} className="login-form">
+                        <form onSubmit={handleSubmit} className="login-form">
                             <div className="form-group">
                                 <label htmlFor="login_id">아이디</label>
                                 <input type="text" id="login_id" name="login_id" value={formData.login_id} onChange={handleChange} required autoFocus placeholder="아이디를 입력하세요" />
