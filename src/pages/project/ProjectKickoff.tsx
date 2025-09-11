@@ -344,8 +344,8 @@ const ProjectKickoffForm: React.FC = () => {
                     {/* 공통 컴포넌트 사용 - 검색 기능 유지 */}
                     <ProjectBasicInfoForm
                         formData={formData}
-                        onChange={handleBasicInfoChange}
-                        onProjectSelect={handleProjectSelect} // 프로젝트 선택 핸들러 추가
+                        // onChange={handleBasicInfoChange}
+                        // onProjectSelect={handleProjectSelect} // 프로젝트 선택 핸들러 추가
                         showSearch={true}  // 검색 기능 유지
                         showDetailSection={true}              // ✓ 이제 인식됨
                         includeDataSections={["basic", "detail", "profile", "kickoff"]}  // ✓ 이제 인식됨

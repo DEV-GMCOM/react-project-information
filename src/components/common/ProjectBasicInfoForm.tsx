@@ -1,36 +1,8 @@
-// src/components/common/ProjectBasicInfoForm.tsx
-import React, { useState } from 'react';
+// src/components/common/ProjectBasicInfoForm.tsx - 수정된 버전
+import React, { useState, useEffect } from 'react';
 import { ProjectBasicInfo, ProjectData, WriterInfo, CompanyContactData, CompanyProfileData, ExtendedProjectData } from '../../types/project';
 import { handleApiError } from '../../api/utils/errorUtils';
-
-// apiClient 사용으로 변경
 import apiClient from '../../api/utils/apiClient';
-
-// interface ExtendedProjectData extends ProjectBasicInfo {
-//     // 상세 정보 추가
-//     purposeBackground?: string;
-//     mainContent?: string;
-//     coreRequirements?: string;
-//     comparison?: string;
-//
-//     // 착수보고 필드들
-//     department?: string;
-//     presenter?: string;
-//     personnel?: string;
-//     collaboration?: string;
-//     schedule?: string;
-//     others?: string;
-//
-//     // 작성자 정보
-//     writerName?: string;
-//     writerDepartment?: string;
-//
-//     // 검토 정보
-//     swotAnalysis?: string;
-//     direction?: string;
-//     resourcePlan?: string;
-//     writerOpinion?: string;
-// }
 
 interface CompanyData {
     id: number;
@@ -51,35 +23,18 @@ interface ContactSearchData {
 type ExternalSearchHandlerResult = 'handled' | 'skip' | void;
 type ExternalSearchHandler = () => ExternalSearchHandlerResult | Promise<ExternalSearchHandlerResult>;
 
-// (상단) props 인터페이스에 콜백/플래그 추가
 interface ProjectBasicInfoFormProps {
-
-    // formData: ProjectBasicInfo;
-    formData: ExtendedProjectData;  // 확장된 타입 사용
-    // onChange: (name: keyof ProjectBasicInfo, value: string) => void;
-    onChange: (name: keyof ExtendedProjectData, value: string) => void;
-    // onChange: (name: string, value: string) => void;  // string으로 변경
-
-    // 추가
+    formData: ExtendedProjectData;
+    onChange?: (name: keyof ExtendedProjectData, value: string) => void;
     showDetailSection?: boolean;
     includeDataSections?: string[];
-
     onProjectSelect?: (project: ProjectData) => void;
     onCompanySelect?: (company: CompanyProfileData) => void;
     onContactSelect?: (contact: CompanyContactData) => void;
-
-    // ▼ 추가: 외부에서 검색 버튼 동작을 가로채고 싶을 때(옵션)
-    // onProjectSearch?: () => void;
-    // onCompanySearch?: () => void;
-    // onContactSearch?: () => void;
     onProjectSearch?: ExternalSearchHandler;
     onCompanySearch?: ExternalSearchHandler;
     onContactSearch?: ExternalSearchHandler;
-
-    /** 외부 핸들러가 false/void를 반환할 때 내부 기본 동작으로 폴백할지 (기본: true) */
     useInternalSearchFallback?: boolean;
-
-    // ▼ 추가: 검색 아이콘/버튼 노출 제어(옵션, 기본 true)
     showSearch?: boolean;
     readOnly?: boolean;
     className?: string;
@@ -87,19 +42,6 @@ interface ProjectBasicInfoFormProps {
     inputClassName?: string;
 }
 
-// const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
-//                                                                        formData,
-//                                                                        onChange,
-//                                                                        onProjectSelect,
-//                                                                        onCompanySelect,
-//                                                                        onContactSelect,
-//                                                                        readOnly = false,
-//                                                                        className = "project-section",
-//                                                                        tableClassName = "project-table",
-//                                                                        inputClassName = "project-input"
-//                                                                    }) => {
-
-// 컴포넌트 파라미터에 추가된 props 디폴트 포함
 const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                                                        formData,
                                                                        onChange,
@@ -109,47 +51,65 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                                                        onProjectSearch,
                                                                        onCompanySearch,
                                                                        onContactSearch,
-                                                                       showDetailSection = false,        // 이것 추가
-                                                                       includeDataSections = ['basic', 'detail'],  // 이것 추가
+                                                                       showDetailSection = false,
+                                                                       includeDataSections = ['basic', 'detail'],
                                                                        showSearch = true,
                                                                        readOnly = false,
                                                                        className = "project-section",
                                                                        tableClassName = "project-table",
                                                                        inputClassName = "project-input"
                                                                    }) => {
-    // 프로젝트 검색 관련 상태
+    // 내장 상태 관리
+    const [internalFormData, setInternalFormData] = useState<ExtendedProjectData>(formData);
+
+    // props formData 변경 시 내장 상태 동기화
+    useEffect(() => {
+        if (!onChange) {
+            setInternalFormData(formData);
+        }
+    }, [formData, onChange]);
+
+    // 실제 사용할 formData 결정
+    const currentFormData = onChange ? formData : internalFormData;
+
+    // 검색 관련 상태
     const [showSearchModal, setShowSearchModal] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchLoading, setSearchLoading] = useState(false);
     const [searchResults, setSearchResults] = useState<ProjectData[]>([]);
     const [totalPages, setTotalPages] = useState(1);
-
-    // 회사 검색 관련 상태
     const [showCompanySearchModal, setShowCompanySearchModal] = useState(false);
     const [companySearchLoading, setCompanySearchLoading] = useState(false);
     const [companySearchResults, setCompanySearchResults] = useState<CompanyData[]>([]);
-
-    // 담당자 검색 관련 상태
     const [showContactSearchModal, setShowContactSearchModal] = useState(false);
     const [contactSearchTerm, setContactSearchTerm] = useState('');
     const [contactSearchResults, setContactSearchResults] = useState<ContactSearchData[]>([]);
     const [contactSearchLoading, setContactSearchLoading] = useState(false);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        // const { name, value } = e.target;
-        // onChange(name as keyof ProjectBasicInfo, value);
-        const { name, value } = e.target;
-        // onChange(name, value);  // as keyof ProjectBasicInfo 제거
-        onChange(name as keyof ExtendedProjectData, value);  // as keyof ProjectBasicInfo 제거
+    // 통합된 onChange 핸들러
+    const handleInternalChange = (name: keyof ExtendedProjectData, value: string) => {
+        if (onChange) {
+            onChange(name, value);
+        } else {
+            setInternalFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
     };
 
-    const handleDateChange = (fieldName: keyof ProjectBasicInfo, e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        handleInternalChange(name as keyof ExtendedProjectData, value);
+    };
+
+    const handleDateChange = (fieldName: keyof ExtendedProjectData, e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedDate = e.target.value;
         if (selectedDate) {
             const formattedDate = selectedDate.replace(/-/g, '.');
-            onChange(fieldName, formattedDate);
+            handleInternalChange(fieldName, formattedDate);
         } else {
-            onChange(fieldName, '');
+            handleInternalChange(fieldName, '');
         }
     };
 
@@ -157,63 +117,44 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         return dateStr ? dateStr.replace(/\./g, '-') : '';
     };
 
-    // ▼ 외부 콜백이 있으면 그걸 먼저 실행하고, 없으면 기존 내부 로직 수행
+    // 외부/내부 핸들러 처리
     const tryExternalThenInternal = async (ext?: ExternalSearchHandler, internal?: () => any) => {
         if (ext) {
             try {
                 const res = await ext();
-                if (res === 'handled') return;       // 외부가 처리 완료 → 내부 X
-                // res 가 'skip' 이거나 undefined → 내부 모달 실행
+                if (res === 'handled') return;
             } catch (e) {
-                // 외부에서 실패하면 내부로 위임 (UX 보장)
                 console.error('[external search handler error]', e);
             }
         }
         return internal?.();
     };
 
+    // 프로젝트 검색 관련
     const handleProjectSearchClick = async () => {
         await tryExternalThenInternal(onProjectSearch, handleProjectSearch);
     };
 
-    const handleCompanySearchClick = async () => {
-        await tryExternalThenInternal(onCompanySearch, handleCompanySearch);
-    };
-
-    const handleContactSearchClick = async () => {
-        await tryExternalThenInternal(onContactSearch, handleContactSearch);
-    };
-
-
-    // 프로젝트 검색 함수들
     const handleProjectSearch = async () => {
         setShowSearchModal(true);
         setCurrentPage(1);
         await searchProjects(1);
     };
 
-
     const searchProjects = async (page: number) => {
         try {
             setSearchLoading(true);
-
             const params = new URLSearchParams({
                 skip: ((page - 1) * 10).toString(),
                 limit: '10'
             });
 
-            if (formData.projectName) {
-                params.append('search', formData.projectName);
+            if (currentFormData.projectName) {
+                params.append('search', currentFormData.projectName);
             }
 
-            const listUrl = `/api/projects/?${params.toString()}`;
             const listUrlAxios = `/projects/?${params.toString()}`;
             const countUrl = `/api/projects/count?${params.toString()}`;
-
-            // const response = await fetch(listUrl);
-            // if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            // const data = await response.json();
-            // setSearchResults(data);
 
             const response = await apiClient(listUrlAxios);
             setSearchResults(response.data);
@@ -233,39 +174,51 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         }
     };
 
+    // 통합된 프로젝트 선택 핸들러
     const selectProject = async (project: ProjectData) => {
         try {
-            // 1. 프로젝트 전체 데이터 가져오기 (기본정보 + 상세정보 + 프로파일 + 착수보고)
+            console.log('프로젝트 선택:', project);
+
+            // 1. 프로젝트 전체 데이터 가져오기
             const sectionsParam = includeDataSections?.join(',') || 'basic,detail';
             const response = await apiClient(`/projects/${project.project_id}/data?include_sections=${sectionsParam}`);
             const fullProjectData = response.data;
 
             // 2. 기본 정보 매핑
-            onChange('projectName', fullProjectData.basic_info.project_name || '');
-            onChange('inflowPath', fullProjectData.basic_info.inflow_path || '');  // 유입경로 추가
-            onChange('client', fullProjectData.basic_info.client || '');
-            onChange('manager', fullProjectData.basic_info.our_manager_name || fullProjectData.basic_info.client_manager_name || '');
-            onChange('eventDate', fullProjectData.basic_info.project_period_start || '');
-            onChange('submissionSchedule', fullProjectData.basic_info.project_period_end || '');
-            onChange('eventLocation', fullProjectData.basic_info.event_location || '');
-            onChange('attendees', fullProjectData.basic_info.attendees || '');
-            onChange('eventNature', fullProjectData.basic_info.business_type || '');
-            onChange('otSchedule', fullProjectData.basic_info.ot_schedule || '');
-            onChange('expectedRevenue', fullProjectData.basic_info.contract_amount?.toString() || '');
-            onChange('expectedCompetitors', fullProjectData.basic_info.expected_competitors || '');
+            const updates: Record<string, string> = {
+                projectName: fullProjectData.basic_info.project_name || '',
+                inflowPath: fullProjectData.basic_info.inflow_path || '',
+                client: fullProjectData.basic_info.client || '',
+                manager: fullProjectData.basic_info.our_manager_name || fullProjectData.basic_info.client_manager_name || '',
+                eventDate: fullProjectData.basic_info.project_period_start || '',
+                submissionSchedule: fullProjectData.basic_info.project_period_end || '',
+                eventLocation: fullProjectData.basic_info.event_location || '',
+                attendees: fullProjectData.basic_info.attendees || '',
+                eventNature: fullProjectData.basic_info.business_type || '',
+                otSchedule: fullProjectData.basic_info.ot_schedule || '',
+                expectedRevenue: fullProjectData.basic_info.contract_amount?.toString() || '',
+                expectedCompetitors: fullProjectData.basic_info.expected_competitors || '',
+            };
 
             // 3. 상세 정보 매핑 (showDetailSection이 true일 때)
             if (showDetailSection && fullProjectData.detail_info) {
-                onChange('purposeBackground', fullProjectData.detail_info.project_background || '');  // 목적 및 배경
-                onChange('mainContent', fullProjectData.detail_info.project_overview || '');          // 주요 내용
-                onChange('coreRequirements', fullProjectData.detail_info.deliverables || '');         // 핵심 요구사항
-                onChange('comparison', fullProjectData.detail_info.special_requirements || '');       // 비고
+                updates.purposeBackground = fullProjectData.detail_info.project_background || '';
+                updates.mainContent = fullProjectData.detail_info.project_overview || '';
+                updates.coreRequirements = fullProjectData.detail_info.deliverables || '';
+                updates.comparison = fullProjectData.detail_info.special_requirements || '';
             }
+
+            // 4. 일괄 업데이트
+            Object.entries(updates).forEach(([key, value]) => {
+                handleInternalChange(key as keyof ExtendedProjectData, value);
+            });
 
             setShowSearchModal(false);
 
-            // 4. 전체 데이터를 상위 컴포넌트에 전달
+            // 5. 외부 선택 핸들러 호출
             onProjectSelect?.(fullProjectData);
+
+            console.log('프로젝트 데이터 로드 완료');
 
         } catch (error) {
             const errorMessage = handleApiError(error);
@@ -273,10 +226,14 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         }
     };
 
-    // 회사 검색 함수들
+    // 회사 검색 관련
+    const handleCompanySearchClick = async () => {
+        await tryExternalThenInternal(onCompanySearch, handleCompanySearch);
+    };
+
     const handleCompanySearch = async () => {
         setShowCompanySearchModal(true);
-        await searchCompaniesAPI(formData.client);
+        await searchCompaniesAPI(currentFormData.client);
     };
 
     const searchCompaniesAPI = async (searchTerm: string) => {
@@ -299,8 +256,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
             if (!response.ok) throw new Error('회사 상세 정보 조회에 실패했습니다.');
             const detailedCompany: CompanyProfileData = await response.json();
 
-            onChange('client', detailedCompany.company_name);
-            onChange('manager', '');
+            handleInternalChange('client', detailedCompany.company_name);
+            handleInternalChange('manager', '');
 
             setShowCompanySearchModal(false);
             onCompanySelect?.(detailedCompany);
@@ -309,7 +266,11 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         }
     };
 
-    // 담당자 검색 함수들
+    // 담당자 검색 관련
+    const handleContactSearchClick = async () => {
+        await tryExternalThenInternal(onContactSearch, handleContactSearch);
+    };
+
     const handleContactSearch = () => {
         setContactSearchTerm('');
         setContactSearchResults([]);
@@ -325,9 +286,9 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
             if (!response.ok) throw new Error('담당자 검색에 실패했습니다.');
 
             let results: ContactSearchData[] = await response.json();
-            if (formData.client) {
+            if (currentFormData.client) {
                 results = results.filter(contact =>
-                    contact.company.company_name === formData.client
+                    contact.company.company_name === currentFormData.client
                 );
             }
             setContactSearchResults(results);
@@ -339,8 +300,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     };
 
     const selectContact = (contact: ContactSearchData) => {
-        onChange('client', contact.company.company_name);
-        onChange('manager', contact.contact_name);
+        handleInternalChange('client', contact.company.company_name);
+        handleInternalChange('manager', contact.contact_name);
 
         setShowContactSearchModal(false);
 
@@ -357,8 +318,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     };
 
     const resetClientAndContact = () => {
-        onChange('client', '');
-        onChange('manager', '');
+        handleInternalChange('client', '');
+        handleInternalChange('manager', '');
     };
 
     const handleResetClick = (e: React.MouseEvent) => {
@@ -418,7 +379,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                 <input
                                     type="text"
                                     name="projectName"
-                                    value={formData.projectName}
+                                    value={currentFormData.projectName}
                                     className={inputClassName}
                                     readOnly
                                 />
@@ -427,7 +388,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                     <input
                                         type="text"
                                         name="projectName"
-                                        value={formData.projectName}
+                                        value={currentFormData.projectName}
                                         onChange={handleInputChange}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') {
@@ -454,7 +415,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             <input
                                 type="text"
                                 name="inflowPath"
-                                value={formData.inflowPath}
+                                value={currentFormData.inflowPath}
                                 onChange={handleInputChange}
                                 className={inputClassName}
                                 readOnly={readOnly}
@@ -468,20 +429,20 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                 <input
                                     type="text"
                                     name="client"
-                                    value={formData.client}
+                                    value={currentFormData.client}
                                     className={inputClassName}
                                     readOnly
                                 />
                             ) : (
                                 <div className="input-with-search">
-                                    {formData.client && (
+                                    {currentFormData.client && (
                                         <button
                                             type="button"
                                             className="status-badge company-badge with-reset"
                                             onClick={handleCompanySearchClick}
                                             title="발주처 변경"
                                         >
-                                            <span className="badge-text">{formData.client}</span>
+                                            <span className="badge-text">{currentFormData.client}</span>
                                             <span className="badge-reset-icon" onClick={handleResetClick} title="발주처 초기화">
                                                 ×
                                             </span>
@@ -505,19 +466,19 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                 <input
                                     type="text"
                                     name="manager"
-                                    value={formData.manager}
+                                    value={currentFormData.manager}
                                     className={inputClassName}
                                     readOnly
                                 />
                             ) : (
                                 <div className="input-with-search">
-                                    {formData.manager && (
+                                    {currentFormData.manager && (
                                         <button
                                             type="button"
                                             className="status-badge contact-badge"
                                             title="담당자 상세 정보 보기"
                                         >
-                                            {formData.manager}
+                                            {currentFormData.manager}
                                         </button>
                                     )}
                                     <button
@@ -539,7 +500,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             <input
                                 type="date"
                                 name="eventDate"
-                                value={formatDateForInput(formData.eventDate)}
+                                value={formatDateForInput(currentFormData.eventDate)}
                                 onChange={(e) => handleDateChange('eventDate', e)}
                                 className="project-date-input"
                                 readOnly={readOnly}
@@ -550,7 +511,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             <input
                                 type="text"
                                 name="eventLocation"
-                                value={formData.eventLocation}
+                                value={currentFormData.eventLocation}
                                 onChange={handleInputChange}
                                 className={inputClassName}
                                 readOnly={readOnly}
@@ -563,7 +524,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             <input
                                 type="text"
                                 name="attendees"
-                                value={formData.attendees}
+                                value={currentFormData.attendees}
                                 onChange={handleInputChange}
                                 placeholder="VIP XX명, 약 XX명 예상"
                                 className={inputClassName}
@@ -575,7 +536,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             <input
                                 type="text"
                                 name="eventNature"
-                                value={formData.eventNature}
+                                value={currentFormData.eventNature}
                                 onChange={handleInputChange}
                                 className={inputClassName}
                                 readOnly={readOnly}
@@ -588,7 +549,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             <input
                                 type="date"
                                 name="otSchedule"
-                                value={formatDateForInput(formData.otSchedule)}
+                                value={formatDateForInput(currentFormData.otSchedule)}
                                 onChange={(e) => handleDateChange('otSchedule', e)}
                                 className="project-date-input"
                                 readOnly={readOnly}
@@ -599,7 +560,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             <input
                                 type="date"
                                 name="submissionSchedule"
-                                value={formatDateForInput(formData.submissionSchedule)}
+                                value={formatDateForInput(currentFormData.submissionSchedule)}
                                 onChange={(e) => handleDateChange('submissionSchedule', e)}
                                 className="project-date-input"
                                 readOnly={readOnly}
@@ -614,7 +575,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             <input
                                 type="text"
                                 name="expectedRevenue"
-                                value={formData.expectedRevenue}
+                                value={currentFormData.expectedRevenue}
                                 onChange={handleInputChange}
                                 placeholder="XX.X [ 수익 X.X ]"
                                 className={inputClassName}
@@ -626,7 +587,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             <input
                                 type="text"
                                 name="expectedCompetitors"
-                                value={formData.expectedCompetitors}
+                                value={currentFormData.expectedCompetitors}
                                 onChange={handleInputChange}
                                 placeholder="XX, YY 등 N개사"
                                 className={inputClassName}
@@ -640,7 +601,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             <input
                                 type="text"
                                 name="scoreTable"
-                                value={formData.scoreTable}
+                                value={currentFormData.scoreTable}
                                 onChange={handleInputChange}
                                 className="kickoff-input"
                             />
@@ -653,7 +614,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             <input
                                 type="text"
                                 name="bidAmount"
-                                value={formData.bidAmount}
+                                value={currentFormData.bidAmount}
                                 onChange={handleInputChange}
                                 placeholder="XX.X, Y%"
                                 className="kickoff-input"
@@ -663,7 +624,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                     </tbody>
                 </table>
             </div>
-            {/* 프로젝트 검색 모달 */}
+
+            {/* 검색 모달들 - 기존과 동일 */}
             {showSearchModal && (
                 <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -686,6 +648,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                     </div>
                 </div>
             )}
+
             {/* 회사 검색 모달 */}
             {showCompanySearchModal && (
                 <div className="modal-overlay" onClick={() => setShowCompanySearchModal(false)}>
@@ -698,7 +661,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             <div className="input-with-search" style={{ marginBottom: '15px' }}>
                                 <input
                                     type="text"
-                                    defaultValue={formData.client}
+                                    defaultValue={currentFormData.client}
                                     onKeyDown={e => { if (e.key === 'Enter') searchCompaniesAPI((e.target as HTMLInputElement).value); }}
                                     placeholder="회사 이름으로 검색"
                                     className="project-input"
@@ -746,6 +709,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                     </div>
                 </div>
             )}
+
             {/* 담당자 검색 모달 */}
             {showContactSearchModal && (
                 <div className="modal-overlay" onClick={() => setShowContactSearchModal(false)}>
@@ -757,7 +721,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                         <div className="modal-body">
                             <div className="input-with-search" style={{ marginBottom: '15px' }}>
                                 <div className="search-prefix">
-                                    {formData.client ? `${formData.client} :` : '전체 고객사 :'}
+                                    {currentFormData.client ? `${currentFormData.client} :` : '전체 고객사 :'}
                                 </div>
                                 <input
                                     type="text"
