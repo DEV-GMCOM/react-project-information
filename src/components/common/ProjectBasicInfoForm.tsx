@@ -1,18 +1,36 @@
 // src/components/common/ProjectBasicInfoForm.tsx
 import React, { useState } from 'react';
-import { ProjectBasicInfo, ProjectData, WriterInfo, CompanyContactData, CompanyProfileData } from '../../types/project';
+import { ProjectBasicInfo, ProjectData, WriterInfo, CompanyContactData, CompanyProfileData, ExtendedProjectData } from '../../types/project';
 import { handleApiError } from '../../api/utils/errorUtils';
 
 // apiClient 사용으로 변경
 import apiClient from '../../api/utils/apiClient';
 
-interface ExtendedProjectData extends ProjectBasicInfo {
-    // 상세 정보 추가
-    purposeBackground?: string;
-    mainContent?: string;
-    coreRequirements?: string;
-    comparison?: string;
-}
+// interface ExtendedProjectData extends ProjectBasicInfo {
+//     // 상세 정보 추가
+//     purposeBackground?: string;
+//     mainContent?: string;
+//     coreRequirements?: string;
+//     comparison?: string;
+//
+//     // 착수보고 필드들
+//     department?: string;
+//     presenter?: string;
+//     personnel?: string;
+//     collaboration?: string;
+//     schedule?: string;
+//     others?: string;
+//
+//     // 작성자 정보
+//     writerName?: string;
+//     writerDepartment?: string;
+//
+//     // 검토 정보
+//     swotAnalysis?: string;
+//     direction?: string;
+//     resourcePlan?: string;
+//     writerOpinion?: string;
+// }
 
 interface CompanyData {
     id: number;
@@ -37,9 +55,10 @@ type ExternalSearchHandler = () => ExternalSearchHandlerResult | Promise<Externa
 interface ProjectBasicInfoFormProps {
 
     // formData: ProjectBasicInfo;
-    // onChange: (name: keyof ProjectBasicInfo, value: string) => void;
     formData: ExtendedProjectData;  // 확장된 타입 사용
-    onChange: (name: string, value: string) => void;  // string으로 변경
+    // onChange: (name: keyof ProjectBasicInfo, value: string) => void;
+    onChange: (name: keyof ExtendedProjectData, value: string) => void;
+    // onChange: (name: string, value: string) => void;  // string으로 변경
 
     // 추가
     showDetailSection?: boolean;
@@ -120,7 +139,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         // const { name, value } = e.target;
         // onChange(name as keyof ProjectBasicInfo, value);
         const { name, value } = e.target;
-        onChange(name, value);  // as keyof ProjectBasicInfo 제거
+        // onChange(name, value);  // as keyof ProjectBasicInfo 제거
+        onChange(name as keyof ExtendedProjectData, value);  // as keyof ProjectBasicInfo 제거
     };
 
     const handleDateChange = (fieldName: keyof ProjectBasicInfo, e: React.ChangeEvent<HTMLInputElement>) => {

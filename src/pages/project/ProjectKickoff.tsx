@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import ProjectBasicInfoForm from '../../components/common/ProjectBasicInfoForm';
-import { ProjectBasicInfo } from '../../types/project';
+import {ExtendedProjectData, ProjectBasicInfo} from '../../types/project';
 import { handleApiError } from '../../api/utils/errorUtils';
 import apiClient from '../../api/utils/apiClient';
 import '../../styles/ProjectKickoff.css';
@@ -193,7 +193,8 @@ const ProjectKickoffForm: React.FC = () => {
         writerOpinion: ''
     });
 
-    const handleBasicInfoChange = (name: keyof ProjectBasicInfo, value: string) => {
+    // const handleBasicInfoChange = (name: keyof ProjectBasicInfo, value: string) => {
+    const handleBasicInfoChange = (name: keyof ExtendedProjectData, value: string) => {
         setFormData(prev => ({
             ...prev,
             [name]: value

@@ -63,6 +63,32 @@ export interface ProjectData {
     selected_contact?: CompanyContactData;
 }
 
+export interface ExtendedProjectData extends ProjectBasicInfo {
+    // 상세 정보 추가
+    purposeBackground?: string;
+    mainContent?: string;
+    coreRequirements?: string;
+    comparison?: string;
+
+    // 착수보고 필드들
+    department?: string;
+    presenter?: string;
+    personnel?: string;
+    collaboration?: string;
+    schedule?: string;
+    others?: string;
+
+    // 작성자 정보
+    writerName?: string;
+    writerDepartment?: string;
+
+    // 검토 정보
+    swotAnalysis?: string;
+    direction?: string;
+    resourcePlan?: string;
+    writerOpinion?: string;
+}
+
 /** 직원의 간단한 정보를 나타냅니다. (작성자, 수정자 등) */
 export interface WriterInfo {
     emp_id: number;
