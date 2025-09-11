@@ -1,4 +1,4 @@
-// src/components/common/ProjectBasicInfoForm.tsx - 수정된 버전
+// src/components/common/ProjectBasicInfoForm.tsx - 완전 수정된 버전
 import React, { useState, useEffect } from 'react';
 import { ProjectBasicInfo, ProjectData, WriterInfo, CompanyContactData, CompanyProfileData, ExtendedProjectData } from '../../types/project';
 import { handleApiError } from '../../api/utils/errorUtils';
@@ -27,7 +27,6 @@ type ExternalSearchHandler = () => ExternalSearchHandlerResult | Promise<Externa
 interface ProjectBasicInfoFormProps {
     formData: ExtendedProjectData;
     onChange?: (name: keyof ExtendedProjectData, value: string) => void;
-    showDetailSection?: boolean;
     includeDataSections?: string[];
     onProjectSelect?: (project: ProjectData) => void;
     onCompanySelect?: (company: CompanyProfileData) => void;
@@ -41,6 +40,13 @@ interface ProjectBasicInfoFormProps {
     className?: string;
     tableClassName?: string;
     inputClassName?: string;
+
+    // 새로 추가된 옵션들
+    showDetailSection?: boolean;                    // 상세정보 테이블 초기 표시 여부
+    enableDetailSectionToggle?: boolean;           // Project Profile 버튼 표시 여부 (기본: true)
+    onDetailSectionChange?: (visible: boolean) => void; // 상태 변경 콜백 (State Lifting용)
+    detailSectionCollapsible?: boolean;            // 접힘/펼침 기능 활성화 여부
+    detailSectionAnimationDuration?: number;       // 애니메이션 지속 시간 (ms)
 }
 
 const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
@@ -52,36 +58,25 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                                                        onProjectSearch,
                                                                        onCompanySearch,
                                                                        onContactSearch,
-                                                                       showDetailSection: showDetailSectionProp = false,
                                                                        includeDataSections = ['basic', 'detail'],
                                                                        showSearch = true,
                                                                        readOnly = false,
                                                                        className = "project-section",
                                                                        tableClassName = "project-table",
-                                                                       inputClassName = "project-input"
+                                                                       inputClassName = "project-input",
+                                                                       // 새로운 옵션들 (기본값 설정)
+                                                                       showDetailSection: showDetailSectionProp = false,
+                                                                       enableDetailSectionToggle = true,
+                                                                       onDetailSectionChange,
+                                                                       detailSectionCollapsible = true,
+                                                                       detailSectionAnimationDuration = 1000,
                                                                    }) => {
-    // 내장 상태 관리
+    // 내부 상태 관리
     const [internalFormData, setInternalFormData] = useState<ExtendedProjectData>(formData);
-
-    // props formData 변경 시 내장 상태 동기화
-    useEffect(() => {
-        if (!onChange) {
-            setInternalFormData(formData);
-        }
-    }, [formData, onChange]);
-
-    // 외부 prop 변경 시 내부 상태 동기화
-    useEffect(() => {
-        setShowDetailSection(showDetailSectionProp);
-    }, [showDetailSectionProp]);
-
-
-    // 실제 사용할 formData 결정
-    const currentFormData = onChange ? formData : internalFormData;
+    const [internalShowDetailSection, setInternalShowDetailSection] = useState<boolean>(showDetailSectionProp);
 
     // 검색 관련 상태
-    // const [showSearchModal, setShowSearchModal] = useState(false);
-    const [showSearchModal, setShowSearchModal] = useState<boolean>(showDetailSectionProp || false);
+    const [showSearchModal, setShowSearchModal] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchLoading, setSearchLoading] = useState(false);
     const [searchResults, setSearchResults] = useState<ProjectData[]>([]);
@@ -93,11 +88,34 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     const [contactSearchTerm, setContactSearchTerm] = useState('');
     const [contactSearchResults, setContactSearchResults] = useState<ContactSearchData[]>([]);
     const [contactSearchLoading, setContactSearchLoading] = useState(false);
-    const [showDetailSection, setShowDetailSection] = useState<boolean>(showDetailSectionProp || false);
+
+    // props formData 변경 시 내부 상태 동기화
+    useEffect(() => {
+        if (!onChange) {
+            setInternalFormData(formData);
+        }
+    }, [formData, onChange]);
+
+    // 외부 prop 변경 시 내부 상태 동기화
+    useEffect(() => {
+        setInternalShowDetailSection(showDetailSectionProp);
+    }, [showDetailSectionProp]);
+
+    // 실제 사용할 상태 결정 (외부 관리 vs 내부 관리)
+    const currentFormData = onChange ? formData : internalFormData;
+    const isDetailSectionVisible = onDetailSectionChange ? showDetailSectionProp : internalShowDetailSection;
 
     // 토글 핸들러
     const handleDetailSectionToggle = () => {
-        setShowDetailSection(prev => !prev);
+        const newValue = !isDetailSectionVisible;
+
+        if (onDetailSectionChange) {
+            // 외부에서 상태 관리하는 경우 (State Lifting)
+            onDetailSectionChange(newValue);
+        } else {
+            // 내부에서 상태 관리하는 경우
+            setInternalShowDetailSection(newValue);
+        }
     };
 
     // 통합된 onChange 핸들러
@@ -214,13 +232,12 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                 expectedCompetitors: fullProjectData.basic_info.expected_competitors || '',
             };
 
-            // 3. 상세 정보 매핑 (showDetailSection이 true일 때)
-            if (showDetailSection && fullProjectData.detail_info) {
-                // ✅ DB 스키마에 맞는 올바른 매핑으로 되돌림 (ProjectInformation.tsx 수정 후)
-                updates.purposeBackground = fullProjectData.detail_info.project_background || '';  // 목적배경 ← project_background
-                updates.mainContent = fullProjectData.detail_info.project_overview || '';          // 주요내용 ← project_overview
-                updates.coreRequirements = fullProjectData.detail_info.deliverables || '';         // 핵심요구사항 ← deliverables
-                updates.comparison = fullProjectData.detail_info.special_requirements || '';       // 비고 ← special_requirements
+            // 3. 상세 정보 매핑 (상세 섹션이 보이는 경우)
+            if (isDetailSectionVisible && fullProjectData.detail_info) {
+                updates.purposeBackground = fullProjectData.detail_info.project_background || '';
+                updates.mainContent = fullProjectData.detail_info.project_overview || '';
+                updates.coreRequirements = fullProjectData.detail_info.deliverables || '';
+                updates.comparison = fullProjectData.detail_info.special_requirements || '';
             }
 
             // 4. 일괄 업데이트
@@ -639,91 +656,95 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                     </tbody>
                 </table>
 
-                {/* 프로젝트 상세 정보 섹션 - 애니메이션 컨테이너 */}
-                <div
-                    className={`profile-tables-container ${showDetailSection ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
-                    style={{
-                        opacity: showDetailSection ? 1 : 0,
-                        maxHeight: showDetailSection ? '2000px' : '0',
-                        transform: showDetailSection ? 'translateY(0)' : 'translateY(-20px)',
-                        marginBottom: showDetailSection ? '0' : '0',
-                        transition: 'all 1s ease-in-out'
-                    }}
-                >
+                {/* 조건부 토글 버튼 렌더링 */}
+                {enableDetailSectionToggle && detailSectionCollapsible && (
+                    <div className="table-action-section">
+                        <button
+                            type="button"
+                            className="toggle-profile-btn"
+                            onClick={handleDetailSectionToggle}
+                            aria-expanded={isDetailSectionVisible}
+                            aria-controls="detail-section-container"
+                        >
+                            Project Profile {isDetailSectionVisible ? '숨기기' : '보기'}
+                        </button>
+                    </div>
+                )}
 
-                    {/* 프로젝트 상세 정보 섹션 추가 */}
-                    {showDetailSection && (
-                        <>
-                            <br/>
-                            <h3 className="section-header">■ 프로젝트 상세 정보</h3>
-                            <table className={tableClassName}>
-                                <tbody>
-                                <tr>
-                                    <td className="table-header">구분</td>
-                                    <td className="table-header">내용</td>
-                                </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label">목적 및 배경</td>
-                                    <td className="table-cell-input">
-                                    <textarea
-                                        name="purposeBackground"
-                                        value={currentFormData.purposeBackground || ''}
-                                        onChange={(e) => handleInternalChange('purposeBackground', e.target.value)}
-                                        placeholder="- 프로젝트 추진 목적 및 배경&#10;- 광고주 측 주요 과제 또는 행사 맥락"
-                                        className="project-textarea textarea-large"
-                                        readOnly={readOnly}
-                                        rows={4}
-                                    />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label">주요 내용<br/>및<br/>핵심 요구사항</td>
-                                    <td className="table-cell-input">
-                                    <textarea
-                                        name="mainContent"
-                                        value={currentFormData.mainContent || ''}
-                                        onChange={(e) => handleInternalChange('mainContent', e.target.value)}
-                                        placeholder="- 주요 과제, 행사 맥락, 주요 프로그램 등&#10;- 과업 제안범위, 제출금액, 운영 시 필수 고려사항등&#10;- 프로젝트 추진 방향성&#10;- 내외부 리소스 활용방법"
-                                        className="project-textarea textarea-large"
-                                        readOnly={readOnly}
-                                        rows={6}
-                                    />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label">비 고</td>
-                                    <td className="table-cell-input">
-                                    <textarea
-                                        name="comparison"
-                                        value={currentFormData.comparison || ''}
-                                        onChange={(e) => handleInternalChange('comparison', e.target.value)}
-                                        placeholder="- 특이사항 및 중요사항등 추가 기재"
-                                        className="project-textarea textarea-medium"
-                                        readOnly={readOnly}
-                                        rows={3}
-                                    />
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
-                        </>
-                    )}
-                </div>
-
-                {/* Project Profile 토글 버튼 */}
-                <div className="table-action-section">
-                    <button
-                        type="button"
-                        className="toggle-profile-btn"
-                        onClick={handleDetailSectionToggle}
+                {/* 조건부 상세정보 섹션 렌더링 */}
+                {(enableDetailSectionToggle || isDetailSectionVisible) && (
+                    <div
+                        id="detail-section-container"
+                        className={`profile-tables-container ${isDetailSectionVisible ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
+                        style={{
+                            opacity: isDetailSectionVisible ? 1 : 0,
+                            maxHeight: isDetailSectionVisible ? '2000px' : '0',
+                            transform: isDetailSectionVisible ? 'translateY(0)' : 'translateY(-20px)',
+                            marginBottom: isDetailSectionVisible ? '0' : '0',
+                            transition: `all ${detailSectionAnimationDuration}ms ease-in-out`
+                        }}
                     >
-                        Project Profile {showDetailSection ? '숨기기' : '보기'}
-                    </button>
-                </div>
-
+                        {isDetailSectionVisible && (
+                            <>
+                                <br/>
+                                <h3 className="section-header">■ 프로젝트 상세 정보</h3>
+                                <table className={tableClassName}>
+                                    <tbody>
+                                    <tr>
+                                        <td className="table-header">구분</td>
+                                        <td className="table-header">내용</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="table-cell table-cell-label">목적 및 배경</td>
+                                        <td className="table-cell-input">
+                            <textarea
+                                name="purposeBackground"
+                                value={currentFormData.purposeBackground || ''}
+                                onChange={(e) => handleInternalChange('purposeBackground', e.target.value)}
+                                placeholder="- 프로젝트 추진 목적 및 배경&#10;- 광고주 측 주요 과제 또는 행사 맥락"
+                                className="project-textarea textarea-large"
+                                readOnly={readOnly}
+                                rows={4}
+                            />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="table-cell table-cell-label">주요 내용<br/>및<br/>핵심 요구사항</td>
+                                        <td className="table-cell-input">
+                            <textarea
+                                name="mainContent"
+                                value={currentFormData.mainContent || ''}
+                                onChange={(e) => handleInternalChange('mainContent', e.target.value)}
+                                placeholder="- 주요 과제, 행사 맥락, 주요 프로그램 등&#10;- 과업 제안범위, 제출금액, 운영 시 필수 고려사항등&#10;- 프로젝트 추진 방향성&#10;- 내외부 리소스 활용방법"
+                                className="project-textarea textarea-large"
+                                readOnly={readOnly}
+                                rows={6}
+                            />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="table-cell table-cell-label">비 고</td>
+                                        <td className="table-cell-input">
+                            <textarea
+                                name="comparison"
+                                value={currentFormData.comparison || ''}
+                                onChange={(e) => handleInternalChange('comparison', e.target.value)}
+                                placeholder="- 특이사항 및 중요사항등 추가 기재"
+                                className="project-textarea textarea-medium"
+                                readOnly={readOnly}
+                                rows={3}
+                            />
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </>
+                        )}
+                    </div>
+                )}
             </div>
 
-            {/* 검색 모달들 - 기존과 동일 */}
+            {/* 검색 모달들 */}
             {showSearchModal && (
                 <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -872,3 +893,4 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
 };
 
 export default ProjectBasicInfoForm;
+
