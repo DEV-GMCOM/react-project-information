@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ProjectBasicInfo, ProjectData, WriterInfo, CompanyContactData, CompanyProfileData, ExtendedProjectData } from '../../types/project';
 import { handleApiError } from '../../api/utils/errorUtils';
 import apiClient from '../../api/utils/apiClient';
+import '../../styles/ProjectBasicInfoForm.css';
 
 interface CompanyData {
     id: number;
@@ -51,7 +52,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                                                        onProjectSearch,
                                                                        onCompanySearch,
                                                                        onContactSearch,
-                                                                       showDetailSection = false,
+                                                                       showDetailSection: showDetailSectionProp = false,
                                                                        includeDataSections = ['basic', 'detail'],
                                                                        showSearch = true,
                                                                        readOnly = false,
@@ -69,11 +70,18 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         }
     }, [formData, onChange]);
 
+    // 외부 prop 변경 시 내부 상태 동기화
+    useEffect(() => {
+        setShowDetailSection(showDetailSectionProp);
+    }, [showDetailSectionProp]);
+
+
     // 실제 사용할 formData 결정
     const currentFormData = onChange ? formData : internalFormData;
 
     // 검색 관련 상태
-    const [showSearchModal, setShowSearchModal] = useState(false);
+    // const [showSearchModal, setShowSearchModal] = useState(false);
+    const [showSearchModal, setShowSearchModal] = useState<boolean>(showDetailSectionProp || false);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchLoading, setSearchLoading] = useState(false);
     const [searchResults, setSearchResults] = useState<ProjectData[]>([]);
@@ -85,6 +93,12 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     const [contactSearchTerm, setContactSearchTerm] = useState('');
     const [contactSearchResults, setContactSearchResults] = useState<ContactSearchData[]>([]);
     const [contactSearchLoading, setContactSearchLoading] = useState(false);
+    const [showDetailSection, setShowDetailSection] = useState<boolean>(showDetailSectionProp || false);
+
+    // 토글 핸들러
+    const handleDetailSectionToggle = () => {
+        setShowDetailSection(prev => !prev);
+    };
 
     // 통합된 onChange 핸들러
     const handleInternalChange = (name: keyof ExtendedProjectData, value: string) => {
@@ -625,31 +639,32 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                     </tbody>
                 </table>
 
-                {/* Project Profile 토글 버튼 */}
-                <div className="table-action-section">
-                    <button
-                        type="button"
-                        className="toggle-profile-btn"
-                        onClick={() => (showDetailSection = !showDetailSection)}
-                    >
-                        Project Profile {showDetailSection ? '숨기기' : '보기'}
-                    </button>
-                </div>
+                {/* 프로젝트 상세 정보 섹션 - 애니메이션 컨테이너 */}
+                <div
+                    className={`profile-tables-container ${showDetailSection ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
+                    style={{
+                        opacity: showDetailSection ? 1 : 0,
+                        maxHeight: showDetailSection ? '2000px' : '0',
+                        transform: showDetailSection ? 'translateY(0)' : 'translateY(-20px)',
+                        marginBottom: showDetailSection ? '0' : '0',
+                        transition: 'all 1s ease-in-out'
+                    }}
+                >
 
-                {/* 프로젝트 상세 정보 섹션 추가 */}
-                {showDetailSection && (
-                    <>
-                        <br/>
-                        <h3 className="section-header">■ 프로젝트 상세 정보</h3>
-                        <table className={tableClassName}>
-                            <tbody>
-                            <tr>
-                                <td className="table-header">구분</td>
-                                <td className="table-header">내용</td>
-                            </tr>
-                            <tr>
-                                <td className="table-cell table-cell-label">목적 및 배경</td>
-                                <td className="table-cell-input">
+                    {/* 프로젝트 상세 정보 섹션 추가 */}
+                    {showDetailSection && (
+                        <>
+                            <br/>
+                            <h3 className="section-header">■ 프로젝트 상세 정보</h3>
+                            <table className={tableClassName}>
+                                <tbody>
+                                <tr>
+                                    <td className="table-header">구분</td>
+                                    <td className="table-header">내용</td>
+                                </tr>
+                                <tr>
+                                    <td className="table-cell table-cell-label">목적 및 배경</td>
+                                    <td className="table-cell-input">
                                     <textarea
                                         name="purposeBackground"
                                         value={currentFormData.purposeBackground || ''}
@@ -659,11 +674,11 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                         readOnly={readOnly}
                                         rows={4}
                                     />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="table-cell table-cell-label">주요 내용<br/>및<br/>핵심 요구사항</td>
-                                <td className="table-cell-input">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="table-cell table-cell-label">주요 내용<br/>및<br/>핵심 요구사항</td>
+                                    <td className="table-cell-input">
                                     <textarea
                                         name="mainContent"
                                         value={currentFormData.mainContent || ''}
@@ -673,11 +688,11 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                         readOnly={readOnly}
                                         rows={6}
                                     />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="table-cell table-cell-label">비 고</td>
-                                <td className="table-cell-input">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="table-cell table-cell-label">비 고</td>
+                                    <td className="table-cell-input">
                                     <textarea
                                         name="comparison"
                                         value={currentFormData.comparison || ''}
@@ -687,12 +702,25 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                         readOnly={readOnly}
                                         rows={3}
                                     />
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </>
-                )}
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </>
+                    )}
+                </div>
+
+                {/* Project Profile 토글 버튼 */}
+                <div className="table-action-section">
+                    <button
+                        type="button"
+                        className="toggle-profile-btn"
+                        onClick={handleDetailSectionToggle}
+                    >
+                        Project Profile {showDetailSection ? '숨기기' : '보기'}
+                    </button>
+                </div>
+
             </div>
 
             {/* 검색 모달들 - 기존과 동일 */}

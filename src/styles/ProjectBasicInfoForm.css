@@ -1,0 +1,54 @@
+/* 토글 애니메이션 효과 */
+.profile-tables-container {
+    transition: all 1s ease-in-out;
+    overflow: hidden;
+}
+
+.profile-tables-enter {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-20px);
+}
+
+.profile-tables-enter-active {
+    opacity: 1;
+    max-height: 2000px; /* 충분히 큰 값 */
+    transform: translateY(0);
+}
+
+.profile-tables-exit {
+    opacity: 1;
+    max-height: 2000px;
+    transform: translateY(0);
+}
+
+.profile-tables-exit-active {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-20px);
+}
+
+.table-action-section {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin: 15px 0;
+    padding: 0 10px;
+}
+
+.toggle-profile-btn {
+    padding: 8px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    white-space: nowrap;
+}
+
+.toggle-profile-btn:hover {
+    background-color: #0056b3;
+}
