@@ -349,7 +349,7 @@ const ProjectKickoffForm: React.FC = () => {
                         showSearch={true}  // 검색 기능 유지
                         showDetailSection={true}              // ✓ 이제 인식됨
                         includeDataSections={["basic", "detail", "profile", "kickoff"]}  // ✓ 이제 인식됨
-                        readOnly={true}
+                        // readOnly={true}
                         className="project-section"
                         tableClassName="project-table"
                         inputClassName="project-input"
