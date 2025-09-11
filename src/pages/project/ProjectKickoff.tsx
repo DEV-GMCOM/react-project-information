@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
 import ProjectBasicInfoForm from '../../components/common/ProjectBasicInfoForm';
 import { ProjectBasicInfo } from '../../types/project';
+import { handleApiError } from '../../api/utils/errorUtils';
+import apiClient from '../../api/utils/apiClient';
 import '../../styles/ProjectKickoff.css';
 
 interface UploadedFile {
@@ -37,14 +39,13 @@ interface ProjectKickoff {
     coreRequirements: string;
     comparison: string;
 
-    // 프로젝트 착수보고
-    department: string;
-    presenter: string;
-    personnel: string;
-    collaboration: string;
-    plannedExpense: string;
-    schedule: string;
-    others: string;
+    // 프로젝트 착수보고 (실제 git 코드 기준 6개 필드)
+    department: string;           // 담당부서
+    presenter: string;            // PT발표자
+    personnel: string;            // 기획자 (투입인력)
+    collaboration: string;        // 협업조직
+    schedule: string;             // 추진 일정 (UI에서는 schedule, DB에서는 progress_schedule)
+    others: string;               // 기타 (UI에서는 others, DB에서는 other_notes)
 
     // 작성자 정보
     writerName: string;
@@ -62,6 +63,11 @@ const ProjectKickoffForm: React.FC = () => {
     const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // 새로 추가된 상태들
+    const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+    const [saveMode, setSaveMode] = useState<'insert' | 'update'>('insert');
+    const [loading, setLoading] = useState(false);
 
     const allowedExtensions = ['txt', 'text', 'md', 'pdf', 'ppt', 'pptx', 'doc', 'docx', 'hwp', 'hwpx', 'png', 'jpg', 'jpeg'];
 
@@ -153,6 +159,7 @@ const ProjectKickoffForm: React.FC = () => {
         setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
     };
 
+    // formData에서 plannedExpense 제거
     const [formData, setFormData] = useState<ProjectKickoff>({
         projectName: '',
         inflowPath: '',
@@ -176,11 +183,14 @@ const ProjectKickoffForm: React.FC = () => {
         presenter: '',
         personnel: '',
         collaboration: '',
-        plannedExpense: '',
         schedule: '',
         others: '',
         writerName: '',
-        writerDepartment: ''
+        writerDepartment: '',
+        swotAnalysis: '',
+        direction: '',
+        resourcePlan: '',
+        writerOpinion: ''
     });
 
     const handleBasicInfoChange = (name: keyof ProjectBasicInfo, value: string) => {
@@ -188,6 +198,46 @@ const ProjectKickoffForm: React.FC = () => {
             ...prev,
             [name]: value
         }));
+    };
+
+    // 프로젝트 선택 시 호출되는 핸들러 추가
+    const handleProjectSelect = async (projectData: any) => {
+        try {
+            console.log('프로젝트 선택 데이터:', projectData);
+
+            // 프로파일 및 착수보고 데이터 매핑
+            if (projectData.profile_info) {
+                setFormData(prev => ({
+                    ...prev,
+                    swotAnalysis: projectData.profile_info.swot_analysis || '',
+                    direction: projectData.profile_info.direction || '',
+                    resourcePlan: projectData.profile_info.resource_plan || '',
+                    writerOpinion: projectData.profile_info.writer_opinion || ''
+                }));
+            }
+
+            if (projectData.kickoff_info) {
+                setFormData(prev => ({
+                    ...prev,
+                    department: projectData.kickoff_info.department || '',
+                    presenter: projectData.kickoff_info.presenter || '',
+                    personnel: projectData.kickoff_info.personnel || '',
+                    collaboration: projectData.kickoff_info.collaboration || '',
+                    schedule: projectData.kickoff_info.progress_schedule || '',    // progress_schedule -> schedule
+                    others: projectData.kickoff_info.other_notes || ''           // other_notes -> others
+                }));
+                setSaveMode('update');
+            } else {
+                setSaveMode('insert');
+            }
+
+            setSelectedProjectId(projectData.project_id);
+            setShowProfileTables(true);
+
+        } catch (error) {
+            const errorMessage = handleApiError(error);
+            alert(`프로젝트 데이터 처리 중 오류가 발생했습니다: ${errorMessage}`);
+        }
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -220,9 +270,40 @@ const ProjectKickoffForm: React.FC = () => {
         }));
     };
 
-    const handleSubmit = () => {
-        console.log('프로젝트 착수서 저장:', formData);
-        // TODO: API 연동
+    // 착수보고 저장 로직으로 handleSubmit 수정
+    const handleSubmit = async () => {
+        if (!selectedProjectId) {
+            alert('프로젝트를 먼저 선택해주세요.');
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            // UI 필드명을 API 필드명으로 매핑
+            const kickoffData = {
+                department: formData.department,
+                presenter: formData.presenter,
+                personnel: formData.personnel,
+                collaboration: formData.collaboration,
+                progress_schedule: formData.schedule,    // schedule -> progress_schedule
+                other_notes: formData.others            // others -> other_notes
+            };
+
+            await apiClient(`/projects/${selectedProjectId}/kickoff`, {
+                method: 'POST',
+                data: kickoffData
+            });
+
+            alert('프로젝트 착수보고가 저장되었습니다.');
+            setSaveMode('update');
+
+        } catch (error) {
+            const errorMessage = handleApiError(error);
+            alert(`저장 중 오류가 발생했습니다: ${errorMessage}`);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handlePrint = () => {
@@ -252,241 +333,22 @@ const ProjectKickoffForm: React.FC = () => {
                     <div className="profile-writer">
                         <div className="writer-form">
                             <div>
-                                최종 작성자 :
+                                최종 작성자 : {formData.writerName} {formData.writerDepartment && `(${formData.writerDepartment})`}
                             </div>
                         </div>
                     </div>
-
-                    {/*<div className="kickoff-writer">*/}
-                    {/*    <div className="writer-form">*/}
-                    {/*        <div className="writer-field">*/}
-                    {/*            <label className="writer-field-label">등록자 이름:</label>*/}
-                    {/*            <input*/}
-                    {/*                type="text"*/}
-                    {/*                name="writerName"*/}
-                    {/*                value={formData.writerName}*/}
-                    {/*                onChange={handleInputChange}*/}
-                    {/*                placeholder="홍길동"*/}
-                    {/*                className="writer-field-input"*/}
-                    {/*            />*/}
-                    {/*        </div>*/}
-                    {/*        <div className="writer-field">*/}
-                    {/*            <label className="writer-field-label">부서:</label>*/}
-                    {/*            <input*/}
-                    {/*                type="text"*/}
-                    {/*                name="writerDepartment"*/}
-                    {/*                value={formData.writerDepartment}*/}
-                    {/*                onChange={handleInputChange}*/}
-                    {/*                placeholder="영업팀"*/}
-                    {/*                className="writer-field-input"*/}
-                    {/*            />*/}
-                    {/*        </div>*/}
-                    {/*    </div>*/}
-                    {/*</div>*/}
                 </div>
 
-                {/*/!* 프로젝트 기본 정보 (8x4 테이블) *!/*/}
-                {/*<div className="kickoff-section">*/}
-                {/*    <h3 className="section-header">*/}
-                {/*        ■ 프로젝트 기본 정보*/}
-                {/*    </h3>*/}
-
-                {/*    <table className="kickoff-table">*/}
-                {/*        <tbody>*/}
-                {/*        <tr>*/}
-                {/*            <td className="table-header">구분</td>*/}
-                {/*            <td className="table-header">내용</td>*/}
-                {/*            <td className="table-header">구분</td>*/}
-                {/*            <td className="table-header">내용</td>*/}
-                {/*            /!*<td className="table-header table-header-empty"></td>*!/*/}
-                {/*            /!*<td className="table-header table-header-empty"></td>*!/*/}
-                {/*        </tr>*/}
-                {/*        <tr>*/}
-                {/*            <td className="table-cell table-cell-label">프로젝트명</td>*/}
-                {/*            <td className="table-cell-input">*/}
-                {/*                <input*/}
-                {/*                    type="text"*/}
-                {/*                    name="projectName"*/}
-                {/*                    value={formData.projectName}*/}
-                {/*                    onChange={handleInputChange}*/}
-                {/*                    className="kickoff-input"*/}
-                {/*                />*/}
-                {/*            </td>*/}
-                {/*            <td className="table-cell table-cell-label">유입경로</td>*/}
-                {/*            <td className="table-cell-input">*/}
-                {/*                <input*/}
-                {/*                    type="text"*/}
-                {/*                    name="inflowPath"*/}
-                {/*                    value={formData.inflowPath}*/}
-                {/*                    onChange={handleInputChange}*/}
-                {/*                    className="kickoff-input"*/}
-                {/*                />*/}
-                {/*            </td>*/}
-                {/*        </tr>*/}
-                {/*        <tr>*/}
-                {/*            <td className="table-cell table-cell-label">발주처</td>*/}
-                {/*            <td className="table-cell-input">*/}
-                {/*                <input*/}
-                {/*                    type="text"*/}
-                {/*                    name="client"*/}
-                {/*                    value={formData.client}*/}
-                {/*                    onChange={handleInputChange}*/}
-                {/*                    className="kickoff-input"*/}
-                {/*                />*/}
-                {/*            </td>*/}
-                {/*            <td className="table-cell table-cell-label">담당자</td>*/}
-                {/*            <td className="table-cell-input">*/}
-                {/*                <div className="input-container">*/}
-                {/*                    <input*/}
-                {/*                        type="text"*/}
-                {/*                        name="manager"*/}
-                {/*                        value={formData.manager}*/}
-                {/*                        onChange={handleInputChange}*/}
-                {/*                        className="kickoff-input input-with-inner-btn"*/}
-                {/*                    />*/}
-                {/*                    <button*/}
-                {/*                        type="button"*/}
-                {/*                        className="inner-profile-btn"*/}
-                {/*                        onClick={() => {*/}
-                {/*                            console.log('광고주 Profile 버튼 클릭');*/}
-                {/*                            // TODO: 광고주 Profile 페이지로 이동 또는 모달 열기*/}
-                {/*                        }}*/}
-                {/*                    >*/}
-                {/*                        광고주 Profile*/}
-                {/*                    </button>*/}
-                {/*                </div>*/}
-                {/*            </td>*/}
-                {/*        </tr>*/}
-                {/*        <tr>*/}
-                {/*            <td className="table-cell table-cell-label">행사일</td>*/}
-                {/*            <td className="table-cell-input">*/}
-                {/*                <input*/}
-                {/*                    type="date"*/}
-                {/*                    name="eventDate"*/}
-                {/*                    value={formData.eventDate ? formData.eventDate.replace(/\./g, '-') : ''}*/}
-                {/*                    onChange={(e) => {*/}
-                {/*                        const selectedDate = e.target.value;*/}
-                {/*                        if (selectedDate) {*/}
-                {/*                            const formattedDate = selectedDate.replace(/-/g, '.');*/}
-                {/*                            setFormData(prev => ({ ...prev, eventDate: formattedDate }));*/}
-                {/*                        } else {*/}
-                {/*                            setFormData(prev => ({ ...prev, eventDate: '' }));*/}
-                {/*                        }*/}
-                {/*                    }}*/}
-                {/*                    className="kickoff-date-input"*/}
-                {/*                />*/}
-                {/*            </td>*/}
-                {/*            <td className="table-cell table-cell-label">행사장소</td>*/}
-                {/*            <td className="table-cell-input">*/}
-                {/*                <input*/}
-                {/*                    type="text"*/}
-                {/*                    name="eventLocation"*/}
-                {/*                    value={formData.eventLocation}*/}
-                {/*                    onChange={handleInputChange}*/}
-                {/*                    className="kickoff-input"*/}
-                {/*                />*/}
-                {/*            </td>*/}
-                {/*        </tr>*/}
-                {/*        <tr>*/}
-                {/*            <td className="table-cell table-cell-label">참석대상</td>*/}
-                {/*            <td className="table-cell-input">*/}
-                {/*                <input*/}
-                {/*                    type="text"*/}
-                {/*                    name="attendees"*/}
-                {/*                    value={formData.attendees}*/}
-                {/*                    onChange={handleInputChange}*/}
-                {/*                    placeholder="VIP XX명, 약 XX명 예상"*/}
-                {/*                    className="kickoff-input"*/}
-                {/*                />*/}
-                {/*            </td>*/}
-                {/*            <td className="table-cell table-cell-label">행사성격</td>*/}
-                {/*            <td className="table-cell-input">*/}
-                {/*                <input*/}
-                {/*                    type="text"*/}
-                {/*                    name="eventNature"*/}
-                {/*                    value={formData.eventNature}*/}
-                {/*                    onChange={handleInputChange}*/}
-                {/*                    className="kickoff-input"*/}
-                {/*                />*/}
-                {/*            </td>*/}
-                {/*        </tr>*/}
-                {/*        <tr>*/}
-                {/*            <td className="table-cell table-cell-label">OT 일정</td>*/}
-                {/*            <td className="table-cell-input">*/}
-                {/*                <input*/}
-                {/*                    type="date"*/}
-                {/*                    name="otSchedule"*/}
-                {/*                    value={formData.otSchedule ? formData.otSchedule.replace(/\./g, '-') : ''}*/}
-                {/*                    onChange={(e) => {*/}
-                {/*                        const selectedDate = e.target.value;*/}
-                {/*                        if (selectedDate) {*/}
-                {/*                            const formattedDate = selectedDate.replace(/-/g, '.');*/}
-                {/*                            setFormData(prev => ({ ...prev, otSchedule: formattedDate }));*/}
-                {/*                        } else {*/}
-                {/*                            setFormData(prev => ({ ...prev, otSchedule: '' }));*/}
-                {/*                        }*/}
-                {/*                    }}*/}
-                {/*                    className="kickoff-date-input"*/}
-                {/*                />*/}
-                {/*            </td>*/}
-                {/*            <td className="table-cell table-cell-label">제출 / PT 일정</td>*/}
-                {/*            <td className="table-cell-input">*/}
-                {/*                <input*/}
-                {/*                    type="date"*/}
-                {/*                    name="submissionSchedule"*/}
-                {/*                    value={formData.submissionSchedule ? formData.submissionSchedule.replace(/\./g, '-') : ''}*/}
-                {/*                    onChange={(e) => {*/}
-                {/*                        const selectedDate = e.target.value;*/}
-                {/*                        if (selectedDate) {*/}
-                {/*                            const formattedDate = selectedDate.replace(/-/g, '.');*/}
-                {/*                            setFormData(prev => ({ ...prev, submissionSchedule: formattedDate }));*/}
-                {/*                        } else {*/}
-                {/*                            setFormData(prev => ({ ...prev, submissionSchedule: '' }));*/}
-                {/*                        }*/}
-                {/*                    }}*/}
-                {/*                    className="kickoff-date-input"*/}
-                {/*                />*/}
-                {/*            </td>*/}
-                {/*        </tr>*/}
-                {/*        <tr>*/}
-                {/*            <td className="table-cell table-cell-label">*/}
-                {/*                예상매출<br/>*/}
-                {/*                ( 단위 : 억원 )*/}
-                {/*            </td>*/}
-                {/*            <td className="table-cell-input">*/}
-                {/*                <input*/}
-                {/*                    type="text"*/}
-                {/*                    name="expectedRevenue"*/}
-                {/*                    value={formData.expectedRevenue}*/}
-                {/*                    onChange={handleInputChange}*/}
-                {/*                    placeholder="XX.X [ 수익 X.X ]"*/}
-                {/*                    className="kickoff-input"*/}
-                {/*                />*/}
-                {/*            </td>*/}
-                {/*            <td className="table-cell table-cell-label">예상 경쟁사</td>*/}
-                {/*            <td className="table-cell-input">*/}
-                {/*                <input*/}
-                {/*                    type="text"*/}
-                {/*                    name="expectedCompetitors"*/}
-                {/*                    value={formData.expectedCompetitors}*/}
-                {/*                    onChange={handleInputChange}*/}
-                {/*                    placeholder="XX, YY 등 N개사"*/}
-                {/*                    className="kickoff-input"*/}
-                {/*                />*/}
-                {/*            </td>*/}
-                {/*        </tr>*/}
-                {/*        </tbody>*/}
-                {/*    </table>*/}
-                {/*</div>*/}
                 <div className="profile-main">
-                    {/* 공통 컴포넌트 사용 */}
+                    {/* 공통 컴포넌트 사용 - 검색 기능 유지 */}
                     <ProjectBasicInfoForm
                         formData={formData}
                         onChange={handleBasicInfoChange}
+                        onProjectSelect={handleProjectSelect} // 프로젝트 선택 핸들러 추가
                         // onProjectSearch={handleProjectSearch}
                         // onCompanySearch={handleCompanySearch}
                         // onContactSearch={handleContactSearch}
-                        showSearch={true}
+                        showSearch={true}  // 검색 기능 유지
                         className="project-section"
                         tableClassName="project-table"
                         inputClassName="project-input"
@@ -504,7 +366,6 @@ const ProjectKickoffForm: React.FC = () => {
                     </button>
                 </div>
 
-
                 {/* 프로젝트 상세 정보 (5x2 테이블) - 토글 애니메이션 */}
                 <div
                     className={`profile-tables-container ${showProfileTables ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
@@ -512,7 +373,6 @@ const ProjectKickoffForm: React.FC = () => {
                         opacity: showProfileTables ? 1 : 0,
                         maxHeight: showProfileTables ? '2000px' : '0',
                         transform: showProfileTables ? 'translateY(0)' : 'translateY(-20px)',
-                        // marginBottom: showProfileTables ? '30px' : '0',
                         marginBottom: showProfileTables ? '0' : '0',
                         transition: 'all 1s ease-in-out'
                     }}
@@ -521,7 +381,7 @@ const ProjectKickoffForm: React.FC = () => {
                         <>
                             <div className="kickoff-section">
                                 <h3 className="section-header">
-                                    ■ 프로젝트 상세 정보
+                                    ■ 프로젝트 상세 정보 (읽기 전용)
                                 </h3>
                                 <table className="kickoff-table">
                                     <tbody>
@@ -535,8 +395,9 @@ const ProjectKickoffForm: React.FC = () => {
                                             <textarea
                                                 name="purposeBackground"
                                                 value={formData.purposeBackground}
-                                                onChange={handleInputChange}
                                                 className="kickoff-textarea textarea-medium"
+                                                readOnly
+                                                style={{ backgroundColor: '#f5f5f5' }}
                                             />
                                         </td>
                                     </tr>
@@ -546,9 +407,9 @@ const ProjectKickoffForm: React.FC = () => {
                                             <textarea
                                                 name="mainContent"
                                                 value={formData.mainContent}
-                                                onChange={handleBulletTextChange}
-                                                placeholder="프로젝트 Profile 토대로 수정/변경/업데이트 가능"
                                                 className="kickoff-textarea textarea-large bullet-textarea"
+                                                readOnly
+                                                style={{ backgroundColor: '#f5f5f5' }}
                                             />
                                         </td>
                                     </tr>
@@ -558,9 +419,9 @@ const ProjectKickoffForm: React.FC = () => {
                                             <textarea
                                                 name="coreRequirements"
                                                 value={formData.coreRequirements}
-                                                onChange={handleBulletTextChange}
-                                                placeholder="프로젝트 Profile 토대로 수정/변경/업데이트 가능"
                                                 className="kickoff-textarea textarea-large bullet-textarea"
+                                                readOnly
+                                                style={{ backgroundColor: '#f5f5f5' }}
                                             />
                                         </td>
                                     </tr>
@@ -570,8 +431,9 @@ const ProjectKickoffForm: React.FC = () => {
                                             <textarea
                                                 name="comparison"
                                                 value={formData.comparison}
-                                                onChange={handleInputChange}
                                                 className="kickoff-textarea textarea-medium"
+                                                readOnly
+                                                style={{ backgroundColor: '#f5f5f5' }}
                                             />
                                         </td>
                                     </tr>
@@ -582,7 +444,7 @@ const ProjectKickoffForm: React.FC = () => {
                             {/* 프로젝트 검토 (ProjectProfile.tsx에서 가져온 테이블) */}
                             <div className="kickoff-section">
                                 <h3 className="section-header">
-                                    ■ 프로젝트 검토
+                                    ■ 프로젝트 검토 (읽기 전용)
                                 </h3>
 
                                 <table className="kickoff-table">
@@ -597,9 +459,9 @@ const ProjectKickoffForm: React.FC = () => {
                                             <textarea
                                                 name="swotAnalysis"
                                                 value={formData.swotAnalysis || ''}
-                                                onChange={handleBulletTextChange}
-                                                placeholder="강점: 독보적 경험과 노하우 활요, 높은 수주가능성&#10;약점: 내수율 저조&#10;기회: 매출달성에 기여, 차기 Proj 기약&#10;위험: 내정자에 따른 휴먼 리소스 소모"
                                                 className="kickoff-textarea textarea-xlarge bullet-textarea"
+                                                readOnly
+                                                style={{ backgroundColor: '#f5f5f5' }}
                                             />
                                         </td>
                                     </tr>
@@ -609,9 +471,9 @@ const ProjectKickoffForm: React.FC = () => {
                                             <textarea
                                                 name="direction"
                                                 value={formData.direction || ''}
-                                                onChange={handleBulletTextChange}
-                                                placeholder="프로젝트 추진 방향성&#10;리소스 활용방법"
                                                 className="kickoff-textarea textarea-large bullet-textarea"
+                                                readOnly
+                                                style={{ backgroundColor: '#f5f5f5' }}
                                             />
                                         </td>
                                     </tr>
@@ -621,9 +483,9 @@ const ProjectKickoffForm: React.FC = () => {
                                             <textarea
                                                 name="resourcePlan"
                                                 value={formData.resourcePlan || ''}
-                                                onChange={handleBulletTextChange}
-                                                placeholder="내부 전담조직 및 참여자 역량&#10;협업 조직: XX사 3D 디자인, 영상팀"
                                                 className="kickoff-textarea textarea-large bullet-textarea"
+                                                readOnly
+                                                style={{ backgroundColor: '#f5f5f5' }}
                                             />
                                         </td>
                                     </tr>
@@ -633,9 +495,9 @@ const ProjectKickoffForm: React.FC = () => {
                                             <textarea
                                                 name="writerOpinion"
                                                 value={formData.writerOpinion || ''}
-                                                onChange={handleBulletTextChange}
-                                                placeholder="프로젝트 진행여부 판단 의견 요약"
                                                 className="kickoff-textarea textarea-large bullet-textarea"
+                                                readOnly
+                                                style={{ backgroundColor: '#f5f5f5' }}
                                             />
                                         </td>
                                     </tr>
@@ -708,18 +570,6 @@ const ProjectKickoffForm: React.FC = () => {
                                 />
                             </td>
                         </tr>
-                        {/*<tr>*/}
-                        {/*    <td className="table-cell table-cell-label">기획 예상경비</td>*/}
-                        {/*    <td className="table-cell-input">*/}
-                        {/*        <textarea*/}
-                        {/*            name="plannedExpense"*/}
-                        {/*            value={formData.plannedExpense}*/}
-                        {/*            onChange={handleBulletTextChange}*/}
-                        {/*            placeholder="출장, 야근택시비, 용역비 등"*/}
-                        {/*            className="kickoff-textarea textarea-medium bullet-textarea"*/}
-                        {/*        />*/}
-                        {/*    </td>*/}
-                        {/*</tr>*/}
                         <tr>
                             <td className="table-cell table-cell-label">추진 일정</td>
                             <td className="table-cell-input">
@@ -822,8 +672,12 @@ const ProjectKickoffForm: React.FC = () => {
 
                 {/* 버튼 영역 */}
                 <div className="button-section">
-                    <button onClick={handleSubmit} className="submit-btn">
-                        저장
+                    <button
+                        onClick={handleSubmit}
+                        className="submit-btn"
+                        disabled={loading || !selectedProjectId}
+                    >
+                        {loading ? '저장 중...' : (saveMode === 'update' ? '수정' : '저장')}
                     </button>
                     <button onClick={handlePrint} className="print-btn">
                         인쇄
