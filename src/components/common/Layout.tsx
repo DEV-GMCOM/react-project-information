@@ -255,7 +255,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     >
                         ☰
                     </button>
-                    <h1 className="header-title">ERP Information Module</h1>
+                    <h1 className="header-title">GMCOM Information System</h1>
                 </div>
                 <div className="header-right">
                     {user ? (

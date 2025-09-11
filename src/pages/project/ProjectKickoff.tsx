@@ -37,7 +37,7 @@ interface ProjectKickoff {
     purposeBackground: string;
     mainContent: string;
     coreRequirements: string;
-    comparison: string;
+    etc: string;
 
     // 프로젝트 착수보고 (실제 git 코드 기준 6개 필드)
     department: string;           // 담당부서
@@ -178,7 +178,7 @@ const ProjectKickoffForm: React.FC = () => {
         purposeBackground: '',
         mainContent: '',
         coreRequirements: '',
-        comparison: '',
+        etc: '',
         department: '',
         presenter: '',
         personnel: '',
@@ -403,35 +403,24 @@ const ProjectKickoffForm: React.FC = () => {
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td className="table-cell table-cell-label">주요 내용</td>
+                                        <td className="table-cell table-cell-label">주요 내용<br/>및<br/>핵심 요구사항</td>
                                         <td className="table-cell-input">
                                             <textarea
                                                 name="mainContent"
                                                 value={formData.mainContent}
                                                 className="kickoff-textarea textarea-large bullet-textarea"
                                                 readOnly
+                                                // placeholder="- 주요 과제, 행사 맥락, 주요 프로그램 등&#10;- 과업 제안범위, 제출금액, 운영 시 필수 고려사항등&#10;- 프로젝트 추진 방향성&#10;- 내외부 리소스 활용방법"
                                                 style={{ backgroundColor: '#f5f5f5' }}
                                             />
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td className="table-cell table-cell-label">핵심 요구사항</td>
-                                        <td className="table-cell-input">
-                                            <textarea
-                                                name="coreRequirements"
-                                                value={formData.coreRequirements}
-                                                className="kickoff-textarea textarea-large bullet-textarea"
-                                                readOnly
-                                                style={{ backgroundColor: '#f5f5f5' }}
-                                            />
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="table-cell table-cell-label">비교</td>
+                                        <td className="table-cell table-cell-label">비고</td>
                                         <td className="table-cell-input">
                                             <textarea
                                                 name="comparison"
-                                                value={formData.comparison}
+                                                value={formData.etc}
                                                 className="kickoff-textarea textarea-medium"
                                                 readOnly
                                                 style={{ backgroundColor: '#f5f5f5' }}

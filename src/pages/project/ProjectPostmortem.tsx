@@ -550,7 +550,7 @@ const ProjectPostmortemForm: React.FC = () => {
                 {/*                        </td>*/}
                 {/*                    </tr>*/}
                 {/*                    <tr>*/}
-                {/*                        <td className="table-cell table-cell-label">비교</td>*/}
+                {/*                        <td className="table-cell table-cell-label">비고</td>*/}
                 {/*                        <td className="table-cell-input">*/}
                 {/*                            <textarea*/}
                 {/*                                name="comparison"*/}
@@ -733,7 +733,7 @@ const ProjectPostmortemForm: React.FC = () => {
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td className="table-cell table-cell-label">비교</td>
+                                        <td className="table-cell table-cell-label">비고</td>
                                         <td className="table-cell-input">
                                                 <textarea
                                                     name="comparison"
