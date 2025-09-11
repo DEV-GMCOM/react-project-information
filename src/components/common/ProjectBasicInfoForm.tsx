@@ -6,6 +6,14 @@ import { handleApiError } from '../../api/utils/errorUtils';
 // apiClient 사용으로 변경
 import apiClient from '../../api/utils/apiClient';
 
+interface ExtendedProjectData extends ProjectBasicInfo {
+    // 상세 정보 추가
+    purposeBackground?: string;
+    mainContent?: string;
+    coreRequirements?: string;
+    comparison?: string;
+}
+
 interface CompanyData {
     id: number;
     company_name: string;
@@ -22,25 +30,20 @@ interface ContactSearchData {
     };
 }
 
-// interface ProjectBasicInfoFormProps {
-//     formData: ProjectBasicInfo;
-//     onChange: (name: keyof ProjectBasicInfo, value: string) => void;
-//     onProjectSelect?: (project: ProjectData) => void;
-//     onCompanySelect?: (company: CompanyProfileData) => void;
-//     onContactSelect?: (contact: CompanyContactData) => void;
-//     readOnly?: boolean;
-//     className?: string;
-//     tableClassName?: string;
-//     inputClassName?: string;
-// }
-
 type ExternalSearchHandlerResult = 'handled' | 'skip' | void;
 type ExternalSearchHandler = () => ExternalSearchHandlerResult | Promise<ExternalSearchHandlerResult>;
 
 // (상단) props 인터페이스에 콜백/플래그 추가
 interface ProjectBasicInfoFormProps {
-    formData: ProjectBasicInfo;
-    onChange: (name: keyof ProjectBasicInfo, value: string) => void;
+
+    // formData: ProjectBasicInfo;
+    // onChange: (name: keyof ProjectBasicInfo, value: string) => void;
+    formData: ExtendedProjectData;  // 확장된 타입 사용
+    onChange: (name: string, value: string) => void;  // string으로 변경
+
+    // 추가
+    showDetailSection?: boolean;
+    includeDataSections?: string[];
 
     onProjectSelect?: (project: ProjectData) => void;
     onCompanySelect?: (company: CompanyProfileData) => void;
@@ -87,6 +90,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                                                        onProjectSearch,
                                                                        onCompanySearch,
                                                                        onContactSearch,
+                                                                       showDetailSection = false,        // 이것 추가
+                                                                       includeDataSections = ['basic', 'detail'],  // 이것 추가
                                                                        showSearch = true,
                                                                        readOnly = false,
                                                                        className = "project-section",
@@ -112,8 +117,10 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     const [contactSearchLoading, setContactSearchLoading] = useState(false);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        // const { name, value } = e.target;
+        // onChange(name as keyof ProjectBasicInfo, value);
         const { name, value } = e.target;
-        onChange(name as keyof ProjectBasicInfo, value);
+        onChange(name, value);  // as keyof ProjectBasicInfo 제거
     };
 
     const handleDateChange = (fieldName: keyof ProjectBasicInfo, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,21 +213,44 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         }
     };
 
-    const selectProject = (project: ProjectData) => {
-        onChange('projectName', project.project_name || '');
-        onChange('client', project.company_profile?.company_name || project.client || '');
-        onChange('manager', project.selected_contact?.contact_name || '');
-        onChange('eventDate', project.project_period_start || '');
-        onChange('submissionSchedule', project.project_period_end || '');
-        onChange('eventLocation', project.event_location || '');
-        onChange('attendees', project.attendees || '');
-        onChange('eventNature', project.business_type || '');
-        onChange('otSchedule', project.ot_schedule || '');
-        onChange('expectedRevenue', project.contract_amount?.toString() || '');
-        onChange('expectedCompetitors', project.expected_competitors || '');
+    const selectProject = async (project: ProjectData) => {
+        try {
+            // 1. 프로젝트 전체 데이터 가져오기 (기본정보 + 상세정보 + 프로파일 + 착수보고)
+            const sectionsParam = includeDataSections?.join(',') || 'basic,detail';
+            const response = await apiClient(`/projects/${project.project_id}/data?include_sections=${sectionsParam}`);
+            const fullProjectData = response.data;
 
-        setShowSearchModal(false);
-        onProjectSelect?.(project);
+            // 2. 기본 정보 매핑
+            onChange('projectName', fullProjectData.basic_info.project_name || '');
+            onChange('inflowPath', fullProjectData.basic_info.inflow_path || '');  // 유입경로 추가
+            onChange('client', fullProjectData.basic_info.client || '');
+            onChange('manager', fullProjectData.basic_info.our_manager_name || fullProjectData.basic_info.client_manager_name || '');
+            onChange('eventDate', fullProjectData.basic_info.project_period_start || '');
+            onChange('submissionSchedule', fullProjectData.basic_info.project_period_end || '');
+            onChange('eventLocation', fullProjectData.basic_info.event_location || '');
+            onChange('attendees', fullProjectData.basic_info.attendees || '');
+            onChange('eventNature', fullProjectData.basic_info.business_type || '');
+            onChange('otSchedule', fullProjectData.basic_info.ot_schedule || '');
+            onChange('expectedRevenue', fullProjectData.basic_info.contract_amount?.toString() || '');
+            onChange('expectedCompetitors', fullProjectData.basic_info.expected_competitors || '');
+
+            // 3. 상세 정보 매핑 (showDetailSection이 true일 때)
+            if (showDetailSection && fullProjectData.detail_info) {
+                onChange('purposeBackground', fullProjectData.detail_info.project_background || '');  // 목적 및 배경
+                onChange('mainContent', fullProjectData.detail_info.project_overview || '');          // 주요 내용
+                onChange('coreRequirements', fullProjectData.detail_info.deliverables || '');         // 핵심 요구사항
+                onChange('comparison', fullProjectData.detail_info.special_requirements || '');       // 비고
+            }
+
+            setShowSearchModal(false);
+
+            // 4. 전체 데이터를 상위 컴포넌트에 전달
+            onProjectSelect?.(fullProjectData);
+
+        } catch (error) {
+            const errorMessage = handleApiError(error);
+            alert(`프로젝트 데이터 로드 중 오류가 발생했습니다: ${errorMessage}`);
+        }
     };
 
     // 회사 검색 함수들

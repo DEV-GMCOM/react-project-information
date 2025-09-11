@@ -345,10 +345,10 @@ const ProjectKickoffForm: React.FC = () => {
                         formData={formData}
                         onChange={handleBasicInfoChange}
                         onProjectSelect={handleProjectSelect} // 프로젝트 선택 핸들러 추가
-                        // onProjectSearch={handleProjectSearch}
-                        // onCompanySearch={handleCompanySearch}
-                        // onContactSearch={handleContactSearch}
                         showSearch={true}  // 검색 기능 유지
+                        showDetailSection={true}              // ✓ 이제 인식됨
+                        includeDataSections={["basic", "detail", "profile", "kickoff"]}  // ✓ 이제 인식됨
+                        readOnly={true}
                         className="project-section"
                         tableClassName="project-table"
                         inputClassName="project-input"
