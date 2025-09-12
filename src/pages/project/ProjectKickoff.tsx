@@ -54,7 +54,6 @@ interface ProjectKickoff {
 
     // 프로젝트 검토 데이터
     swotAnalysis?: string;
-    direction?: string;
     resourcePlan?: string;
     writerOpinion?: string;
 }
@@ -128,7 +127,6 @@ const ProjectKickoffForm: React.FC = () => {
         writerName: '',
         writerDepartment: '',
         swotAnalysis: '',
-        direction: '',
         resourcePlan: '',
         writerOpinion: ''
     });
@@ -136,26 +134,30 @@ const ProjectKickoffForm: React.FC = () => {
     // 프로젝트 ID 선택 시 호출되는 핸들러
     const handleProjectIdSelected = async (projectId: number) => {
         console.log('프로젝트 ID 수신:', projectId);
-
         setSelectedProjectId(projectId);
 
         try {
             setLoading(true);
 
-            // 프로젝트 검토 데이터 가져오기 (profile)
+            // ✅ 1. 프로젝트 검토 데이터 가져오기 (profile 섹션)
             const profileResponse = await apiClient(`/projects/${projectId}/data?include_sections=profile`);
+            console.log('Profile Response:', profileResponse.data);
+
             if (profileResponse.data.profile_info) {
                 setFormData(prev => ({
                     ...prev,
                     swotAnalysis: profileResponse.data.profile_info.swot_analysis || '',
-                    direction: profileResponse.data.profile_info.direction || '',
+                    // direction 필드 제거 - ProjectProfile과 동일하게
                     resourcePlan: profileResponse.data.profile_info.resource_plan || '',
                     writerOpinion: profileResponse.data.profile_info.writer_opinion || ''
                 }));
+                console.log('프로젝트 검토 데이터 로드 완료');
             }
 
-            // 착수보고 데이터 가져오기 (kickoff)
+            // ✅ 2. 착수보고 데이터 가져오기 (kickoff 섹션)
             const kickoffResponse = await apiClient(`/projects/${projectId}/data?include_sections=kickoff`);
+            console.log('Kickoff Response:', kickoffResponse.data);
+
             if (kickoffResponse.data.kickoff_info) {
                 setFormData(prev => ({
                     ...prev,
@@ -163,23 +165,37 @@ const ProjectKickoffForm: React.FC = () => {
                     presenter: kickoffResponse.data.kickoff_info.presenter || '',
                     personnel: kickoffResponse.data.kickoff_info.personnel || '',
                     collaboration: kickoffResponse.data.kickoff_info.collaboration || '',
+                    // ✅ DB 필드명과 UI 필드명 매핑 주의
                     schedule: kickoffResponse.data.kickoff_info.progress_schedule || '',
                     others: kickoffResponse.data.kickoff_info.other_notes || ''
                 }));
                 setSaveMode('update');
+                console.log('프로젝트 착수보고 데이터 로드 완료');
             } else {
+                // 착수보고 데이터가 없으면 새로 생성 모드
                 setSaveMode('insert');
+                console.log('새로운 착수보고 생성 모드');
             }
 
-            console.log('프로젝트 검토 및 착수보고 데이터 로드 완료');
+            // ✅ 3. 작성자 정보 설정 (현재 로그인 사용자 또는 기본값)
+            // 실제 구현에서는 AuthContext나 사용자 세션에서 가져와야 함
+            setFormData(prev => ({
+                ...prev,
+                writerName: '작성자명', // 실제로는 현재 사용자 정보
+                writerDepartment: '소속부서' // 실제로는 현재 사용자 부서
+            }));
+
+            console.log('모든 프로젝트 데이터 로드 완료');
 
         } catch (error) {
             const errorMessage = handleApiError(error);
             console.error('프로젝트 데이터 로드 오류:', errorMessage);
+            alert(`프로젝트 데이터를 불러오는 중 오류가 발생했습니다: ${errorMessage}`);
         } finally {
             setLoading(false);
         }
     };
+
 
     // ✅ 토글 상태 변경 핸들러 (단순화)
     const handleToggleStateChange = (isVisible: boolean) => {
@@ -300,25 +316,37 @@ const ProjectKickoffForm: React.FC = () => {
             setLoading(true);
 
             const kickoffData = {
+                project_id: selectedProjectId,
                 department: formData.department,
                 presenter: formData.presenter,
                 personnel: formData.personnel,
                 collaboration: formData.collaboration,
-                progress_schedule: formData.schedule,
-                other_notes: formData.others
+                progress_schedule: formData.schedule, // UI -> DB 필드명 매핑
+                other_notes: formData.others // UI -> DB 필드명 매핑
             };
 
-            await apiClient(`/projects/${selectedProjectId}/kickoff`, {
-                method: 'POST',
-                data: kickoffData
-            });
+            let response;
+            if (saveMode === 'insert') {
+                response = await apiClient(`/projects/${selectedProjectId}/kickoff`, {
+                    method: 'POST',
+                    data: kickoffData
+                });
+                alert('프로젝트 착수서가 저장되었습니다.');
+            } else {
+                response = await apiClient(`/projects/${selectedProjectId}/kickoff`, {
+                    method: 'PUT',
+                    data: kickoffData
+                });
+                alert('프로젝트 착수서가 수정되었습니다.');
+            }
 
-            alert('프로젝트 착수보고가 저장되었습니다.');
+            console.log('저장 완료:', response.data);
             setSaveMode('update');
 
         } catch (error) {
             const errorMessage = handleApiError(error);
             alert(`저장 중 오류가 발생했습니다: ${errorMessage}`);
+            console.error('저장 오류:', error);
         } finally {
             setLoading(false);
         }
@@ -413,18 +441,18 @@ const ProjectKickoffForm: React.FC = () => {
                                             />
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <td className="table-cell table-cell-label">추진방향</td>
-                                        <td className="table-cell-input">
-                                            <textarea
-                                                name="direction"
-                                                value={formData.direction || ''}
-                                                className="kickoff-textarea textarea-large bullet-textarea"
-                                                readOnly
-                                                style={{ backgroundColor: '#f5f5f5' }}
-                                            />
-                                        </td>
-                                    </tr>
+                                    {/*<tr>*/}
+                                    {/*    <td className="table-cell table-cell-label">추진방향</td>*/}
+                                    {/*    <td className="table-cell-input">*/}
+                                    {/*        <textarea*/}
+                                    {/*            name="direction"*/}
+                                    {/*            value={formData.direction || ''}*/}
+                                    {/*            className="kickoff-textarea textarea-large bullet-textarea"*/}
+                                    {/*            readOnly*/}
+                                    {/*            style={{ backgroundColor: '#f5f5f5' }}*/}
+                                    {/*        />*/}
+                                    {/*    </td>*/}
+                                    {/*</tr>*/}
                                     <tr>
                                         <td className="table-cell table-cell-label">리소스 활용방안</td>
                                         <td className="table-cell-input">
@@ -442,6 +470,18 @@ const ProjectKickoffForm: React.FC = () => {
                                         <td className="table-cell-input">
                                             <textarea
                                                 name="writerOpinion"
+                                                value={formData.writerOpinion || ''}
+                                                className="kickoff-textarea textarea-large bullet-textarea"
+                                                readOnly
+                                                style={{ backgroundColor: '#f5f5f5' }}
+                                            />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="table-cell table-cell-label">진행 부결 사유</td>
+                                        <td className="table-cell-input">
+                                            <textarea
+                                                name="proceedDecision"
                                                 value={formData.writerOpinion || ''}
                                                 className="kickoff-textarea textarea-large bullet-textarea"
                                                 readOnly

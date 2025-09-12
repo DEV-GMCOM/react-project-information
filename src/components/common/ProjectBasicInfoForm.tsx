@@ -163,9 +163,9 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         }
     };
 
-    const formatDateForInput = (dateStr: string) => {
-        return dateStr ? dateStr.replace(/\./g, '-') : '';
-    };
+    // const formatDateForInput = (dateStr: string) => {
+    //     return dateStr ? dateStr.replace(/\./g, '-') : '';
+    // };
 
     // 외부/내부 핸들러 처리
     const tryExternalThenInternal = async (ext?: ExternalSearchHandler, internal?: () => any) => {
@@ -224,7 +224,9 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         }
     };
 
-    // 통합된 프로젝트 선택 핸들러
+    // ProjectBasicInfoForm.tsx의 selectProject 함수 완전 수정 버전
+
+// 통합된 프로젝트 선택 핸들러
     const selectProject = async (project: ProjectData) => {
         try {
             console.log('프로젝트 선택:', project);
@@ -234,49 +236,71 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
             const response = await apiClient(`/projects/${project.project_id}/data?include_sections=${sectionsParam}`);
             const projectData = response.data;
 
-            // 기본 정보 매핑
+            // 기본 정보 매핑 - ProjectProfile과 동일한 방식
             const updates: Record<string, string> = {
-                projectName: projectData.basic_info.project_name || '',
-                inflowPath: projectData.basic_info.inflow_path || '',
-                client: projectData.basic_info.client || '',
-                manager: projectData.basic_info.our_manager_name || projectData.basic_info.client_manager_name || '',
-                eventDate: projectData.basic_info.project_period_start || '',
-                submissionSchedule: projectData.basic_info.project_period_end || '',
-                eventLocation: projectData.basic_info.event_location || '',
-                attendees: projectData.basic_info.attendees || '',
-                eventNature: projectData.basic_info.business_type || '',
-                otSchedule: projectData.basic_info.ot_schedule || '',
-                expectedRevenue: projectData.basic_info.contract_amount?.toString() || '',
-                expectedCompetitors: projectData.basic_info.expected_competitors || '',
+                projectName: projectData.basic_info?.project_name || '',
+                inflowPath: projectData.basic_info?.inflow_path || '',
+                client: projectData.basic_info?.client || '',
+                manager: projectData.basic_info?.client_manager_name || projectData.basic_info?.our_manager_name || '',
+                eventDate: formatDateForInput(projectData.basic_info?.project_period_start) || '',
+                eventLocation: projectData.basic_info?.event_location || '',
+                attendees: projectData.basic_info?.attendees || '',
+                eventNature: projectData.basic_info?.event_nature || projectData.basic_info?.business_type || '',
+                otSchedule: projectData.basic_info?.ot_schedule || '',
+                submissionSchedule: formatDateForInput(projectData.basic_info?.project_period_end) || '',
+                expectedRevenue: projectData.basic_info?.contract_amount?.toString() || '',
+                expectedCompetitors: projectData.basic_info?.expected_competitors || '',
+                scoreTable: projectData.basic_info?.score_table || '',
+                bidAmount: projectData.basic_info?.bid_amount?.toString() || ''
             };
 
-            // 상세 정보 매핑 (상세 섹션이 보이는 경우)
-            if (isDetailSectionVisible && projectData.detail_info) {
+            // 상세 정보 매핑 (includeDataSections에 'detail'이 포함된 경우)
+            if (includeDataSections.includes('detail') && projectData.detail_info) {
                 updates.purposeBackground = projectData.detail_info.project_background || '';
                 updates.mainContent = projectData.detail_info.project_overview || '';
-                updates.coreRequirements = projectData.detail_info.deliverables || '';
+                updates.coreRequirements = projectData.detail_info.project_scope || projectData.detail_info.deliverables || '';
                 updates.comparison = projectData.detail_info.special_requirements || '';
             }
 
-            // 일괄 업데이트
+            // 일괄 업데이트 - onChange 함수 또는 내부 상태 업데이트
             Object.entries(updates).forEach(([key, value]) => {
-                handleInternalChange(key as keyof ExtendedProjectData, value);
+                if (onChange) {
+                    onChange(key as keyof ExtendedProjectData, value);
+                } else {
+                    // 내부 상태 관리인 경우
+                    setInternalFormData(prev => ({
+                        ...prev,
+                        [key]: value
+                    }));
+                }
             });
 
             setShowSearchModal(false);
 
             // 기존 콜백 호출
-            onProjectSelect?.(projectData);
+            onProjectSelect?.(project);
 
             // 새로 추가: 프로젝트 ID만 부모에게 전달
             onProjectIdSelected?.(project.project_id);
 
-            console.log('프로젝트 데이터 로드 완료');
+            console.log('프로젝트 데이터 매핑 완료:', updates);
 
         } catch (error) {
             const errorMessage = handleApiError(error);
-            alert(`프로젝트 데이터 로드 중 오류가 발생했습니다: ${errorMessage}`);
+            alert(`프로젝트 데이터를 가져오는 중 오류가 발생했습니다: ${errorMessage}`);
+            console.error('프로젝트 선택 오류:', error);
         }
+    };
+
+    // 날짜 포맷 헬퍼 함수
+    const formatDateForInput = (dateStr?: string): string => {
+        if (!dateStr) return '';
+
+        // ISO 날짜를 YYYY-MM-DD 형식으로 변환
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return '';
+
+        return date.toISOString().split('T')[0];
     };
 
     // 회사 검색 관련 (기존 로직 유지)
