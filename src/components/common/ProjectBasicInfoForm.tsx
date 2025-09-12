@@ -42,11 +42,14 @@ interface ProjectBasicInfoFormProps {
     inputClassName?: string;
 
     // 새로 추가된 옵션들
-    showDetailSection?: boolean;                    // 상세정보 테이블 초기 표시 여부
-    enableDetailSectionToggle?: boolean;           // Project Profile 버튼 표시 여부 (기본: true)
-    onDetailSectionChange?: (visible: boolean) => void; // 상태 변경 콜백 (State Lifting용)
-    detailSectionCollapsible?: boolean;            // 접힘/펼침 기능 활성화 여부
-    detailSectionAnimationDuration?: number;       // 애니메이션 지속 시간 (ms)
+    showDetailSection?: boolean;
+    enableDetailSectionToggle?: boolean;
+    onDetailSectionChange?: (visible: boolean) => void;
+    detailSectionCollapsible?: boolean;
+    detailSectionAnimationDuration?: number;
+
+    // 프로젝트 선택 시 ID만 전달
+    onProjectIdSelected?: (projectId: number) => void;
 }
 
 const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
@@ -64,12 +67,16 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                                                        className = "project-section",
                                                                        tableClassName = "project-table",
                                                                        inputClassName = "project-input",
-                                                                       // 새로운 옵션들 (기본값 설정)
+
+                                                                       // 새로운 옵션들
                                                                        showDetailSection: showDetailSectionProp = false,
                                                                        enableDetailSectionToggle = true,
                                                                        onDetailSectionChange,
                                                                        detailSectionCollapsible = true,
                                                                        detailSectionAnimationDuration = 1000,
+
+                                                                       // 프로젝트 ID 전달 콜백
+                                                                       onProjectIdSelected,
                                                                    }) => {
     // 내부 상태 관리
     const [internalFormData, setInternalFormData] = useState<ExtendedProjectData>(formData);
@@ -96,27 +103,38 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         }
     }, [formData, onChange]);
 
-    // 외부 prop 변경 시 내부 상태 동기화
-    useEffect(() => {
-        setInternalShowDetailSection(showDetailSectionProp);
-    }, [showDetailSectionProp]);
+    // // 외부 prop 변경 시 내부 상태 동기화
+    // useEffect(() => {
+    //     setInternalShowDetailSection(showDetailSectionProp);
+    // }, [showDetailSectionProp]);
 
-    // 실제 사용할 상태 결정 (외부 관리 vs 내부 관리)
+    // 실제 사용할 상태 결정
     const currentFormData = onChange ? formData : internalFormData;
-    const isDetailSectionVisible = onDetailSectionChange ? showDetailSectionProp : internalShowDetailSection;
+    // const isDetailSectionVisible = onDetailSectionChange ? showDetailSectionProp : internalShowDetailSection;
+    // ✅ 수정된 상태 결정 로직
+    const isDetailSectionVisible = showDetailSectionProp !== undefined
+        ? showDetailSectionProp
+        : internalShowDetailSection;
 
-    // 토글 핸들러
+    // ✅ 수정된 토글 핸들러
     const handleDetailSectionToggle = () => {
         const newValue = !isDetailSectionVisible;
 
         if (onDetailSectionChange) {
-            // 외부에서 상태 관리하는 경우 (State Lifting)
+            // 외부 제어: 부모에게 새 값 전달
             onDetailSectionChange(newValue);
         } else {
-            // 내부에서 상태 관리하는 경우
+            // 내부 제어: 내부 상태 업데이트
             setInternalShowDetailSection(newValue);
         }
     };
+
+    // // useEffect로 토글 상태 변경을 부모에게 알림 (선언적 방식)
+    // useEffect(() => {
+    //     if (onDetailSectionChange && !showDetailSectionProp) {
+    //         onDetailSectionChange(internalShowDetailSection);
+    //     }
+    // }, [internalShowDetailSection, onDetailSectionChange]);
 
     // 통합된 onChange 핸들러
     const handleInternalChange = (name: keyof ExtendedProjectData, value: string) => {
@@ -211,44 +229,47 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         try {
             console.log('프로젝트 선택:', project);
 
-            // 1. 프로젝트 전체 데이터 가져오기
-            const sectionsParam = includeDataSections?.join(',') || 'basic,detail';
+            // 프로젝트 기본 데이터 가져오기 (basic, detail만)
+            const sectionsParam = 'basic,detail';
             const response = await apiClient(`/projects/${project.project_id}/data?include_sections=${sectionsParam}`);
-            const fullProjectData = response.data;
+            const projectData = response.data;
 
-            // 2. 기본 정보 매핑
+            // 기본 정보 매핑
             const updates: Record<string, string> = {
-                projectName: fullProjectData.basic_info.project_name || '',
-                inflowPath: fullProjectData.basic_info.inflow_path || '',
-                client: fullProjectData.basic_info.client || '',
-                manager: fullProjectData.basic_info.our_manager_name || fullProjectData.basic_info.client_manager_name || '',
-                eventDate: fullProjectData.basic_info.project_period_start || '',
-                submissionSchedule: fullProjectData.basic_info.project_period_end || '',
-                eventLocation: fullProjectData.basic_info.event_location || '',
-                attendees: fullProjectData.basic_info.attendees || '',
-                eventNature: fullProjectData.basic_info.business_type || '',
-                otSchedule: fullProjectData.basic_info.ot_schedule || '',
-                expectedRevenue: fullProjectData.basic_info.contract_amount?.toString() || '',
-                expectedCompetitors: fullProjectData.basic_info.expected_competitors || '',
+                projectName: projectData.basic_info.project_name || '',
+                inflowPath: projectData.basic_info.inflow_path || '',
+                client: projectData.basic_info.client || '',
+                manager: projectData.basic_info.our_manager_name || projectData.basic_info.client_manager_name || '',
+                eventDate: projectData.basic_info.project_period_start || '',
+                submissionSchedule: projectData.basic_info.project_period_end || '',
+                eventLocation: projectData.basic_info.event_location || '',
+                attendees: projectData.basic_info.attendees || '',
+                eventNature: projectData.basic_info.business_type || '',
+                otSchedule: projectData.basic_info.ot_schedule || '',
+                expectedRevenue: projectData.basic_info.contract_amount?.toString() || '',
+                expectedCompetitors: projectData.basic_info.expected_competitors || '',
             };
 
-            // 3. 상세 정보 매핑 (상세 섹션이 보이는 경우)
-            if (isDetailSectionVisible && fullProjectData.detail_info) {
-                updates.purposeBackground = fullProjectData.detail_info.project_background || '';
-                updates.mainContent = fullProjectData.detail_info.project_overview || '';
-                updates.coreRequirements = fullProjectData.detail_info.deliverables || '';
-                updates.comparison = fullProjectData.detail_info.special_requirements || '';
+            // 상세 정보 매핑 (상세 섹션이 보이는 경우)
+            if (isDetailSectionVisible && projectData.detail_info) {
+                updates.purposeBackground = projectData.detail_info.project_background || '';
+                updates.mainContent = projectData.detail_info.project_overview || '';
+                updates.coreRequirements = projectData.detail_info.deliverables || '';
+                updates.comparison = projectData.detail_info.special_requirements || '';
             }
 
-            // 4. 일괄 업데이트
+            // 일괄 업데이트
             Object.entries(updates).forEach(([key, value]) => {
                 handleInternalChange(key as keyof ExtendedProjectData, value);
             });
 
             setShowSearchModal(false);
 
-            // 5. 외부 선택 핸들러 호출
-            onProjectSelect?.(fullProjectData);
+            // 기존 콜백 호출
+            onProjectSelect?.(projectData);
+
+            // 새로 추가: 프로젝트 ID만 부모에게 전달
+            onProjectIdSelected?.(project.project_id);
 
             console.log('프로젝트 데이터 로드 완료');
 
@@ -258,7 +279,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         }
     };
 
-    // 회사 검색 관련
+    // 회사 검색 관련 (기존 로직 유지)
     const handleCompanySearchClick = async () => {
         await tryExternalThenInternal(onCompanySearch, handleCompanySearch);
     };
@@ -298,7 +319,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         }
     };
 
-    // 담당자 검색 관련
+    // 담당자 검색 관련 (기존 로직 유지)
     const handleContactSearchClick = async () => {
         await tryExternalThenInternal(onContactSearch, handleContactSearch);
     };
@@ -697,56 +718,54 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                     <tr>
                                         <td className="table-cell table-cell-label">목적 및 배경</td>
                                         <td className="table-cell-input">
-                            <textarea
-                                name="purposeBackground"
-                                value={currentFormData.purposeBackground || ''}
-                                onChange={(e) => handleInternalChange('purposeBackground', e.target.value)}
-                                placeholder="- 프로젝트 추진 목적 및 배경&#10;- 광고주 측 주요 과제 또는 행사 맥락"
-                                className="project-textarea textarea-large"
-                                readOnly={readOnly}
-                                rows={4}
-                            />
+                                        <textarea
+                                            name="purposeBackground"
+                                            value={currentFormData.purposeBackground || ''}
+                                            onChange={(e) => handleInternalChange('purposeBackground', e.target.value)}
+                                            placeholder="- 프로젝트 추진 목적 및 배경&#10;- 광고주 측 주요 과제 또는 행사 맥락"
+                                            className="project-textarea textarea-large"
+                                            readOnly={readOnly}
+                                            rows={4}
+                                        />
                                         </td>
                                     </tr>
                                     <tr>
                                         <td className="table-cell table-cell-label">주요 내용<br/>및<br/>핵심 요구사항</td>
                                         <td className="table-cell-input">
-                            <textarea
-                                name="mainContent"
-                                value={currentFormData.mainContent || ''}
-                                onChange={(e) => handleInternalChange('mainContent', e.target.value)}
-                                placeholder="- 주요 과제, 행사 맥락, 주요 프로그램 등&#10;- 과업 제안범위, 제출금액, 운영 시 필수 고려사항등&#10;- 프로젝트 추진 방향성&#10;- 내외부 리소스 활용방법"
-                                className="project-textarea textarea-large"
-                                readOnly={readOnly}
-                                rows={6}
-                            />
+                                        <textarea
+                                            name="mainContent"
+                                            value={currentFormData.mainContent || ''}
+                                            onChange={(e) => handleInternalChange('mainContent', e.target.value)}
+                                            placeholder="- 주요 과제, 행사 맥락, 주요 프로그램 등&#10;- 과업 제안범위, 제출금액, 운영 시 필수 고려사항등&#10;- 프로젝트 추진 방향성&#10;- 내외부 리소스 활용방법"
+                                            className="project-textarea textarea-large"
+                                            readOnly={readOnly}
+                                            rows={6}
+                                        />
                                         </td>
                                     </tr>
                                     <tr>
                                         <td className="table-cell table-cell-label">비 고</td>
                                         <td className="table-cell-input">
-                            <textarea
-                                name="comparison"
-                                value={currentFormData.comparison || ''}
-                                onChange={(e) => handleInternalChange('comparison', e.target.value)}
-                                placeholder="- 특이사항 및 중요사항등 추가 기재"
-                                className="project-textarea textarea-medium"
-                                readOnly={readOnly}
-                                rows={3}
-                            />
+                                        <textarea
+                                            name="comparison"
+                                            value={currentFormData.comparison || ''}
+                                            onChange={(e) => handleInternalChange('comparison', e.target.value)}
+                                            placeholder="- 특이사항 및 중요사항등 추가 기재"
+                                            className="project-textarea textarea-medium"
+                                            readOnly={readOnly}
+                                            rows={3}
+                                        />
                                         </td>
                                     </tr>
                                     </tbody>
                                 </table>
                             </>
-
-
                         )}
                     </div>
                 )}
             </div>
 
-            {/* 검색 모달들 */}
+            {/* 검색 모달들 (기존과 동일) */}
             {showSearchModal && (
                 <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -770,7 +789,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                 </div>
             )}
 
-            {/* 회사 검색 모달 */}
+            {/* 회사 검색 모달과 담당자 검색 모달들 (기존과 동일) */}
             {showCompanySearchModal && (
                 <div className="modal-overlay" onClick={() => setShowCompanySearchModal(false)}>
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -895,4 +914,3 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
 };
 
 export default ProjectBasicInfoForm;
-
