@@ -225,42 +225,60 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     };
 
     // ProjectBasicInfoForm.tsx의 selectProject 함수 완전 수정 버전
-
-// 통합된 프로젝트 선택 핸들러
+    // 통합된 프로젝트 선택 핸들러
     const selectProject = async (project: ProjectData) => {
         try {
             console.log('프로젝트 선택:', project);
 
             // 프로젝트 기본 데이터 가져오기 (basic, detail만)
             const sectionsParam = 'basic,detail';
-            const response = await apiClient(`/projects/${project.project_id}/data?include_sections=${sectionsParam}`);
+            const response = await apiClient(`/projects/${project.project_id}`);
             const projectData = response.data;
+
+            // console.log("check ==== : ", projectData);
 
             // 기본 정보 매핑 - ProjectProfile과 동일한 방식
             const updates: Record<string, string> = {
-                projectName: projectData.basic_info?.project_name || '',
-                inflowPath: projectData.basic_info?.inflow_path || '',
-                client: projectData.basic_info?.client || '',
-                manager: projectData.basic_info?.client_manager_name || projectData.basic_info?.our_manager_name || '',
-                eventDate: formatDateForInput(projectData.basic_info?.project_period_start) || '',
-                eventLocation: projectData.basic_info?.event_location || '',
-                attendees: projectData.basic_info?.attendees || '',
-                eventNature: projectData.basic_info?.event_nature || projectData.basic_info?.business_type || '',
-                otSchedule: projectData.basic_info?.ot_schedule || '',
-                submissionSchedule: formatDateForInput(projectData.basic_info?.project_period_end) || '',
-                expectedRevenue: projectData.basic_info?.contract_amount?.toString() || '',
-                expectedCompetitors: projectData.basic_info?.expected_competitors || '',
-                scoreTable: projectData.basic_info?.score_table || '',
-                bidAmount: projectData.basic_info?.bid_amount?.toString() || ''
+                // 기본 정보 - ProjectProfile과 동일한 매핑
+                projectName: projectData.project_name || '',
+                inflowPath: projectData.inflow_path || '',
+                client: projectData.company_profile?.company_name || projectData.client || '',
+                manager: projectData.selected_contact?.contact_name || '',
+                eventDate: projectData.project_period_start || '',
+                submissionSchedule: projectData.project_period_end || '',
+                eventLocation: projectData.event_location || '',
+                attendees: projectData.attendees || '',
+                eventNature: projectData.business_type || '', // business_type만 사용
+                otSchedule: projectData.ot_schedule || '',
+                expectedRevenue: projectData.contract_amount?.toString() || '',
+                expectedCompetitors: projectData.expected_competitors || '',
+                // scoreTable, bidAmount는 ProjectProfile에서 누락되어 있으므로 제거하거나 빈값
+                scoreTable: '',
+                bidAmount: ''
             };
 
+            // console.log("check 000 : ", projectData.project_overview);
+            // console.log("check 001 : ", projectData.project_background);
+            // console.log("check 002 : ", projectData.project_scope);
+            // console.log("check 003 : ", projectData.deliverables);
+            // console.log("check !!! : ", includeDataSections);
+            // console.log("check !!! : ", projectData.detail_info);
+
             // 상세 정보 매핑 (includeDataSections에 'detail'이 포함된 경우)
-            if (includeDataSections.includes('detail') && projectData.detail_info) {
-                updates.purposeBackground = projectData.detail_info.project_background || '';
-                updates.mainContent = projectData.detail_info.project_overview || '';
-                updates.coreRequirements = projectData.detail_info.project_scope || projectData.detail_info.deliverables || '';
-                updates.comparison = projectData.detail_info.special_requirements || '';
+            // if (includeDataSections.includes('detail') && projectData.detail_info) {
+            if (includeDataSections.includes('detail')) {
+                updates.purposeBackground = projectData.project_overview || '';
+                // updates.mainContent = projectData.project_background || '';
+                updates.mainContent = projectData.project_scope || '';
+                //updates.coreRequirements = projectData.project_scope || projectData.detail_info.deliverables || '';
+                updates.coreRequirements = projectData.project_scope || '';
+                updates.comparison = projectData.deliverables || '';
             }
+
+            // console.log("check 100 : ", updates.project_overview);
+            // console.log("check 101 : ", updates.project_background);
+            // console.log("check 102 : ", updates.project_scope);
+            // console.log("check 103 : ", updates.deliverables);
 
             // 일괄 업데이트 - onChange 함수 또는 내부 상태 업데이트
             Object.entries(updates).forEach(([key, value]) => {
