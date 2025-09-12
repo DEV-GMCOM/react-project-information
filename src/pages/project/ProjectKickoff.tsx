@@ -399,16 +399,16 @@ const ProjectKickoffForm: React.FC = () => {
                     )}
                 </div>
 
-                {/* ✅ 부모에서 관리하는 토글 버튼 */}
-                <div className="table-action-section">
-                    <button
-                        type="button"
-                        className="toggle-profile-btn"
-                        onClick={() => setShowProfileTables(!showProfileTables)}
-                    >
-                        Project Profile {showProfileTables ? '숨기기' : '보기'}
-                    </button>
-                </div>
+                {/*/!* ✅ 부모에서 관리하는 토글 버튼 *!/*/}
+                {/*<div className="table-action-section">*/}
+                {/*    <button*/}
+                {/*        type="button"*/}
+                {/*        className="toggle-profile-btn"*/}
+                {/*        onClick={() => setShowProfileTables(!showProfileTables)}*/}
+                {/*    >*/}
+                {/*        Project Profile {showProfileTables ? '숨기기' : '보기'}*/}
+                {/*    </button>*/}
+                {/*</div>*/}
 
                 {/* 프로젝트 착수보고 */}
                 <div className="kickoff-section">
