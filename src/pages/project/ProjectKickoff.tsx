@@ -310,7 +310,7 @@ const ProjectKickoffForm: React.FC = () => {
                         // ✅ 핵심: 상세 섹션 제어를 부모에서 관리
                         showDetailSection={showProfileTables}           // 부모 상태 전달
                         onDetailSectionChange={handleDetailSectionToggle} // 콜백 전달
-                        enableDetailSectionToggle={false}               // 내부 버튼 숨김
+                        enableDetailSectionToggle={true}               // 내부 버튼 숨김
                         includeDataSections={["basic", "detail", "profile", "kickoff"]}
                         className="project-section"
                         tableClassName="project-table"
