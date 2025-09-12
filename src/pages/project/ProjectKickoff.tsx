@@ -4,6 +4,8 @@ import ProjectBasicInfoForm from '../../components/common/ProjectBasicInfoForm';
 import {ExtendedProjectData, ProjectBasicInfo} from '../../types/project';
 import { handleApiError } from '../../api/utils/errorUtils';
 import apiClient from '../../api/utils/apiClient';
+// 💡 [추가] 새로 만든 서비스를 import 합니다.
+import { projectKickoffService } from '../../api/services/projectKickoffService';
 import '../../styles/ProjectKickoff.css';
 
 interface UploadedFile {
@@ -140,7 +142,8 @@ const ProjectKickoffForm: React.FC = () => {
             setLoading(true);
 
             // ✅ 1. 프로젝트 검토 데이터 가져오기 (profile 섹션)
-            const profileResponse = await apiClient(`/projects/${projectId}/data?include_sections=profile`);
+            // const profileResponse = await apiClient(`/projects/${projectId}/data?include_sections=profile`);
+            const profileResponse = await apiClient(`/projects/${projectId}/profile`);
             console.log('Profile Response:', profileResponse.data);
 
             if (profileResponse.data.profile_info) {
@@ -155,7 +158,8 @@ const ProjectKickoffForm: React.FC = () => {
             }
 
             // ✅ 2. 착수보고 데이터 가져오기 (kickoff 섹션)
-            const kickoffResponse = await apiClient(`/projects/${projectId}/data?include_sections=kickoff`);
+            // const kickoffResponse = await apiClient(`/projects/${projectId}/data?include_sections=kickoff`);
+            const kickoffResponse = await apiClient(`/projects/${projectId}/kickoff`);
             console.log('Kickoff Response:', kickoffResponse.data);
 
             if (kickoffResponse.data.kickoff_info) {
@@ -326,23 +330,28 @@ const ProjectKickoffForm: React.FC = () => {
             };
 
             let response;
-            if (saveMode === 'insert') {
-                response = await apiClient(`/projects/${selectedProjectId}/kickoff`, {
-                    method: 'POST',
-                    data: kickoffData
-                });
-                alert('프로젝트 착수서가 저장되었습니다.');
-            } else {
-                response = await apiClient(`/projects/${selectedProjectId}/kickoff`, {
-                    method: 'PUT',
-                    data: kickoffData
-                });
-                alert('프로젝트 착수서가 수정되었습니다.');
-            }
+            // if (saveMode === 'insert') {
+            //     response = await apiClient(`/projects/${selectedProjectId}/kickoff`, {
+            //         method: 'POST',
+            //         data: kickoffData
+            //     });
+            //     alert('프로젝트 착수서가 저장되었습니다.');
+            // } else {
+            //     response = await apiClient(`/projects/${selectedProjectId}/kickoff`, {
+            //         method: 'PUT',
+            //         data: kickoffData
+            //     });
+            //     alert('프로젝트 착수서가 수정되었습니다.');
+            // }
+            //
+            // console.log('저장 완료:', response.data);
+            // setSaveMode('update');
 
-            console.log('저장 완료:', response.data);
+            // 💡 [수정] 서비스 파일을 통해 API를 호출하도록 변경
+            await projectKickoffService.upsertKickoff(selectedProjectId, formData);
+
+            alert('착수보고가 성공적으로 저장되었습니다.');
             setSaveMode('update');
-
         } catch (error) {
             const errorMessage = handleApiError(error);
             alert(`저장 중 오류가 발생했습니다: ${errorMessage}`);

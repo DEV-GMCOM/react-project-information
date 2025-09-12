@@ -132,3 +132,30 @@ export interface DashboardStats {
         new_employees: number;
     };
 }
+
+// 💡 [추가] ProjectKickoff 타입을 아래 내용으로 추가합니다.
+export interface ProjectKickoff {
+    id?: number;
+    project_id?: number;
+
+    // 프로젝트 착수보고 내용
+    department?: string;
+    presenter?: string;
+    personnel?: string;
+    collaboration?: string;
+    progress_schedule?: string; // 백엔드 모델 필드명 기준
+    other_notes?: string;       // 백엔드 모델 필드명 기준
+
+    // 프론트엔드에서 alias로 매핑될 필드 (선택사항)
+    schedule?: string;
+    others?: string;
+
+    // 메타데이터
+    created_at?: string;
+    updated_at?: string;
+    created_by?: number;
+    updated_by?: number;
+}
+
+
+
