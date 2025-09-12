@@ -146,15 +146,14 @@ const ProjectKickoffForm: React.FC = () => {
             const profileResponse = await apiClient(`/projects/${projectId}/profile`);
             console.log('Profile Response:', profileResponse.data);
 
-            if (profileResponse.data.profile_info) {
+            // ✅ [수정] profileResponse.data가 null이 아닌지 먼저 확인
+            if (profileResponse.data) {
                 setFormData(prev => ({
                     ...prev,
-                    swotAnalysis: profileResponse.data.profile_info.swot_analysis || '',
-                    // direction 필드 제거 - ProjectProfile과 동일하게
-                    resourcePlan: profileResponse.data.profile_info.resource_plan || '',
-                    writerOpinion: profileResponse.data.profile_info.writer_opinion || ''
+                    swotAnalysis: profileResponse.data.swot_analysis || '',
+                    resourcePlan: profileResponse.data.resource_plan || '',
+                    writerOpinion: profileResponse.data.writer_opinion || ''
                 }));
-                console.log('프로젝트 검토 데이터 로드 완료');
             }
 
             // ✅ 2. 착수보고 데이터 가져오기 (kickoff 섹션)
@@ -162,23 +161,24 @@ const ProjectKickoffForm: React.FC = () => {
             const kickoffResponse = await apiClient(`/projects/${projectId}/kickoff`);
             console.log('Kickoff Response:', kickoffResponse.data);
 
-            if (kickoffResponse.data.kickoff_info) {
+            // 💡 [핵심 수정] kickoffResponse.data가 null이 아닌지 먼저 확인합니다.
+            if (kickoffResponse.data) {
+                // 데이터가 존재하면 폼에 채우고 '수정' 모드로 설정
                 setFormData(prev => ({
                     ...prev,
-                    department: kickoffResponse.data.kickoff_info.department || '',
-                    presenter: kickoffResponse.data.kickoff_info.presenter || '',
-                    personnel: kickoffResponse.data.kickoff_info.personnel || '',
-                    collaboration: kickoffResponse.data.kickoff_info.collaboration || '',
-                    // ✅ DB 필드명과 UI 필드명 매핑 주의
-                    schedule: kickoffResponse.data.kickoff_info.progress_schedule || '',
-                    others: kickoffResponse.data.kickoff_info.other_notes || ''
+                    department: kickoffResponse.data.department || '',
+                    presenter: kickoffResponse.data.presenter || '',
+                    personnel: kickoffResponse.data.personnel || '',
+                    collaboration: kickoffResponse.data.collaboration || '',
+                    schedule: kickoffResponse.data.progress_schedule || '',
+                    others: kickoffResponse.data.other_notes || ''
                 }));
                 setSaveMode('update');
-                console.log('프로젝트 착수보고 데이터 로드 완료');
+                console.log('기존 착수보고 데이터를 로드했습니다 (수정 모드).');
             } else {
-                // 착수보고 데이터가 없으면 새로 생성 모드
+                // 데이터가 없으면 (null이면) '생성' 모드로 설정
                 setSaveMode('insert');
-                console.log('새로운 착수보고 생성 모드');
+                console.log('착수보고 데이터가 없어 새로 생성합니다 (생성 모드).');
             }
 
             // ✅ 3. 작성자 정보 설정 (현재 로그인 사용자 또는 기본값)
