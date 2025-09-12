@@ -331,56 +331,6 @@ const ProjectKickoffForm: React.FC = () => {
                 >
                     {showProfileTables && (
                         <>
-                            {/*<div className="kickoff-section">*/}
-                            {/*    <h3 className="section-header">*/}
-                            {/*        ■ 프로젝트 상세 정보 (읽기 전용)*/}
-                            {/*    </h3>*/}
-                            {/*    <table className="kickoff-table">*/}
-                            {/*        <tbody>*/}
-                            {/*        <tr>*/}
-                            {/*            <td className="table-header">구분</td>*/}
-                            {/*            <td className="table-header">내용</td>*/}
-                            {/*        </tr>*/}
-                            {/*        <tr>*/}
-                            {/*            <td className="table-cell table-cell-label">목적 및 배경</td>*/}
-                            {/*            <td className="table-cell-input">*/}
-                            {/*                <textarea*/}
-                            {/*                    name="purposeBackground"*/}
-                            {/*                    value={formData.purposeBackground}*/}
-                            {/*                    className="kickoff-textarea textarea-medium"*/}
-                            {/*                    readOnly*/}
-                            {/*                    style={{ backgroundColor: '#f5f5f5' }}*/}
-                            {/*                />*/}
-                            {/*            </td>*/}
-                            {/*        </tr>*/}
-                            {/*        <tr>*/}
-                            {/*            <td className="table-cell table-cell-label">주요 내용<br/>및<br/>핵심 요구사항</td>*/}
-                            {/*            <td className="table-cell-input">*/}
-                            {/*                <textarea*/}
-                            {/*                    name="mainContent"*/}
-                            {/*                    value={formData.mainContent}*/}
-                            {/*                    className="kickoff-textarea textarea-large bullet-textarea"*/}
-                            {/*                    readOnly*/}
-                            {/*                    style={{ backgroundColor: '#f5f5f5' }}*/}
-                            {/*                />*/}
-                            {/*            </td>*/}
-                            {/*        </tr>*/}
-                            {/*        <tr>*/}
-                            {/*            <td className="table-cell table-cell-label">비고</td>*/}
-                            {/*            <td className="table-cell-input">*/}
-                            {/*                <textarea*/}
-                            {/*                    name="comparison"*/}
-                            {/*                    value={formData.etc}*/}
-                            {/*                    className="kickoff-textarea textarea-medium"*/}
-                            {/*                    readOnly*/}
-                            {/*                    style={{ backgroundColor: '#f5f5f5' }}*/}
-                            {/*                />*/}
-                            {/*            </td>*/}
-                            {/*        </tr>*/}
-                            {/*        </tbody>*/}
-                            {/*    </table>*/}
-                            {/*</div>*/}
-
                             {/* 프로젝트 검토 (ProjectProfile.tsx에서 가져온 테이블) */}
                             <div className="kickoff-section">
                                 <h3 className="section-header">

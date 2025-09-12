@@ -738,7 +738,70 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                     </tr>
                                     </tbody>
                                 </table>
+                                <br/>
+                                <h3 className="section-header">
+                                    ■ 프로젝트 검토
+                                </h3>
+
+                                <table className="profile-table">
+                                    <tbody>
+                                    <tr>
+                                        <td className="table-header">구분</td>
+                                        <td className="table-header">내용</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="table-cell table-cell-label blue-highlight-label">SWOT 분석</td>
+                                        <td className="table-cell-input">
+                                <textarea
+                                    name="swotAnalysis"
+                                    value={formData.swotAnalysis}
+                                    // onChange={handleBulletTextChange}
+                                    placeholder="- 강점: 독보적 경험과 노하우 활요, 높은 수주가능성&#10;- 약점: 내수율 저조&#10;- 기회: 매출달성에 기여, 차기 Proj 기약&#10;- 위험: 내정자에 따른 휴먼 리소스 소모"
+                                    className="profile-textarea textarea-xlarge bullet-textarea"
+                                />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="table-cell table-cell-label blue-highlight-label">리소스 활용방안</td>
+                                        <td className="table-cell-input">
+                                <textarea
+                                    name="resourcePlan"
+                                    value={formData.resourcePlan}
+                                    // onChange={handleBulletTextChange}
+                                    placeholder="- 내부 전담조직 및 참여자 역량&#10;- 협업 조직: XX사 3D 디자인, 영상팀"
+                                    className="profile-textarea textarea-large bullet-textarea"
+                                />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="table-cell table-cell-label blue-highlight-label">작성자 의견</td>
+                                        <td className="table-cell-input">
+                                <textarea
+                                    name="writerOpinion"
+                                    value={formData.writerOpinion}
+                                    // onChange={handleBulletTextChange}
+                                    placeholder="- 프로젝트 진행여부 판단 의견 요약 ( 팀원들의 첨언 포함 )&#10;- 평가등급 기재 (A~C)&#10;      A : 프로젝트 추진&#10;      B : 재검토후 추진여부 결정&#10;      C : 추진 중지"
+                                    className="profile-textarea textarea-large bullet-textarea"
+                                />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="table-cell table-cell-label blue-highlight-label">진행 부결 사유</td>
+                                        <td className="table-cell-input">
+                                <textarea
+                                    name="proceedDecision"
+                                    // value={formData.proceedDecision}
+                                    // onChange={handleBulletTextChange}
+                                    placeholder="부결 사유 기재"
+                                    className="profile-textarea textarea-large bullet-textarea"
+                                />
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
                             </>
+
+
                         )}
                     </div>
                 )}
