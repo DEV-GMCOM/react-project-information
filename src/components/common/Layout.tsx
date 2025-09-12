@@ -36,11 +36,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         },
         {
             path: '/information',
-            name: '[입력폼 샘플] 정보수집',
+            name: '정보수집',
             icon: '📋',
             subMenus: [
-                { path: '/info-management/advertiser', name: '[입력폼 샘플] 광고주_기업 프로파일' },
-                { path: '/info-management/project', name: '[입력폼 샘플] 프로젝트 정보수집' }
+                { path: '/info-management/advertiser', name: '광고주 & 기업 프로파일' },
+                { path: '/info-management/project', name: '프로젝트 프로파일' }
             ]
         },
         {
@@ -55,22 +55,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         },
         {
             path: '/project-kickoff',
-            name: '[입력폼 샘플] 프로젝트 착수서 작성',
+            name: '프로젝트 착수서 작성',
             icon: '🚀'
         },
         {
             path: '/pt-checklist',
-            name: '[입력폼 샘플] 제안서 PT 체크리스트',
+            name: '제안서 PT 체크리스트',
             icon: '✅'
         },
         {
             path: '/pt-postmortem',
-            name: '[입력폼 샘플] PT postmortem',
+            name: 'PT postmortem',
             icon: '🔍'
         },
         {
             path: '/project-postmortem',
-            name: '[입력폼 샘플] Project postmortem',
+            name: '프로젝트 결과 postmortem',
             icon: '📊'
         },
     ];

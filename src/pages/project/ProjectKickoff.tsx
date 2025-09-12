@@ -666,9 +666,6 @@ const ProjectKickoffForm: React.FC = () => {
                     >
                         {loading ? '저장 중...' : (saveMode === 'update' ? '수정' : '저장')}
                     </button>
-                    <button onClick={handlePrint} className="print-btn">
-                        인쇄
-                    </button>
                 </div>
             </div>
         </div>
