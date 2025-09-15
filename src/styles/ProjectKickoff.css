@@ -620,6 +620,448 @@
     background-color: #218838;
 }
 
+/* 파일 업로드 관련 추가 CSS - ProjectKickoff.css에 추가 */
+
+/* 파일 섹션 헤더 */
+.file-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.file-section-header h4 {
+    margin: 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.close-upload-btn {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.close-upload-btn:hover {
+    background: #e9ecef;
+    color: #495057;
+}
+
+/* 파일 업로드 컴포넌트 */
+.file-upload-component {
+    margin-bottom: 20px;
+}
+
+.file-drop-zone {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    min-height: 120px;
+    background-color: #fafafa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.file-drop-zone:hover {
+    border-color: #007bff;
+    background-color: #f0f8ff;
+}
+
+.file-drop-zone.drag-over {
+    border-color: #007bff;
+    background-color: #e3f2fd;
+    transform: scale(1.02);
+}
+
+.file-drop-zone.has-files {
+    min-height: auto;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* 빈 상태 메시지 */
+.drop-zone-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 80px;
+    text-align: center;
+}
+
+.drop-zone-icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+    opacity: 0.6;
+}
+
+.drop-zone-text p {
+    margin: 4px 0;
+    color: #666;
+}
+
+.drop-zone-hint {
+    font-size: 12px;
+    color: #999;
+}
+
+/* 파일 리스트 */
+.file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    transition: box-shadow 0.2s ease;
+}
+
+.file-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.file-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.file-name {
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    word-break: break-all;
+}
+
+.file-details {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: #666;
+}
+
+.file-size {
+    font-weight: 500;
+}
+
+.file-status {
+    color: #007bff;
+}
+
+.file-remove-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.file-remove-btn:hover {
+    background-color: #c82333;
+}
+
+.file-remove-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.drop-zone-add-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    border: 1px dashed #007bff;
+    border-radius: 6px;
+    background-color: #f8f9ff;
+    color: #007bff;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.drop-zone-add-more:hover {
+    background-color: #e3f2fd;
+    border-color: #0056b3;
+}
+
+/* 업로드 액션 버튼 */
+.upload-actions {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.upload-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.upload-btn:hover {
+    background-color: #218838;
+}
+
+.upload-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* 업로드된 파일 목록 */
+.uploaded-files-list {
+    margin-top: 20px;
+}
+
+.uploaded-files-list.loading,
+.uploaded-files-list.empty {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+.loading-message {
+    font-style: italic;
+}
+
+.empty-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.empty-icon {
+    font-size: 48px;
+    opacity: 0.5;
+}
+
+.files-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.files-header h4 {
+    margin: 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.refresh-btn {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.refresh-btn:hover {
+    background: #f8f9fa;
+    border-color: #aaa;
+}
+
+.files-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.uploaded-file-item {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 12px;
+    transition: box-shadow 0.2s ease;
+}
+
+.uploaded-file-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.file-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.file-name-container {
+    flex: 1;
+}
+
+.file-name-link {
+    background: none;
+    border: none;
+    color: #007bff;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: left;
+    padding: 0;
+    text-decoration: underline;
+    word-break: break-all;
+}
+
+.file-name-link:hover {
+    color: #0056b3;
+}
+
+.file-name-link:disabled {
+    color: #6c757d;
+    cursor: not-allowed;
+    text-decoration: none;
+}
+
+.file-name-text {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    word-break: break-all;
+}
+
+.file-delete-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.file-delete-btn:hover {
+    background-color: #f8d7da;
+}
+
+.file-details {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: #666;
+}
+
+.file-type {
+    background-color: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+.upload-date {
+    color: #999;
+}
+
+.readonly-badge {
+    background-color: #ffc107;
+    color: #856404;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* 파일 요약 섹션 */
+.file-summary-section {
+    margin: 15px 0;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+}
+
+.file-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: #495057;
+}
+
+.view-files-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.view-files-btn:hover {
+    background-color: #0056b3;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .file-details {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .files-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .file-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .file-summary {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .drop-zone-icon {
+        font-size: 24px;
+    }
+
+    .drop-zone-message {
+        height: 60px;
+    }
+}
+
 /* 인쇄 스타일 */
 @media print {
     .project-kickoff-container {
