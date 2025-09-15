@@ -1027,6 +1027,115 @@
 .view-files-btn:hover {
     background-color: #0056b3;
 }
+/* ProjectKickoff.css에 추가할 스타일 */
+
+/* 업로드된 파일과 대기 중 파일 구분 */
+.file-item.uploaded-file {
+    background-color: #f8fff8;
+    border-left: 4px solid #28a745;
+}
+
+.file-item.uploading-file {
+    background-color: #fff8f0;
+    border-left: 4px solid #ffc107;
+}
+
+/* 파일 다운로드 링크 */
+.file-download-link {
+    background: none;
+    border: none;
+    color: #007bff;
+    text-decoration: underline;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    padding: 0;
+    text-align: left;
+    word-break: break-all;
+}
+
+.file-download-link:hover {
+    color: #0056b3;
+}
+
+/* 읽기전용 배지 */
+.readonly-badge {
+    background-color: #ffc107;
+    color: #856404;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+/* 파일 타입 배지 */
+.file-type {
+    background-color: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+    font-size: 10px;
+}
+
+/* 업로드 진행 상태 */
+.upload-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    margin-top: 10px;
+    color: #495057;
+    font-size: 14px;
+}
+
+.upload-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* RFP 첨부 버튼 비활성화 상태 */
+.rfp-attach-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+/* 파일 삭제 버튼 스타일 개선 */
+.file-remove-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.file-remove-btn:hover {
+    background-color: #f8d7da;
+}
+
+/* 파일 목록 스크롤 */
+.file-drop-zone.has-files {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* 업로드 날짜 스타일 */
+.upload-date {
+    color: #999;
+    font-size: 11px;
+}
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
