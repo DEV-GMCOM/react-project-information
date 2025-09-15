@@ -1,16 +1,26 @@
-// src/pages/project/ProjectKickoff.tsx - 파일 업로드 기능 통합
-import React, { useState, useEffect, useCallback } from 'react';
+// src/pages/project/ProjectKickoff.tsx - 완전 수정된 버전
+import React, { useState, useRef, useEffect } from 'react';
 import ProjectBasicInfoForm from '../../components/common/ProjectBasicInfoForm';
-import FileUploadComponent from '../../components/project/FileUploadComponent';
-import UploadedFilesList from '../../components/project/UploadedFilesList';
-import { ExtendedProjectData } from '../../types/project';
+import {ExtendedProjectData, ProjectBasicInfo} from '../../types/project';
 import { handleApiError } from '../../api/utils/errorUtils';
+import apiClient from '../../api/utils/apiClient';
+// 💡 [추가] 새로 만든 서비스를 import 합니다.
 import { projectKickoffService } from '../../api/services/projectKickoffService';
-import { UploadedFileInfo } from '../../api/services/fileUploadService';
 import '../../styles/ProjectKickoff.css';
 
+interface UploadedFile {
+    id: string;
+    name: string;
+    size: number;
+    type: string;
+    uploadedBy: string;
+    createdDate: string;
+    modifiedDate: string;
+    uploadedDate: string;
+}
+
 interface ProjectKickoff {
-    // 기존 프로젝트 정보들...
+    // 프로젝트 기본 정보
     projectName: string;
     inflowPath: string;
     client: string;
@@ -25,39 +35,70 @@ interface ProjectKickoff {
     expectedCompetitors: string;
     scoreTable: string;
     bidAmount: string;
+
+    // 프로젝트 상세 정보
     purposeBackground: string;
     mainContent: string;
     coreRequirements: string;
     etc: string;
 
-    // 착수보고 필드들
-    department: string;
-    presenter: string;
-    personnel: string;
-    collaboration: string;
-    schedule: string;
-    others: string;
+    // 프로젝트 착수보고 (실제 git 코드 기준 6개 필드)
+    department: string;           // 담당부서
+    presenter: string;            // PT발표자
+    personnel: string;            // 기획자 (투입인력)
+    collaboration: string;        // 협업조직
+    schedule: string;             // 추진 일정 (UI에서는 schedule, DB에서는 progress_schedule)
+    others: string;               // 기타 (UI에서는 others, DB에서는 other_notes)
 
     // 작성자 정보
     writerName: string;
     writerDepartment: string;
 
-    // 검토 정보
+    // 프로젝트 검토 데이터
     swotAnalysis?: string;
     resourcePlan?: string;
     writerOpinion?: string;
 }
 
 const ProjectKickoffForm: React.FC = () => {
-    // 기존 상태들...
+    // 토글 상태 관리
     const [showProfileTables, setShowProfileTables] = useState(false);
+
+    // 파일 관련 상태
+    const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+    const [isDragOver, setIsDragOver] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // 프로젝트 관련 상태
     const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
     const [saveMode, setSaveMode] = useState<'insert' | 'update'>('insert');
     const [loading, setLoading] = useState(false);
 
-    // 파일 업로드 관련 상태
-    const [showFileUpload, setShowFileUpload] = useState(false);
-    const [uploadedFilesCount, setUploadedFilesCount] = useState(0);
+    const allowedExtensions = ['txt', 'text', 'md', 'pdf', 'ppt', 'pptx', 'doc', 'docx', 'hwp', 'hwpx', 'png', 'jpg', 'jpeg'];
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Byte';
+        const k = 1024;
+        const sizes = ['Byte', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    const formatDate = (date: Date): string => {
+        return date.toLocaleString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    };
+
+    const validateFileType = (fileName: string): boolean => {
+        const extension = fileName.split('.').pop()?.toLowerCase();
+        return extension ? allowedExtensions.includes(extension) : false;
+    };
 
     // 폼 데이터 상태
     const [formData, setFormData] = useState<ProjectKickoff>({
@@ -99,14 +140,56 @@ const ProjectKickoffForm: React.FC = () => {
 
         try {
             setLoading(true);
-            // 기존 프로젝트 데이터 로드 로직...
-            // (기존 코드와 동일)
 
+            // ✅ 1. 프로젝트 검토 데이터 가져오기 (profile 섹션)
+            // const profileResponse = await apiClient(`/projects/${projectId}/data?include_sections=profile`);
+            const profileResponse = await apiClient(`/projects/${projectId}/profile`);
+            console.log('Profile Response:', profileResponse.data);
+
+            // ✅ [수정] profileResponse.data가 null이 아닌지 먼저 확인
+            if (profileResponse.data) {
+                setFormData(prev => ({
+                    ...prev,
+                    swotAnalysis: profileResponse.data.swot_analysis || '',
+                    resourcePlan: profileResponse.data.resource_plan || '',
+                    writerOpinion: profileResponse.data.writer_opinion || ''
+                }));
+            }
+
+            // ✅ 2. 착수보고 데이터 가져오기 (kickoff 섹션)
+            // const kickoffResponse = await apiClient(`/projects/${projectId}/data?include_sections=kickoff`);
+            const kickoffResponse = await apiClient(`/projects/${projectId}/kickoff`);
+            console.log('Kickoff Response:', kickoffResponse.data);
+
+            // 💡 [핵심 수정] kickoffResponse.data가 null이 아닌지 먼저 확인합니다.
+            if (kickoffResponse.data) {
+                // 데이터가 존재하면 폼에 채우고 '수정' 모드로 설정
+                setFormData(prev => ({
+                    ...prev,
+                    department: kickoffResponse.data.department || '',
+                    presenter: kickoffResponse.data.presenter || '',
+                    personnel: kickoffResponse.data.personnel || '',
+                    collaboration: kickoffResponse.data.collaboration || '',
+                    schedule: kickoffResponse.data.progress_schedule || '',
+                    others: kickoffResponse.data.other_notes || ''
+                }));
+                setSaveMode('update');
+                console.log('기존 착수보고 데이터를 로드했습니다 (수정 모드).');
+            } else {
+                // 데이터가 없으면 (null이면) '생성' 모드로 설정
+                setSaveMode('insert');
+                console.log('착수보고 데이터가 없어 새로 생성합니다 (생성 모드).');
+            }
+
+            // ✅ 3. 작성자 정보 설정 (현재 로그인 사용자 또는 기본값)
+            // 실제 구현에서는 AuthContext나 사용자 세션에서 가져와야 함
             setFormData(prev => ({
                 ...prev,
-                writerName: '작성자명',
-                writerDepartment: '소속부서'
+                writerName: '작성자명', // 실제로는 현재 사용자 정보
+                writerDepartment: '소속부서' // 실제로는 현재 사용자 부서
             }));
+
+            console.log('모든 프로젝트 데이터 로드 완료');
 
         } catch (error) {
             const errorMessage = handleApiError(error);
@@ -117,9 +200,10 @@ const ProjectKickoffForm: React.FC = () => {
         }
     };
 
-    // 토글 상태 변경 핸들러
+
+    // ✅ 토글 상태 변경 핸들러 (단순화)
     const handleToggleStateChange = (isVisible: boolean) => {
-        console.log('토글 상태 변경:', isVisible);
+        console.log('토글 상태 변경:', isVisible); // 디버깅용
         setShowProfileTables(isVisible);
     };
 
@@ -140,7 +224,19 @@ const ProjectKickoffForm: React.FC = () => {
         }));
     };
 
-    // Bullet point 자동 추가
+    // Bullet point 자동 추가 함수
+    const formatWithBullets = (text: string): string => {
+        if (!text) return text;
+        const lines = text.split('\n');
+        return lines.map(line => {
+            const trimmedLine = line.trim();
+            if (trimmedLine && !trimmedLine.startsWith('•') && !trimmedLine.startsWith('-')) {
+                return `• ${trimmedLine}`;
+            }
+            return line;
+        }).join('\n');
+    };
+
     const handleBulletTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -149,37 +245,68 @@ const ProjectKickoffForm: React.FC = () => {
         }));
     };
 
-    // 파일 업로드 성공 핸들러
-    const handleFilesUploaded = useCallback((files: UploadedFileInfo[]) => {
-        console.log('파일 업로드 완료:', files);
-        setUploadedFilesCount(prev => prev + files.length);
-        // 필요시 알림 표시
-        if (files.length === 1) {
-            alert(`${files[0].original_file_name} 파일이 업로드되었습니다.`);
-        } else {
-            alert(`${files.length}개 파일이 업로드되었습니다.`);
+    // 파일 처리 관련 함수들
+    const processFiles = (files: FileList) => {
+        const validFiles: UploadedFile[] = [];
+
+        Array.from(files).forEach(file => {
+            if (validateFileType(file.name)) {
+                const uploadedFile: UploadedFile = {
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                    name: file.name,
+                    size: file.size,
+                    type: file.type || 'application/octet-stream',
+                    uploadedBy: '사용자명',
+                    createdDate: formatDate(new Date(file.lastModified || Date.now())),
+                    modifiedDate: formatDate(new Date(file.lastModified || Date.now())),
+                    uploadedDate: formatDate(new Date())
+                };
+                validFiles.push(uploadedFile);
+            } else {
+                alert(`지원하지 않는 파일 형식입니다: ${file.name}\n지원 형식: ${allowedExtensions.join(', ')}`);
+            }
+        });
+
+        if (validFiles.length > 0) {
+            setUploadedFiles(prev => [...prev, ...validFiles]);
         }
-    }, []);
+    };
 
-    // 파일 삭제 핸들러
-    const handleFileDeleted = useCallback((fileId: number) => {
-        console.log('파일 삭제됨:', fileId);
-        setUploadedFilesCount(prev => Math.max(0, prev - 1));
-    }, []);
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(true);
+    };
 
-    // 파일 관련 에러 핸들러
-    const handleFileError = useCallback((error: string) => {
-        console.error('파일 오류:', error);
-        alert(error);
-    }, []);
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+    };
 
-    // RFP 첨부 버튼 클릭 핸들러
-    const handleRfpAttachClick = () => {
-        if (!selectedProjectId) {
-            alert('프로젝트를 먼저 선택해주세요.');
-            return;
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            processFiles(files);
         }
-        setShowFileUpload(true);
+    };
+
+    const handleFileSelect = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            processFiles(files);
+        }
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const removeFile = (fileId: string) => {
+        setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
     };
 
     // 저장 핸들러
@@ -198,11 +325,31 @@ const ProjectKickoffForm: React.FC = () => {
                 presenter: formData.presenter,
                 personnel: formData.personnel,
                 collaboration: formData.collaboration,
-                progress_schedule: formData.schedule,
-                other_notes: formData.others
+                progress_schedule: formData.schedule, // UI -> DB 필드명 매핑
+                other_notes: formData.others // UI -> DB 필드명 매핑
             };
 
-            await projectKickoffService.upsertKickoff(selectedProjectId, kickoffData);
+            let response;
+            // if (saveMode === 'insert') {
+            //     response = await apiClient(`/projects/${selectedProjectId}/kickoff`, {
+            //         method: 'POST',
+            //         data: kickoffData
+            //     });
+            //     alert('프로젝트 착수서가 저장되었습니다.');
+            // } else {
+            //     response = await apiClient(`/projects/${selectedProjectId}/kickoff`, {
+            //         method: 'PUT',
+            //         data: kickoffData
+            //     });
+            //     alert('프로젝트 착수서가 수정되었습니다.');
+            // }
+            //
+            // console.log('저장 완료:', response.data);
+            // setSaveMode('update');
+
+            // 💡 [수정] 서비스 파일을 통해 API를 호출하도록 변경
+            await projectKickoffService.upsertKickoff(selectedProjectId, formData);
+
             alert('착수보고가 성공적으로 저장되었습니다.');
             setSaveMode('update');
         } catch (error) {
@@ -253,10 +400,13 @@ const ProjectKickoffForm: React.FC = () => {
                         formData={formData}
                         onChange={handleBasicInfoChange}
                         showSearch={true}
+
+                        // ✅ 수정된 props
                         onProjectIdSelected={handleProjectIdSelected}
                         onDetailSectionChange={handleToggleStateChange}
                         showDetailSection={showProfileTables}
-                        enableDetailSectionToggle={true}
+                        enableDetailSectionToggle={true}  // 내부 토글 버튼 활성화
+
                         includeDataSections={["basic", "detail"]}
                         className="project-section"
                         tableClassName="project-table"
@@ -264,172 +414,266 @@ const ProjectKickoffForm: React.FC = () => {
                     />
                 </div>
 
-                {/* 프로젝트 검토 및 착수보고 테이블들 */}
-                <div className={`profile-tables-container ${showProfileTables ? 'show' : 'hide'}`}>
-                    {/* 기존 테이블들... (생략) */}
+                {/* 프로젝트 검토 및 착수보고 테이블들 (토글로 제어) */}
+                <div
+                    className={`profile-tables-container ${showProfileTables ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
+                    style={{
+                        opacity: showProfileTables ? 1 : 0,
+                        maxHeight: showProfileTables ? '2000px' : '0',
+                        transform: showProfileTables ? 'translateY(0)' : 'translateY(-20px)',
+                        marginBottom: showProfileTables ? '0' : '0',
+                        transition: 'all 1s ease-in-out'
+                    }}
+                >
+                    {showProfileTables && (
+                        <>
+                            {/* 프로젝트 검토 테이블 */}
+                            <div className="kickoff-section">
+                                <h3 className="section-header">
+                                    ■ 프로젝트 검토 (읽기 전용)
+                                </h3>
+                                <table className="kickoff-table">
+                                    <tbody>
+                                    <tr>
+                                        <td className="table-header">구분</td>
+                                        <td className="table-header">내용</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="table-cell table-cell-label">SWOT 분석</td>
+                                        <td className="table-cell-input">
+                                            <textarea
+                                                name="swotAnalysis"
+                                                value={formData.swotAnalysis || ''}
+                                                className="kickoff-textarea textarea-xlarge bullet-textarea"
+                                                readOnly
+                                                style={{ backgroundColor: '#f5f5f5' }}
+                                            />
+                                        </td>
+                                    </tr>
+                                    {/*<tr>*/}
+                                    {/*    <td className="table-cell table-cell-label">추진방향</td>*/}
+                                    {/*    <td className="table-cell-input">*/}
+                                    {/*        <textarea*/}
+                                    {/*            name="direction"*/}
+                                    {/*            value={formData.direction || ''}*/}
+                                    {/*            className="kickoff-textarea textarea-large bullet-textarea"*/}
+                                    {/*            readOnly*/}
+                                    {/*            style={{ backgroundColor: '#f5f5f5' }}*/}
+                                    {/*        />*/}
+                                    {/*    </td>*/}
+                                    {/*</tr>*/}
+                                    <tr>
+                                        <td className="table-cell table-cell-label">리소스 활용방안</td>
+                                        <td className="table-cell-input">
+                                            <textarea
+                                                name="resourcePlan"
+                                                value={formData.resourcePlan || ''}
+                                                className="kickoff-textarea textarea-large bullet-textarea"
+                                                readOnly
+                                                style={{ backgroundColor: '#f5f5f5' }}
+                                            />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="table-cell table-cell-label">작성자 의견</td>
+                                        <td className="table-cell-input">
+                                            <textarea
+                                                name="writerOpinion"
+                                                value={formData.writerOpinion || ''}
+                                                className="kickoff-textarea textarea-large bullet-textarea"
+                                                readOnly
+                                                style={{ backgroundColor: '#f5f5f5' }}
+                                            />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td className="table-cell table-cell-label">진행 부결 사유</td>
+                                        <td className="table-cell-input">
+                                            <textarea
+                                                name="proceedDecision"
+                                                value={formData.writerOpinion || ''}
+                                                className="kickoff-textarea textarea-large bullet-textarea"
+                                                readOnly
+                                                style={{ backgroundColor: '#f5f5f5' }}
+                                            />
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </>
+                    )}
+                </div>
 
-                    {/* 착수보고 테이블 */}
-                    <div className="kickoff-section">
-                        <h3 className="section-title">프로젝트 착수보고</h3>
-                        <table className="kickoff-table">
-                            <tbody>
-                            <tr>
-                                <td className="table-cell table-cell-label">담당부서</td>
-                                <td className="table-cell-input">
-                                        <textarea
-                                            name="department"
-                                            value={formData.department}
-                                            onChange={handleBulletTextChange}
-                                            placeholder="담당부서 입력"
-                                            className="kickoff-textarea textarea-small bullet-textarea"
-                                        />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="table-cell table-cell-label">PT발표자</td>
-                                <td className="table-cell-input">
-                                        <textarea
-                                            name="presenter"
-                                            value={formData.presenter}
-                                            onChange={handleBulletTextChange}
-                                            placeholder="PT발표자 입력"
-                                            className="kickoff-textarea textarea-small bullet-textarea"
-                                        />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="table-cell table-cell-label">기획자(투입인력)</td>
-                                <td className="table-cell-input">
-                                        <textarea
-                                            name="personnel"
-                                            value={formData.personnel}
-                                            onChange={handleBulletTextChange}
-                                            placeholder="투입인력 정보 입력"
-                                            className="kickoff-textarea textarea-medium bullet-textarea"
-                                        />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="table-cell table-cell-label">협업조직</td>
-                                <td className="table-cell-input">
-                                        <textarea
-                                            name="collaboration"
-                                            value={formData.collaboration}
-                                            onChange={handleBulletTextChange}
-                                            placeholder="협업조직 정보 입력"
-                                            className="kickoff-textarea textarea-medium bullet-textarea"
-                                        />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="table-cell table-cell-label">추진 일정</td>
-                                <td className="table-cell-input">
-                                        <textarea
-                                            name="schedule"
-                                            value={formData.schedule}
-                                            onChange={handleBulletTextChange}
-                                            placeholder="기획 Kickoff, Ideation 회의, 디자인 의뢰, 제안서 리뷰, PT 리허설 등 일정&#10;*D-0 일 기준으로 작성"
-                                            className="kickoff-textarea textarea-xlarge bullet-textarea"
-                                        />
-                                </td>
-                            </tr>
-                            <tr>
-                                <td className="table-cell table-cell-label">기타</td>
-                                <td className="table-cell-input">
-                                        <textarea
-                                            name="others"
-                                            value={formData.others}
-                                            onChange={handleBulletTextChange}
-                                            className="kickoff-textarea textarea-medium bullet-textarea"
-                                        />
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                {/* 프로젝트 착수보고 */}
+                <div className="kickoff-section">
+                    <h3 className="section-header">
+                        ■ 프로젝트 착수보고
+                    </h3>
+                    <table className="kickoff-table">
+                        <tbody>
+                        <tr>
+                            <td className="table-header">구분</td>
+                            <td className="table-header">내용</td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">담당부서</td>
+                            <td className="table-cell-input">
+                                <textarea
+                                    name="department"
+                                    value={formData.department}
+                                    onChange={handleBulletTextChange}
+                                    placeholder="X본부 Y팀"
+                                    className="kickoff-textarea textarea-small bullet-textarea"
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">PT발표자</td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="presenter"
+                                    value={formData.presenter}
+                                    onChange={handleInputChange}
+                                    className="kickoff-input"
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">
+                                기획자
+                            </td>
+                            <td className="table-cell-input">
+                                <textarea
+                                    name="personnel"
+                                    value={formData.personnel}
+                                    onChange={handleBulletTextChange}
+                                    placeholder="메인 XXX PM ( 기여도 YY% 예정 )&#10;서브 XXX PM ( 기여도 YY% 예정 )&#10;서브 XXX PM ( 기여도 YY% 예정 )"
+                                    className="kickoff-textarea textarea-large bullet-textarea"
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">협업조직</td>
+                            <td className="table-cell-input">
+                                <textarea
+                                    name="collaboration"
+                                    value={formData.collaboration}
+                                    onChange={handleBulletTextChange}
+                                    placeholder="키비주얼 : 디자인팀&#10;3D 디자인 : XX 사&#10;영상 : 영상팀"
+                                    className="kickoff-textarea textarea-large bullet-textarea"
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">추진 일정</td>
+                            <td className="table-cell-input">
+                                <textarea
+                                    name="schedule"
+                                    value={formData.schedule}
+                                    onChange={handleBulletTextChange}
+                                    placeholder="기획 Kickoff, Ideation 회의, 디자인 의뢰, 제안서 리뷰, PT 리허설 등 일정&#10;*D-0 일 기준으로 작성"
+                                    className="kickoff-textarea textarea-xlarge bullet-textarea"
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">기타</td>
+                            <td className="table-cell-input">
+                                <textarea
+                                    name="others"
+                                    value={formData.others}
+                                    onChange={handleBulletTextChange}
+                                    className="kickoff-textarea textarea-medium bullet-textarea"
+                                />
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
                 </div>
 
                 {/* RFP 첨부 버튼 */}
                 <div className="table-action-section">
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept=".txt,.text,.md,.pdf,.ppt,.pptx,.doc,.docx,.hwp,.hwpx,.png,.jpg,.jpeg"
+                        onChange={handleFileInputChange}
+                        style={{ display: 'none' }}
+                    />
                     <button
                         type="button"
                         className="rfp-attach-btn"
-                        onClick={handleRfpAttachClick}
-                        disabled={!selectedProjectId}
+                        onClick={handleFileSelect}
                     >
-                        RFP 첨부 {uploadedFilesCount > 0 && `(${uploadedFilesCount})`}
+                        RFP 첨부
                     </button>
                 </div>
 
-                {/* 파일 업로드 섹션 */}
-                {showFileUpload && selectedProjectId && (
-                    <div className="file-upload-section">
-                        <div className="file-section-header">
-                            <h4>RFP 파일 첨부</h4>
-                            <button
-                                type="button"
-                                className="close-upload-btn"
-                                onClick={() => setShowFileUpload(false)}
-                            >
-                                ✕ 닫기
-                            </button>
-                        </div>
-
-                        {/* 파일 업로드 컴포넌트 */}
-                        <FileUploadComponent
-                            projectId={selectedProjectId}
-                            onFilesUploaded={handleFilesUploaded}
-                            onError={handleFileError}
-                            className="rfp-file-upload"
-                            multiple={true}
-                            attachmentType="rfp"
-                        />
-
-                        {/* 업로드된 파일 목록 */}
-                        <UploadedFilesList
-                            projectId={selectedProjectId}
-                            attachmentType="rfp"
-                            onFileDeleted={handleFileDeleted}
-                            onError={handleFileError}
-                            className="rfp-files-list"
-                            showDeleteButton={true}
-                            showDownloadButton={true}
-                        />
+                {/* 파일 업로드 영역 */}
+                <div className="file-upload-section">
+                    <div
+                        className={`file-drop-zone ${isDragOver ? 'drag-over' : ''}`}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onClick={handleFileSelect}
+                    >
+                        {uploadedFiles.length === 0 ? (
+                            <div className="drop-zone-message">
+                                <div className="drop-zone-icon">📁</div>
+                                <div className="drop-zone-text">
+                                    <p>파일을 여기로 드래그하거나 클릭하여 업로드하세요</p>
+                                    <p className="drop-zone-hint">
+                                        지원 형식: {allowedExtensions.join(', ')}
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="file-list">
+                                {uploadedFiles.map(file => (
+                                    <div key={file.id} className="file-item">
+                                        <div className="file-info">
+                                            <div className="file-name">{file.name}</div>
+                                            <div className="file-details">
+                                                <span className="file-size">{formatFileSize(file.size)}</span>
+                                                <span className="file-uploader">업로드: {file.uploadedBy}</span>
+                                            </div>
+                                            <div className="file-dates">
+                                                <div className="file-date">생성: {file.createdDate}</div>
+                                                <div className="file-date">수정: {file.modifiedDate}</div>
+                                                <div className="file-date">업로드: {file.uploadedDate}</div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            className="file-remove-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                removeFile(file.id);
+                                            }}
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))}
+                                <div className="drop-zone-add-more" onClick={handleFileSelect}>
+                                    <span>+ 더 많은 파일 추가</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
 
-                {/* 기존에 업로드된 파일이 있는 경우 간단한 요약 표시 */}
-                {!showFileUpload && selectedProjectId && uploadedFilesCount > 0 && (
-                    <div className="file-summary-section">
-                        <div className="file-summary">
-                            📎 첨부된 파일: {uploadedFilesCount}개
-                            <button
-                                type="button"
-                                className="view-files-btn"
-                                onClick={() => setShowFileUpload(true)}
-                            >
-                                파일 보기/관리
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* 버튼 섹션 */}
+                {/* 버튼 영역 */}
                 <div className="button-section">
                     <button
-                        type="button"
-                        className="submit-btn"
                         onClick={handleSubmit}
+                        className="submit-btn"
                         disabled={loading || !selectedProjectId}
                     >
-                        {loading ? '저장 중...' : (saveMode === 'insert' ? '저장' : '수정')}
-                    </button>
-                    <button
-                        type="button"
-                        className="print-btn"
-                        onClick={handlePrint}
-                    >
-                        인쇄
+                        {loading ? '저장 중...' : (saveMode === 'update' ? '수정' : '저장')}
                     </button>
                 </div>
             </div>
