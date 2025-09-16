@@ -864,18 +864,21 @@
 .inner-table-cell:nth-child(4) { width: 15%; } /* 점수 */
 
 .inner-table-header {
-    background-color: #333;
+    /*background-color: #333;*/
+    background-color: #aae;
     color: white;
     padding: 8px 12px;
     font-size: 13px;
     font-weight: bold;
-    border: 1px solid #333;
+    /*border: 1px solid #333;*/
+    border: 1px solid #77e;
     text-align: center;
 }
 
 .inner-table-cell {
     padding: 8px 12px;
-    border: 1px solid #ddd;
+    /*border: 1px solid #ddd;*/
+    border: 1px solid #aae;
     font-size: 12px;
     vertical-align: middle;
 }
@@ -885,7 +888,8 @@
 
 
 .inner-table-cell-label {
-    background-color: #f8f9fa;
+    /*background-color: #f8f9fa;*/
+    background-color: #eef;
     text-align: center;
     font-weight: 500;
 }
@@ -904,7 +908,8 @@
 
 
 .inner-table-cell-weight {
-    background-color: #f0f0f0;
+    /*background-color: #f0f0f0;*/
+    background-color: #dedeff;
     text-align: center;
     font-weight: bold;
 }
@@ -915,7 +920,7 @@
 
 /* colspan이 적용된 셀들은 개별 처리 */
 .inner-table-cell-merged {
-    background-color: #e9ecef;
+    background-color: #ceceff;
     text-align: center;
     font-weight: bold;
 }

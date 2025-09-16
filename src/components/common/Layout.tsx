@@ -43,34 +43,34 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 { path: '/info-management/project', name: '프로젝트 프로파일' }
             ]
         },
-        {
-            path: '/project-evaluation',
-            name: '1. 프로젝트 자체평가',
-            icon: '✅'
-        },
-        {
-            path: '/project-profile',
-            name: '2. 프로젝트 프로파일',
-            icon: '📝'
-        },
+        // {
+        //     path: '/project-evaluation',
+        //     name: '1. 프로젝트 자체평가',
+        //     icon: '✅'
+        // },
+        // {
+        //     path: '/project-profile',
+        //     name: '2. 프로젝트 프로파일',
+        //     icon: '📝'
+        // },
         {
             path: '/project-kickoff',
-            name: '3. 프로젝트 착수서',
+            name: '1. 프로젝트 착수서',
             icon: '🚀'
         },
         {
             path: '/pt-checklist',
-            name: '4. PT 자체평가',
+            name: '2. PT 자체평가',
             icon: '✅'
         },
         {
             path: '/pt-postmortem',
-            name: '5. PT 사후분석',
+            name: '3. PT 결과분석',
             icon: '🔍'
         },
         {
             path: '/project-postmortem',
-            name: '6. 프로젝트 사후분석',
+            name: '4. 프로젝트 결과분석',
             icon: '📊'
         },
     ];

@@ -356,7 +356,7 @@ const ProjectKickoffForm: React.FC = () => {
             <div className="kickoff-header">
                 <div>
                     <h1 className="kickoff-title">
-                        별텀 2-3. 프로젝트 착수서 양식
+                        별첨 2-3. 프로젝트 착수서 양식
                     </h1>
                 </div>
                 <div className="kickoff-logo">
