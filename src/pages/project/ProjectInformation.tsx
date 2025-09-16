@@ -680,26 +680,6 @@ const ProjectInformationForm: React.FC = () => {
         await searchContacts(contactSearchTerm);
     };
 
-    // const selectContact = (contact: ContactSearchData) => { // 💡 타입을 ContactSearchData로 변경
-    //     // 1. 폼 UI 필드를 업데이트합니다.
-    //     setFormData(prev => ({
-    //         ...prev,
-    //         client: contact.company.company_name, // 'contact.company' 접근 가능
-    //         manager: contact.contact_name,
-    //     }));
-    //
-    //     // 2. 💡 선택된 담당자 상태(selectedContact)를 업데이트합니다.
-    //     // ContactSearchData에는 없는 is_primary 같은 필드는 기본값을 넣어줍니다.
-    //     setSelectedContact({
-    //         id: contact.id,
-    //         contact_name: contact.contact_name,
-    //         is_primary: false, // 기본값 설정
-    //         // position, department 등은 검색 결과에 없으므로 비워둡니다.
-    //     });
-    //
-    //     // 3. 모달을 닫습니다.
-    //     setShowContactSearchModal(false);
-    // };
     const selectContact = (contact: ContactSearchData) => {
         // 💡 [추가] 담당자 정보에 포함된 회사 정보로 selectedCompany 상태도 함께 업데이트합니다.
         setSelectedCompany({
@@ -799,33 +779,6 @@ const ProjectInformationForm: React.FC = () => {
         }
     };
 
-    // const selectCompany = async (company: CompanyData) => {
-    //     // 회사 상세 정보를 불러와 담당자 목록까지 업데이트합니다.
-    //     try {
-    //         // const response = await fetch(`http://localhost:8001/api/company-profile/${company.id}`);
-    //         const response = await fetch(`/api/company-profile/${company.id}`);
-    //         if (!response.ok) throw new Error('회사 상세 정보 조회에 실패했습니다.');
-    //         const detailedCompany = await response.json();
-    //
-    //         // 발주처 필드 업데이트
-    //         setFormData(prev => ({
-    //             ...prev,
-    //             client: detailedCompany.company_name,
-    //             // 이전에 선택했던 담당자 정보는 초기화합니다.
-    //             // companyId: detailedCompany.id,
-    //             manager: '',
-    //             // clientContactId: undefined,
-    //         }));
-    //
-    //         // 담당자 목록 상태를 새로 불러온 회사 정보로 업데이트합니다.
-    //         setClientCompanyContacts(detailedCompany.contacts || []);
-    //         setSelectedContact(null); // 기존 담당자 선택 해제
-    //
-    //         setShowCompanySearchModal(false); // 모달 닫기
-    //     } catch (error) {
-    //         handleApiError(error);
-    //     }
-    // };
     const selectCompany = async (company: CompanyData) => {
         try {
             const response = await fetch(`/api/company-profile/${company.id}`);
@@ -899,13 +852,6 @@ const ProjectInformationForm: React.FC = () => {
             <div className="project-main">
                 <div className="project-title-section">
                     <h2 className="project-subtitle">정보 수집</h2>
-                    {/* [수정된 부분] 기존의 복잡했던 작성자 입력 폼을 아래의 간단한 표시 영역으로 교체했습니다. */}
-                    {/*<div className="project-writer">*/}
-                    {/*    <div className="writer-display">*/}
-                    {/*        <span>최종 수정: </span>*/}
-                    {/*        <span>{lastUpdater ? `${lastUpdater.name} (${lastUpdater.department || '작성자 미지정'})` : '정보 없음'}</span>*/}
-                    {/*    </div>*/}
-                    {/*</div>*/}
                     <div className="profile-writer">
                         <div className="writer-form">
                             <div>
@@ -1080,6 +1026,82 @@ const ProjectInformationForm: React.FC = () => {
                         <tr><td className="table-cell table-cell-label">주요 내용<br/>및<br/>핵심 요구사항</td><td className="table-cell-input"><textarea name="mainContent" value={formData.mainContent} onChange={handleBulletTextChange} placeholder="- 주요 과제, 행사 맥락, 주요 프로그램 등&#10;- 과업 제안범위, 제출금액, 운영 시 필수 고려사항등&#10;- 프로젝트 추진 방향성&#10;- 내외부 리소스 활용방법" className="project-textarea textarea-large bullet-textarea"/></td></tr>
                         {/*<tr><td className="table-cell table-cell-label">핵심 요구사항</td><td className="table-cell-input"><textarea name="coreRequirements" value={formData.coreRequirements} onChange={handleBulletTextChange} placeholder="- 과업 제안범위, 제출금액, 운영 시 필수 고려사항등" className="project-textarea textarea-large bullet-textarea"/></td></tr>*/}
                         <tr><td className="table-cell table-cell-label">비 고</td><td className="table-cell-input"><textarea name="comparison" value={formData.comparison} onChange={handleInputChange} placeholder="- 특이사항 및 중요사항등 추가 기재" className="project-textarea textarea-medium"/></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* 프로젝트 검토 (5x2 테이블) */}
+                <div className="profile-section">
+                    <h3 className="section-header">
+                        ■ 프로젝트 검토
+                    </h3>
+
+                    <table className="profile-table">
+                        <tbody>
+                        <tr>
+                            <td className="table-header">구분</td>
+                            <td className="table-header">내용</td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label blue-highlight-label">SWOT 분석</td>
+                            <td className="table-cell-input">
+                                <textarea
+                                    name="swotAnalysis"
+                                    value={formData.swotAnalysis}
+                                    onChange={handleBulletTextChange}
+                                    placeholder="- 강점: 독보적 경험과 노하우 활요, 높은 수주가능성&#10;- 약점: 내수율 저조&#10;- 기회: 매출달성에 기여, 차기 Proj 기약&#10;- 위험: 내정자에 따른 휴먼 리소스 소모"
+                                    className="profile-textarea textarea-xlarge bullet-textarea"
+                                />
+                            </td>
+                        </tr>
+                        {/*<tr>*/}
+                        {/*    <td className="table-cell table-cell-label blue-highlight-label">추진방향</td>*/}
+                        {/*    <td className="table-cell-input">*/}
+                        {/*        <textarea*/}
+                        {/*            name="direction"*/}
+                        {/*            value={formData.direction}*/}
+                        {/*            onChange={handleBulletTextChange}*/}
+                        {/*            placeholder="- 프로젝트 추진 방향성&#10;- 내외부 리소스 활용방법"*/}
+                        {/*            className="profile-textarea textarea-large bullet-textarea"*/}
+                        {/*        />*/}
+                        {/*    </td>*/}
+                        {/*</tr>*/}
+                        <tr>
+                            <td className="table-cell table-cell-label blue-highlight-label">리소스 활용방안</td>
+                            <td className="table-cell-input">
+                                <textarea
+                                    name="resourcePlan"
+                                    value={formData.resourcePlan}
+                                    onChange={handleBulletTextChange}
+                                    placeholder="- 내부 전담조직 및 참여자 역량&#10;- 협업 조직: XX사 3D 디자인, 영상팀"
+                                    className="profile-textarea textarea-large bullet-textarea"
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label blue-highlight-label">작성자 의견</td>
+                            <td className="table-cell-input">
+                                <textarea
+                                    name="writerOpinion"
+                                    value={formData.writerOpinion}
+                                    onChange={handleBulletTextChange}
+                                    placeholder="- 프로젝트 진행여부 판단 의견 요약 ( 팀원들의 첨언 포함 )&#10;- 평가등급 기재 (A~C)&#10;      A : 프로젝트 추진&#10;      B : 재검토후 추진여부 결정&#10;      C : 추진 중지"
+                                    className="profile-textarea textarea-large bullet-textarea"
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label blue-highlight-label">진행 부결 사유</td>
+                            <td className="table-cell-input">
+                                <textarea
+                                    name="proceedDecision"
+                                    value={formData.proceedDecision}
+                                    onChange={handleBulletTextChange}
+                                    placeholder="부결 사유 기재"
+                                    className="profile-textarea textarea-large bullet-textarea"
+                                />
+                            </td>
+                        </tr>
                         </tbody>
                     </table>
                 </div>
