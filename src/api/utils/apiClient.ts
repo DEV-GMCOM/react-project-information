@@ -141,11 +141,26 @@ apiClient.interceptors.request.use(
 );
 
 // 응답 인터셉터
+// 응답 인터셉터 수정 (라인 150-180 부분)
 apiClient.interceptors.response.use(
     (response) => {
         // 요청 시간 계산
         const duration = Date.now() - (response.config.metadata?.startTime || 0);
 
+        // blob 응답은 특별 처리
+        if (response.config.responseType === 'blob') {
+            if (isDevelopment) {
+                console.log(`✅ API 응답 (Blob): ${response.status} ${response.config.url}`, {
+                    duration: `${duration}ms`,
+                    contentType: response.headers['content-type'],
+                    contentLength: response.headers['content-length'],
+                    contentDisposition: response.headers['content-disposition']
+                });
+            }
+            return response; // blob 응답은 그대로 반환
+        }
+
+        // 일반 응답 처리
         if (isDevelopment) {
             console.log(`✅ API 응답: ${response.status} ${response.config.url}`, {
                 duration: `${duration}ms`,
@@ -164,6 +179,16 @@ apiClient.interceptors.response.use(
         return response;
     },
     (error) => {
+        // blob 요청 에러 특별 처리
+        if (error.config?.responseType === 'blob') {
+            console.error('❌ Blob API 응답 오류:', {
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                url: error.config?.url,
+                method: error.config?.method?.toUpperCase()
+            });
+        }
+
         // 에러 정보 향상
         const enhancedError = {
             ...error,
@@ -173,8 +198,8 @@ apiClient.interceptors.response.use(
             baseURL: error.config?.baseURL,
         };
 
-        // 개발 환경에서 상세 에러 로깅
-        if (isDevelopment) {
+        // 개발 환경에서 상세 에러 로깅 (blob이 아닌 경우만)
+        if (isDevelopment && error.config?.responseType !== 'blob') {
             console.error('❌ API 응답 오류:', {
                 status: error.response?.status,
                 statusText: error.response?.statusText,
@@ -185,7 +210,7 @@ apiClient.interceptors.response.use(
                     baseURL: error.config?.baseURL
                 }
             });
-        } else {
+        } else if (!isDevelopment) {
             // 프로덕션에서는 간단한 로깅
             console.error('API 오류:', error.response?.status, error.config?.url);
         }
@@ -205,7 +230,7 @@ apiClient.interceptors.response.use(
             enhancedError.userMessage = '요청한 데이터를 찾을 수 없습니다.';
         } else if (error.response?.status >= 500) {
             enhancedError.userMessage = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
-        } else if (error.code === 'NETWORK_ERROR') {
+        } else if (error.code === 'NETWORK_ERROR' || error.code === 'ERR_NETWORK') {
             enhancedError.userMessage = '네트워크 연결을 확인해주세요.';
         } else if (error.code === 'TIMEOUT') {
             enhancedError.userMessage = '요청 시간이 초과되었습니다. 다시 시도해주세요.';

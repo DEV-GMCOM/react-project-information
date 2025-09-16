@@ -106,35 +106,108 @@ export class FileUploadService {
         return `/api/projects/${projectId}/files/${fileId}/download`;
     }
 
-    // 파일 다운로드 처리
+    // 파일 다운로드 처리 - Firefox만 fetch 사용
     async downloadFile(projectId: number, fileId: number, fileName: string): Promise<void> {
         try {
-            const response = await apiClient.get(
-                `/projects/${projectId}/files/${fileId}/download`,
-                {
-                    responseType: 'blob',
-                }
-            );
+            console.log(`파일 다운로드 시작: projectId=${projectId}, fileId=${fileId}`);
 
-            // Blob을 이용한 파일 다운로드
-            const blob = new Blob([response.data]);
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-        } catch (error: any) {
-            if (error.response?.status === 403) {
-                throw new Error('파일 다운로드 권한이 없습니다.');
-            } else if (error.response?.status === 404) {
-                throw new Error('파일을 찾을 수 없습니다.');
+            // Firefox 감지
+            const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+            console.log(`브라우저: ${isFirefox ? 'Firefox' : 'Other'}`);
+
+            if (isFirefox) {
+                // Firefox: fetch 사용
+                console.log('Firefox 감지 - fetch 사용');
+                return this.downloadWithFetch(projectId, fileId, fileName);
             } else {
-                throw new Error('파일 다운로드 중 오류가 발생했습니다.');
+                // Chrome, Safari 등: axios 사용
+                console.log('다른 브라우저 - axios 사용');
+                return this.downloadWithAxios(projectId, fileId, fileName);
+            }
+
+        } catch (error: any) {
+            console.error('파일 다운로드 실패:', error);
+            throw new Error('파일 다운로드 중 오류가 발생했습니다.');
+        }
+    }
+
+    // Firefox 전용 fetch 방식
+    private async downloadWithFetch(projectId: number, fileId: number, fileName: string): Promise<void> {
+        const response = await fetch(`/api/projects/${projectId}/files/${fileId}/download`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'X-Session-Id': localStorage.getItem('session_id') || '',
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        // 파일명 추출
+        let downloadFileName = fileName;
+        const contentDisposition = response.headers.get('content-disposition');
+        if (contentDisposition) {
+            const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (fileNameMatch && fileNameMatch[1]) {
+                downloadFileName = fileNameMatch[1].replace(/['"]/g, '');
             }
         }
+
+        const blob = await response.blob();
+        this.triggerDownload(blob, downloadFileName);
+    }
+
+    // Chrome/Safari용 axios 방식
+    private async downloadWithAxios(projectId: number, fileId: number, fileName: string): Promise<void> {
+        const response = await apiClient.get(
+            `/projects/${projectId}/files/${fileId}/download`,
+            {
+                responseType: 'blob',
+                timeout: 30000,
+            }
+        );
+
+        // 파일명 처리 (RFC 6266 지원)
+        let downloadFileName = fileName;
+        const contentDisposition = response.headers['content-disposition'];
+
+        if (contentDisposition) {
+            const filenameStarMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+            if (filenameStarMatch && filenameStarMatch[1]) {
+                try {
+                    downloadFileName = decodeURIComponent(filenameStarMatch[1]);
+                } catch (e) {
+                    console.warn('파일명 디코딩 실패:', e);
+                }
+            } else {
+                const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                if (fileNameMatch && fileNameMatch[1]) {
+                    downloadFileName = fileNameMatch[1].replace(/['"]/g, '');
+                }
+            }
+        }
+
+        this.triggerDownload(response.data, downloadFileName);
+    }
+
+    // 공통 다운로드 실행
+    private triggerDownload(blobData: any, fileName: string): void {
+        const blob = new Blob([blobData]);
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+
+        link.href = url;
+        link.download = fileName;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+
+        setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        }, 100);
     }
 
     // 파일 삭제
