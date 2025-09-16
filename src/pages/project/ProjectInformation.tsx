@@ -95,6 +95,15 @@ interface ProjectInformationFormData {
         date: string;
         content: string;
     }>;
+    // 프로젝트 검토 필드들 추가
+    swotAnalysis: string;
+    // marketSize: string;
+    // competitorAnalysis: string;
+    // coreSuccessFactors: string;
+    // otherNotes: string;
+    resourcePlan: string;
+    writerOpinion: string;
+    proceedDecision: string;
 }
 // (참고) 기존 `ProjectInformation` 인터페이스는 `ProjectInformationFormData`로
 // 이름을 변경하여 역할(폼 데이터 관리)을 명확히 하고, ID 필드는 제거했습니다.
@@ -165,7 +174,16 @@ const ProjectInformationForm: React.FC = () => {
             //     content: '• 제목 및 안건 : 현대자동차 EV 신차 발표회 프로모션의 건\n• 협의 및 내용 : '
             // },
             { date: '', content: '' }
-        ]
+        ],
+        // 프로젝트 검토 필드들 초기화
+        swotAnalysis: '',
+        // marketSize: '',
+        // competitorAnalysis: '',
+        // coreSuccessFactors: '',
+        // otherNotes: '',
+        resourcePlan: '',
+        writerOpinion: '',
+        proceedDecision: '',
     });
 
     // --- 기존 상태들도 그대로 유지 ---

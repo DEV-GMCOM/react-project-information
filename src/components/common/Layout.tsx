@@ -29,48 +29,48 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     // 기본 메뉴 항목들
     const mainMenuItems: MenuItem[] = [
-        {
-            path: '/dashboard',
-            name: '대시보드',
-            icon: '📊'
-        },
+        // {
+        //     path: '/dashboard',
+        //     name: '대시보드',
+        //     icon: '📊'
+        // },
         {
             path: '/information',
-            name: '정보수집',
+            name: '0. 기본정보',
             icon: '📋',
             subMenus: [
-                { path: '/info-management/advertiser', name: '광고주 & 기업 프로파일' },
+                { path: '/info-management/advertiser', name: '기업 / 광고주 ( 담당자 )' },
                 { path: '/info-management/project', name: '프로젝트 프로파일' }
             ]
         },
         {
             path: '/project-evaluation',
-            name: '[입력폼 샘플] 프로젝트 평가 리스트',
+            name: '1. 프로젝트 자체평가',
             icon: '✅'
         },
         {
             path: '/project-profile',
-            name: '[입력폼 샘플] 프로젝트 Profile 작성',
+            name: '2. 프로젝트 프로파일',
             icon: '📝'
         },
         {
             path: '/project-kickoff',
-            name: '프로젝트 착수서 작성',
+            name: '3. 프로젝트 착수서',
             icon: '🚀'
         },
         {
             path: '/pt-checklist',
-            name: '제안서 PT 체크리스트',
+            name: '4. PT 자체평가',
             icon: '✅'
         },
         {
             path: '/pt-postmortem',
-            name: 'PT postmortem',
+            name: '5. PT 사후분석',
             icon: '🔍'
         },
         {
             path: '/project-postmortem',
-            name: '프로젝트 결과 postmortem',
+            name: '6. 프로젝트 사후분석',
             icon: '📊'
         },
     ];
@@ -291,17 +291,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         {/* 구분선 */}
                         <div className="nav-divider"></div>
 
-                        {/* 관리자 메뉴 섹션 */}
-                        <div className="nav-section nav-section-admin">
-                            {sidebarOpen && (
-                                <div className="section-header">
-                                    <div className="section-title">관리자 메뉴</div>
-                                </div>
-                            )}
-                            <ul className="nav-list">
-                                {adminMenuItems.map(renderMenuItem)}
-                            </ul>
-                        </div>
+                        {/*/!* 관리자 메뉴 섹션 *!/*/}
+                        {/*<div className="nav-section nav-section-admin">*/}
+                        {/*    {sidebarOpen && (*/}
+                        {/*        <div className="section-header">*/}
+                        {/*            <div className="section-title">관리자 메뉴</div>*/}
+                        {/*        </div>*/}
+                        {/*    )}*/}
+                        {/*    <ul className="nav-list">*/}
+                        {/*        {adminMenuItems.map(renderMenuItem)}*/}
+                        {/*    </ul>*/}
+                        {/*</div>*/}
                     </nav>
                 </aside>
 
