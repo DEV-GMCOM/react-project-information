@@ -110,24 +110,70 @@ export class FileUploadService {
     async downloadFile(projectId: number, fileId: number, fileName: string): Promise<void> {
         try {
             console.log(`파일 다운로드 시작: projectId=${projectId}, fileId=${fileId}`);
+            console.log(`원본 파일명: ${fileName}`);
 
-            // Firefox 감지
-            const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
-            console.log(`브라우저: ${isFirefox ? 'Firefox' : 'Other'}`);
+            // 모든 브라우저에서 fetch 사용 (통일성)
+            const response = await fetch(`/api/projects/${projectId}/files/${fileId}/download`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'X-Session-Id': localStorage.getItem('session_id') || '',
+                }
+            });
 
-            if (isFirefox) {
-                // Firefox: fetch 사용
-                console.log('Firefox 감지 - fetch 사용');
-                return this.downloadWithFetch(projectId, fileId, fileName);
-            } else {
-                // Chrome, Safari 등: axios 사용
-                console.log('다른 브라우저 - axios 사용');
-                return this.downloadWithAxios(projectId, fileId, fileName);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
+
+            // 개선된 파일명 추출
+            let downloadFileName = fileName; // 기본값은 원본 파일명
+            const contentDisposition = response.headers.get('content-disposition');
+
+            if (contentDisposition) {
+                console.log(`Content-Disposition: ${contentDisposition}`);
+
+                // 1순위: filename*=UTF-8''인코딩된파일명 (RFC 6266)
+                const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;,\s]+)/i);
+                if (utf8Match && utf8Match[1]) {
+                    try {
+                        downloadFileName = decodeURIComponent(utf8Match[1]);
+                        console.log(`UTF-8 디코딩 성공: ${downloadFileName}`);
+                    } catch (e) {
+                        console.warn('UTF-8 디코딩 실패:', e);
+                    }
+                }
+
+                // 2순위: filename="파일명" (fallback)
+                if (!utf8Match || downloadFileName === fileName) {
+                    const quotedMatch = contentDisposition.match(/filename="([^"]+)"/i);
+                    if (quotedMatch && quotedMatch[1]) {
+                        downloadFileName = quotedMatch[1];
+                        console.log(`quoted filename: ${downloadFileName}`);
+                    }
+                }
+
+                // 3순위: filename=파일명 (따옴표 없음)
+                if (downloadFileName === fileName) {
+                    const unquotedMatch = contentDisposition.match(/filename=([^;,\s]+)/i);
+                    if (unquotedMatch && unquotedMatch[1]) {
+                        downloadFileName = unquotedMatch[1];
+                        console.log(`unquoted filename: ${downloadFileName}`);
+                    }
+                }
+            }
+
+            console.log(`최종 파일명: ${downloadFileName}`);
+
+            // 파일 다운로드
+            const arrayBuffer = await response.arrayBuffer();
+            const blob = new Blob([arrayBuffer]);
+            this.triggerDownload(blob, downloadFileName);
+
+            console.log(`파일 다운로드 완료: ${downloadFileName}`);
 
         } catch (error: any) {
             console.error('파일 다운로드 실패:', error);
-            throw new Error('파일 다운로드 중 오류가 발생했습니다.');
+            throw new Error(`파일 다운로드 중 오류가 발생했습니다: ${error.message}`);
         }
     }
 
