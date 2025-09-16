@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { handleApiError } from '../../api/utils/errorUtils';
 import '../../styles/ProjectInformation.css';
 
@@ -104,6 +104,13 @@ interface ProjectInformationFormData {
     resourcePlan: string;
     writerOpinion: string;
     proceedDecision: string;
+
+    // 체크리스트 점수 필드 추가
+    revenueScore: number | '';
+    feasibilityScore: number | '';
+    rfpReviewScore: number | '';
+    futureValueScore: number | '';
+    relationshipScore: number | '';
 }
 // (참고) 기존 `ProjectInformation` 인터페이스는 `ProjectInformationFormData`로
 // 이름을 변경하여 역할(폼 데이터 관리)을 명확히 하고, ID 필드는 제거했습니다.
@@ -184,6 +191,12 @@ const ProjectInformationForm: React.FC = () => {
         resourcePlan: '',
         writerOpinion: '',
         proceedDecision: '',
+        // 📋 체크리스트 점수 초기값 추가
+        revenueScore: 0,
+        feasibilityScore: 0,
+        rfpReviewScore: 0,
+        futureValueScore: 0,
+        relationshipScore: 0,
     });
 
     // --- 기존 상태들도 그대로 유지 ---
@@ -215,9 +228,26 @@ const ProjectInformationForm: React.FC = () => {
     const [companySearchLoading, setCompanySearchLoading] = useState(false);
     const [saveMode, setSaveMode] = useState<'insert' | 'update'>('insert');    const [clientCompanyContacts, setClientCompanyContacts] = useState<CompanyContactData[]>([]);
     const [selectedContact, setSelectedContact] = useState<CompanyContactData | null>(null);
-
-    // ... 다른 useState 선언부 아래에 추가
     const [selectedCompany, setSelectedCompany] = useState<CompanyProfileData | null>(null);
+
+    // 기존 상태들 아래에 추가
+    const [showChecklist, setShowChecklist] = useState(false);
+    const [checklistTotalScore, setChecklistTotalScore] = useState<number | null>(null);
+    const [checklistGrade, setChecklistGrade] = useState<string>('');
+
+
+    // 점수 입력 필드 ref들
+    const revenueScoreRef = useRef<HTMLInputElement>(null);
+    const feasibilityScoreRef = useRef<HTMLInputElement>(null);
+    const futureValueScoreRef = useRef<HTMLInputElement>(null);
+    const relationshipScoreRef = useRef<HTMLInputElement>(null);
+    // ref 맵핑 객체
+    const scoreRefMap = {
+        revenueScore: revenueScoreRef,
+        feasibilityScore: feasibilityScoreRef,
+        futureValueScore: futureValueScoreRef,
+        relationshipScore: relationshipScoreRef
+    };
 
     // --- 기존 함수들은 모두 그대로 유지하며, 필요한 부분만 수정합니다 ---
     // [이 코드 블록을 새로 추가하세요]
@@ -240,6 +270,73 @@ const ProjectInformationForm: React.FC = () => {
             }));
         }
     }, [formData.projectName]); // formData.projectName이 변경될 때마다 이 함수가 실행됩니다.
+
+    // 체크리스트 총점 및 등급 실시간 계산
+    // useEffect(() => {
+    //     const { revenueScore, feasibilityScore, futureValueScore, relationshipScore } = formData;
+    //
+    //     let total = 0;
+    //     let hasAllScores = true;
+    //
+    //     // 각 점수가 유효한 숫자인지 확인하고 합계 계산
+    //     const scores = [revenueScore, feasibilityScore, futureValueScore, relationshipScore];
+    //
+    //     for (const score of scores) {
+    //         if (score === '' || score === null || score === undefined) {
+    //             hasAllScores = false;
+    //         } else {
+    //             const numScore = Number(score);
+    //             if (!isNaN(numScore) && numScore >= 0) {
+    //                 total += numScore;
+    //             } else {
+    //                 hasAllScores = false;
+    //             }
+    //         }
+    //     }
+    //
+    //     // 모든 점수가 입력되었거나 부분적으로라도 입력된 경우 총점 표시
+    //     if (total > 0) {
+    //         setChecklistTotalScore(total);
+    //
+    //         // 등급 계산 (모든 점수가 입력된 경우에만)
+    //         if (hasAllScores) {
+    //             if (total <= 70) {
+    //                 setChecklistGrade('C');
+    //             } else if (total <= 80) {
+    //                 setChecklistGrade('B');
+    //             } else {
+    //                 setChecklistGrade('A');
+    //             }
+    //         } else {
+    //             setChecklistGrade(''); // 부분 입력시에는 등급 표시 안함
+    //         }
+    //     } else {
+    //         setChecklistTotalScore(null);
+    //         setChecklistGrade('');
+    //     }
+    // }, [formData.revenueScore, formData.feasibilityScore, formData.futureValueScore, formData.relationshipScore]);
+    useEffect(() => {
+        const { revenueScore, feasibilityScore, futureValueScore, relationshipScore } = formData;
+
+        // 각 점수를 숫자로 변환 (빈값이면 0으로 처리)
+        const revenue = Number(revenueScore) || 0;
+        const feasibility = Number(feasibilityScore) || 0;
+        const futureValue = Number(futureValueScore) || 0;
+        const relationship = Number(relationshipScore) || 0;
+
+        // 총점 계산
+        const total = revenue + feasibility + futureValue + relationship;
+        setChecklistTotalScore(total);
+
+        // 등급 실시간 계산 (총점에 따라 항상 등급 표시)
+        if (total <= 70) {
+            setChecklistGrade('C');
+        } else if (total <= 80) {
+            setChecklistGrade('B');
+        } else {
+            setChecklistGrade('A');
+        }
+    }, [formData.revenueScore, formData.feasibilityScore, formData.futureValueScore, formData.relationshipScore]);
 
     const handleProjectSearch = async () => {
         setShowSearchModal(true);
@@ -845,6 +942,41 @@ const ProjectInformationForm: React.FC = () => {
         resetClientAndContact();
     };
 
+    const handleChecklistScoreChange = (scoreField: string, value: string, maxScore: number) => {
+        const numValue = value === '' ? '' : Number(value);
+
+        // 점수가 배점을 초과하는지 확인
+        if (numValue !== '' && numValue > maxScore) {
+            alert(`점수는 배점(${maxScore}점)을 초과할 수 없습니다.`);
+            return;
+        }
+
+        // 음수 입력 방지
+        if (numValue !== '' && numValue < 0) {
+            return;
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            [scoreField]: numValue
+        }));
+    };
+
+    // 엔터키로 다음 점수 입력 필드로 이동
+    const handleScoreKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, nextField: string | null) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+
+            if (nextField && scoreRefMap[nextField as keyof typeof scoreRefMap]) {
+                // 다음 필드로 포커스 이동
+                scoreRefMap[nextField as keyof typeof scoreRefMap].current?.focus();
+            } else {
+                // 마지막 필드인 경우 포커스 해제
+                (e.target as HTMLInputElement).blur();
+            }
+        }
+    };
+
     const WriterSearchModal: React.FC = () => {
         const [searchTerm, setSearchTerm] = useState('');
         return writerSearchModal ? (
@@ -886,7 +1018,10 @@ const ProjectInformationForm: React.FC = () => {
                     <table className="project-table">
                         <tbody>
                         <tr>
-                            <td className="table-header">구분</td><td className="table-header">내용</td><td className="table-header">구분</td><td className="table-header">내용</td>
+                            <td className="table-header">구분</td>
+                            <td className="table-header">내용</td>
+                            <td className="table-header">구분</td>
+                            <td className="table-header">내용</td>
                         </tr>
                         <tr>
                             <td className="table-cell table-cell-label">프로젝트명</td>
@@ -1058,11 +1193,11 @@ const ProjectInformationForm: React.FC = () => {
                         <tbody>
                         <tr>
                             <td className="table-header">구분</td>
-                            <td className="table-header">내용</td>
+                            <td className="table-header" colSpan={4}>내용</td>
                         </tr>
                         <tr>
                             <td className="table-cell table-cell-label blue-highlight-label">SWOT 분석</td>
-                            <td className="table-cell-input">
+                            <td className="table-cell-input" colSpan={4}>
                                 <textarea
                                     name="swotAnalysis"
                                     value={formData.swotAnalysis}
@@ -1086,7 +1221,7 @@ const ProjectInformationForm: React.FC = () => {
                         {/*</tr>*/}
                         <tr>
                             <td className="table-cell table-cell-label blue-highlight-label">리소스 활용방안</td>
-                            <td className="table-cell-input">
+                            <td className="table-cell-input" colSpan={4}>
                                 <textarea
                                     name="resourcePlan"
                                     value={formData.resourcePlan}
@@ -1098,7 +1233,145 @@ const ProjectInformationForm: React.FC = () => {
                         </tr>
                         <tr>
                             <td className="table-cell table-cell-label blue-highlight-label">작성자 의견</td>
-                            <td className="table-cell-input">
+                            <td className="table-cell-input" colSpan={4}>
+
+                                {/* 내부 체크리스트 테이블을 완전한 테이블 구조로 변경 */}
+                                <div className="inner-checklist-container">
+                                    <table className="inner-checklist-table">
+                                        <thead>
+                                        <tr>
+                                            <th className="inner-table-header">구분</th>
+                                            <th className="inner-table-header">내용</th>
+                                            <th className="inner-table-header">배점</th>
+                                            <th className="inner-table-header">점수</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr>
+                                            <td className="inner-table-cell inner-table-cell-label">매출액 및 이익</td>
+                                            <td className="inner-table-cell inner-table-cell-content">
+                                                <div className="bullet-content">
+                                                    • 예상 매출규모의 충분성<br/>
+                                                    • 예상 수익률의 적정성
+                                                </div>
+                                            </td>
+                                            <td className="inner-table-cell inner-table-cell-weight">50</td>
+                                            <td className="inner-table-cell inner-table-cell-input">
+                                                <input
+                                                    ref={revenueScoreRef}
+                                                    type="number"
+                                                    min="0"
+                                                    max="50"
+                                                    name="revenueScore"
+                                                    value={formData.revenueScore}
+                                                    onChange={(e) => handleChecklistScoreChange('revenueScore', e.target.value, 50)}
+                                                    onKeyDown={(e) => handleScoreKeyDown(e, 'feasibilityScore')}
+                                                    className="checklist-score-input"
+                                                    placeholder="0"
+                                                />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td className="inner-table-cell inner-table-cell-label">실행가능성</td>
+                                            <td className="inner-table-cell inner-table-cell-content">
+                                                <div className="bullet-content">
+                                                    • 수주가능성 : 유착관계, 당사 리스크 등<br/>
+                                                    • 당사 동원 인력의 역량 및 활용상황<br/>
+                                                    • 참여조건, 심사기준 등의 적합성<br/>
+                                                    • 당사 단독 준비 가능여부, 협업 필요성등<br/>
+                                                    • 수주 가능성 분석 : 유착관계, 당사 리스크 등
+                                                </div>
+                                            </td>
+                                            <td className="inner-table-cell inner-table-cell-weight">30</td>
+                                            <td className="inner-table-cell inner-table-cell-input">
+                                                <input
+                                                    ref={feasibilityScoreRef}
+                                                    type="number"
+                                                    min="0"
+                                                    max="30"
+                                                    name="feasibilityScore"
+                                                    value={formData.feasibilityScore}
+                                                    onChange={(e) => handleChecklistScoreChange('feasibilityScore', e.target.value, 30)}
+                                                    onKeyDown={(e) => handleScoreKeyDown(e, 'futureValueScore')}
+                                                    className="checklist-score-input"
+                                                    placeholder="0"
+                                                />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td className="inner-table-cell inner-table-cell-label">미래가치성</td>
+                                            <td className="inner-table-cell inner-table-cell-content">
+                                                <div className="bullet-content">
+                                                    • 클라이언트 브랜드 시장가치<br/>
+                                                    • 향후 반복수주의 가능성
+                                                </div>
+                                            </td>
+                                            <td className="inner-table-cell inner-table-cell-weight">10</td>
+                                            <td className="inner-table-cell inner-table-cell-input">
+                                                <input
+                                                    ref={futureValueScoreRef}
+                                                    type="number"
+                                                    min="0"
+                                                    max="10"
+                                                    name="futureValueScore"
+                                                    value={formData.futureValueScore}
+                                                    onChange={(e) => handleChecklistScoreChange('futureValueScore', e.target.value, 10)}
+                                                    onKeyDown={(e) => handleScoreKeyDown(e, 'relationshipScore')}
+                                                    className="checklist-score-input"
+                                                    placeholder="0"
+                                                />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td className="inner-table-cell inner-table-cell-label">관계성</td>
+                                            <td className="inner-table-cell inner-table-cell-content">
+                                                <div className="bullet-content">
+                                                    • 이전 년도 프로젝트 정보 수집<br/>
+                                                    • 최근 2년간 클라이언트와의 관계성<br/>
+                                                    • 당사와의 관계성
+                                                </div>
+                                            </td>
+                                            <td className="inner-table-cell inner-table-cell-weight">10</td>
+                                            <td className="inner-table-cell inner-table-cell-input">
+                                                <input
+                                                    ref={relationshipScoreRef}
+                                                    type="number"
+                                                    min="0"
+                                                    max="10"
+                                                    name="relationshipScore"
+                                                    value={formData.relationshipScore}
+                                                    onChange={(e) => handleChecklistScoreChange('relationshipScore', e.target.value, 10)}
+                                                    onKeyDown={(e) => handleScoreKeyDown(e, null)} // 마지막 필드
+                                                    className="checklist-score-input"
+                                                    placeholder="0"
+                                                />
+                                            </td>
+                                        </tr>
+                                        <tr className="total-row">
+                                            <td className="inner-table-cell inner-table-cell-merged" colSpan={2}>총점</td>
+                                            <td className="inner-table-cell inner-table-cell-weight">100</td>
+                                            <td className="inner-table-cell inner-table-cell-total">
+                                                {checklistTotalScore !== null ? checklistTotalScore : '-'}
+                                            </td>
+                                        </tr>
+                                        <tr className="grade-row">
+                                            <td className="inner-table-cell inner-table-cell-merged" colSpan={2}>
+                                                종합 등급&emsp;&emsp;(&emsp;&emsp;C:0~70&emsp;&emsp;&emsp;B:71~80&emsp;&emsp;&emsp;A:81~100&emsp;&emsp;)
+                                            </td>
+                                            <td className="inner-table-cell inner-table-cell-dash">-</td>
+                                            <td className="inner-table-cell inner-table-cell-grade">
+                                                {checklistGrade ? (
+                                                    <span className={`grade-badge grade-${checklistGrade.toLowerCase()}`}>
+                {checklistGrade}
+            </span>
+                                                ) : '-'}
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <br/>
+                                <div>
                                 <textarea
                                     name="writerOpinion"
                                     value={formData.writerOpinion}
@@ -1106,11 +1379,93 @@ const ProjectInformationForm: React.FC = () => {
                                     placeholder="- 프로젝트 진행여부 판단 의견 요약 ( 팀원들의 첨언 포함 )&#10;- 평가등급 기재 (A~C)&#10;      A : 프로젝트 추진&#10;      B : 재검토후 추진여부 결정&#10;      C : 추진 중지"
                                     className="profile-textarea textarea-large bullet-textarea"
                                 />
+                                </div>
+
                             </td>
                         </tr>
+                        {/*/!* 평가 체크리스트 섹션 추가 *!/*/}
+                        {/*<tr>*/}
+                        {/*    <td className="table-cell table-cell-label blue-highlight-label">평가 체크리스트</td>*/}
+                        {/*    <td className="table-cell-input">*/}
+                        {/*        /!* 체크리스트 토글 버튼 *!/*/}
+                        {/*        <div className="checklist-header-controls">*/}
+                        {/*            <button*/}
+                        {/*                type="button"*/}
+                        {/*                onClick={() => setShowChecklist(!showChecklist)}*/}
+                        {/*                className="checklist-toggle-btn"*/}
+                        {/*            >*/}
+                        {/*                {showChecklist ? '▼ 체크리스트 숨기기' : '▶ 체크리스트 보기'}*/}
+                        {/*            </button>*/}
+                        {/*            <div className="checklist-summary">*/}
+                        {/*                총점: {checklistTotalScore || '-'}점*/}
+                        {/*                {checklistGrade && <span className={`grade-badge grade-${checklistGrade.toLowerCase()}`}>{checklistGrade}</span>}*/}
+                        {/*            </div>*/}
+                        {/*        </div>*/}
+                        
+                        {/*        /!* 접이식 체크리스트 테이블 *!/*/}
+                        {/*        {showChecklist && (*/}
+                        {/*            <div className="embedded-checklist">*/}
+                        {/*                <table className="checklist-table">*/}
+                        {/*                    <thead>*/}
+                        {/*                    <tr>*/}
+                        {/*                        <th className="checklist-header">구분</th>*/}
+                        {/*                        <th className="checklist-header">내용</th>*/}
+                        {/*                        <th className="checklist-header weight-header">배점</th>*/}
+                        {/*                        <th className="checklist-header score-header">점수</th>*/}
+                        {/*                    </tr>*/}
+                        {/*                    </thead>*/}
+                        {/*                    <tbody>*/}
+                        {/*                    <tr>*/}
+                        {/*                        <td className="table-cell table-cell-label">매출액 및 이익</td>*/}
+                        {/*                        <td className="table-cell table-cell-content">*/}
+                        {/*                            <div className="bullet-content">*/}
+                        {/*                                • 예상 매출규모의 충분성<br/>*/}
+                        {/*                                • 예상 수익률의 적정성*/}
+                        {/*                            </div>*/}
+                        {/*                        </td>*/}
+                        {/*                        <td className="table-cell table-cell-weight">50</td>*/}
+                        {/*                        <td className="table-cell-input">*/}
+                        {/*                            <input*/}
+                        {/*                                type="number"*/}
+                        {/*                                min="0"*/}
+                        {/*                                max="50"*/}
+                        {/*                                name="revenueScore"*/}
+                        {/*                                value={formData.revenueScore}*/}
+                        {/*                                onChange={(e) => handleChecklistScoreChange('revenueScore', e.target.value, 50)}*/}
+                        {/*                                className="checklist-score-input"*/}
+                        {/*                            />*/}
+                        {/*                        </td>*/}
+                        {/*                    </tr>*/}
+                        {/*                    /!* ... 나머지 체크리스트 항목들 ... *!/*/}
+                        {/*                    <tr className="total-row">*/}
+                        {/*                        <td className="table-cell table-cell-merged" colSpan={2}>총점</td>*/}
+                        {/*                        <td className="table-cell table-cell-weight">100</td>*/}
+                        {/*                        <td className="table-cell table-cell-total">*/}
+                        {/*                            {checklistTotalScore || '-'}*/}
+                        {/*                        </td>*/}
+                        {/*                    </tr>*/}
+                        {/*                    <tr className="grade-row">*/}
+                        {/*                        <td className="table-cell table-cell-merged" colSpan={2}>*/}
+                        {/*                            종합 등급 ( C:0~70   B:71~80   A:81~100 )*/}
+                        {/*                        </td>*/}
+                        {/*                        <td className="table-cell table-cell-dash">-</td>*/}
+                        {/*                        <td className="table-cell table-cell-grade">*/}
+                        {/*                            {checklistGrade && (*/}
+                        {/*                                <span className={`grade-badge grade-${checklistGrade.toLowerCase()}`}>*/}
+                        {/*                {checklistGrade}*/}
+                        {/*            </span>*/}
+                        {/*                            )}*/}
+                        {/*                        </td>*/}
+                        {/*                    </tr>*/}
+                        {/*                    </tbody>*/}
+                        {/*                </table>*/}
+                        {/*            </div>*/}
+                        {/*        )}*/}
+                        {/*    </td>*/}
+                        {/*</tr>*/}
                         <tr>
                             <td className="table-cell table-cell-label blue-highlight-label">진행 부결 사유</td>
-                            <td className="table-cell-input">
+                            <td className="table-cell-input" colSpan={4}>
                                 <textarea
                                     name="proceedDecision"
                                     value={formData.proceedDecision}

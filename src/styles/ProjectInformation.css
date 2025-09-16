@@ -834,6 +834,168 @@
 .writer-result-item:hover {
     background-color: #f8f9fa;
 }
+
+
+/* 내부 체크리스트 테이블 스타일 */
+.inner-checklist-container {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+/* 내부 체크리스트 테이블 컬럼 너비 지정 */
+.inner-checklist-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333;
+    font-size: 12px;
+    table-layout: fixed; /* 고정 테이블 레이아웃 사용 */
+}
+
+/* 헤더 컬럼 너비 */
+.inner-table-header:nth-child(1) { width: 25%; } /* 구분 */
+.inner-table-header:nth-child(2) { width: 45%; } /* 내용 */
+.inner-table-header:nth-child(3) { width: 15%; } /* 배점 */
+.inner-table-header:nth-child(4) { width: 15%; } /* 점수 */
+
+/* 셀 컬럼 너비 */
+.inner-table-cell:nth-child(1) { width: 25%; } /* 구분 */
+.inner-table-cell:nth-child(2) { width: 45%; } /* 내용 */
+.inner-table-cell:nth-child(3) { width: 15%; } /* 배점 */
+.inner-table-cell:nth-child(4) { width: 15%; } /* 점수 */
+
+.inner-table-header {
+    background-color: #333;
+    color: white;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: bold;
+    border: 1px solid #333;
+    text-align: center;
+}
+
+.inner-table-cell {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    font-size: 12px;
+    vertical-align: middle;
+}
+
+
+
+
+
+.inner-table-cell-label {
+    background-color: #f8f9fa;
+    text-align: center;
+    font-weight: 500;
+}
+
+.inner-table-cell-content {
+    padding: 12px;
+    line-height: 1.4;
+    text-align: left !important;      /* 좌측 정렬 강제 */
+    /*vertical-align: middle !important; !* 세로 가운데 정렬 강제 *!*/
+}
+/* 내용 컬럼의 bullet-content도 좌측 정렬 */
+.inner-table-cell-content .bullet-content {
+    text-align: left;
+    line-height: 1.5;
+}
+
+
+.inner-table-cell-weight {
+    background-color: #f0f0f0;
+    text-align: center;
+    font-weight: bold;
+}
+
+.inner-table-cell-input {
+    text-align: center;
+}
+
+/* colspan이 적용된 셀들은 개별 처리 */
+.inner-table-cell-merged {
+    background-color: #e9ecef;
+    text-align: center;
+    font-weight: bold;
+}
+
+.inner-table-cell-total {
+    background-color: #fff3cd;
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: #856404;
+}
+
+.inner-table-cell-dash {
+    background-color: #f8f9fa;
+    text-align: center;
+    color: #666;
+}
+
+.inner-table-cell-grade {
+    background-color: #f8f9fa;
+    text-align: center;
+    padding: 8px;
+}
+
+
+
+.writer-opinion-section {
+    width: 100%;
+}
+
+.checklist-score-input {
+    width: 60px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 4px 8px;
+    text-align: center;
+    font-size: 12px;
+    background-color: white;
+
+    /* 숫자 입력 필드의 스피너(상하 화살표) 제거 */
+    -moz-appearance: textfield; /* Firefox */
+}
+/* Chrome, Safari, Edge에서 스피너 제거 */
+.checklist-score-input::-webkit-outer-spin-button,
+.checklist-score-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.checklist-score-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.checklist-score-input::placeholder {
+    color: #999;
+    font-style: italic;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* 인쇄 스타일 */
 @media print {
     .project-info-container {
