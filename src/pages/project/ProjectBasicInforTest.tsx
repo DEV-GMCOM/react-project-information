@@ -1,11 +1,11 @@
 // src/pages/test/ProjectBasicInfoTest.tsx
 import React, { useState } from 'react';
 import ProjectBasicInfoForm from '../../components/common/ProjectBasicInfoForm';
-import { ProjectBasicInfo } from '../../types/project';
+import {ExtendedProjectData, ProjectBasicInfo} from '../../types/project';
 import '../../styles/ProjectProfile.css';
 
-const ProjectBasicInfoTest: React.FC = () => {
-    const [formData, setFormData] = useState<ProjectBasicInfo>({
+const ProjectBasicInforTest: React.FC = () => {
+    const [formData, setFormData] = useState<ExtendedProjectData>({
         projectName: '',
         inflowPath: '',
         client: '',
@@ -19,10 +19,17 @@ const ProjectBasicInfoTest: React.FC = () => {
         expectedRevenue: '',
         expectedCompetitors: '',
         scoreTable: '',
-        bidAmount: ''
+        bidAmount: '',
+        // ExtendedProjectData에 포함된 추가 필드들
+        purposeBackground: '',
+        mainContent: '',
+        coreRequirements: '',
+        comparison: '',
+        writerName: '',
+        writerDepartment: ''
     });
 
-    const handleBasicInfoChange = (name: keyof ProjectBasicInfo, value: string) => {
+    const handleBasicInfoChange = (name: keyof ExtendedProjectData, value: string) => {
         setFormData(prev => ({
             ...prev,
             [name]: value
@@ -97,4 +104,4 @@ const ProjectBasicInfoTest: React.FC = () => {
     );
 };
 
-export default ProjectBasicInfoTest;
+export default ProjectBasicInforTest;
