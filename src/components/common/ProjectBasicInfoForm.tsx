@@ -1,4 +1,3 @@
-// src/components/common/ProjectBasicInfoForm.tsx - 완전 수정된 버전
 import React, { useState, useEffect } from 'react';
 import { ProjectBasicInfo, ProjectData, WriterInfo, CompanyContactData, CompanyProfileData, ExtendedProjectData } from '../../types/project';
 import { handleApiError } from '../../api/utils/errorUtils';
@@ -78,11 +77,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                                                        // 프로젝트 ID 전달 콜백
                                                                        onProjectIdSelected,
                                                                    }) => {
-    // 내부 상태 관리
     const [internalFormData, setInternalFormData] = useState<ExtendedProjectData>(formData);
     const [internalShowDetailSection, setInternalShowDetailSection] = useState<boolean>(showDetailSectionProp);
-
-    // 검색 관련 상태
     const [showSearchModal, setShowSearchModal] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchLoading, setSearchLoading] = useState(false);
@@ -96,47 +92,26 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     const [contactSearchResults, setContactSearchResults] = useState<ContactSearchData[]>([]);
     const [contactSearchLoading, setContactSearchLoading] = useState(false);
 
-    // props formData 변경 시 내부 상태 동기화
     useEffect(() => {
         if (!onChange) {
             setInternalFormData(formData);
         }
     }, [formData, onChange]);
 
-    // // 외부 prop 변경 시 내부 상태 동기화
-    // useEffect(() => {
-    //     setInternalShowDetailSection(showDetailSectionProp);
-    // }, [showDetailSectionProp]);
-
-    // 실제 사용할 상태 결정
     const currentFormData = onChange ? formData : internalFormData;
-    // const isDetailSectionVisible = onDetailSectionChange ? showDetailSectionProp : internalShowDetailSection;
-    // ✅ 수정된 상태 결정 로직
     const isDetailSectionVisible = showDetailSectionProp !== undefined
         ? showDetailSectionProp
         : internalShowDetailSection;
 
-    // ✅ 수정된 토글 핸들러
     const handleDetailSectionToggle = () => {
         const newValue = !isDetailSectionVisible;
-
         if (onDetailSectionChange) {
-            // 외부 제어: 부모에게 새 값 전달
             onDetailSectionChange(newValue);
         } else {
-            // 내부 제어: 내부 상태 업데이트
             setInternalShowDetailSection(newValue);
         }
     };
 
-    // // useEffect로 토글 상태 변경을 부모에게 알림 (선언적 방식)
-    // useEffect(() => {
-    //     if (onDetailSectionChange && !showDetailSectionProp) {
-    //         onDetailSectionChange(internalShowDetailSection);
-    //     }
-    // }, [internalShowDetailSection, onDetailSectionChange]);
-
-    // 통합된 onChange 핸들러
     const handleInternalChange = (name: keyof ExtendedProjectData, value: string) => {
         if (onChange) {
             onChange(name, value);
@@ -163,11 +138,6 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         }
     };
 
-    // const formatDateForInput = (dateStr: string) => {
-    //     return dateStr ? dateStr.replace(/\./g, '-') : '';
-    // };
-
-    // 외부/내부 핸들러 처리
     const tryExternalThenInternal = async (ext?: ExternalSearchHandler, internal?: () => any) => {
         if (ext) {
             try {
@@ -180,7 +150,6 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         return internal?.();
     };
 
-    // 프로젝트 검색 관련
     const handleProjectSearchClick = async () => {
         await tryExternalThenInternal(onProjectSearch, handleProjectSearch);
     };
@@ -194,28 +163,15 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     const searchProjects = async (page: number) => {
         try {
             setSearchLoading(true);
-            const params = new URLSearchParams({
-                skip: ((page - 1) * 10).toString(),
-                limit: '10'
-            });
-
-            if (currentFormData.projectName) {
-                params.append('search', currentFormData.projectName);
-            }
-
-            const listUrlAxios = `/projects/?${params.toString()}`;
-            const countUrl = `/api/projects/count?${params.toString()}`;
-
-            const response = await apiClient(listUrlAxios);
-            setSearchResults(response.data);
-
-            const countResponse = await fetch(countUrl);
-            if (countResponse.ok) {
-                const countData = await countResponse.json();
-                setTotalPages(Math.ceil(countData.total_count / 10));
-            } else {
-                setTotalPages(1);
-            }
+            const params = {
+                skip: (page - 1) * 10,
+                limit: 10,
+                search: currentFormData.projectName || ''
+            };
+            const listResponse = await apiClient.get('/projects/', { params });
+            const countResponse = await apiClient.get('/projects/count', { params });
+            setSearchResults(listResponse.data);
+            setTotalPages(Math.ceil(countResponse.data.total_count / 10));
         } catch (error) {
             const errorMessage = handleApiError(error);
             alert(`검색 중 오류가 발생했습니다: ${errorMessage}`);
@@ -224,22 +180,11 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         }
     };
 
-    // ProjectBasicInfoForm.tsx의 selectProject 함수 완전 수정 버전
-    // 통합된 프로젝트 선택 핸들러
     const selectProject = async (project: ProjectData) => {
         try {
-            console.log('프로젝트 선택:', project);
-
-            // 프로젝트 기본 데이터 가져오기 (basic, detail만)
-            const sectionsParam = 'basic,detail';
-            const response = await apiClient(`/projects/${project.project_id}`);
+            const response = await apiClient.get(`/projects/${project.project_id}`);
             const projectData = response.data;
-
-            // console.log("check ==== : ", projectData);
-
-            // 기본 정보 매핑 - ProjectProfile과 동일한 방식
             const updates: Record<string, string> = {
-                // 기본 정보 - ProjectProfile과 동일한 매핑
                 projectName: projectData.project_name || '',
                 inflowPath: projectData.inflow_path || '',
                 client: projectData.company_profile?.company_name || projectData.client || '',
@@ -248,61 +193,29 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                 submissionSchedule: projectData.project_period_end || '',
                 eventLocation: projectData.event_location || '',
                 attendees: projectData.attendees || '',
-                eventNature: projectData.business_type || '', // business_type만 사용
+                eventNature: projectData.business_type || '',
                 otSchedule: projectData.ot_schedule || '',
                 expectedRevenue: projectData.contract_amount?.toString() || '',
                 expectedCompetitors: projectData.expected_competitors || '',
-                // scoreTable, bidAmount는 ProjectProfile에서 누락되어 있으므로 제거하거나 빈값
                 scoreTable: '',
                 bidAmount: ''
             };
-
-            // console.log("check 000 : ", projectData.project_overview);
-            // console.log("check 001 : ", projectData.project_background);
-            // console.log("check 002 : ", projectData.project_scope);
-            // console.log("check 003 : ", projectData.deliverables);
-            // console.log("check !!! : ", includeDataSections);
-            // console.log("check !!! : ", projectData.detail_info);
-
-            // 상세 정보 매핑 (includeDataSections에 'detail'이 포함된 경우)
-            // if (includeDataSections.includes('detail') && projectData.detail_info) {
             if (includeDataSections.includes('detail')) {
                 updates.purposeBackground = projectData.project_overview || '';
-                // updates.mainContent = projectData.project_background || '';
                 updates.mainContent = projectData.project_scope || '';
-                //updates.coreRequirements = projectData.project_scope || projectData.detail_info.deliverables || '';
                 updates.coreRequirements = projectData.project_scope || '';
                 updates.comparison = projectData.deliverables || '';
             }
-
-            // console.log("check 100 : ", updates.project_overview);
-            // console.log("check 101 : ", updates.project_background);
-            // console.log("check 102 : ", updates.project_scope);
-            // console.log("check 103 : ", updates.deliverables);
-
-            // 일괄 업데이트 - onChange 함수 또는 내부 상태 업데이트
             Object.entries(updates).forEach(([key, value]) => {
                 if (onChange) {
                     onChange(key as keyof ExtendedProjectData, value);
                 } else {
-                    // 내부 상태 관리인 경우
-                    setInternalFormData(prev => ({
-                        ...prev,
-                        [key]: value
-                    }));
+                    setInternalFormData(prev => ({ ...prev, [key]: value }));
                 }
             });
-
             setShowSearchModal(false);
-
-            // 기존 콜백 호출
             onProjectSelect?.(project);
-
-            // 새로 추가: 프로젝트 ID만 부모에게 전달
             onProjectIdSelected?.(project.project_id);
-
-            console.log('프로젝트 데이터 매핑 완료:', updates);
-
         } catch (error) {
             const errorMessage = handleApiError(error);
             alert(`프로젝트 데이터를 가져오는 중 오류가 발생했습니다: ${errorMessage}`);
@@ -310,18 +223,13 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         }
     };
 
-    // 날짜 포맷 헬퍼 함수
     const formatDateForInput = (dateStr?: string): string => {
         if (!dateStr) return '';
-
-        // ISO 날짜를 YYYY-MM-DD 형식으로 변환
         const date = new Date(dateStr);
         if (isNaN(date.getTime())) return '';
-
         return date.toISOString().split('T')[0];
     };
 
-    // 회사 검색 관련 (기존 로직 유지)
     const handleCompanySearchClick = async () => {
         await tryExternalThenInternal(onCompanySearch, handleCompanySearch);
     };
@@ -334,10 +242,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     const searchCompaniesAPI = async (searchTerm: string) => {
         setCompanySearchLoading(true);
         try {
-            const response = await fetch(`/api/company-profile/?search=${encodeURIComponent(searchTerm)}`);
-            if (!response.ok) throw new Error('회사 검색에 실패했습니다.');
-            const data: CompanyData[] = await response.json();
-            setCompanySearchResults(data);
+            const response = await apiClient.get('/company-profile/', { params: { search: searchTerm } });
+            setCompanySearchResults(response.data);
         } catch (error) {
             handleApiError(error);
         } finally {
@@ -347,13 +253,10 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
 
     const selectCompany = async (company: CompanyData) => {
         try {
-            const response = await fetch(`/api/company-profile/${company.id}`);
-            if (!response.ok) throw new Error('회사 상세 정보 조회에 실패했습니다.');
-            const detailedCompany: CompanyProfileData = await response.json();
-
+            const response = await apiClient.get(`/company-profile/${company.id}`);
+            const detailedCompany: CompanyProfileData = response.data;
             handleInternalChange('client', detailedCompany.company_name);
             handleInternalChange('manager', '');
-
             setShowCompanySearchModal(false);
             onCompanySelect?.(detailedCompany);
         } catch (error) {
@@ -361,7 +264,6 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         }
     };
 
-    // 담당자 검색 관련 (기존 로직 유지)
     const handleContactSearchClick = async () => {
         await tryExternalThenInternal(onContactSearch, handleContactSearch);
     };
@@ -376,15 +278,10 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     const searchContacts = async (searchTerm: string) => {
         setContactSearchLoading(true);
         try {
-            const url = `/api/company-profile/contacts/search?search=${encodeURIComponent(searchTerm)}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('담당자 검색에 실패했습니다.');
-
-            let results: ContactSearchData[] = await response.json();
+            const response = await apiClient.get('/company-profile/contacts/search', { params: { search: searchTerm } });
+            let results: ContactSearchData[] = response.data;
             if (currentFormData.client) {
-                results = results.filter(contact =>
-                    contact.company.company_name === currentFormData.client
-                );
+                results = results.filter(contact => contact.company.company_name === currentFormData.client);
             }
             setContactSearchResults(results);
         } catch (error) {
@@ -397,9 +294,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     const selectContact = (contact: ContactSearchData) => {
         handleInternalChange('client', contact.company.company_name);
         handleInternalChange('manager', contact.contact_name);
-
         setShowContactSearchModal(false);
-
         const contactData: CompanyContactData = {
             id: contact.id,
             contact_name: contact.contact_name,
@@ -422,11 +317,9 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         resetClientAndContact();
     };
 
-    // 검색 결과 렌더링
     const renderSearchResults = () => {
         if (searchLoading) return <div className="loading">검색 중...</div>;
         if (searchResults.length === 0) return <div className="no-results">검색 결과가 없습니다.</div>;
-
         return (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
@@ -719,7 +612,6 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                     </tbody>
                 </table>
 
-                {/* 조건부 토글 버튼 렌더링 */}
                 {enableDetailSectionToggle && detailSectionCollapsible && (
                     <div className="table-action-section">
                         <button
@@ -734,7 +626,6 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                     </div>
                 )}
 
-                {/* 조건부 상세정보 섹션 렌더링 */}
                 {(enableDetailSectionToggle || isDetailSectionVisible) && (
                     <div
                         id="detail-section-container"
@@ -806,8 +697,6 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                     </div>
                 )}
             </div>
-
-            {/* 검색 모달들 (기존과 동일) */}
             {showSearchModal && (
                 <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -830,8 +719,6 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                     </div>
                 </div>
             )}
-
-            {/* 회사 검색 모달과 담당자 검색 모달들 (기존과 동일) */}
             {showCompanySearchModal && (
                 <div className="modal-overlay" onClick={() => setShowCompanySearchModal(false)}>
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -891,8 +778,6 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                     </div>
                 </div>
             )}
-
-            {/* 담당자 검색 모달 */}
             {showContactSearchModal && (
                 <div className="modal-overlay" onClick={() => setShowContactSearchModal(false)}>
                     <div className="modal-content" onClick={e => e.stopPropagation()}>

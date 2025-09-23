@@ -2,75 +2,17 @@
 import axios from 'axios';
 
 // Vite 환경변수 접근 (import.meta.env 사용)
-// const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
 const APP_TITLE = import.meta.env.VITE_APP_TITLE || 'ERP Information Module';
 
 // 개발 환경 여부 확인
 const isDevelopment = import.meta.env.DEV;
-const isProduction = import.meta.env.PROD;
-const mode = import.meta.env.MODE;
 
-// const getApiBaseUrl = () => {
-//     // 환경변수가 명시적으로 설정된 경우 우선 사용
-//     if (import.meta.env.VITE_API_URL) {
-//         return import.meta.env.VITE_API_URL;
-//     }
-//
-//     const hostname = window.location.hostname;
-//
-//     // ngrok을 통한 외부 접근인 경우
-//     if (hostname.includes('ngrok-free.app') || hostname.includes('ngrok.io')) {
-//         // 내부 IP로 API 호출 (서버 PC의 실제 IP 주소)
-//         return 'http://172.16.3.23:8001/api';  // 👈 실제 서버 IP로 변경
-//     }
-//
-//     // 로컬 개발 환경
-//     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-//         return 'http://localhost:8001/api';
-//     }
-//
-//     // 기본값
-//     return 'http://localhost:8001/api';
-// };
-//
-// const API_BASE_URL = getApiBaseUrl();
-
-
-// let currentBaseURL = 'http://localhost:8001/api'; // 기본값
-// let currentBaseURL = 'http://172.16.3.23:8001/api'; // 기본값
-let currentBaseURL = '/api'; // 기본값
-
-const getApiBaseUrl = () => {
-    // 환경변수가 명시적으로 설정된 경우 우선 사용
-    if (import.meta.env.VITE_API_URL) {
-        console.log('환경변수에서 API URL 사용:', import.meta.env.VITE_API_URL);
-        return import.meta.env.VITE_API_URL;
-    }
-
-    const hostname = window.location.hostname;
-
-    // // ngrok을 통한 외부 접근인 경우
-    // if (hostname.includes('ngrok-free.app') || hostname.includes('ngrok.io')) {
-    //     return 'http://172.16.3.23:8001/api';
-    // }
-    //
-    // // 로컬 개발 환경
-    // if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    //     return 'http://localhost:8001/api';
-    // }
-    console.log('!!!!!! hostname: ', hostname);
-
-    // return 'http://172.16.3.23:8001/api';
-    return '/api';
-};
-
-// 초기 URL 설정
-currentBaseURL = getApiBaseUrl();
-
+// 환경변수에서 API 기본 URL을 직접 가져와 상수로 사용합니다.
+// const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/information';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const apiClient = axios.create({
-    // baseURL: API_BASE_URL,
-    baseURL: currentBaseURL,
+    baseURL: API_BASE_URL,
     timeout: 300000, // 5분 타임아웃
     headers: {
         'Content-Type': 'application/json',
@@ -78,38 +20,14 @@ export const apiClient = axios.create({
         ...(APP_TITLE && { 'X-App-Name': APP_TITLE }),
     },
     withCredentials: true,  // 쿠키 자동 포함
-    // 개발 환경에서만 자세한 에러 정보 포함
     validateStatus: (status) => {
         return status >= 200 && status < 300;
     }
 });
 
-// API 베이스 URL 설정 함수
-export const setApiBaseUrl = () => {
-    currentBaseURL = getApiBaseUrl();
-    apiClient.defaults.baseURL = currentBaseURL;
-
-    console.log('🔄 API Base URL 업데이트:', currentBaseURL);
-};
-
-// 초기 설정
-setApiBaseUrl();
-
-
-console.log('🔧 API Client 설정:', {
-    // API_BASE_URL,
-    currentBaseURL,
-    APP_TITLE,
-    mode,
-    isDevelopment,
-    isProduction
-});
-
-
 // 요청 인터셉터
 apiClient.interceptors.request.use(
     (config) => {
-        // 개발 환경에서만 상세 로깅
         if (isDevelopment) {
             console.log(`🚀 API 요청: ${config.method?.toUpperCase()} ${config.url}`, {
                 baseURL: config.baseURL,
@@ -117,21 +35,11 @@ apiClient.interceptors.request.use(
                 data: config.data
             });
         }
-
-        // 요청 시간 기록 (성능 모니터링용)
         config.metadata = { startTime: Date.now() };
-
-        // 세션 ID를 헤더에 추가 (쿠키와 함께)
         const sessionId = localStorage.getItem('session_id');
         if (sessionId) {
             config.headers['X-Session-Id'] = sessionId;
         }
-
-        // 로깅
-        if (import.meta.env.DEV) {
-            console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
-        }
-
         return config;
     },
     (error) => {
@@ -141,13 +49,9 @@ apiClient.interceptors.request.use(
 );
 
 // 응답 인터셉터
-// 응답 인터셉터 수정 (라인 150-180 부분)
 apiClient.interceptors.response.use(
     (response) => {
-        // 요청 시간 계산
         const duration = Date.now() - (response.config.metadata?.startTime || 0);
-
-        // blob 응답은 특별 처리
         if (response.config.responseType === 'blob') {
             if (isDevelopment) {
                 console.log(`✅ API 응답 (Blob): ${response.status} ${response.config.url}`, {
@@ -157,39 +61,23 @@ apiClient.interceptors.response.use(
                     contentDisposition: response.headers['content-disposition']
                 });
             }
-            return response; // blob 응답은 그대로 반환
+            return response;
         }
-
-        // 일반 응답 처리
         if (isDevelopment) {
             console.log(`✅ API 응답: ${response.status} ${response.config.url}`, {
                 duration: `${duration}ms`,
                 data: response.data
             });
         }
-
-        // 응답 헤더에서 유용한 정보 추출
         if (response.headers['x-total-count']) {
             response.data._meta = {
                 totalCount: parseInt(response.headers['x-total-count']),
                 duration
             };
         }
-
         return response;
     },
     (error) => {
-        // blob 요청 에러 특별 처리
-        if (error.config?.responseType === 'blob') {
-            console.error('❌ Blob API 응답 오류:', {
-                status: error.response?.status,
-                statusText: error.response?.statusText,
-                url: error.config?.url,
-                method: error.config?.method?.toUpperCase()
-            });
-        }
-
-        // 에러 정보 향상
         const enhancedError = {
             ...error,
             timestamp: new Date().toISOString(),
@@ -198,7 +86,6 @@ apiClient.interceptors.response.use(
             baseURL: error.config?.baseURL,
         };
 
-        // 개발 환경에서 상세 에러 로깅 (blob이 아닌 경우만)
         if (isDevelopment && error.config?.responseType !== 'blob') {
             console.error('❌ API 응답 오류:', {
                 status: error.response?.status,
@@ -211,18 +98,24 @@ apiClient.interceptors.response.use(
                 }
             });
         } else if (!isDevelopment) {
-            // 프로덕션에서는 간단한 로깅
             console.error('API 오류:', error.response?.status, error.config?.url);
         }
 
-        // 사용자 친화적 에러 메시지 추가
         if (error.response?.status === 401) {
-            // 로그인 페이지가 아닌 경우에만 리다이렉트
             if (!window.location.pathname.includes('/login')) {
                 localStorage.removeItem('session_id');
-                window.location.href = '/information/login';
+                // =================================================================
+                // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 부분을 수정 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+                //
+                // 이 라인은 React Router를 무시하고 페이지를 강제로 새로고침하여
+                // 'basename' 관련 경고를 유발합니다.
+                // 따라서 이 코드를 삭제하거나 주석 처리하여 apiClient가 페이지 이동에
+                // 관여하지 않도록 합니다.
+                // window.location.href = '/information/login';
+                //
+                // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 이 부분을 수정 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+                // =================================================================
             }
-
             enhancedError.userMessage = '인증이 만료되었습니다. 다시 로그인해주세요.';
         } else if (error.response?.status === 403) {
             enhancedError.userMessage = '접근 권한이 없습니다.';
@@ -235,14 +128,12 @@ apiClient.interceptors.response.use(
         } else if (error.code === 'TIMEOUT') {
             enhancedError.userMessage = '요청 시간이 초과되었습니다. 다시 시도해주세요.';
         }
-
         return Promise.reject(enhancedError);
     }
 );
 
-// 공통 API 유틸리티 함수들
+// 공통 API 유틸리티 함수들 (기존과 동일)
 export const apiUtils = {
-    // 헬스체크
     async healthCheck(): Promise<boolean> {
         try {
             const response = await apiClient.get('/health');
@@ -251,21 +142,16 @@ export const apiUtils = {
             return false;
         }
     },
-
-    // 현재 설정 정보 반환
     getConfig() {
         return {
-            // baseURL: API_BASE_URL,
-            baseURL: currentBaseURL,
+            baseURL: API_BASE_URL,
             appTitle: APP_TITLE,
-            mode,
+            mode: import.meta.env.MODE,
             isDevelopment,
-            isProduction,
+            isProduction: import.meta.env.PROD,
             timeout: apiClient.defaults.timeout
         };
     },
-
-    // API 버전 확인
     async getApiVersion(): Promise<string | null> {
         try {
             const response = await apiClient.get('/version');
@@ -276,7 +162,7 @@ export const apiUtils = {
     }
 };
 
-// TypeScript 모듈 선언 확장 (axios config에 metadata 추가)
+// TypeScript 모듈 선언 확장 (기존과 동일)
 declare module 'axios' {
     export interface AxiosRequestConfig {
         metadata?: {

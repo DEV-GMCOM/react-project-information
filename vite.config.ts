@@ -21,6 +21,8 @@ export default defineConfig({
             '/api': {
                 target: 'http://localhost:8001', // 백엔드 API 서버 주소
                 changeOrigin: true, // CORS 문제 방지를 위해 호스트 헤더 변경
+                // 경로를 다시 씀: '/api/information/auth' -> '/auth'
+                // rewrite: (path) => path.replace(/^\/api\/information/, ''),
             }
         }
     },
