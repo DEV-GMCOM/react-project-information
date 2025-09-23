@@ -42,10 +42,10 @@ let currentBaseURL = '/api'; // 기본값
 
 const getApiBaseUrl = () => {
     // 환경변수가 명시적으로 설정된 경우 우선 사용
-    // if (import.meta.env.VITE_API_URL) {
-    //     console.log('!!!!!! API_BASE_URL: ', import.meta.env.VITE_API_URL);
-    //     return import.meta.env.VITE_API_URL;
-    // }
+    if (import.meta.env.VITE_API_URL) {
+        console.log('환경변수에서 API URL 사용:', import.meta.env.VITE_API_URL);
+        return import.meta.env.VITE_API_URL;
+    }
 
     const hostname = window.location.hostname;
 
