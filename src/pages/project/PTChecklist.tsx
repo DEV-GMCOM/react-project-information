@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import '../../styles/PTChecklist.css';
+import { apiService } from '../../api';
+import type { Project } from '../../api/types';
+
+// ... (기존 PTChecklistData 인터페이스는 그대로 유지) ...
 
 interface PTChecklistData {
     // 프로젝트 기본 정보
@@ -7,7 +11,7 @@ interface PTChecklistData {
     department: string;
     presenter: string;
 
-    // 내용 체크리스트
+    // ... (나머지 체크리스트 항목들은 생략) ...
     professionalUnderstanding: {
         checked: boolean;
         opinion: string;
@@ -76,6 +80,7 @@ interface PTChecklistData {
     writerDepartment: string;
 }
 
+
 const PTChecklistForm: React.FC = () => {
     const [formData, setFormData] = useState<PTChecklistData>({
         projectName: '',
@@ -98,6 +103,14 @@ const PTChecklistForm: React.FC = () => {
         writerName: '',
         writerDepartment: ''
     });
+
+    // --- 프로젝트 검색 관련 상태 추가 ---
+    const [showSearchModal, setShowSearchModal] = useState(false);
+    const [searchResults, setSearchResults] = useState<Project[]>([]);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -127,6 +140,37 @@ const PTChecklistForm: React.FC = () => {
         }));
     };
 
+    // --- 프로젝트 검색 관련 함수 추가 ---
+    const handleProjectSearch = async (page = 1) => {
+        setSearchLoading(true);
+        try {
+            const projects = await apiService.getProjects({
+                search: formData.projectName,
+                skip: (page - 1) * 10,
+                limit: 10,
+            });
+            setSearchResults(projects);
+            // 전체 페이지 수 계산 로직 (백엔드 API가 전체 카운트를 제공해야 함)
+            // setTotalPages(Math.ceil(projects.totalCount / 10));
+        } catch (error) {
+            console.error("Project search error:", error);
+            alert("프로젝트 검색 중 오류가 발생했습니다.");
+        } finally {
+            setSearchLoading(false);
+        }
+    };
+
+    const selectProject = (project: Project) => {
+        setFormData(prev => ({
+            ...prev,
+            projectName: project.project_name,
+            department: project.company_name || '', // 담당부서를 우선 회사명으로 설정
+            presenter: project.manager_name || '', // PT 발표자를 우선 프로젝트 매니저로 설정
+        }));
+        setShowSearchModal(false);
+    };
+
+
     const handleSubmit = () => {
         console.log('PT Checklist 저장:', formData);
         // TODO: API 연동
@@ -136,9 +180,10 @@ const PTChecklistForm: React.FC = () => {
         window.print();
     };
 
+
     return (
         <div className="pt-checklist-container">
-            {/* 헤더 */}
+            {/* ... (기존 헤더 및 타이틀 섹션은 그대로 유지) ... */}
             <div className="checklist-header">
                 <div>
                     <h1 className="checklist-title">
@@ -150,7 +195,6 @@ const PTChecklistForm: React.FC = () => {
                 </div>
             </div>
 
-            {/* 메인 컨텐츠 */}
             <div className="checklist-main">
                 <div className="checklist-title-section">
                     <h2 className="checklist-subtitle">
@@ -163,36 +207,8 @@ const PTChecklistForm: React.FC = () => {
                             </div>
                         </div>
                     </div>
-
-                    {/*<div className="checklist-writer">*/}
-                    {/*    <div className="writer-form">*/}
-                    {/*        <div className="writer-field">*/}
-                    {/*            <label className="writer-field-label">등록자 이름:</label>*/}
-                    {/*            <input*/}
-                    {/*                type="text"*/}
-                    {/*                name="writerName"*/}
-                    {/*                value={formData.writerName}*/}
-                    {/*                onChange={handleInputChange}*/}
-                    {/*                placeholder="홍길동"*/}
-                    {/*                className="writer-field-input"*/}
-                    {/*            />*/}
-                    {/*        </div>*/}
-                    {/*        <div className="writer-field">*/}
-                    {/*            <label className="writer-field-label">부서:</label>*/}
-                    {/*            <input*/}
-                    {/*                type="text"*/}
-                    {/*                name="writerDepartment"*/}
-                    {/*                value={formData.writerDepartment}*/}
-                    {/*                onChange={handleInputChange}*/}
-                    {/*                placeholder="기획팀"*/}
-                    {/*                className="writer-field-input"*/}
-                    {/*            />*/}
-                    {/*        </div>*/}
-                    {/*    </div>*/}
-                    {/*</div>*/}
                 </div>
 
-                {/* 프로젝트 체크사항 (18x2 테이블) */}
                 <div className="checklist-section">
                     <h3 className="section-header">
                         ■ 프로젝트 체크사항
@@ -204,18 +220,39 @@ const PTChecklistForm: React.FC = () => {
                             <td className="table-header">타이틀 구분</td>
                             <td className="table-header">타이틀 내용</td>
                         </tr>
+                        {/* --- 프로젝트명 Row 수정 --- */}
                         <tr>
                             <td className="table-cell table-cell-label">프로젝트명</td>
                             <td className="table-cell-input">
-                                <input
-                                    type="text"
-                                    name="projectName"
-                                    value={formData.projectName}
-                                    onChange={handleInputChange}
-                                    className="checklist-input"
-                                />
+                                <div className="input-with-search">
+                                    <input
+                                        type="text"
+                                        name="projectName"
+                                        value={formData.projectName}
+                                        onChange={handleInputChange}
+                                        className="checklist-input"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                setShowSearchModal(true);
+                                                handleProjectSearch(1);
+                                            }
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="search-btn"
+                                        onClick={() => {
+                                            setShowSearchModal(true);
+                                            handleProjectSearch(1);
+                                        }}
+                                    >
+                                        🔍
+                                    </button>
+                                </div>
                             </td>
                         </tr>
+                        {/* --- 담당부서 및 PT 발표자 Row 는 그대로 유지 --- */}
                         <tr>
                             <td className="table-cell table-cell-label">담당부서</td>
                             <td className="table-cell-input">
@@ -241,7 +278,7 @@ const PTChecklistForm: React.FC = () => {
                             </td>
                         </tr>
 
-                        {/* 내용 섹션 */}
+                        {/* ... (나머지 체크리스트 항목 테이블 구조는 그대로 유지) ... */}
                         <tr>
                             <td className="table-cell table-cell-rowspan" rowSpan={4}>내용</td>
                             <td className="table-cell-input checklist-item-cell">
@@ -562,11 +599,57 @@ const PTChecklistForm: React.FC = () => {
                     <button onClick={handlePrint} className="btn-secondary">인쇄</button>
                 </div>
             </div>
+
+            {/* --- 프로젝트 검색 모달 추가 --- */}
+            {showSearchModal && (
+                <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>프로젝트 검색</h3>
+                            <button className="modal-close-btn" onClick={() => setShowSearchModal(false)}>×</button>
+                        </div>
+                        <div className="modal-body">
+                            {searchLoading ? (
+                                <div className="loading">검색 중...</div>
+                            ) : (
+                                <>
+                                    <table className="search-table">
+                                        <thead>
+                                        <tr>
+                                            <th>프로젝트명</th>
+                                            <th>프로젝트 코드</th>
+                                            <th>상태</th>
+                                            <th>선택</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {searchResults.length > 0 ? (
+                                            searchResults.map(project => (
+                                                <tr key={project.id}>
+                                                    <td>{project.project_name}</td>
+                                                    <td>{project.project_code}</td>
+                                                    <td>{project.status}</td>
+                                                    <td>
+                                                        <button className="select-btn" onClick={() => selectProject(project)}>선택</button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={4} className="no-results">검색 결과가 없습니다.</td>
+                                            </tr>
+                                        )}
+                                        </tbody>
+                                    </table>
+                                    {/* 페이지네이션 (추후 구현) */}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
 export default PTChecklistForm;
-
-
-
