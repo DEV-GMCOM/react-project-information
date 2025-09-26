@@ -1,5 +1,5 @@
-// PTPostmortem.tsx - Project Kickoff 버튼 추가된 버전
-import React, { useState } from 'react';
+// PTPostmortem.tsx - API 연동 수정 완료
+import React, { useState, useEffect } from 'react';
 import '../../styles/PTPostmortem.css';
 import ProjectBasicInfoForm from "@/components/common/ProjectBasicInfoForm.tsx";
 
@@ -19,6 +19,24 @@ interface PTPostmortemData {
     writerDepartment: string;
 }
 
+// API 응답 타입
+interface PTPostmortemResponse {
+    id: string;
+    project_id: string;
+    pt_review?: string;
+    pt_result?: string;
+    reason?: string;
+    direction_concept?: string;
+    program?: string;
+    operation?: string;
+    quotation?: string;
+    manager_opinion?: string;
+    writer_name?: string;
+    writer_department?: string;
+    created_at: string;
+    updated_at: string;
+}
+
 const PTPostmortemForm: React.FC = () => {
     const [showProfileTables, setShowProfileTables] = useState(false);
     const [showKickoffTables, setShowKickoffTables] = useState(false);
@@ -34,6 +52,117 @@ const PTPostmortemForm: React.FC = () => {
         writerName: '',
         writerDepartment: ''
     });
+
+    // 로딩 및 에러 상태 관리
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [projectId, setProjectId] = useState<string>('');
+
+    // [수정됨] Vite 환경에 맞게 환경 변수 접근 방식을 변경합니다.
+    const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001';
+
+    // PT Postmortem 데이터 로드
+    const loadPTPostmortemData = async (projectId: string) => {
+        if (!projectId) return;
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch(`${apiBase}/api/projects/${projectId}/pt-postmortem`);
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    // PT Postmortem 데이터가 없는 경우, 빈 폼으로 초기화
+                    return;
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data: PTPostmortemResponse = await response.json();
+
+            // API 응답을 폼 데이터로 변환
+            setFormData({
+                ptReview: data.pt_review || '',
+                ptResult: data.pt_result || '',
+                reason: data.reason || '',
+                directionConcept: data.direction_concept || '',
+                program: data.program || '',
+                operation: data.operation || '',
+                quotation: data.quotation || '',
+                managerOpinion: data.manager_opinion || '',
+                writerName: data.writer_name || '',
+                writerDepartment: data.writer_department || ''
+            });
+
+        } catch (error) {
+            console.error('PT Postmortem 데이터 로드 실패:', error);
+            setError('PT Postmortem 데이터를 불러오는데 실패했습니다.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // PT Postmortem 데이터 저장
+    const savePTPostmortemData = async (data: PTPostmortemData) => {
+        if (!projectId) {
+            setError('프로젝트가 선택되지 않았습니다.');
+            return false;
+        }
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            // 폼 데이터를 API 포맷으로 변환
+            const apiData = {
+                pt_review: data.ptReview,
+                pt_result: data.ptResult,
+                reason: data.reason,
+                direction_concept: data.directionConcept,
+                program: data.program,
+                operation: data.operation,
+                quotation: data.quotation,
+                manager_opinion: data.managerOpinion,
+                writer_name: data.writerName,
+                writer_department: data.writerDepartment
+            };
+
+            const response = await fetch(`${apiBase}/api/projects/${projectId}/pt-postmortem`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(apiData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            const result: PTPostmortemResponse = await response.json();
+            console.log('PT Postmortem 저장 성공:', result);
+
+            // 성공 메시지 표시 (선택사항)
+            alert('PT Postmortem 데이터가 성공적으로 저장되었습니다.');
+            return true;
+
+        } catch (error) {
+            console.error('PT Postmortem 저장 실패:', error);
+            setError(`저장 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // 프로젝트 선택 시 데이터 로드
+    useEffect(() => {
+        if (projectId) {
+            loadPTPostmortemData(projectId);
+        }
+    }, [projectId]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -66,12 +195,32 @@ const PTPostmortemForm: React.FC = () => {
         }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('PT Postmortem 데이터:', formData);
-        // TODO: 서버 전송 로직
+        console.log('PT Postmortem 데이터 저장 시작:', formData);
+
+        const success = await savePTPostmortemData(formData);
+        if (success) {
+            // 저장 성공 후 추가 작업 (예: 페이지 리다이렉트 등)
+        }
     };
 
+    // 프로젝트 ID 선택 핸들러
+    const handleProjectSelect = (selectedProjectId: string) => {
+        setProjectId(selectedProjectId);
+        setFormData({
+            ptReview: '',
+            ptResult: '',
+            reason: '',
+            directionConcept: '',
+            program: '',
+            operation: '',
+            quotation: '',
+            managerOpinion: '',
+            writerName: '',
+            writerDepartment: ''
+        });
+    };
 
     return (
         <div className="pt-postmortem-container">
@@ -93,6 +242,7 @@ const PTPostmortemForm: React.FC = () => {
                             </div>
                         </div>
                     </div>
+
 
                     {/*<div className="profile-main">*/}
                     {/*    /!* ProjectBasicInfoForm 컴포넌트 - 기본/상세 정보 관리 *!/*/}
@@ -726,10 +876,6 @@ const PTPostmortemForm: React.FC = () => {
                             </tbody>
                         </table>
                     </div>
-
-                    {/* 버튼 섹션 */}                        {/*<button type="button" className="print-btn" onClick={handlePrint}>*/}
-                    {/*    인쇄*/}
-                    {/*</button>*/}
 
                     <div className="button-section">
                         <button type="submit" className="submit-btn">

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { handleApiError } from '../../api/utils/errorUtils';
-import apiClient from '../../api/utils/apiClient'; // apiClient를 import 합니다.
+import apiClient from '../../api/utils/apiClient';
 import '../../styles/ProjectInformation.css';
 
+// === 기존 인터페이스들 그대로 유지 ===
 /** 직원의 간단한 정보를 나타냅니다. (작성자, 수정자 등) */
 interface WriterInfo {
     emp_id: number;
@@ -27,13 +28,11 @@ interface CompanyContactData {
 interface CompanyProfileData {
     id: number;
     company_name: string;
-    contacts: CompanyContactData[]; // 해당 회사의 모든 담당자 목록
+    contacts: CompanyContactData[];
 }
-
 
 /** [API 응답용] API로부터 받는 프로젝트의 최종 데이터 구조입니다. */
 interface ProjectData {
-    // --- 프로젝트 기본 속성 (DB 컬럼과 일치) ---
     project_id: number;
     project_name: string;
     status: string;
@@ -66,7 +65,6 @@ interface ProjectData {
     company_profile?: CompanyProfileData;
     selected_contact?: CompanyContactData;
 }
-
 
 /** [폼 상태 관리용] 화면의 입력 필드 상태를 관리하는 인터페이스입니다. */
 interface ProjectInformationFormData {
@@ -138,7 +136,24 @@ interface ContactDetailData {
     }>;
 }
 
+// === 평가 관련 인터페이스 추가 (UI 변경 없음) ===
+interface ProjectEvaluationCriteria {
+    id: number;
+    category: string;
+    category_name: string;
+    description: string;
+    max_score: number;
+    sort_order: number;
+}
+
+interface ProjectEvaluationScore {
+    criteria_id: number;
+    score: number;
+    notes?: string;
+}
+
 const ProjectInformationForm: React.FC = () => {
+    // === 기존 상태들 모두 그대로 유지 ===
     const [formData, setFormData] = useState<ProjectInformationFormData>({
         projectName: '',
         inflowPath: '',
@@ -198,6 +213,11 @@ const ProjectInformationForm: React.FC = () => {
     const relationshipScoreRef = useRef<HTMLInputElement>(null);
     const scoreRefMap = { revenueScore: revenueScoreRef, feasibilityScore: feasibilityScoreRef, futureValueScore: futureValueScoreRef, relationshipScore: relationshipScoreRef };
 
+    // === 평가 관련 상태 추가 (내부 로직용) ===
+    const [evaluationCriteria, setEvaluationCriteria] = useState<ProjectEvaluationCriteria[]>([]);
+    const [evaluationScores, setEvaluationScores] = useState<{ [key: number]: number }>({});
+
+    // === 기존 useEffect들 그대로 유지 ===
     useEffect(() => {
         if (formData.projectName === '') {
             setSelectedProject(null);
@@ -222,6 +242,57 @@ const ProjectInformationForm: React.FC = () => {
         else setChecklistGrade('A');
     }, [formData.revenueScore, formData.feasibilityScore, formData.futureValueScore, formData.relationshipScore]);
 
+    // === 평가 관련 useEffect 추가 ===
+    useEffect(() => {
+        loadEvaluationCriteria();
+    }, []);
+
+    // === 평가 관련 함수들 추가 (UI 변경 없음, 내부 로직만) ===
+    const loadEvaluationCriteria = async () => {
+        try {
+            const response = await apiClient.get('/api/projects/evaluation/criteria');
+            setEvaluationCriteria(response.data || []);
+        } catch (error) {
+            console.error('평가 기준 로드 실패:', error);
+        }
+    };
+
+    const loadProjectEvaluation = async (projectId: number) => {
+        try {
+            const response = await apiClient.get(`/api/projects/${projectId}/evaluation`);
+            if (response.data && response.data.scores) {
+                const scoresMap: { [key: number]: number } = {};
+                response.data.scores.forEach((score: ProjectEvaluationScore) => {
+                    scoresMap[score.criteria_id] = score.score;
+                });
+                setEvaluationScores(scoresMap);
+            }
+        } catch (error) {
+            console.error('프로젝트 평가 데이터 로드 실패:', error);
+        }
+    };
+
+    const saveEvaluation = async () => {
+        if (!selectedProject?.project_id) {
+            return;
+        }
+
+        try {
+            const scores = evaluationCriteria.map(criteria => ({
+                criteria_id: criteria.id,
+                score: evaluationScores[criteria.id] || 0
+            }));
+
+            await apiClient.post(`/api/projects/${selectedProject.project_id}/evaluation`, {
+                project_id: selectedProject.project_id,
+                scores: scores
+            });
+        } catch (error) {
+            console.error('평가 저장 실패:', error);
+        }
+    };
+
+    // === 기존 함수들 그대로 유지하되, selectProject에 평가 로드 추가 ===
     const handleProjectSearch = async () => {
         setShowSearchModal(true);
         setCurrentPage(1);
@@ -287,6 +358,9 @@ const ProjectInformationForm: React.FC = () => {
             setSelectedProject(detailedProject);
             setSaveMode('update');
             setShowSearchModal(false);
+
+            // === 평가 데이터 로드 추가 ===
+            loadProjectEvaluation(detailedProject.project_id);
         } catch (error) {
             handleApiError(error);
         }
@@ -303,7 +377,7 @@ const ProjectInformationForm: React.FC = () => {
                 action = 'insert';
             }
         }
-        const currentUser = { id: 1, name: "테스트유저" }; // 실제 인증 로직으로 대체 필요
+        const currentUser = { id: 1, name: "테스트유저" };
         const apiData = {
             project_name: formData.projectName,
             inflow_path: formData.inflowPath,
@@ -345,11 +419,17 @@ const ProjectInformationForm: React.FC = () => {
             setLastUpdater(result.updater_info || result.writer_info || null);
             setClientCompanyContacts(result.company_profile?.contacts || []);
             setSelectedContact(result.selected_contact || null);
+
+            // === 평가 저장 추가 ===
+            if (evaluationCriteria.length > 0 && Object.keys(evaluationScores).length > 0) {
+                await saveEvaluation();
+            }
         } catch (error) {
             handleApiError(error);
         }
     };
 
+    // === 나머지 모든 기존 함수들 그대로 유지 ===
     const searchWriters = async (searchTerm: string) => {
         try {
             const response = await apiClient.get('/hr/', { params: { search: searchTerm, limit: 20 } });
@@ -480,7 +560,6 @@ const ProjectInformationForm: React.FC = () => {
         const writerDeptInput = document.querySelector('input[name="writerDepartment"]') as HTMLInputElement;
         if (writerNameInput) { writerNameInput.value = writer.emp_name; writerNameInput.readOnly = false; writerNameInput.className = 'writer-field-input'; }
         if (writerDeptInput) { writerDeptInput.value = writer.division || ''; writerDeptInput.readOnly = false; writerDeptInput.className = 'writer-field-input'; }
-        // setFormData(prev => ({ ...prev, writerEmpId: writer.emp_id })); // writerEmpId is not in form data
         setWriterSearchModal(false);
     };
 
@@ -602,6 +681,7 @@ const ProjectInformationForm: React.FC = () => {
         ) : null;
     };
 
+    // === 원본 JSX 렌더링 그대로 유지 ===
     return (
         <div className="project-info-container">
             <div className="project-header">
@@ -818,6 +898,7 @@ const ProjectInformationForm: React.FC = () => {
                 </div>
             </div>
 
+            {/* === 모든 기존 모달들 그대로 유지 === */}
             {showSearchModal && (
                 <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -956,4 +1037,3 @@ const ProjectInformationForm: React.FC = () => {
 };
 
 export default ProjectInformationForm;
-

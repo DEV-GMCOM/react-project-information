@@ -1,7 +1,31 @@
-// ProjectPostmortem.tsx - 완전 업데이트된 버전
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../styles/ProjectPostmortem.css';
 import ProjectBasicInfoForm from "@/components/common/ProjectBasicInfoForm.tsx";
+
+// API 연동을 위한 interface 추가
+interface ProjectPostmortemApiData {
+    // 프로젝트 실행 후 보고
+    execution_date: string;
+    internal_department: string;
+    internal_team: Array<{
+        category: string;
+        details: string;
+    }>;
+    external_partners: Array<{
+        category: string;
+        details: string;
+    }>;
+
+    // 실행 후 평가
+    quantitative_evaluation: string;
+    qualitative_evaluation: string;
+    issues_and_improvements: string;
+    manager_opinion: string;
+
+    // 메타데이터
+    writer_name: string;
+    writer_department: string;
+}
 
 interface ProjectPostmortemData {
     // // 프로젝트 기본 정보 (PTPostmortem과 동일한 포맷)
@@ -79,6 +103,9 @@ const ProjectPostmortemForm: React.FC = () => {
     const [showProfileTables, setShowProfileTables] = useState(false);
     const [showKickoffTables, setShowKickoffTables] = useState(false);
     const [showPTPostmortemTables, setShowPTPostmortemTables] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [projectId, setProjectId] = useState<number | null>(null); // 프로젝트 ID 저장
     const [formData, setFormData] = useState<ProjectPostmortemData>({
         // projectName: '',
         // inflowRoute: '',
@@ -132,6 +159,84 @@ const ProjectPostmortemForm: React.FC = () => {
 
     const internalCategories = ['기획', 'Proj 메인', '무대 및 연출', '인력', '제작'];
     const externalCategories = ['무대', '전시', '영상장비', '음향', '영상제작', '조명', '음악제작', 'VJ', '진행인력', '경호', '렌탈', '기타'];
+
+    // API 호출 함수들
+    const apiCall = async (url: string, options?: RequestInit) => {
+        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8001'}${url}`, {
+            headers: {
+                'Content-Type': 'application/json',
+                ...options?.headers,
+            },
+            ...options,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: '알 수 없는 오류가 발생했습니다.' }));
+            throw new Error(errorData.detail || `API 오류: ${response.status}`);
+        }
+
+        return response.json();
+    };
+
+    // 프로젝트 Postmortem 데이터 로드
+    const loadPostmortemData = async (projectId: number) => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const data = await apiCall(`/api/projects/${projectId}/postmortem`);
+
+            if (data) {
+                // 백엔드 데이터를 프론트엔드 형식으로 변환
+                setFormData({
+                    executionDate: data.execution_date || '',
+                    internalDepartment: data.internal_department || '',
+                    internalTeam: data.internal_team || [{ category: '', details: '' }],
+                    externalPartners: data.external_partners || [{ category: '', details: '' }],
+                    quantitativeEvaluation: data.quantitative_evaluation || '',
+                    qualitativeEvaluation: data.qualitative_evaluation || '',
+                    issuesAndImprovements: data.issues_and_improvements || '',
+                    managerOpinion: data.manager_opinion || '',
+                    writerName: data.writer_name || '',
+                    writerDepartment: data.writer_department || ''
+                });
+            }
+        } catch (err) {
+            console.error('Postmortem 데이터 로드 오류:', err);
+            setError(err instanceof Error ? err.message : 'Postmortem 데이터를 불러오는 중 오류가 발생했습니다.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 프로젝트 Postmortem 데이터 저장
+    const savePostmortemData = async (projectId: number, data: ProjectPostmortemData) => {
+        // 프론트엔드 데이터를 백엔드 API 형식으로 변환
+        const apiData: ProjectPostmortemApiData = {
+            execution_date: data.executionDate,
+            internal_department: data.internalDepartment,
+            internal_team: data.internalTeam,
+            external_partners: data.externalPartners,
+            quantitative_evaluation: data.quantitativeEvaluation,
+            qualitative_evaluation: data.qualitativeEvaluation,
+            issues_and_improvements: data.issuesAndImprovements,
+            manager_opinion: data.managerOpinion,
+            writer_name: data.writerName,
+            writer_department: data.writerDepartment
+        };
+
+        return await apiCall(`/api/projects/${projectId}/postmortem`, {
+            method: 'PUT',
+            body: JSON.stringify(apiData),
+        });
+    };
+
+    // 프로젝트 ID가 변경될 때 데이터 로드
+    useEffect(() => {
+        if (projectId) {
+            loadPostmortemData(projectId);
+        }
+    }, [projectId]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -200,9 +305,28 @@ const ProjectPostmortemForm: React.FC = () => {
         }
     };
 
-    const handleSubmit = () => {
-        console.log('Project Postmortem 저장:', formData);
-        // TODO: API 연동
+    // 저장 버튼 핸들러 - API 연동 추가
+    const handleSubmit = async () => {
+        if (!projectId) {
+            alert('프로젝트가 선택되지 않았습니다.');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError(null);
+
+            await savePostmortemData(projectId, formData);
+            alert('Project Postmortem이 성공적으로 저장되었습니다.');
+
+        } catch (err) {
+            console.error('저장 오류:', err);
+            const errorMessage = err instanceof Error ? err.message : 'Project Postmortem 저장 중 오류가 발생했습니다.';
+            setError(errorMessage);
+            alert(errorMessage);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handlePrint = () => {
@@ -222,6 +346,19 @@ const ProjectPostmortemForm: React.FC = () => {
                     GMCOM
                 </div>
             </div>
+
+            {/* 로딩 및 에러 상태 표시 */}
+            {loading && (
+                <div className="loading-indicator">
+                    데이터를 처리 중입니다...
+                </div>
+            )}
+
+            {error && (
+                <div className="error-message">
+                    오류: {error}
+                </div>
+            )}
 
             {/* 메인 컨텐츠 */}
             <div className="postmortem-main">
@@ -891,7 +1028,7 @@ const ProjectPostmortemForm: React.FC = () => {
                 {/* 프로젝트 실행 후 보고 */}
                 <div className="postmortem-section">
                     <h3 className="section-header section-header-margin">
-                        ■ 프로젝트 실행 후 보고
+                    ■ 프로젝트 실행 후 보고
                     </h3>
 
                     {/*<table className="postmortem-table">*/}
@@ -1039,49 +1176,49 @@ const ProjectPostmortemForm: React.FC = () => {
                         <tr>
                             <td className="table-cell table-cell-label">정량적 평가</td>
                             <td className="table-cell-input">
-                                <textarea
-                                    name="quantitativeEvaluation"
-                                    value={formData.quantitativeEvaluation}
-                                    onChange={handleInputChange}
-                                    placeholder="• 참석률, 만족도, 매출 등 수치화 가능한 평가"
-                                    className="postmortem-textarea textarea-medium"
-                                />
+                                    <textarea
+                                        name="quantitativeEvaluation"
+                                        value={formData.quantitativeEvaluation}
+                                        onChange={handleInputChange}
+                                        placeholder="• 참석률, 만족도, 매출 등 수치화 가능한 평가"
+                                        className="postmortem-textarea textarea-medium"
+                                    />
                             </td>
                         </tr>
                         <tr>
                             <td className="table-cell table-cell-label">정성적 평가</td>
                             <td className="table-cell-input">
-                                <textarea
-                                    name="qualitativeEvaluation"
-                                    value={formData.qualitativeEvaluation}
-                                    onChange={handleInputChange}
-                                    placeholder="• 브랜드 이미지 향상, 고객 반응, 미디어 노출 등"
-                                    className="postmortem-textarea textarea-medium"
-                                />
+                                    <textarea
+                                        name="qualitativeEvaluation"
+                                        value={formData.qualitativeEvaluation}
+                                        onChange={handleInputChange}
+                                        placeholder="• 브랜드 이미지 향상, 고객 반응, 미디어 노출 등"
+                                        className="postmortem-textarea textarea-medium"
+                                    />
                             </td>
                         </tr>
                         <tr>
                             <td className="table-cell table-cell-label">이슈 및 개선사항</td>
                             <td className="table-cell-input">
-                                <textarea
-                                    name="issuesAndImprovements"
-                                    value={formData.issuesAndImprovements}
-                                    onChange={handleInputChange}
-                                    placeholder="• 발생한 문제점과 향후 개선 방안"
-                                    className="postmortem-textarea textarea-large"
-                                />
+                                    <textarea
+                                        name="issuesAndImprovements"
+                                        value={formData.issuesAndImprovements}
+                                        onChange={handleInputChange}
+                                        placeholder="• 발생한 문제점과 향후 개선 방안"
+                                        className="postmortem-textarea textarea-large"
+                                    />
                             </td>
                         </tr>
                         <tr>
                             <td className="table-cell table-cell-label">담당자 의견</td>
                             <td className="table-cell-input">
-                                <textarea
-                                    name="managerOpinion"
-                                    value={formData.managerOpinion}
-                                    onChange={handleInputChange}
-                                    placeholder="• 전체적인 프로젝트 평가 및 의견"
-                                    className="postmortem-textarea textarea-large"
-                                />
+                                    <textarea
+                                        name="managerOpinion"
+                                        value={formData.managerOpinion}
+                                        onChange={handleInputChange}
+                                        placeholder="• 전체적인 프로젝트 평가 및 의견"
+                                        className="postmortem-textarea textarea-large"
+                                    />
                             </td>
                         </tr>
                         </tbody>
@@ -1090,8 +1227,13 @@ const ProjectPostmortemForm: React.FC = () => {
 
                 {/* 버튼 영역 */}
                 <div className="button-section">
-                    <button type="button" onClick={handleSubmit} className="submit-btn">
-                        저장
+                    <button
+                        type="button"
+                        onClick={handleSubmit}
+                        className="submit-btn"
+                        disabled={loading}
+                    >
+                        {loading ? '저장 중...' : '저장'}
                     </button>
                     {/*<button type="button" onClick={handlePrint} className="print-btn">*/}
                     {/*    인쇄*/}
@@ -1102,4 +1244,4 @@ const ProjectPostmortemForm: React.FC = () => {
     );
 };
 
-export default ProjectPostmortemForm;
+export default ProjectPostmortemForm;// ProjectPostmortem.tsx - 완전 업데이트된 버전 (백엔드 API 연동 추가)
