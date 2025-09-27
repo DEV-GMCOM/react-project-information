@@ -250,7 +250,7 @@ const ProjectInformationForm: React.FC = () => {
     // === 평가 관련 함수들 추가 (UI 변경 없음, 내부 로직만) ===
     const loadEvaluationCriteria = async () => {
         try {
-            const response = await apiClient.get('/api/projects/evaluation/criteria');
+            const response = await apiClient.get('/projects/evaluation/criteria');
             setEvaluationCriteria(response.data || []);
         } catch (error) {
             console.error('평가 기준 로드 실패:', error);
@@ -259,7 +259,7 @@ const ProjectInformationForm: React.FC = () => {
 
     const loadProjectEvaluation = async (projectId: number) => {
         try {
-            const response = await apiClient.get(`/api/projects/${projectId}/evaluation`);
+            const response = await apiClient.get(`/projects/${projectId}/evaluation`);
             if (response.data && response.data.scores) {
                 const scoresMap: { [key: number]: number } = {};
                 response.data.scores.forEach((score: ProjectEvaluationScore) => {
@@ -283,7 +283,7 @@ const ProjectInformationForm: React.FC = () => {
                 score: evaluationScores[criteria.id] || 0
             }));
 
-            await apiClient.post(`/api/projects/${selectedProject.project_id}/evaluation`, {
+            await apiClient.post(`/projects/${selectedProject.project_id}/evaluation`, {
                 project_id: selectedProject.project_id,
                 scores: scores
             });
@@ -359,6 +359,31 @@ const ProjectInformationForm: React.FC = () => {
             setSaveMode('update');
             setShowSearchModal(false);
 
+            // ✅ 추가: 프로젝트 검토 데이터 별도 로드
+            try {
+                const profileResponse = await apiClient.get(`/projects/${project.project_id}/profile`);
+                const profileData = profileResponse.data;
+
+                setFormData(prev => ({
+                    ...prev,
+                    // 기존 필드들...
+                    swotAnalysis: profileData.swot_analysis || '',
+                    resourcePlan: profileData.resource_plan || '',
+                    writerOpinion: profileData.writer_opinion || '',
+                    proceedDecision: profileData.proceed_decision || ''
+                }));
+            } catch (profileError) {
+                console.log('프로젝트 검토 데이터 없음 (신규 생성 대상)');
+                // 검토 데이터가 없는 경우 빈 값으로 초기화
+                setFormData(prev => ({
+                    ...prev,
+                    swotAnalysis: '',
+                    resourcePlan: '',
+                    writerOpinion: '',
+                    proceedDecision: ''
+                }));
+            }
+
             // === 평가 데이터 로드 추가 ===
             loadProjectEvaluation(detailedProject.project_id);
         } catch (error) {
@@ -413,6 +438,77 @@ const ProjectInformationForm: React.FC = () => {
                 const response = await apiClient.post('/projects/', apiData);
                 result = response.data;
             }
+
+            // ✅ 추가: 프로젝트 검토 데이터 별도 저장
+            if (result.project_id) {
+                const profileData = {
+                    project_id: result.project_id,
+                    swot_analysis: formData.swotAnalysis,
+                    resource_plan: formData.resourcePlan,
+                    writer_opinion: formData.writerOpinion,
+                    proceed_decision: formData.proceedDecision
+                };
+
+                try {
+                    // 먼저 기존 프로필 확인
+                    let profileResponse;
+                    try {
+                        profileResponse = await apiClient.get(`/projects/${result.project_id}/profile`);
+                        // 기존 프로필이 있으면 PUT으로 수정
+                        await apiClient.put(`/projects/${result.project_id}/profile`, profileData);
+                    } catch (error: any) {
+                        if (error.response?.status === 404) {
+                            // 프로필이 없으면 POST로 생성 (올바른 경로 사용)
+                            await apiClient.post(`/projects/${result.project_id}`, profileData);
+                        } else {
+                            throw error;
+                        }
+                    }
+                } catch (profileError) {
+                    console.error('프로젝트 검토 데이터 저장 실패:', profileError);
+                }
+            }
+
+            // ✅ 평가 점수 저장 추가
+            // 평가 점수 저장 (입력된 점수만 저장)
+            // 평가 점수 저장 (입력된 점수만 저장)
+            if (result.project_id && evaluationCriteria.length > 0) {
+                try {
+                    const scores: Array<{ criteria_id: number; score: number }> = [];
+
+                    // formData에서 직접 점수 매핑
+                    const scoreMapping = [
+                        { field: 'revenueScore' as const, category: 'revenue' },
+                        { field: 'feasibilityScore' as const, category: 'feasibility' },
+                        { field: 'futureValueScore' as const, category: 'future_value' },
+                        { field: 'relationshipScore' as const, category: 'relationship' }
+                    ];
+
+                    scoreMapping.forEach(mapping => {
+                        const criteria = evaluationCriteria.find(c => c.category === mapping.category);
+                        const score = formData[mapping.field];
+
+                        if (criteria && score !== '' && score !== null && typeof score === 'number') {
+                            scores.push({
+                                criteria_id: criteria.id,
+                                score: score
+                            });
+                        }
+                    });
+
+                    console.log('전송할 평가 데이터:', { project_id: result.project_id, scores });
+
+                    if (scores.length > 0) {
+                        await apiClient.post(`/projects/${result.project_id}/evaluation`, {
+                            project_id: result.project_id,
+                            scores: scores
+                        });
+                    }
+                } catch (evaluationError) {
+                    console.error('평가 저장 실패:', evaluationError);
+                }
+            }
+
             alert(`프로젝트가 성공적으로 ${action === 'update' ? '수정' : '생성'}되었습니다!`);
             setSaveMode('update');
             setSelectedProject(result);
@@ -616,7 +712,27 @@ const ProjectInformationForm: React.FC = () => {
             alert(`점수는 0과 배점(${maxScore}점) 사이여야 합니다.`);
             return;
         }
+
+        // formData 업데이트
         setFormData(prev => ({ ...prev, [scoreField]: numValue }));
+
+        // evaluationScores도 함께 업데이트
+        if (evaluationCriteria.length > 0) {
+            const criteriaMap = {
+                'revenueScore': evaluationCriteria.find(c => c.category === 'revenue')?.id,
+                'feasibilityScore': evaluationCriteria.find(c => c.category === 'feasibility')?.id,
+                'futureValueScore': evaluationCriteria.find(c => c.category === 'future_value')?.id,
+                'relationshipScore': evaluationCriteria.find(c => c.category === 'relationship')?.id,
+            };
+
+            const criteriaId = criteriaMap[scoreField as keyof typeof criteriaMap];
+            if (criteriaId) {
+                setEvaluationScores(prev => ({
+                    ...prev,
+                    [criteriaId]: numValue === '' ? 0 : numValue
+                }));
+            }
+        }
     };
 
     const handleScoreKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, nextField: string | null) => {
