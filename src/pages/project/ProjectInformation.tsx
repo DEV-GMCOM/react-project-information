@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { handleApiError } from '../../api/utils/errorUtils';
 import apiClient from '../../api/utils/apiClient';
 import '../../styles/ProjectInformation.css';
+import { useAuth } from '../../contexts/AuthContext'; // ◀◀◀ 1. AuthContext를 사용하기 위해 import 합니다.
 
 // === 기존 인터페이스들 그대로 유지 ===
 /** 직원의 간단한 정보를 나타냅니다. (작성자, 수정자 등) */
@@ -94,7 +95,7 @@ interface ProjectInformationFormData {
     proceedDecision: string;
     revenueScore: number | '';
     feasibilityScore: number | '';
-    rfpReviewScore: number | '';
+    // rfpReviewScore: number | '';
     futureValueScore: number | '';
     relationshipScore: number | '';
 }
@@ -153,6 +154,9 @@ interface ProjectEvaluationScore {
 }
 
 const ProjectInformationForm: React.FC = () => {
+
+    const { user } = useAuth(); // ◀◀◀ 2. useAuth()를 호출하여 로그인한 user 객체를 가져옵니다.
+
     // === 기존 상태들 모두 그대로 유지 ===
     const [formData, setFormData] = useState<ProjectInformationFormData>({
         projectName: '',
@@ -176,11 +180,11 @@ const ProjectInformationForm: React.FC = () => {
         resourcePlan: '',
         writerOpinion: '',
         proceedDecision: '',
-        revenueScore: 0,
-        feasibilityScore: 0,
-        rfpReviewScore: 0,
-        futureValueScore: 0,
-        relationshipScore: 0,
+        revenueScore: '',
+        feasibilityScore: '',
+        // rfpReviewScore: '',
+        futureValueScore: '',
+        relationshipScore: '',
     });
     const [showSearchModal, setShowSearchModal] = useState(false);
     const [searchResults, setSearchResults] = useState<ProjectData[]>([]);
@@ -322,18 +326,22 @@ const ProjectInformationForm: React.FC = () => {
 
     const selectProject = async (project: ProjectData) => {
         try {
+            // --- 1. 프로젝트 기본 정보 로드 ---
             const response = await apiClient.get(`/projects/${project.project_id}`);
             const detailedProject: ProjectData = response.data;
+
+            // 폼 기본 정보 업데이트 (기존과 동일)
             const reportsData = detailedProject.reports?.map(report => ({
                 date: report.report_date,
                 content: report.content || ''
             })) || [];
-            const lastReport = reportsData[reportsData.length - 1];
-            if (reportsData.length === 0 || (lastReport && (lastReport.date || lastReport.content))) {
+            if (reportsData.length === 0 || (reportsData[reportsData.length - 1] && (reportsData[reportsData.length - 1].date || reportsData[reportsData.length - 1].content))) {
                 reportsData.push({ date: '', content: '' });
             }
+
             setFormData(prev => ({
                 ...prev,
+                // (기본 정보 필드 매핑은 기존과 동일)
                 projectName: detailedProject.project_name || '',
                 inflowPath: detailedProject.inflow_path || '',
                 client: detailedProject.company_profile?.company_name || detailedProject.client || '',
@@ -350,8 +358,18 @@ const ProjectInformationForm: React.FC = () => {
                 mainContent: detailedProject.project_scope || '',
                 comparison: detailedProject.deliverables || '',
                 coreRequirements: detailedProject.special_requirements || '',
-                additionalInfo: reportsData
+                additionalInfo: reportsData,
+                // 불러오기 전, 관련 필드 초기화
+                swotAnalysis: '',
+                resourcePlan: '',
+                writerOpinion: '',
+                proceedDecision: '',
+                revenueScore: '',
+                feasibilityScore: '',
+                futureValueScore: '',
+                relationshipScore: '',
             }));
+
             setLastUpdater(detailedProject.updater_info || detailedProject.writer_info || null);
             setClientCompanyContacts(detailedProject.company_profile?.contacts || []);
             setSelectedContact(detailedProject.selected_contact || null);
@@ -359,52 +377,110 @@ const ProjectInformationForm: React.FC = () => {
             setSaveMode('update');
             setShowSearchModal(false);
 
-            // ✅ 추가: 프로젝트 검토 데이터 별도 로드
+            // --- 2. [핵심] 상세 데이터(검토, 평가) 로드 및 에러 처리 ---
+
+            // '프로젝트 검토' 데이터 로드
             try {
                 const profileResponse = await apiClient.get(`/projects/${project.project_id}/profile`);
                 const profileData = profileResponse.data;
-
                 setFormData(prev => ({
                     ...prev,
-                    // 기존 필드들...
                     swotAnalysis: profileData.swot_analysis || '',
                     resourcePlan: profileData.resource_plan || '',
                     writerOpinion: profileData.writer_opinion || '',
                     proceedDecision: profileData.proceed_decision || ''
                 }));
-            } catch (profileError) {
-                console.log('프로젝트 검토 데이터 없음 (신규 생성 대상)');
-                // 검토 데이터가 없는 경우 빈 값으로 초기화
-                setFormData(prev => ({
-                    ...prev,
-                    swotAnalysis: '',
-                    resourcePlan: '',
-                    writerOpinion: '',
-                    proceedDecision: ''
-                }));
+            } catch (error) {
+                console.error("⚠️ [로드 실패] 프로젝트 검토(Profile) 데이터를 가져오는 데 실패했습니다.", error);
+                // 실패해도 UI는 유지하되, 관련 필드는 비워진 상태가 됩니다.
             }
 
-            // === 평가 데이터 로드 추가 ===
-            loadProjectEvaluation(detailedProject.project_id);
+            // '평가 점수' 데이터 로드
+            try {
+                const evaluationResponse = await apiClient.get(`/projects/${project.project_id}/evaluation`);
+                const evaluationData = evaluationResponse.data;
+                console.log("[프론트엔드] ✅ 평가 점수 응답 성공:", evaluationData);
+
+                // ▼▼▼ [최종 수정] criteria와 scores를 조합하는 로직 ▼▼▼
+                if (evaluationData && evaluationData.criteria && evaluationData.scores) {
+
+                    // 1. 카테고리 이름과 폼 필드 이름을 매핑하는 객체
+                    const categoryToFieldMap: { [key: string]: keyof ProjectInformationFormData } = {
+                        'revenue_profit': 'revenueScore',
+                        'feasibility': 'feasibilityScore',
+                        'future_value': 'futureValueScore',
+                        'relationship': 'relationshipScore'
+                    };
+
+                    // 2. API 응답의 criteria 배열을 사용하여, criteria_id를 폼 필드 이름으로 변환하는 맵을 생성합니다.
+                    //    결과 예시: { 1: 'revenueScore', 2: 'feasibilityScore', ... }
+                    const criteriaIdToFieldMap: { [key: number]: keyof ProjectInformationFormData } = {};
+                    evaluationData.criteria.forEach((criterion: any) => {
+                        const fieldName = categoryToFieldMap[criterion.category];
+                        if (fieldName) {
+                            criteriaIdToFieldMap[criterion.id] = fieldName;
+                        }
+                    });
+
+                    // 3. scores 배열을 순회하며, 위에서 만든 맵을 사용해 점수를 업데이트할 객체를 만듭니다.
+                    const newScores: Partial<ProjectInformationFormData> = {};
+                    evaluationData.scores.forEach((scoreItem: any) => {
+                        const fieldName = criteriaIdToFieldMap[scoreItem.criteria_id];
+                        if (fieldName) {
+                            newScores[fieldName] = scoreItem.score;
+                        }
+                    });
+
+                    // 4. 최종적으로 formData 상태를 업데이트합니다.
+                    setFormData(prev => ({
+                        ...prev,
+                        revenueScore: newScores.revenueScore ?? '',
+                        feasibilityScore: newScores.feasibilityScore ?? '',
+                        futureValueScore: newScores.futureValueScore ?? '',
+                        relationshipScore: newScores.relationshipScore ?? '',
+                    }));
+                }
+                // ▲▲▲ [최종 수정] 여기까지 ▲▲▲
+            } catch (error) {
+                console.error("⚠️ [로드 실패] 프로젝트 평가(Evaluation) 데이터를 가져오는 데 실패했습니다.", error);
+                // 마찬가지로 점수 칸은 빈 상태로 유지됩니다.
+            }
+
         } catch (error) {
+            // '프로젝트 기본 정보' 로드 실패 시의 포괄적 에러 처리
+            console.error("🚨 [로드 실패] 프로젝트 기본 정보를 가져오는 데 실패했습니다.", error);
             handleApiError(error);
         }
     };
 
+    // longjaw/react-information-test/longjaw-react-information-test-4eafa308b2e55b44b208032ca1291495f51fea0f/src/pages/project/ProjectInformation.tsx
+
     const handleSubmit = async () => {
+
+        // --- [핵심] 로그인 상태 확인 ---
+        if (!user) {
+            alert("로그인 정보가 없습니다. 다시 로그인해주세요.");
+            return;
+        }
+
         if (!formData.projectName.trim()) {
             alert('프로젝트명을 입력해주세요.');
             return;
         }
+
         let action = saveMode;
         if (action === 'update' && selectedProject && formData.projectName !== selectedProject.project_name) {
             if (!window.confirm('프로젝트명이 변경되었습니다.\n\n- "확인": 현재 프로젝트를 수정합니다.\n- "취소": 새 프로젝트로 생성합니다.')) {
                 action = 'insert';
             }
         }
-        const currentUser = { id: 1, name: "테스트유저" };
+
+        // const currentUser = { id: 1, name: "테스트유저" }; // 실제 인증 로직으로 대체 필요
+
+        // --- 1. [기본 정보] API 전송 데이터 준비 ---
         const apiData = {
             project_name: formData.projectName,
+            // ... (나머지 기본 정보 필드들은 기존과 동일)
             inflow_path: formData.inflowPath,
             client: formData.client,
             client_manager_name: formData.manager,
@@ -422,15 +498,18 @@ const ProjectInformationForm: React.FC = () => {
             ot_schedule: formData.otSchedule ? formData.otSchedule.replace(/\./g, '-') : null,
             company_id: selectedCompany?.id,
             client_contact_id: selectedContact?.id,
-            writer_emp_id: selectedProject?.writer_info?.emp_id || currentUser.id,
-            writer_name: lastUpdater?.name || currentUser.name,
+            writer_emp_id: selectedProject?.writer_info?.emp_id || user.emp_id,
+            writer_name: lastUpdater?.name || user.emp_name,
             reports: formData.additionalInfo.filter(info => info.date || info.content).map(info => ({
                 report_date: info.date ? info.date.replace(/\./g, '-') : null,
                 content: info.content
             }))
         };
+
+        let result; // 저장 성공 후 프로젝트 데이터를 담을 변수
+
+        // --- 2. [기본 정보] 저장 시도 ---
         try {
-            let result;
             if (action === 'update' && selectedProject) {
                 const response = await apiClient.put(`/projects/${selectedProject.project_id}`, apiData);
                 result = response.data;
@@ -438,90 +517,107 @@ const ProjectInformationForm: React.FC = () => {
                 const response = await apiClient.post('/projects/', apiData);
                 result = response.data;
             }
+        } catch (error) {
+            console.error("🚨 [저장 실패] 프로젝트 기본 정보 저장 중 오류가 발생했습니다.", error);
+            handleApiError(error);
+            return; // 기본 정보 저장 실패 시, 더 이상 진행하지 않음
+        }
 
-            // ✅ 추가: 프로젝트 검토 데이터 별도 저장
-            if (result.project_id) {
-                const profileData = {
-                    project_id: result.project_id,
-                    swot_analysis: formData.swotAnalysis,
-                    resource_plan: formData.resourcePlan,
-                    writer_opinion: formData.writerOpinion,
-                    proceed_decision: formData.proceedDecision
-                };
-
-                try {
-                    // 먼저 기존 프로필 확인
-                    let profileResponse;
+        // --- 기본 정보 저장이 성공한 경우에만 아래 로직 실행 ---
+        if (result && result.project_id) {
+            // --- 3. [프로젝트 검토] 저장 시도 ---
+            const profileData = {
+                project_id: result.project_id,
+                swot_analysis: formData.swotAnalysis,
+                resource_plan: formData.resourcePlan,
+                writer_opinion: formData.writerOpinion,
+                proceed_decision: formData.proceedDecision
+            };
+            try {
+                await apiClient.put(`/projects/${result.project_id}/profile`, profileData);
+            } catch (error: any) {
+                if (error.response?.status === 404) {
                     try {
-                        profileResponse = await apiClient.get(`/projects/${result.project_id}/profile`);
-                        // 기존 프로필이 있으면 PUT으로 수정
-                        await apiClient.put(`/projects/${result.project_id}/profile`, profileData);
-                    } catch (error: any) {
-                        if (error.response?.status === 404) {
-                            // 프로필이 없으면 POST로 생성 (올바른 경로 사용)
-                            await apiClient.post(`/projects/${result.project_id}`, profileData);
-                        } else {
-                            throw error;
-                        }
+                        await apiClient.post(`/projects/${result.project_id}/profile`, profileData);
+                    } catch (postError) {
+                        console.error("⚠️ [저장 실패] 프로젝트 검토(Profile) 정보 생성 중 오류가 발생했습니다.", postError);
                     }
-                } catch (profileError) {
-                    console.error('프로젝트 검토 데이터 저장 실패:', profileError);
+                } else {
+                    console.error("⚠️ [저장 실패] 프로젝트 검토(Profile) 정보 업데이트 중 오류가 발생했습니다.", error);
                 }
             }
 
-            // ✅ 평가 점수 저장 추가
-            // 평가 점수 저장 (입력된 점수만 저장)
-            // 평가 점수 저장 (입력된 점수만 저장)
-            if (result.project_id && evaluationCriteria.length > 0) {
-                try {
-                    const scores: Array<{ criteria_id: number; score: number }> = [];
+            // --- 4. [평가 점수] 저장 시도 (디버깅 강화) ---
+            if (evaluationCriteria && evaluationCriteria.length > 0) {
+                console.log("--- 🔍 [디버그 시작] scoresPayload 생성 과정을 추적합니다. ---");
+                console.log("현재 formData 상태:", formData);
+                console.log("현재 evaluationCriteria 상태:", evaluationCriteria);
 
-                    // formData에서 직접 점수 매핑
-                    const scoreMapping = [
-                        { field: 'revenueScore' as const, category: 'revenue' },
-                        { field: 'feasibilityScore' as const, category: 'feasibility' },
-                        { field: 'futureValueScore' as const, category: 'future_value' },
-                        { field: 'relationshipScore' as const, category: 'relationship' }
-                    ];
+                const scoresPayload = [
+                    { field: 'revenueScore', category: 'revenue_profit' },
+                    { field: 'feasibilityScore', category: 'feasibility' },
+                    { field: 'futureValueScore', category: 'future_value' },
+                    { field: 'relationshipScore', category: 'relationship' }
+                ]
+                    .map(mapping => {
+                        console.log(`\n[디버그] ➡️ 항목: ${mapping.field}`);
 
-                    scoreMapping.forEach(mapping => {
                         const criteria = evaluationCriteria.find(c => c.category === mapping.category);
-                        const score = formData[mapping.field];
+                        const score = formData[mapping.field as keyof ProjectInformationFormData];
 
-                        if (criteria && score !== '' && score !== null && typeof score === 'number') {
-                            scores.push({
-                                criteria_id: criteria.id,
-                                score: score
-                            });
+                        console.log(`    - formData에서 가져온 score 값:`, score);
+                        console.log(`    - score의 타입 (typeof):`, typeof score);
+                        console.log(`    - '${mapping.category}'에 해당하는 criteria 발견 여부:`, !!criteria);
+                        if(criteria) {
+                            console.log(`    - 발견된 criteria ID:`, criteria.id);
                         }
-                    });
 
-                    console.log('전송할 평가 데이터:', { project_id: result.project_id, scores });
+                        if (criteria && typeof score === 'number') {
+                            console.log(`    - ✅ [성공] 모든 조건을 통과했습니다. payload에 추가됩니다.`);
+                            return { criteria_id: criteria.id, score: score };
+                        } else {
+                            console.log(`    - ❌ [실패] 조건 불충족으로 payload에서 제외됩니다.`);
+                            return null;
+                        }
+                    })
+                    .filter(item => item !== null) as Array<{ criteria_id: number; score: number }>;
 
-                    if (scores.length > 0) {
-                        await apiClient.post(`/projects/${result.project_id}/evaluation`, {
+                console.log("--- ✅ [디버그 종료] 최종 생성된 scoresPayload: ---", scoresPayload);
+
+
+                if (scoresPayload.length > 0) {
+                    try {
+                        const bulkUpdateData = {
                             project_id: result.project_id,
-                            scores: scores
-                        });
+                            evaluator_id: user.emp_id,
+                            scores: scoresPayload.map(s => ({
+                                criteria_id: s.criteria_id,
+                                score: s.score,
+                                notes: ""
+                            }))
+                        };
+
+                        console.log("[프론트엔드] 📤 전송할 데이터(Payload):", bulkUpdateData);
+                        await apiClient.post(`/projects/${result.project_id}/evaluation`, bulkUpdateData);
+                        console.log("[프론트엔드] ✅ 평가 점수 저장 요청 성공!");
+
+                    } catch (evaluationError) {
+                        console.error("⚠️ [프론트엔드] 🚨 평가 점수 저장 중 에러가 발생했습니다!", evaluationError);
                     }
-                } catch (evaluationError) {
-                    console.error('평가 저장 실패:', evaluationError);
+                } else {
+                    console.log("[프론트엔드] ℹ️ 전송할 평가 점수가 없어 API를 호출하지 않습니다.");
                 }
+            } else {
+                console.warn("[프론트엔드] ⚠️ 평가 기준(Criteria)이 로드되지 않아 점수를 저장할 수 없습니다.");
             }
 
-            alert(`프로젝트가 성공적으로 ${action === 'update' ? '수정' : '생성'}되었습니다!`);
+            // --- 5. 모든 저장 작업 완료 후 최종 처리 ---
+            alert(`프로젝트가 성공적으로 ${action === 'update' ? '수정' : '생성'}되었습니다! (일부 저장에 실패했을 수 있으니 콘솔을 확인하세요)`);
             setSaveMode('update');
             setSelectedProject(result);
             setLastUpdater(result.updater_info || result.writer_info || null);
             setClientCompanyContacts(result.company_profile?.contacts || []);
             setSelectedContact(result.selected_contact || null);
-
-            // === 평가 저장 추가 ===
-            if (evaluationCriteria.length > 0 && Object.keys(evaluationScores).length > 0) {
-                await saveEvaluation();
-            }
-        } catch (error) {
-            handleApiError(error);
         }
     };
 
@@ -707,11 +803,20 @@ const ProjectInformationForm: React.FC = () => {
     };
 
     const handleChecklistScoreChange = (scoreField: string, value: string, maxScore: number) => {
-        const numValue = value === '' ? '' : Number(value);
-        if (numValue !== '' && (numValue > maxScore || numValue < 0)) {
+
+        // ▼▼▼ [최종 수정] 입력 값 처리를 더 명확하게 변경합니다. ▼▼▼
+        let numValue: number | '' = Number(value); // 우선 숫자로 변환 시도
+
+        // 1. 변환 결과가 숫자가 아니거나(NaN), 빈 문자열이 입력된 경우 -> 빈 문자열('')로 통일
+        if (isNaN(numValue) || value.trim() === '') {
+            numValue = '';
+        }
+        // 2. 유효 범위를 벗어난 경우 경고 후 함수 종료
+        else if (numValue > maxScore || numValue < 0) {
             alert(`점수는 0과 배점(${maxScore}점) 사이여야 합니다.`);
             return;
         }
+        // ▲▲▲ [최종 수정] 여기까지 ▲▲▲
 
         // formData 업데이트
         setFormData(prev => ({ ...prev, [scoreField]: numValue }));
