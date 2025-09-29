@@ -404,6 +404,20 @@
     display: none;
 }
 
+/* ... 기존 Layout.css 내용 ... */
+
+/* 사용자 정보 텍스트를 클릭 가능하게 보이도록 스타일 추가 */
+.user-info-clickable {
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 4px; /* 밑줄과 텍스트 사이 간격 */
+}
+
+.user-info-clickable:hover {
+    color: #007bff; /* 마우스 오버 시 색상 변경 */
+}
+
+
 /* 반응형: 모바일에서 관리자 메뉴 구분 유지 */
 @media (max-width: 768px) {
     .nav-section-admin {

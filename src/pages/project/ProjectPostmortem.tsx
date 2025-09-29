@@ -1034,8 +1034,8 @@ const ProjectPostmortemForm: React.FC = () => {
                     {/*<table className="postmortem-table">*/}
                     <table className="postmortem-table-customized">
                         <colgroup>
-                            <col style={{ width: '120px'}} /> {/* 첫 번째 '담당부서/팀' 열 120 이하로 안줄어든다*/}
-                            <col style={{ width: '120px' }} /> {/* 두 번째 '구분' 열 50 이하로 안 줄어든다*/}
+                            <col style={{width: '120px'}} /> {/* 첫 번째 '담당부서/팀' 열 120 이하로 안줄어든다*/}
+                            <col style={{width: '120px'}} /> {/* 두 번째 '구분' 열 50 이하로 안 줄어든다*/}
                             <col /> {/* 세 번째 '내용' 열 (나머지 너비 차지) */}
                         </colgroup>
                         <tbody>

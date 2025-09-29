@@ -27,6 +27,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
 
+    const headerTitle = import.meta.env.VITE_APP_TITLE || 'GMCOM Information System';
+
+
     // 기본 메뉴 항목들
     const mainMenuItems: MenuItem[] = [
         // {
@@ -191,6 +194,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         }
     };
 
+    // 사용자 정보 클릭 시 실행될 핸들러
+    const handleUserInfoClick = () => {
+        navigate('/profile/change-password');
+    };
+
     // 메뉴 항목 렌더링 함수
     const renderMenuItem = (item: MenuItem) => (
         <li key={item.path} className="nav-item">
@@ -255,16 +263,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     >
                         ☰
                     </button>
-                    <h1 className="header-title">GMCOM Information System</h1>
+                    {/*<h1 className="header-title">GMCOM Information System</h1>*/}
+                    <h1 className="header-title">{headerTitle}</h1>
                 </div>
                 <div className="header-right">
                     {user ? (
                         <>
-                            <span className="user-info">
-                                {user.emp_name}
-                                {user.position && ` (${user.position})`}
-                                {user.team && ` - ${user.team}`}
-                            </span>
+                            {/*<span className="user-info">*/}
+                            {/*    {user.emp_name}*/}
+                            {/*    {user.position && ` (${user.position})`}*/}
+                            {/*    {user.team && ` - ${user.team}`}*/}
+                            {/*</span>*/}
+                            {/* user-info 영역에 onClick 핸들러와 스타일링을 위한 className 추가 */}
+                            <div className="user-info user-info-clickable" onClick={handleUserInfoClick}>
+    <span>
+        {user?.emp_name}
+        {user?.position && ` (${user.position})`}
+        {user?.team && ` - ${user.team}`}
+    </span>
+                            </div>
                             <button
                                 className="logout-btn"
                                 onClick={handleLogout}

@@ -7,6 +7,10 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import Layout from './components/common/Layout';
 import Login from './pages/auth/Login';
 
+// 👇 추가된 import: ChangePassword 컴포넌트를 불러옵니다.
+import ChangePassword from './pages/auth/ChangePassword'; // 파일 경로를 실제 위치에 맞게 수정하세요.
+
+
 // 기존 페이지들
 import Dashboard from './pages/Dashboard';
 import CompanyList from './pages/company/CompanyList';
@@ -63,6 +67,18 @@ function App() {
                         <ProtectedRoute>
                             <Layout>
                                 <Dashboard />
+                            </Layout>
+                        </ProtectedRoute>
+                    }
+                />
+
+                {/* 👇 비밀번호 변경 페이지 라우트 추가 */}
+                <Route
+                    path="/profile/change-password"
+                    element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <ChangePassword />
                             </Layout>
                         </ProtectedRoute>
                     }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { authService } from '../../api'; // 경로를 /api/index.ts로 변경하는 것이 좋습니다.
+import { authService } from '../../api';
 import '../../styles/Login.css';
 
 const Login: React.FC = () => {
@@ -31,18 +31,15 @@ const Login: React.FC = () => {
         setError('');
     };
 
-    // [핵심 수정] handleSubmit 함수
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
 
         try {
-            // 기존과 동일하게 AuthContext의 login 함수를 호출합니다.
             await login(formData.login_id, formData.password);
             navigate(from, { replace: true });
         } catch (err: any) {
-            // AuthContext가 던진 특별한 에러 메시지를 확인합니다.
             if (err.message === 'INITIAL_PASSWORD_SETUP_REQUIRED') {
                 setMode('setPassword');
             } else {
@@ -53,7 +50,6 @@ const Login: React.FC = () => {
         }
     };
 
-    // 최초 비밀번호 설정을 위한 핸들러
     const handleSetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
         if (newPassword !== confirmPassword) {
@@ -81,7 +77,12 @@ const Login: React.FC = () => {
         }
     };
 
-    // JSX 렌더링 부분은 이전 답변과 동일하게 유지
+    // 👇 로그인 모드 전환 링크를 클릭했을 때 실행될 함수
+    const handleSwitchToSetPasswordMode = () => {
+        setMode('setPassword');
+        setError(''); // 다른 모드로 전환 시 에러 메시지 초기화
+    };
+
     return (
         <div className="login-container">
             <div className="login-box">
@@ -89,6 +90,7 @@ const Login: React.FC = () => {
                     <>
                         <h2 className="login-title">GMCOM Information System</h2>
                         <form onSubmit={handleSubmit} className="login-form">
+                            {/* ... 기존 input 필드들은 동일 ... */}
                             <div className="form-group">
                                 <label htmlFor="login_id">아이디</label>
                                 <input type="text" id="login_id" name="login_id" value={formData.login_id} onChange={handleChange} required autoFocus placeholder="아이디를 입력하세요" />
@@ -101,10 +103,16 @@ const Login: React.FC = () => {
                             <button type="submit" className="login-button" disabled={isLoading}>
                                 {isLoading ? '로그인 중...' : '로그인'}
                             </button>
+
+                            {/* [추가된 부분] 비밀번호 신규 설정 링크 */}
+                            <p className="mode-switch-link" onClick={handleSwitchToSetPasswordMode}>
+                                비밀 번호 신규 설정
+                            </p>
                         </form>
                     </>
                 ) : (
                     <>
+                        {/* '최초 비밀번호 설정' 부분은 변경 없음 */}
                         <h2 className="login-title">최초 비밀번호 설정</h2>
                         <form onSubmit={handleSetPassword} className="login-form">
                             <p className="info-text">최초 로그인입니다. <br/>본인 인증을 위해 **생년월일 6자리(YYMMDD)**를 입력하고 새 비밀번호를 등록해주세요.</p>

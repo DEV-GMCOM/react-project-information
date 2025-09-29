@@ -92,3 +92,17 @@
     color: #667eea;
     font-size: 1.2rem;
 }
+
+/* 비밀번호 설정 모드 전환 링크 스타일 */
+.mode-switch-link {
+    margin-top: 16px;
+    color: #007bff; /* 파란색 텍스트 */
+    text-decoration: underline; /* 밑줄 */
+    cursor: pointer; /* 마우스를 올렸을 때 손가락 모양 커서 */
+    text-align: center;
+    font-size: 14px;
+}
+
+.mode-switch-link:hover {
+    color: #0056b3; /* 마우스를 올렸을 때 약간 더 어두운 파란색 */
+}

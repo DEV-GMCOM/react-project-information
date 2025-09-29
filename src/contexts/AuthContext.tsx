@@ -15,6 +15,7 @@ interface User {
     emp_id: number;
     emp_name: string;
     email: string;
+    login_id: string; // 👈 이 필드를 추가합니다.
     division?: string;
     team?: string;
     position?: string;
