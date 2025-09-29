@@ -3,6 +3,11 @@ import '../../styles/PTChecklist.css';
 import { apiService } from '../../api';
 import type { Project } from '../../api/types';
 
+import apiClient from '../../api/utils/apiClient';  // 이 줄 추가
+
+// import {ptChecklistService} from "@/api/services/ptChecklistService.ts";
+import {ptChecklistService} from "../../api/services/ptChecklistService.ts";
+
 // ... (기존 PTChecklistData 인터페이스는 그대로 유지) ...
 
 interface PTChecklistData {
@@ -111,6 +116,11 @@ const PTChecklistForm: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
+    const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    const [searchQuery, setSearchQuery] = useState('');  // 검색용 독립 상태 추가
+
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -141,17 +151,33 @@ const PTChecklistForm: React.FC = () => {
     };
 
     // --- 프로젝트 검색 관련 함수 추가 ---
+    // const handleProjectSearch = async (page = 1) => {
+    //     setSearchLoading(true);
+    //     try {
+    //         const projects = await apiService.getProjects({
+    //             search: formData.projectName,
+    //             skip: (page - 1) * 10,
+    //             limit: 10,
+    //         });
+    //         setSearchResults(projects);
+    //         // 전체 페이지 수 계산 로직 (백엔드 API가 전체 카운트를 제공해야 함)
+    //         // setTotalPages(Math.ceil(projects.totalCount / 10));
+    //     } catch (error) {
+    //         console.error("Project search error:", error);
+    //         alert("프로젝트 검색 중 오류가 발생했습니다.");
+    //     } finally {
+    //         setSearchLoading(false);
+    //     }
+    // };
     const handleProjectSearch = async (page = 1) => {
         setSearchLoading(true);
         try {
             const projects = await apiService.getProjects({
-                search: formData.projectName,
+                search: searchQuery,  // ← formData.projectName 대신 searchQuery 사용
                 skip: (page - 1) * 10,
                 limit: 10,
             });
             setSearchResults(projects);
-            // 전체 페이지 수 계산 로직 (백엔드 API가 전체 카운트를 제공해야 함)
-            // setTotalPages(Math.ceil(projects.totalCount / 10));
         } catch (error) {
             console.error("Project search error:", error);
             alert("프로젝트 검색 중 오류가 발생했습니다.");
@@ -160,24 +186,182 @@ const PTChecklistForm: React.FC = () => {
         }
     };
 
-    const selectProject = (project: Project) => {
-        setFormData(prev => ({
-            ...prev,
-            projectName: project.project_name,
-            department: project.company_name || '', // 담당부서를 우선 회사명으로 설정
-            presenter: project.manager_name || '', // PT 발표자를 우선 프로젝트 매니저로 설정
-        }));
+    // 프로젝트 선택 시 기존 데이터 로딩
+    const selectProject = async (project: Project) => {
+        // project_id 필드 사용 (콘솔에서 확인된 필드명)
+        const projectId = (project as any).project_id;
+
+        if (!projectId) {
+            console.error('프로젝트 ID가 없습니다:', project);
+            alert('프로젝트 ID를 찾을 수 없습니다.');
+            return;
+        }
+
+        setSelectedProjectId(projectId);
+
+        // Project Kickoff에서 담당부서, PT발표자 가져오기
+        let kickoffData = null;
+        try {
+            const kickoffResponse = await apiClient.get(`/projects/${projectId}/kickoff`);
+            kickoffData = kickoffResponse.data;
+        } catch (kickoffError) {
+            console.log('착수보고 데이터 없음');
+        }
+
+        // 기존 체크리스트 데이터 로딩
+        try {
+            const existingData = await ptChecklistService.getPTChecklist(projectId);
+
+            // API 응답 데이터를 폼 데이터로 매핑
+            setFormData({
+                projectName: project.project_name,
+                // department: existingData.department || project.company_name || '',
+                // presenter: existingData.presenter || project.manager_name || '',
+                department: kickoffData?.department || '',  // 표시용, 저장 안함
+                presenter: kickoffData?.presenter || '',    // 표시용, 저장 안함
+
+                // 체크리스트 항목들 - 백엔드 JSON 형태를 프론트 형태로 변환
+                professionalUnderstanding: existingData.professional_understanding || { checked: false, opinion: '' },
+                conceptStrategy: existingData.concept_strategy || { checked: false, opinion: '' },
+                feasibility: existingData.feasibility || { checked: false, opinion: '' },
+                proposalCompleteness: existingData.proposal_completeness || { checked: false, opinion: '' },
+                safetyManagement: existingData.safety_management || { checked: false, opinion: '' },
+                eventPlan: existingData.event_plan || { checked: false, opinion: '' },
+                organizationStructure: existingData.organization_structure || { checked: false, opinion: '' },
+                performanceRecord: existingData.performance_record || { checked: false, opinion: '' },
+                pricingAdequacy: existingData.pricing_adequacy || { checked: false, opinion: '' },
+                additionalProposals: existingData.additional_proposals || { checked: false, opinion: '' },
+                presentationPersuasiveness: existingData.persuasiveness || { checked: false, opinion: '' },
+                strategicPerformance: existingData.strategic_performance || { checked: false, opinion: '' },
+                qaPreparation: existingData.qa_preparation || { checked: false, opinion: '' },
+                presenterAttitude: existingData.presenter_attitude || { checked: false, opinion: '' },
+
+                writerName: existingData.writer_name || '',
+                writerDepartment: existingData.writer_department || ''
+            });
+
+            console.log('기존 체크리스트 데이터 로딩 완료:', existingData);
+
+        } catch (error: any) {
+            if (error.status === 404) {
+                // 2. 응답값이 없을 경우 기본값으로 리셋
+                console.log('신규 프로젝트 - 기존 데이터 없음');
+                setFormData({
+                    projectName: project.project_name,
+                    // department: project.company_name || '',
+                    // presenter: project.manager_name || '',
+                    department: kickoffData?.department || '',  // 표시용, 저장 안함
+                    presenter: kickoffData?.presenter || '',    // 표시용, 저장 안함
+
+                    // 모든 체크리스트 항목을 기본값으로 초기화
+                    professionalUnderstanding: { checked: false, opinion: '' },
+                    conceptStrategy: { checked: false, opinion: '' },
+                    feasibility: { checked: false, opinion: '' },
+                    proposalCompleteness: { checked: false, opinion: '' },
+                    safetyManagement: { checked: false, opinion: '' },
+                    eventPlan: { checked: false, opinion: '' },
+                    organizationStructure: { checked: false, opinion: '' },
+                    performanceRecord: { checked: false, opinion: '' },
+                    pricingAdequacy: { checked: false, opinion: '' },
+                    additionalProposals: { checked: false, opinion: '' },
+                    presentationPersuasiveness: { checked: false, opinion: '' },
+                    strategicPerformance: { checked: false, opinion: '' },
+                    qaPreparation: { checked: false, opinion: '' },
+                    presenterAttitude: { checked: false, opinion: '' },
+
+                    writerName: '',
+                    writerDepartment: ''
+                });
+            } else {
+                console.error('체크리스트 로딩 오류:', error);
+                alert('기존 데이터 로딩 중 오류가 발생했습니다.');
+            }
+        }
+
         setShowSearchModal(false);
     };
 
+    const handleSubmit = async () => {
+        if (!selectedProjectId) {
+            alert('프로젝트를 먼저 선택해주세요.');
+            return;
+        }
 
-    const handleSubmit = () => {
-        console.log('PT Checklist 저장:', formData);
-        // TODO: API 연동
+        setLoading(true);
+        try {
+            const apiData = {
+                project_id: selectedProjectId,
+                // department: formData.department,
+                // presenter: formData.presenter,
+                professional_understanding: formData.professionalUnderstanding,
+                concept_strategy: formData.conceptStrategy,
+                feasibility: formData.feasibility,
+                proposal_completeness: formData.proposalCompleteness,
+                safety_management: formData.safetyManagement,
+                event_plan: formData.eventPlan,
+                organization_structure: formData.organizationStructure,
+                performance_record: formData.performanceRecord,
+                pricing_adequacy: formData.pricingAdequacy,
+                additional_proposals: formData.additionalProposals,
+                persuasiveness: formData.presentationPersuasiveness,
+                strategic_performance: formData.strategicPerformance,
+                qa_preparation: formData.qaPreparation,
+                presenter_attitude: formData.presenterAttitude,
+                writer_name: formData.writerName,
+                writer_department: formData.writerDepartment
+            };
+
+            await ptChecklistService.createOrUpdatePTChecklist(apiData);
+            alert('PT 체크리스트가 저장되었습니다.');
+        } catch (error) {
+            console.error('저장 오류:', error);
+            alert('저장 중 오류가 발생했습니다.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handlePrint = () => {
         window.print();
+    };
+
+    // 2. renderSearchResults 함수 추가 (ProjectInformation 스타일 참조)
+    const renderSearchResults = () => {
+        if (searchLoading) {
+            return <div className="loading">검색 중...</div>;
+        }
+
+        if (searchResults.length === 0) {
+            return <div className="no-results">검색 결과가 없습니다.</div>;
+        }
+
+        return (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                <tr style={{ backgroundColor: '#f8f9fa' }}>
+                    <th style={{ padding: '8px', border: '1px solid #ddd' }}>프로젝트명</th>
+                    <th style={{ padding: '8px', border: '1px solid #ddd' }}>고객사</th>
+                    <th style={{ padding: '8px', border: '1px solid #ddd' }}>상태</th>
+                    <th style={{ padding: '8px', border: '1px solid #ddd' }}>생성일</th>
+                    <th style={{ padding: '8px', border: '1px solid #ddd' }}>선택</th>
+                </tr>
+                </thead>
+                <tbody>
+                {searchResults.map((project: Project) => (
+                    // <tr key={project.id}>
+                    <tr key={project.project_id || project.id}>
+                    <td style={{ padding: '8px', border: '1px solid #ddd' }}>{project.project_name}</td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>{project.company_name || '-'}</td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>{project.status}</td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>{project.created_at}</td>
+                        <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                            <button className="select-btn" onClick={() => selectProject(project)}>선택</button>
+                        </td>
+                    </tr>
+                ))}
+                </tbody>
+            </table>
+        );
     };
 
 
@@ -258,22 +442,29 @@ const PTChecklistForm: React.FC = () => {
                             <td className="table-cell-input">
                                 <input
                                     type="text"
-                                    name="department"
                                     value={formData.department}
-                                    onChange={handleInputChange}
-                                    className="checklist-input"
+                                    className="checklist-input readonly-field"
+                                    readOnly
+                                    placeholder="착수보고서에서 설정된 담당부서가 표시됩니다"
                                 />
                             </td>
                         </tr>
                         <tr>
                             <td className="table-cell table-cell-label">PT 발표자</td>
                             <td className="table-cell-input">
+                                {/*<input*/}
+                                {/*    type="text"*/}
+                                {/*    name="presenter"*/}
+                                {/*    value={formData.presenter}*/}
+                                {/*    onChange={handleInputChange}*/}
+                                {/*    className="checklist-input"*/}
+                                {/*/>*/}
                                 <input
                                     type="text"
-                                    name="presenter"
                                     value={formData.presenter}
-                                    onChange={handleInputChange}
-                                    className="checklist-input"
+                                    className="checklist-input readonly-field"
+                                    readOnly
+                                    placeholder="착수보고서에서 설정된 PT 발표자가 표시됩니다"
                                 />
                             </td>
                         </tr>
@@ -596,11 +787,12 @@ const PTChecklistForm: React.FC = () => {
                 {/* 버튼 영역 */}
                 <div className="checklist-actions">
                     <button onClick={handleSubmit} className="btn-primary">저장</button>
-                    <button onClick={handlePrint} className="btn-secondary">인쇄</button>
+                    {/*<button onClick={handlePrint} className="btn-secondary">인쇄</button>*/}
                 </div>
             </div>
 
             {/* --- 프로젝트 검색 모달 추가 --- */}
+            {/*// 1. 검색 모달을 ProjectInformation.tsx와 동일한 구조로 변경*/}
             {showSearchModal && (
                 <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -609,41 +801,42 @@ const PTChecklistForm: React.FC = () => {
                             <button className="modal-close-btn" onClick={() => setShowSearchModal(false)}>×</button>
                         </div>
                         <div className="modal-body">
-                            {searchLoading ? (
-                                <div className="loading">검색 중...</div>
-                            ) : (
-                                <>
-                                    <table className="search-table">
-                                        <thead>
-                                        <tr>
-                                            <th>프로젝트명</th>
-                                            <th>프로젝트 코드</th>
-                                            <th>상태</th>
-                                            <th>선택</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        {searchResults.length > 0 ? (
-                                            searchResults.map(project => (
-                                                <tr key={project.id}>
-                                                    <td>{project.project_name}</td>
-                                                    <td>{project.project_code}</td>
-                                                    <td>{project.status}</td>
-                                                    <td>
-                                                        <button className="select-btn" onClick={() => selectProject(project)}>선택</button>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td colSpan={4} className="no-results">검색 결과가 없습니다.</td>
-                                            </tr>
-                                        )}
-                                        </tbody>
-                                    </table>
-                                    {/* 페이지네이션 (추후 구현) */}
-                                </>
-                            )}
+                            <div className="input-with-search" style={{ marginBottom: '20px' }}>
+                                <input
+                                    type="text"
+                                    value={searchQuery}  // ← 독립된 검색 상태 사용
+                                    onChange={(e) => setSearchQuery(e.target.value)}  // ← 독립 상태 업데이트
+                                    placeholder="프로젝트명을 입력하세요"
+                                    className="checklist-input"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleProjectSearch(1);
+                                        }
+                                    }}
+                                />
+                                {/*<button*/}
+                                {/*    onClick={() => handleProjectSearch(1)}*/}
+                                {/*    className="search-btn"*/}
+                                {/*    type="button"*/}
+                                {/*>*/}
+                                {/*    🔍*/}
+                                {/*</button>*/}
+                                <button
+                                    type="button"
+                                    className="search-btn"
+                                    onClick={() => {
+                                        setSearchQuery(formData.projectName);  // 현재 프로젝트명을 검색어로 초기 설정
+                                        setShowSearchModal(true);
+                                        if (formData.projectName) {
+                                            handleProjectSearch(1);  // 기존 프로젝트명이 있으면 바로 검색
+                                        }
+                                    }}
+                                >
+                                    🔍
+                                </button>
+                            </div>
+                            {renderSearchResults()}
                         </div>
                     </div>
                 </div>

@@ -52,6 +52,9 @@ export const apiService = {
     healthCheck: dashboardService.healthCheck.bind(dashboardService),
 };
 
+export { ptChecklistService } from './services/ptChecklistService';
+export type { PTChecklistItem, PTChecklistRequest, PTChecklistResponse } from './services/ptChecklistService';
+
 // Auth 서비스 추가
 export { authService } from './services/authService';
 export type { LoginRequest, User, LoginResponse } from './services/authService';

@@ -100,6 +100,7 @@ export interface EmployeeCreate {
 
 export interface Project {
     id: number;
+    project_id: number;
     project_code: string;
     project_name: string;
     project_type: string;
@@ -158,4 +159,33 @@ export interface ProjectKickoff {
 }
 
 
+// src/api/types.ts 파일 끝에 추가
+export interface PTChecklistItem {
+    checked: boolean;
+    opinion: string;
+}
 
+export interface PTChecklist {
+    id?: number;
+    project_id: number;
+    department?: string;
+    presenter?: string;
+    professional_understanding?: PTChecklistItem;
+    concept_strategy?: PTChecklistItem;
+    feasibility?: PTChecklistItem;
+    proposal_completeness?: PTChecklistItem;
+    safety_management?: PTChecklistItem;
+    event_plan?: PTChecklistItem;
+    organization_structure?: PTChecklistItem;
+    performance_record?: PTChecklistItem;
+    pricing_adequacy?: PTChecklistItem;
+    additional_proposals?: PTChecklistItem;
+    persuasiveness?: PTChecklistItem;
+    strategic_performance?: PTChecklistItem;
+    qa_preparation?: PTChecklistItem;
+    presenter_attitude?: PTChecklistItem;
+    writer_name?: string;
+    writer_department?: string;
+    created_at?: string;
+    updated_at?: string;
+}
