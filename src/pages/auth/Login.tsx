@@ -21,7 +21,8 @@ const Login: React.FC = () => {
     });
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const from = location.state?.from?.pathname || '/dashboard';
+    // const from = location.state?.from?.pathname || '/dashboard';
+    const from = location.state?.from?.pathname || '/info-management/advertiser';
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({

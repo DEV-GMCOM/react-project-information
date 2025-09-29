@@ -53,7 +53,8 @@ function App() {
                     element={
                         <ProtectedRoute>
                             <Layout>
-                                <Navigate to="/dashboard" replace />
+                                {/*<Navigate to="/dashboard" replace />*/}
+                                <Navigate to="/info-management/advertiser" replace />
                             </Layout>
                         </ProtectedRoute>
                     }
@@ -437,7 +438,8 @@ function App() {
                     element={
                         <ProtectedRoute>
                             <Layout>
-                                <Navigate to="/dashboard" replace />
+                                {/*<Navigate to="/dashboard" replace />*/}
+                                <Navigate to="/info-management/advertiser" replace />
                             </Layout>
                         </ProtectedRoute>
                     }
