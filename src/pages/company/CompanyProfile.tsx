@@ -185,6 +185,10 @@ const CompanyProfileForm: React.FC = () => {
     const [tempReports, setTempReports] = useState<Array<{id: string, contact_date: string, content: string, isTemp: boolean}>>([]);
     const [originalTempReports, setOriginalTempReports] = useState<Array<{id: string, contact_date: string, content: string, isTemp: boolean}>>([]);
 
+    const [showSimilarCompaniesModal, setShowSimilarCompaniesModal] = useState(false);
+    const [similarCompanies, setSimilarCompanies] = useState<CompanyData[]>([]);
+
+
     useEffect(() => {
         const companyDataChanged = JSON.stringify(formData) !== JSON.stringify(originalFormData);
         const contactDataChanged = JSON.stringify(contactFormData) !== JSON.stringify(originalContactData);
@@ -418,17 +422,20 @@ const CompanyProfileForm: React.FC = () => {
         }
     };
 
-    const handleSubmit = async () => {
-        if (!isFormDirty) {
+    // 저장 함수 - 통합 방식
+    const handleSave = async (forceSave: boolean = false) => {
+        if (!isFormDirty && !forceSave) {
             alert('변경된 내용이 없습니다.');
             return;
         }
 
+        // 신규 등록인 경우
         if (!selectedCompany) {
-            if (!formData.companyName) {
+            if (!formData.companyName.trim()) {
                 alert('회사명을 입력해주세요.');
                 return;
             }
+
             try {
                 const creationPayload: CompanyCreatePayload = {
                     company_name: formData.companyName,
@@ -462,7 +469,11 @@ const CompanyProfileForm: React.FC = () => {
                     creationPayload.contacts.push(contactPayload);
                 }
 
-                const response = await apiClient.post('/company-profile/', creationPayload);
+                // force_save 파라미터와 함께 요청
+                const response = await apiClient.post('/company-profile/', creationPayload, {
+                    params: { force_save: forceSave }
+                });
+
                 const newlyCreatedCompany: CompanyData = response.data;
                 alert(`"${newlyCreatedCompany.company_name}" 회사가 성공적으로 등록되었습니다.`);
 
@@ -492,11 +503,20 @@ const CompanyProfileForm: React.FC = () => {
                 }
                 setIsFormDirty(false);
 
-            } catch (error) {
-                console.error('신규 회사 생성 오류:', error);
-                alert(`저장 실패: ${handleApiError(error)}`);
+            } catch (error: any) {
+                // 409 Conflict: 유사 회사 발견
+                if (error.response?.status === 409) {
+                    const detail = error.response.data.detail;
+                    setSimilarCompanies(detail.similar_companies || []);
+                    setShowSimilarCompaniesModal(true);
+                } else {
+                    console.error('신규 회사 생성 오류:', error);
+                    alert(`저장 실패: ${handleApiError(error)}`);
+                }
             }
-        } else {
+        }
+        // 기존 회사 수정인 경우
+        else {
             try {
                 const companyDataChanged = JSON.stringify(formData) !== JSON.stringify(originalFormData);
                 const contactDataChanged = JSON.stringify(contactFormData) !== JSON.stringify(originalContactData);
@@ -517,7 +537,9 @@ const CompanyProfileForm: React.FC = () => {
                 }
 
                 if (contactDataChanged && (isNewContact || selectedContact)) {
-                    const url = isNewContact ? `/company-profile/${selectedCompany.id}/contacts` : `/company-profile/${selectedCompany.id}/contacts/${selectedContact!.id}`;
+                    const url = isNewContact
+                        ? `/company-profile/${selectedCompany.id}/contacts`
+                        : `/company-profile/${selectedCompany.id}/contacts/${selectedContact!.id}`;
                     const method = isNewContact ? 'post' : 'put';
                     const contactPayload = {
                         contact_name: contactFormData.contactName,
@@ -560,6 +582,99 @@ const CompanyProfileForm: React.FC = () => {
             }
         }
     };
+
+    // 유사 회사 확인 모달
+    const SimilarCompaniesModal: React.FC = () => {
+        return showSimilarCompaniesModal ? (
+            <div className="modal-overlay" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <h3>⚠️ 유사한 회사명이 이미 존재합니다</h3>
+                        <button
+                            className="modal-close-btn"
+                            onClick={() => setShowSimilarCompaniesModal(false)}
+                        >
+                            ✕
+                        </button>
+                    </div>
+
+                    <div className="modal-body">
+                        <p style={{
+                            marginBottom: '15px',
+                            padding: '10px',
+                            backgroundColor: '#fff3e0',
+                            borderLeft: '4px solid #ff9800',
+                            fontWeight: 'bold'
+                        }}>
+                            입력한 회사명: "{formData.companyName}"
+                        </p>
+                        <p style={{ marginBottom: '15px' }}>
+                            다음과 유사한 회사들이 이미 등록되어 있습니다:
+                        </p>
+
+                        <table className="search-table">
+                            <thead>
+                            <tr>
+                                <th>회사명</th>
+                                <th>대표자</th>
+                                <th>사업자번호</th>
+                                <th>선택</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {similarCompanies.map(company => (
+                                <tr key={company.id}>
+                                    <td><strong>{company.company_name}</strong></td>
+                                    <td>{company.representative || '-'}</td>
+                                    <td>{company.business_number || '-'}</td>
+                                    <td>
+                                        <button
+                                            className="select-btn"
+                                            onClick={async () => {
+                                                await selectCompany(company.id);
+                                                setShowSimilarCompaniesModal(false);
+                                            }}
+                                        >
+                                            이 회사 선택
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+
+                        <div style={{
+                            marginTop: '20px',
+                            display: 'flex',
+                            gap: '10px',
+                            justifyContent: 'center',
+                            borderTop: '1px solid #eee',
+                            paddingTop: '15px'
+                        }}>
+                            <button
+                                className="action-btn"
+                                style={{ backgroundColor: '#28a745' }}
+                                onClick={async () => {
+                                    setShowSimilarCompaniesModal(false);
+                                    await handleSave(true); // force_save=true
+                                }}
+                            >
+                                그래도 신규 등록
+                            </button>
+                            <button
+                                className="action-btn"
+                                style={{ backgroundColor: '#6c757d' }}
+                                onClick={() => setShowSimilarCompaniesModal(false)}
+                            >
+                                취소
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        ) : null;
+    };
+
 
     const selectContact = (contact: CompanyContactData) => {
         setSelectedContact(contact);
@@ -606,8 +721,8 @@ const CompanyProfileForm: React.FC = () => {
     };
 
     const CompanySearchModal: React.FC = () => {
+        const [localSearchTerm, setLocalSearchTerm] = useState(searchKeyword);
 
-        // ESC 키 이벤트 리스너 추가
         useEffect(() => {
             const handleEscKey = (e: KeyboardEvent) => {
                 if (e.key === 'Escape') {
@@ -624,6 +739,12 @@ const CompanyProfileForm: React.FC = () => {
             };
         }, [showSearchModal]);
 
+        const handleSearch = () => {
+            setSearchKeyword(localSearchTerm);
+            setCurrentPage(1);
+            searchCompanies(localSearchTerm, 1);
+        };
+
         return showSearchModal ? (
             <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
                 <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -638,19 +759,14 @@ const CompanyProfileForm: React.FC = () => {
                     </div>
 
                     <div className="modal-body">
-                        {/*<div className="search-info">*/}
-                        {/*    <p>검색어: "{searchKeyword || '전체'}"</p>*/}
-                        {/*</div>*/}
-                        {/* 기존 search-info를 입력 필드로 변경 */}
                         <div className="input-with-search" style={{ marginBottom: '15px' }}>
                             <input
                                 type="text"
-                                value={searchKeyword}
-                                onChange={(e) => setSearchKeyword(e.target.value)}
+                                value={localSearchTerm}
+                                onChange={(e) => setLocalSearchTerm(e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
-                                        setCurrentPage(1);
-                                        searchCompanies(searchKeyword, 1);  // 👈 2개 인자 전달
+                                        handleSearch();
                                     }
                                 }}
                                 placeholder="회사명으로 검색"
@@ -658,10 +774,7 @@ const CompanyProfileForm: React.FC = () => {
                                 autoFocus
                             />
                             <button
-                                onClick={() => {
-                                    setCurrentPage(1);
-                                    searchCompanies(searchKeyword, 1);  // 👈 2개 인자 전달
-                                }}
+                                onClick={handleSearch}
                                 className="search-btn"
                                 title="검색"
                             >
@@ -714,7 +827,7 @@ const CompanyProfileForm: React.FC = () => {
                                                 className={`page-btn ${currentPage === page ? 'active' : ''}`}
                                                 onClick={() => {
                                                     setCurrentPage(page);
-                                                    searchCompanies(searchKeyword, page);
+                                                    searchCompanies(localSearchTerm, page);
                                                 }}
                                             >
                                                 {page}
@@ -1281,7 +1394,7 @@ const CompanyProfileForm: React.FC = () => {
                         <button
                             type="button"
                             className="action-btn save-btn"
-                            onClick={handleSubmit}
+                            onClick={() => handleSave(false)}  // 👈 변경
                             disabled={!isFormDirty}
                             title={!isFormDirty ? "변경된 데이터가 있어야만 저장 가능합니다." : ""}
                         >
@@ -1297,6 +1410,7 @@ const CompanyProfileForm: React.FC = () => {
             </div>
             <CompanySearchModal />
             <ContactSearchModal />
+            <SimilarCompaniesModal />
         </div>
     );
 };
