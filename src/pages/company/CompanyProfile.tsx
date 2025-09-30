@@ -606,6 +606,24 @@ const CompanyProfileForm: React.FC = () => {
     };
 
     const CompanySearchModal: React.FC = () => {
+
+        // ESC 키 이벤트 리스너 추가
+        useEffect(() => {
+            const handleEscKey = (e: KeyboardEvent) => {
+                if (e.key === 'Escape') {
+                    setShowSearchModal(false);
+                }
+            };
+
+            if (showSearchModal) {
+                window.addEventListener('keydown', handleEscKey);
+            }
+
+            return () => {
+                window.removeEventListener('keydown', handleEscKey);
+            };
+        }, [showSearchModal]);
+
         return showSearchModal ? (
             <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
                 <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -620,8 +638,35 @@ const CompanyProfileForm: React.FC = () => {
                     </div>
 
                     <div className="modal-body">
-                        <div className="search-info">
-                            <p>검색어: "{searchKeyword || '전체'}"</p>
+                        {/*<div className="search-info">*/}
+                        {/*    <p>검색어: "{searchKeyword || '전체'}"</p>*/}
+                        {/*</div>*/}
+                        {/* 기존 search-info를 입력 필드로 변경 */}
+                        <div className="input-with-search" style={{ marginBottom: '15px' }}>
+                            <input
+                                type="text"
+                                value={searchKeyword}
+                                onChange={(e) => setSearchKeyword(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        setCurrentPage(1);
+                                        searchCompanies(searchKeyword, 1);  // 👈 2개 인자 전달
+                                    }
+                                }}
+                                placeholder="회사명으로 검색"
+                                className="profile-input"
+                                autoFocus
+                            />
+                            <button
+                                onClick={() => {
+                                    setCurrentPage(1);
+                                    searchCompanies(searchKeyword, 1);  // 👈 2개 인자 전달
+                                }}
+                                className="search-btn"
+                                title="검색"
+                            >
+                                🔍
+                            </button>
                         </div>
 
                         {searchLoading ? (
@@ -686,6 +731,23 @@ const CompanyProfileForm: React.FC = () => {
     };
 
     const ContactSearchModal: React.FC = () => {
+        // ESC 키 이벤트 리스너
+        useEffect(() => {
+            const handleEscKey = (e: KeyboardEvent) => {
+                if (e.key === 'Escape') {
+                    setShowContactSearchModal(false);
+                }
+            };
+
+            if (showContactSearchModal) {
+                window.addEventListener('keydown', handleEscKey);
+            }
+
+            return () => {
+                window.removeEventListener('keydown', handleEscKey);
+            };
+        }, [showContactSearchModal]);
+
         return showContactSearchModal ? (
             <div className="modal-overlay" onClick={() => setShowContactSearchModal(false)}>
                 <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -700,8 +762,32 @@ const CompanyProfileForm: React.FC = () => {
                     </div>
 
                     <div className="modal-body">
-                        <div className="search-info">
-                            <p>검색어: "{contactSearchTerm}"</p>
+                        {/* 검색 입력 필드 추가 */}
+                        <div className="input-with-search" style={{ marginBottom: '15px' }}>
+                            <input
+                                type="text"
+                                value={contactSearchTerm}
+                                onChange={(e) => setContactSearchTerm(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        setContactSearchCurrentPage(1);
+                                        searchContacts(contactSearchTerm, 1);
+                                    }
+                                }}
+                                placeholder="담당자 이름으로 검색 (Enter: 검색, ESC: 닫기)"
+                                className="profile-input"
+                                autoFocus
+                            />
+                            <button
+                                onClick={() => {
+                                    setContactSearchCurrentPage(1);
+                                    searchContacts(contactSearchTerm, 1);
+                                }}
+                                className="search-btn"
+                                title="검색"
+                            >
+                                🔍
+                            </button>
                         </div>
 
                         {contactSearchLoading ? (
@@ -794,6 +880,7 @@ const CompanyProfileForm: React.FC = () => {
                         <div className="writer-form">
                             <div>
                                 최종 작성자 :
+                                {/*{writerInfo ? `${writerInfo.name} (${writerInfo.department || ''})` : '정보 없음'}*/}
                             </div>
                         </div>
                     </div>
@@ -817,15 +904,31 @@ const CompanyProfileForm: React.FC = () => {
                             <td className="table-cell table-cell-label">회사명</td>
                             <td className="table-cell-input">
                                 <div className="input-with-search">
+                                    {/*<input*/}
+                                    {/*    type="text"*/}
+                                    {/*    name="companyName"*/}
+                                    {/*    value={formData.companyName}*/}
+                                    {/*    onChange={handleInputChange}*/}
+                                    {/*    className={clsx('profile-input', {*/}
+                                    {/*        'input-modified': formData.companyName !== originalFormData.companyName*/}
+                                    {/*    })}*/}
+                                    {/*    placeholder="회사명을 입력하고 검색하세요"*/}
+                                    {/*/>*/}
                                     <input
                                         type="text"
                                         name="companyName"
                                         value={formData.companyName}
                                         onChange={handleInputChange}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault(); // form submit 방지
+                                                handleCompanySearch();
+                                            }
+                                        }}
                                         className={clsx('profile-input', {
                                             'input-modified': formData.companyName !== originalFormData.companyName
                                         })}
-                                        placeholder="회사명을 입력하고 검색하세요"
+                                        placeholder="회사명을 입력하고 검색하세요 (Enter 또는 🔍)"
                                     />
                                     <button
                                         type="button"
@@ -874,7 +977,7 @@ const CompanyProfileForm: React.FC = () => {
                                     className={clsx('profile-input', {
                                         'input-modified': formData.businessNumber !== originalFormData.businessNumber
                                     })}
-                                    placeholder="사업자번호 형식 검증은 추후 적용 예정"
+                                    placeholder="사업자번호 형식은 10자리 숫자로만 구성해야 합니다"
                                 />
                             </td>
                         </tr>
@@ -889,6 +992,7 @@ const CompanyProfileForm: React.FC = () => {
                                     className={clsx('profile-input', {
                                         'input-modified': formData.contactInfo !== originalFormData.contactInfo
                                     })}
+                                    placeholder="하이픈(-)을 제외한 숫자로만"
                                 />
                             </td>
                             <td className="table-cell table-cell-label">주소</td>
@@ -987,7 +1091,7 @@ const CompanyProfileForm: React.FC = () => {
                                         <div className="no-contacts">
                                             {selectedCompany
                                                 ? '등록된 담당자가 없습니다.'
-                                                : '회사를 선택하면 담당자 정보가 표시됩니다.'
+                                                : '회사가 선택 되어야 담당자 정보가 표시됩니다.'
                                             }
                                         </div>
                                     )}

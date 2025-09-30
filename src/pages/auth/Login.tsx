@@ -84,6 +84,15 @@ const Login: React.FC = () => {
         setError(''); // 다른 모드로 전환 시 에러 메시지 초기화
     };
 
+    // 👇 추가: 뒤로가기 핸들러
+    const handleGoBack = () => {
+        setMode('login');
+        setError('');
+        setBirthDate('');
+        setNewPassword('');
+        setConfirmPassword('');
+    };
+
     return (
         <div className="login-container">
             <div className="login-box">
@@ -114,12 +123,26 @@ const Login: React.FC = () => {
                 ) : (
                     <>
                         {/* '최초 비밀번호 설정' 부분은 변경 없음 */}
+                        {/* X 버튼 추가 */}
+                        <button className="close-button" onClick={handleGoBack} type="button">
+                            &times;
+                        </button>
+
                         <h2 className="login-title">최초 비밀번호 설정</h2>
                         <form onSubmit={handleSetPassword} className="login-form">
                             <p className="info-text">최초 로그인입니다. <br/>본인 인증을 위해 **생년월일 6자리(YYMMDD)**를 입력하고 새 비밀번호를 등록해주세요.</p>
                             <div className="form-group">
-                                <label htmlFor="login_id_readonly">아이디</label>
-                                <input type="text" id="login_id_readonly" value={formData.login_id} readOnly />
+                                <label htmlFor="login_id_set">아이디</label>
+                                <input
+                                    type="text"
+                                    id="login_id_set"
+                                    name="login_id"
+                                    value={formData.login_id}
+                                    onChange={handleChange}
+                                    required
+                                    autoFocus
+                                    placeholder="아이디를 입력하세요"
+                                />
                             </div>
                             <div className="form-group">
                                 <label htmlFor="birth_date">생년월일 6자리</label>

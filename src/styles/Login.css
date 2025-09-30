@@ -106,3 +106,39 @@
 .mode-switch-link:hover {
     color: #0056b3; /* 마우스를 올렸을 때 약간 더 어두운 파란색 */
 }
+
+/* X 버튼 스타일 */
+.close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #666;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-button:hover {
+    color: #333;
+}
+
+/* login-box에 relative 추가 */
+.login-box {
+    position: relative; /* 추가 */
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+}
+
+

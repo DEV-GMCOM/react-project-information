@@ -15,7 +15,7 @@ export const VALIDATION_MESSAGES = {
     REQUIRED: '필수 입력 항목입니다.',
     INVALID_EMAIL: '올바른 이메일 형식을 입력하세요.',
     INVALID_PHONE: '올바른 전화번호 형식을 입력하세요.',
-    INVALID_BUSINESS_NUMBER: '사업자번호는 123-45-67890 형식으로 입력하세요.',
+    INVALID_BUSINESS_NUMBER: '사업자번호는 1234567890 형식으로 입력하세요.',
     INVALID_URL: '올바른 URL 형식을 입력하세요.',
     MAX_LENGTH: (max: number) => `최대 ${max}자까지 입력 가능합니다.`,
     MIN_VALUE: (min: number) => `${min} 이상의 값을 입력하세요.`,

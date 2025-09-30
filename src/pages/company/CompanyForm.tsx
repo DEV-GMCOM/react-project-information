@@ -133,7 +133,7 @@ const CompanyForm: React.FC = () => {
 
         // 사업자번호 형식 검증 (선택사항이지만 입력된 경우)
         if (formData.business_number &&
-            !/^\d{3}-\d{2}-\d{5}$/.test(formData.business_number)) {
+            !/^\d{10}$/.test(formData.business_number)) {
             errors.business_number = '사업자번호는 123-45-67890 형식으로 입력하세요.';
         }
 

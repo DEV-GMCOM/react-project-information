@@ -915,6 +915,7 @@ const ProjectInformationForm: React.FC = () => {
                     <div className="profile-writer">
                         <div className="writer-form">
                             <div>최종 작성자 : {lastUpdater?.name || '정보 없음'}</div>
+                            {/*<div>최종 작성자 : {writerInfo ? `${writerInfo.name} (${writerInfo.department || ''})` : '정보 없음'}</div>*/}
                         </div>
                     </div>
                 </div>
