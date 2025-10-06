@@ -52,3 +52,27 @@
 .toggle-profile-btn:hover {
     background-color: #0056b3;
 }
+
+/* src/styles/ProjectBasicInfoForm.css */
+
+/* .readonly-mode 클래스가 적용된 폼 전체에 대한 스타일 (선택 사항) */
+.readonly-mode {
+    background-color: #f8f9fa; /* 폼 전체 배경을 아주 살짝 어둡게 */
+    border-radius: 5px;
+    padding: 5px; /* 약간의 여백 추가 */
+}
+
+/* readOnly 상태인 input과 textarea의 배경을 어둡게 처리 */
+.readonly-mode input[readOnly],
+.readonly-mode textarea[readOnly] {
+    background-color: #e9ecef !important; /* 어두운 배경색 (Bootstrap의 disabled 색상) */
+    color: #495057; /* 텍스트 색상도 살짝 변경 */
+    cursor: not-allowed; /* 마우스 커서를 '금지' 아이콘으로 변경 */
+    border-color: #ced4da;
+}
+
+/* 헤더 스타일도 살짝 변경 (선택 사항) */
+.readonly-mode .section-header {
+    color: #6c757d; /* 헤더 색상을 약간 연하게 */
+}
+

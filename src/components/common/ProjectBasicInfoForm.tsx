@@ -350,307 +350,315 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
 
     return (
         <>
-            <div className={className}>
-                <h3 className="section-header">■ 프로젝트 기본 정보</h3>
-                <table className={tableClassName}>
-                    <tbody>
-                    <tr>
-                        <td className="table-header">구분</td>
-                        <td className="table-header">내용</td>
-                        <td className="table-header">구분</td>
-                        <td className="table-header">내용</td>
-                    </tr>
-                    <tr>
-                        <td className="table-cell table-cell-label">프로젝트명</td>
-                        <td className="table-cell-input">
-                            {readOnly ? (
-                                <input
-                                    type="text"
-                                    name="projectName"
-                                    value={currentFormData.projectName}
-                                    className={inputClassName}
-                                    readOnly
-                                />
-                            ) : (
-                                <div className="input-with-search">
+            {/* [수정] 최상위 div에 readOnly 값에 따라 'readonly-mode' 클래스를 추가합니다. */}
+            <div className={`${className} ${readOnly ? 'readonly-mode' : ''}`}>
+                <div className={className}>
+                    <h3 className="section-header">{readOnly ? '🔒 (검색만 가능)' : '■'} 프로젝트 기본 정보</h3>
+                    <table className={tableClassName}>
+                        <tbody>
+                        <tr>
+                            <td className="table-header">구분</td>
+                            <td className="table-header">내용</td>
+                            <td className="table-header">구분</td>
+                            <td className="table-header">내용</td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">프로젝트명</td>
+                            <td className="table-cell-input">
+                                {/*{readOnly ? (*/}
+                                {false ? (
                                     <input
                                         type="text"
                                         name="projectName"
                                         value={currentFormData.projectName}
-                                        onChange={handleInputChange}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                handleProjectSearch();
-                                            }
-                                        }}
                                         className={inputClassName}
-                                        placeholder="프로젝트명 입력 후 엔터 또는 🔍 클릭"
+                                        readOnly
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={handleProjectSearchClick}
-                                        className="search-btn"
-                                        title="프로젝트 검색"
-                                    >
-                                        🔍
-                                    </button>
-                                </div>
-                            )}
-                        </td>
-                        <td className="table-cell table-cell-label">유입경로</td>
-                        <td className="table-cell-input">
-                            <input
-                                type="text"
-                                name="inflowPath"
-                                value={currentFormData.inflowPath}
-                                onChange={handleInputChange}
-                                className={inputClassName}
-                                readOnly={readOnly}
-                            />
-                        </td>
-                    </tr>
-                    <tr>
-                        <td className="table-cell table-cell-label">발주처</td>
-                        <td className="table-cell-input">
-                            {readOnly ? (
-                                <input
-                                    type="text"
-                                    name="client"
-                                    value={currentFormData.client}
-                                    className={inputClassName}
-                                    readOnly
-                                />
-                            ) : (
-                                <div className="input-with-search">
-                                    {currentFormData.client && (
+                                ) : (
+                                    <div className="input-with-search">
+                                        <input
+                                            type="text"
+                                            name="projectName"
+                                            value={currentFormData.projectName}
+                                            onChange={handleInputChange}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleProjectSearch();
+                                                }
+                                            }}
+                                            className={inputClassName}
+                                            placeholder="프로젝트명 입력 후 엔터 또는 🔍 클릭"
+                                        />
                                         <button
                                             type="button"
-                                            className="status-badge company-badge with-reset"
-                                            onClick={handleCompanySearchClick}
-                                            title="발주처 변경"
+                                            onClick={handleProjectSearchClick}
+                                            className="search-btn"
+                                            title="프로젝트 검색"
                                         >
-                                            <span className="badge-text">{currentFormData.client}</span>
-                                            <span className="badge-reset-icon" onClick={handleResetClick} title="발주처 초기화">
+                                            🔍
+                                        </button>
+                                    </div>
+                                )}
+                            </td>
+                            <td className="table-cell table-cell-label">유입경로</td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="inflowPath"
+                                    value={currentFormData.inflowPath}
+                                    onChange={handleInputChange}
+                                    className={inputClassName}
+                                    readOnly={readOnly}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">발주처</td>
+                            <td className="table-cell-input">
+                                {/*{readOnly ? (*/}
+                                {false ? (
+                                    <input
+                                        type="text"
+                                        name="client"
+                                        value={currentFormData.client}
+                                        className={inputClassName}
+                                        readOnly
+                                    />
+                                ) : (
+                                    <div className="input-with-search">
+                                        {currentFormData.client && (
+                                            <button
+                                                type="button"
+                                                className="status-badge company-badge with-reset"
+                                                onClick={handleCompanySearchClick}
+                                                title="발주처 변경"
+                                            >
+                                                <span className="badge-text">{currentFormData.client}</span>
+                                                <span className="badge-reset-icon" onClick={handleResetClick} title="발주처 초기화">
                                                 ×
                                             </span>
-                                        </button>
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={handleCompanySearchClick}
-                                        className="search-btn"
-                                        title="발주처 검색"
-                                        style={{ marginLeft: 'auto' }}
-                                    >
-                                        🔍
-                                    </button>
-                                </div>
-                            )}
-                        </td>
-                        <td className="table-cell table-cell-label">담당자</td>
-                        <td className="table-cell-input">
-                            {readOnly ? (
-                                <input
-                                    type="text"
-                                    name="manager"
-                                    value={currentFormData.manager}
-                                    className={inputClassName}
-                                    readOnly
-                                />
-                            ) : (
-                                <div className="input-with-search">
-                                    {currentFormData.manager && (
+                                            </button>
+                                        )}
                                         <button
                                             type="button"
-                                            className="status-badge contact-badge"
-                                            title="담당자 상세 정보 보기"
+                                            onClick={handleCompanySearchClick}
+                                            className="search-btn"
+                                            title="발주처 검색"
+                                            style={{ marginLeft: 'auto' }}
                                         >
-                                            {currentFormData.manager}
+                                            🔍
                                         </button>
-                                    )}
-                                    <button
-                                        type="button"
-                                        onClick={handleContactSearchClick}
-                                        className="search-btn"
-                                        title="담당자 검색"
-                                        style={{ marginLeft: 'auto' }}
-                                    >
-                                        🔍
-                                    </button>
-                                </div>
-                            )}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td className="table-cell table-cell-label">행사일</td>
-                        <td className="table-cell-input">
-                            <input
-                                type="date"
-                                name="eventDate"
-                                value={formatDateForInput(currentFormData.eventDate)}
-                                onChange={(e) => handleDateChange('eventDate', e)}
-                                className="project-date-input"
-                                readOnly={readOnly}
-                            />
-                        </td>
-                        <td className="table-cell table-cell-label">행사장소</td>
-                        <td className="table-cell-input">
-                            <input
-                                type="text"
-                                name="eventLocation"
-                                value={currentFormData.eventLocation}
-                                onChange={handleInputChange}
-                                className={inputClassName}
-                                readOnly={readOnly}
-                            />
-                        </td>
-                    </tr>
-                    <tr>
-                        <td className="table-cell table-cell-label">참석대상</td>
-                        <td className="table-cell-input">
-                            <input
-                                type="text"
-                                name="attendees"
-                                value={currentFormData.attendees}
-                                onChange={handleInputChange}
-                                placeholder="VIP XX명, 약 XX명 예상"
-                                className={inputClassName}
-                                readOnly={readOnly}
-                            />
-                        </td>
-                        <td className="table-cell table-cell-label">행사성격</td>
-                        <td className="table-cell-input">
-                            <input
-                                type="text"
-                                name="eventNature"
-                                value={currentFormData.eventNature}
-                                onChange={handleInputChange}
-                                className={inputClassName}
-                                readOnly={readOnly}
-                            />
-                        </td>
-                    </tr>
-                    <tr>
-                        <td className="table-cell table-cell-label">OT 일정</td>
-                        <td className="table-cell-input">
-                            <input
-                                type="date"
-                                name="otSchedule"
-                                value={formatDateForInput(currentFormData.otSchedule)}
-                                onChange={(e) => handleDateChange('otSchedule', e)}
-                                className="project-date-input"
-                                readOnly={readOnly}
-                            />
-                        </td>
-                        <td className="table-cell table-cell-label">제출 / PT 일정</td>
-                        <td className="table-cell-input">
-                            <input
-                                type="date"
-                                name="submissionSchedule"
-                                value={formatDateForInput(currentFormData.submissionSchedule)}
-                                onChange={(e) => handleDateChange('submissionSchedule', e)}
-                                className="project-date-input"
-                                readOnly={readOnly}
-                            />
-                        </td>
-                    </tr>
-                    <tr>
-                        <td className="table-cell table-cell-label">
-                            예 산<br/>( 단위 : 천만원 )
-                        </td>
-                        <td className="table-cell-input">
-                            <input
-                                type="text"
-                                name="expectedRevenue"
-                                value={currentFormData.expectedRevenue}
-                                onChange={handleInputChange}
-                                placeholder="XX.X [ 수익 X.X ]"
-                                className={inputClassName}
-                                readOnly={readOnly}
-                            />
-                        </td>
-                        <td className="table-cell table-cell-label">예상 경쟁사</td>
-                        <td className="table-cell-input">
-                            <input
-                                type="text"
-                                name="expectedCompetitors"
-                                value={currentFormData.expectedCompetitors}
-                                onChange={handleInputChange}
-                                placeholder="XX, YY 등 N개사"
-                                className={inputClassName}
-                                readOnly={readOnly}
-                            />
-                        </td>
-                    </tr>
-                    <tr>
-                        <td className="table-cell table-cell-label">배점표</td>
-                        <td className="table-cell-input">
-                            <input
-                                type="text"
-                                name="scoreTable"
-                                value={currentFormData.scoreTable}
-                                onChange={handleInputChange}
-                                className="kickoff-input"
-                            />
-                        </td>
-                        <td className="table-cell table-cell-label">
-                            제출/투찰 금액<br/>
-                            (단위 : 천만원)
-                        </td>
-                        <td className="table-cell-input">
-                            <input
-                                type="text"
-                                name="bidAmount"
-                                value={currentFormData.bidAmount}
-                                onChange={handleInputChange}
-                                placeholder="XX.X, Y%"
-                                className="kickoff-input"
-                            />
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+                                    </div>
+                                )}
+                            </td>
+                            <td className="table-cell table-cell-label">담당자</td>
+                            <td className="table-cell-input">
+                                {/*{readOnly ? (*/}
+                                {false ? (
+                                    <input
+                                        type="text"
+                                        name="manager"
+                                        value={currentFormData.manager}
+                                        className={inputClassName}
+                                        readOnly
+                                    />
+                                ) : (
+                                    <div className="input-with-search">
+                                        {currentFormData.manager && (
+                                            <button
+                                                type="button"
+                                                className="status-badge contact-badge"
+                                                title="담당자 상세 정보 보기"
+                                            >
+                                                {currentFormData.manager}
+                                            </button>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={handleContactSearchClick}
+                                            className="search-btn"
+                                            title="담당자 검색"
+                                            style={{ marginLeft: 'auto' }}
+                                        >
+                                            🔍
+                                        </button>
+                                    </div>
+                                )}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">행사일</td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="date"
+                                    name="eventDate"
+                                    value={formatDateForInput(currentFormData.eventDate)}
+                                    onChange={(e) => handleDateChange('eventDate', e)}
+                                    className="project-date-input"
+                                    readOnly={readOnly}
+                                />
+                            </td>
+                            <td className="table-cell table-cell-label">행사장소</td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="eventLocation"
+                                    value={currentFormData.eventLocation}
+                                    onChange={handleInputChange}
+                                    className={inputClassName}
+                                    readOnly={readOnly}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">참석대상</td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="attendees"
+                                    value={currentFormData.attendees}
+                                    onChange={handleInputChange}
+                                    placeholder="VIP XX명, 약 XX명 예상"
+                                    className={inputClassName}
+                                    readOnly={readOnly}
+                                />
+                            </td>
+                            <td className="table-cell table-cell-label">행사성격</td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="eventNature"
+                                    value={currentFormData.eventNature}
+                                    onChange={handleInputChange}
+                                    className={inputClassName}
+                                    readOnly={readOnly}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">OT 일정</td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="date"
+                                    name="otSchedule"
+                                    value={formatDateForInput(currentFormData.otSchedule)}
+                                    onChange={(e) => handleDateChange('otSchedule', e)}
+                                    className="project-date-input"
+                                    readOnly={readOnly}
+                                />
+                            </td>
+                            <td className="table-cell table-cell-label">제출 / PT 일정</td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="date"
+                                    name="submissionSchedule"
+                                    value={formatDateForInput(currentFormData.submissionSchedule)}
+                                    onChange={(e) => handleDateChange('submissionSchedule', e)}
+                                    className="project-date-input"
+                                    readOnly={readOnly}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">
+                                예 산<br/>( 단위 : 천만원 )
+                            </td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="expectedRevenue"
+                                    value={currentFormData.expectedRevenue}
+                                    onChange={handleInputChange}
+                                    placeholder="XX.X [ 수익 X.X ]"
+                                    className={inputClassName}
+                                    readOnly={readOnly}
+                                />
+                            </td>
+                            <td className="table-cell table-cell-label">예상 경쟁사</td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="expectedCompetitors"
+                                    value={currentFormData.expectedCompetitors}
+                                    onChange={handleInputChange}
+                                    placeholder="XX, YY 등 N개사"
+                                    className={inputClassName}
+                                    readOnly={readOnly}
+                                />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="table-cell table-cell-label">배점표</td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="scoreTable"
+                                    value={currentFormData.scoreTable}
+                                    onChange={handleInputChange}
+                                    className={`kickoff-input ${readOnly ? 'readonly-input' : ''}`}
+                                    readOnly={readOnly}
+                                />
+                            </td>
+                            <td className="table-cell table-cell-label">
+                                제출/투찰 금액<br/>
+                                (단위 : 천만원)
+                            </td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="bidAmount"
+                                    value={currentFormData.bidAmount}
+                                    onChange={handleInputChange}
+                                    placeholder="XX.X, Y%"
+                                    className={`kickoff-input ${readOnly ? 'readonly-input' : ''}`}
+                                    readOnly={readOnly}
+                                />
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
 
-                {enableDetailSectionToggle && detailSectionCollapsible && (
-                    <div className="table-action-section">
-                        <button
-                            type="button"
-                            className="toggle-profile-btn"
-                            onClick={handleDetailSectionToggle}
-                            aria-expanded={isDetailSectionVisible}
-                            aria-controls="detail-section-container"
+                    {enableDetailSectionToggle && detailSectionCollapsible && (
+                        <div className="table-action-section">
+                            <button
+                                type="button"
+                                className="toggle-profile-btn"
+                                onClick={handleDetailSectionToggle}
+                                aria-expanded={isDetailSectionVisible}
+                                aria-controls="detail-section-container"
+                            >
+                                Project Profile {isDetailSectionVisible ? '숨기기' : '보기'}
+                            </button>
+                        </div>
+                    )}
+
+                    {(enableDetailSectionToggle || isDetailSectionVisible) && (
+                        <div
+                            id="detail-section-container"
+                            className={`profile-tables-container ${isDetailSectionVisible ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
+                            style={{
+                                opacity: isDetailSectionVisible ? 1 : 0,
+                                maxHeight: isDetailSectionVisible ? '2000px' : '0',
+                                transform: isDetailSectionVisible ? 'translateY(0)' : 'translateY(-20px)',
+                                marginBottom: isDetailSectionVisible ? '0' : '0',
+                                transition: `all ${detailSectionAnimationDuration}ms ease-in-out`
+                            }}
                         >
-                            Project Profile {isDetailSectionVisible ? '숨기기' : '보기'}
-                        </button>
-                    </div>
-                )}
-
-                {(enableDetailSectionToggle || isDetailSectionVisible) && (
-                    <div
-                        id="detail-section-container"
-                        className={`profile-tables-container ${isDetailSectionVisible ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
-                        style={{
-                            opacity: isDetailSectionVisible ? 1 : 0,
-                            maxHeight: isDetailSectionVisible ? '2000px' : '0',
-                            transform: isDetailSectionVisible ? 'translateY(0)' : 'translateY(-20px)',
-                            marginBottom: isDetailSectionVisible ? '0' : '0',
-                            transition: `all ${detailSectionAnimationDuration}ms ease-in-out`
-                        }}
-                    >
-                        {isDetailSectionVisible && (
-                            <>
-                                <br/>
-                                <h3 className="section-header">■ 프로젝트 상세 정보</h3>
-                                <table className={tableClassName}>
-                                    <tbody>
-                                    <tr>
-                                        <td className="table-header">구분</td>
-                                        <td className="table-header">내용</td>
-                                    </tr>
-                                    <tr>
-                                        <td className="table-cell table-cell-label">목적 및 배경</td>
-                                        <td className="table-cell-input">
+                            {isDetailSectionVisible && (
+                                <>
+                                    {/* [수정] 최상위 div에 readOnly 값에 따라 'readonly-mode' 클래스를 추가합니다. */}
+                                    <div className={`${className} ${readOnly ? 'readonly-mode' : ''}`}>
+                                        <h3 className="section-header">{readOnly ? '🔒' : '■'} 프로젝트 상세 정보</h3>
+                                        <table className={tableClassName}>
+                                            <tbody>
+                                            <tr>
+                                                <td className="table-header">구분</td>
+                                                <td className="table-header">내용</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="table-cell table-cell-label">목적 및 배경</td>
+                                                <td className="table-cell-input">
                                         <textarea
                                             name="purposeBackground"
                                             value={currentFormData.purposeBackground || ''}
@@ -660,11 +668,11 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                             readOnly={readOnly}
                                             rows={4}
                                         />
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="table-cell table-cell-label">주요 내용<br/>및<br/>핵심 요구사항</td>
-                                        <td className="table-cell-input">
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td className="table-cell table-cell-label">주요 내용<br/>및<br/>핵심 요구사항</td>
+                                                <td className="table-cell-input">
                                         <textarea
                                             name="mainContent"
                                             value={currentFormData.mainContent || ''}
@@ -674,11 +682,11 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                             readOnly={readOnly}
                                             rows={6}
                                         />
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td className="table-cell table-cell-label">비 고</td>
-                                        <td className="table-cell-input">
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td className="table-cell table-cell-label">비 고</td>
+                                                <td className="table-cell-input">
                                         <textarea
                                             name="comparison"
                                             value={currentFormData.comparison || ''}
@@ -688,15 +696,18 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                             readOnly={readOnly}
                                             rows={3}
                                         />
-                                        </td>
-                                    </tr>
-                                    </tbody>
-                                </table>
-                            </>
-                        )}
-                    </div>
-                )}
+                                                </td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
+
             {showSearchModal && (
                 <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>

@@ -1,0 +1,94 @@
+/* src/styles/modal.css */
+
+/* 오버레이 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+/* 모달 컨테이너 */
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 32px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* ✅ Idle 타임아웃 모달 (좁게) */
+.modal-content.idle-timeout-modal {
+    text-align: center;
+    max-width: 350px;
+}
+
+/* Idle 타임아웃 모달 */
+.idle-timeout-modal {
+    text-align: center;
+    max-width: 400px;
+}
+
+.idle-timeout-modal h2 {
+    margin: 0 0 20px 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: #f59e0b;
+}
+
+.idle-timeout-modal p {
+    margin: 0 0 24px 0;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #666;
+}
+
+.idle-timeout-modal strong {
+    color: #ef4444;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* 모달 액션 버튼 */
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 24px;
+}
+
+.modal-actions button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+/* 버튼 스타일 */
+.btn-primary {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #2563eb;
+}
+
+.btn-secondary {
+    background-color: #6b7280;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #4b5563;
+}

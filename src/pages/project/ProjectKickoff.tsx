@@ -393,6 +393,7 @@ const ProjectKickoffForm: React.FC = () => {
                         className="project-section"
                         tableClassName="project-table"
                         inputClassName="project-input"
+                        readOnly={true}
                     />
                 </div>
 
@@ -409,7 +410,7 @@ const ProjectKickoffForm: React.FC = () => {
                     {showProfileTables && (
                         <div className="kickoff-section">
                             <h3 className="section-header">
-                                ■ 프로젝트 검토 (읽기 전용)
+                                🔒 프로젝트 검토
                             </h3>
                             <table className="kickoff-table">
                                 <tbody>

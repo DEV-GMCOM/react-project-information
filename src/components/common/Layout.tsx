@@ -81,83 +81,94 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     // 관리자 메뉴 항목들
     const adminMenuItems: MenuItem[] = [
         {
-            path: '/admin/users',
-            name: '사용자 관리',
-            icon: '👤',
+            path: '/admin/permissions/policies',
+            name: '권한 관리',
+            icon: '🚫',
             subMenus: [
-                { path: '/admin/users', name: '사용자 목록' },
-                { path: '/admin/users/permissions', name: '권한 관리' },
-                { path: '/admin/users/roles', name: '역할 관리' }
+                { path: '/admin/permissions/policies', name: '정책 관리' },     //
+                { path: '/admin/permissions/roles', name: '역할 관리' },        // 직급별, 부서별, 개인별
+                { path: '/admin/permissions/pages', name: '페이지 관리' },       //
+                { path: '/admin/permissions/restrictions', name: '한정 관리' }, // 시간별, 외부접근별
             ]
         },
-        {
-            path: '/company',
-            name: '업체 관리',
-            icon: '🏢',
-            subMenus: [
-                { path: '/company', name: '업체 목록' },
-                { path: '/company/new', name: '업체 등록' },
-                { path: '/company/regist', name: '업체 신규등록' },
-                { path: '/company/information', name: '[입력폼 샘플] 프로젝트 정보수집' },
-                { path: '/company/profile', name: '[입력폼 샘플] 광고주(담당자) 프로파일' }
-            ]
-        },
-        {
-            path: '/hr',
-            name: '인적자원 관리',
-            icon: '👥',
-            subMenus: [
-                { path: '/hr', name: '직원 목록' },
-                { path: '/hr/new', name: '직원 등록' }
-            ]
-        },
-        {
-            path: '/project',
-            name: '프로젝트 관리',
-            icon: '📁',
-            subMenus: [
-                { path: '/project', name: '프로젝트 목록' },
-                { path: '/project/new', name: '프로젝트 등록' },
-                { path: '/project/regist', name: '프로젝트 신규등록' },
-                { path: '/project/information', name: '[입력폼 샘플] 프로젝트 정보수집' },
-                { path: '/project/kickoff-checklist', name: '[입력폼 샘플] 프로젝트 평가 체크리스트' },
-                { path: '/project/profile', name: '[입력폼 샘플] 프로젝트 프로파일' },
-                { path: '/project/kickoff', name: '[입력폼 샘플] 프로젝트 착수서' },
-                { path: '/project/pt-checklist', name: '[입력폼 샘플] PT 준비 체크리스트' },
-                { path: '/project/postmortem-pt', name: '[입력폼 샘플] PT 사후분석' },
-                { path: '/project/postmortem-project', name: '[입력폼 샘플] 프로젝트 실행 결과 사후분석' }
-            ]
-        },
-        {
-            path: '/admin/system',
-            name: '시스템 관리',
-            icon: '⚙️',
-            subMenus: [
-                { path: '/admin/system/settings', name: '시스템 설정' },
-                { path: '/admin/system/logs', name: '시스템 로그' },
-                { path: '/admin/system/backup', name: '백업 관리' }
-            ]
-        },
-        {
-            path: '/admin/database',
-            name: '데이터베이스 관리',
-            icon: '🗄️',
-            subMenus: [
-                { path: '/admin/database/maintenance', name: '데이터베이스 유지보수' },
-                { path: '/admin/database/migration', name: '데이터 마이그레이션' },
-                { path: '/admin/database/monitoring', name: '성능 모니터링' }
-            ]
-        },
-        {
-            path: '/admin/analytics',
-            name: '분석 및 리포트',
-            icon: '📈',
-            subMenus: [
-                { path: '/admin/analytics/usage', name: '사용량 분석' },
-                { path: '/admin/analytics/performance', name: '성능 분석' },
-                { path: '/admin/analytics/reports', name: '통계 리포트' }
-            ]
-        }
+        // {
+        //     path: '/admin/users',
+        //     name: '사용자 관리',
+        //     icon: '👤',
+        //     subMenus: [
+        //         { path: '/admin/users', name: '사용자 목록' },
+        //         { path: '/admin/users/permissions', name: '권한 관리' },
+        //         { path: '/admin/users/roles', name: '역할 관리' }
+        //     ]
+        // },
+        // {
+        //     path: '/company',
+        //     name: '업체 관리',
+        //     icon: '🏢',
+        //     subMenus: [
+        //         { path: '/company', name: '업체 목록' },
+        //         { path: '/company/new', name: '업체 등록' },
+        //         { path: '/company/regist', name: '업체 신규등록' },
+        //         { path: '/company/information', name: '[입력폼 샘플] 프로젝트 정보수집' },
+        //         { path: '/company/profile', name: '[입력폼 샘플] 광고주(담당자) 프로파일' }
+        //     ]
+        // },
+        // {
+        //     path: '/hr',
+        //     name: '인적자원 관리',
+        //     icon: '👥',
+        //     subMenus: [
+        //         { path: '/hr', name: '직원 목록' },
+        //         { path: '/hr/new', name: '직원 등록' }
+        //     ]
+        // },
+        // {
+        //     path: '/project',
+        //     name: '프로젝트 관리',
+        //     icon: '📁',
+        //     subMenus: [
+        //         { path: '/project', name: '프로젝트 목록' },
+        //         { path: '/project/new', name: '프로젝트 등록' },
+        //         { path: '/project/regist', name: '프로젝트 신규등록' },
+        //         { path: '/project/information', name: '[입력폼 샘플] 프로젝트 정보수집' },
+        //         { path: '/project/kickoff-checklist', name: '[입력폼 샘플] 프로젝트 평가 체크리스트' },
+        //         { path: '/project/profile', name: '[입력폼 샘플] 프로젝트 프로파일' },
+        //         { path: '/project/kickoff', name: '[입력폼 샘플] 프로젝트 착수서' },
+        //         { path: '/project/pt-checklist', name: '[입력폼 샘플] PT 준비 체크리스트' },
+        //         { path: '/project/postmortem-pt', name: '[입력폼 샘플] PT 사후분석' },
+        //         { path: '/project/postmortem-project', name: '[입력폼 샘플] 프로젝트 실행 결과 사후분석' }
+        //     ]
+        // },
+        // {
+        //     path: '/admin/system',
+        //     name: '시스템 관리',
+        //     icon: '⚙️',
+        //     subMenus: [
+        //         { path: '/admin/system/settings', name: '시스템 설정' },
+        //         { path: '/admin/system/logs', name: '시스템 로그' },
+        //         { path: '/admin/system/backup', name: '백업 관리' }
+        //     ]
+        // },
+        // {
+        //     path: '/admin/database',
+        //     name: '데이터베이스 관리',
+        //     icon: '🗄️',
+        //     subMenus: [
+        //         { path: '/admin/database/maintenance', name: '데이터베이스 유지보수' },
+        //         { path: '/admin/database/migration', name: '데이터 마이그레이션' },
+        //         { path: '/admin/database/monitoring', name: '성능 모니터링' }
+        //     ]
+        // },
+        // {
+        //     path: '/admin/analytics',
+        //     name: '분석 및 리포트',
+        //     icon: '📈',
+        //     subMenus: [
+        //         { path: '/admin/analytics/usage', name: '사용량 분석' },
+        //         { path: '/admin/analytics/performance', name: '성능 분석' },
+        //         { path: '/admin/analytics/reports', name: '통계 리포트' }
+        //     ]
+        // }
     ];
 
     const toggleMenu = (path: string) => {
@@ -308,17 +319,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         {/* 구분선 */}
                         <div className="nav-divider"></div>
 
-                        {/*/!* 관리자 메뉴 섹션 *!/*/}
-                        {/*<div className="nav-section nav-section-admin">*/}
-                        {/*    {sidebarOpen && (*/}
-                        {/*        <div className="section-header">*/}
-                        {/*            <div className="section-title">관리자 메뉴</div>*/}
-                        {/*        </div>*/}
-                        {/*    )}*/}
-                        {/*    <ul className="nav-list">*/}
-                        {/*        {adminMenuItems.map(renderMenuItem)}*/}
-                        {/*    </ul>*/}
-                        {/*</div>*/}
+                        {/* 관리자 메뉴 섹션 */}
+                        <div className="nav-section nav-section-admin">
+                            {sidebarOpen && (
+                                <div className="section-header">
+                                    <div className="section-title">관리자 메뉴</div>
+                                </div>
+                            )}
+                            <ul className="nav-list">
+                                {adminMenuItems.map(renderMenuItem)}
+                            </ul>
+                        </div>
                     </nav>
                 </aside>
 

@@ -1,6 +1,11 @@
-// src/contexts/AuthContext.tsx (기존 소스에 role 정보 추가)
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiClient } from '../api/utils/apiClient';
+// src/contexts/AuthContext.tsx
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import apiClient from '../api/utils/apiClient';
+import { useIdleTimer } from '../hooks/useIdleTimer';
+import IdleTimeoutModal from '../components/IdleTimeoutModal';
+import AutoLogoutAlertModal from '../components/AutoLogoutAlertModal';
+import { setLogoutCallback } from '../api/utils/apiClient';
+import { ENV } from '../config/env';
 
 // 기존 User 인터페이스에 role 정보 추가
 interface Role {
@@ -15,11 +20,10 @@ interface User {
     emp_id: number;
     emp_name: string;
     email: string;
-    login_id: string; // 👈 이 필드를 추가합니다.
+    login_id: string;
     division?: string;
     team?: string;
     position?: string;
-    // 새로 추가되는 권한 관련 필드들
     role_id?: number;
     role?: Role;
 }
@@ -33,6 +37,10 @@ interface AuthContextType {
     checkSession: () => Promise<void>;
 }
 
+interface AuthProviderProps {
+    children: React.ReactNode;
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
@@ -43,50 +51,14 @@ export const useAuth = () => {
     return context;
 };
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [showIdleModal, setShowIdleModal] = useState(false);
+    const [showAutoLogoutAlert, setShowAutoLogoutAlert] = useState(false);
 
-    // 세션 체크 (기존 로직 유지)
-    const checkSession = async () => {
-        try {
-            const response = await apiClient.get('/auth/me', {
-                withCredentials: true
-            });
-            setUser(response.data);
-        } catch {
-            setUser(null);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // 로그인 (기존 로직 유지하되 응답 데이터 확장)
-    const login = async (login_id: string, password: string) => {
-        try {
-            const response = await apiClient.post('/auth/login', {
-                login_id,
-                password
-            }, {
-                withCredentials: true
-            });
-            setUser(response.data);
-            if (response.data.session_id) {
-                localStorage.setItem('session_id', response.data.session_id);
-            }
-        } catch (error: any) {
-            // [핵심 수정] 에러의 상태 코드를 확인하여 분기 처리합니다.
-            if (error.response && error.response.status === 412) {
-                // 412 에러일 경우, Login 컴포넌트가 식별할 수 있는 특별한 에러 메시지를 던집니다.
-                throw new Error('INITIAL_PASSWORD_SETUP_REQUIRED');
-            }
-            // 그 외의 모든 에러는 기존과 동일하게 처리합니다.
-            throw new Error(error.response?.data?.detail || '로그인 실패');
-        }
-    };
-
-    // 로그아웃 (기존 로직 그대로 유지)
-    const logout = async () => {
+    // logout 함수
+    const logout = useCallback(async () => {
         try {
             await apiClient.post('/auth/logout', {}, {
                 withCredentials: true
@@ -94,24 +66,166 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } finally {
             setUser(null);
             localStorage.removeItem('session_id');
+            setShowIdleModal(false);
+            setShowAutoLogoutAlert(false);  // ✅ 추가 필요
+        }
+    }, []);
+
+    // 자동 로그아웃 함수
+    const handleAutoLogout = useCallback(async () => {
+        await logout();
+        localStorage.setItem('auto_logout_reason', 'inactivity');
+        setShowAutoLogoutAlert(true);
+    }, [logout]);
+
+    // 세션 체크
+    const checkSession = async () => {
+        try {
+            const response = await apiClient.post('/auth/check-session', {}, {
+                withCredentials: true
+            });
+
+            if (response.data.valid && response.data.user) {
+                setUser(response.data.user);
+            } else {
+                setUser(null);
+                localStorage.removeItem('session_id');
+            }
+        } catch (error) {
+            setUser(null);
+            localStorage.removeItem('session_id');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    // 초기 세션 체크 (기존 로직 그대로 유지)
+    // Heartbeat 전송
+    const sendHeartbeat = useCallback(async () => {
+        if (!user) return;
+
+        try {
+            console.log('🫀 Heartbeat 전송 시도...', new Date().toLocaleTimeString());
+
+            await apiClient.post('/auth/heartbeat', {}, {
+                withCredentials: true
+            });
+            console.log('✅ Heartbeat 전송 성공', new Date().toLocaleTimeString());
+        } catch (error: any) {
+            console.error('❌ Heartbeat 전송 실패:', error.response?.status, new Date().toLocaleTimeString());
+
+            if (error.response?.status === 401) {
+                console.warn('⚠️ 세션 만료 감지 (Heartbeat)');
+                setShowIdleModal(false);  // ✅ 추가: 모달 닫기
+                setUser(null);
+                localStorage.removeItem('session_id');
+            }
+        }
+    }, [user]);
+
+    // 로그인
+    const login = async (loginId: string, password: string) => {
+        try {
+            const response = await apiClient.post('/auth/login', {
+                login_id: loginId,
+                password: password
+            }, {
+                withCredentials: true
+            });
+
+            setUser({
+                emp_id: response.data.emp_id,
+                emp_name: response.data.emp_name,
+                email: response.data.email,
+                login_id: loginId,
+                division: response.data.division,
+                team: response.data.team,
+                position: response.data.position,
+                role_id: response.data.role_id,
+                role: response.data.role
+            });
+
+            localStorage.setItem('session_id', response.data.session_id);
+        } catch (error: any) {
+            if (error.response && error.response.status === 412) {
+                throw new Error('INITIAL_PASSWORD_SETUP_REQUIRED');
+            }
+            throw new Error(error.response?.data?.detail || '로그인 실패');
+        }
+    };
+
+    // 계속 사용하기
+    const handleContinueSession = () => {
+        console.log('✅ 계속 사용하기 클릭');
+        setShowIdleModal(false);
+        resetTimer();
+        sendHeartbeat();
+    };
+
+    // Idle 타이머 - 환경 변수 사용
+    const { isIdle, remainingTime, resetTimer, getLastActivityTime } = useIdleTimer({
+        timeout: ENV.IDLE_TIMEOUT,
+        warningTime: ENV.IDLE_WARNING_COUNTDOWN,  // ✅ 추가: 30초
+        onIdle: () => {
+            if (user) {  // ✅ 추가: user 있을 때만
+                console.log('🔴 Idle 감지:', new Date().toLocaleTimeString());
+                setShowIdleModal(true);
+            }
+        },
+        enabled: !!user  // ✅ user 없으면 타이머 비활성화
+        // onActive: () => {
+        //     setShowIdleModal(false);
+        // }
+    });
+
+    // apiClient에 logout 콜백 등록
+    useEffect(() => {
+        setLogoutCallback(() => {
+            logout();
+        });
+    }, [logout]);
+
+    // 401 에러로 인한 세션 만료 처리
+    useEffect(() => {
+        const handleSessionExpired = () => {
+            logout();
+            localStorage.setItem('auto_logout_reason', 'session_expired');
+            setShowAutoLogoutAlert(true);
+        };
+
+        window.addEventListener('auth:session-expired', handleSessionExpired);
+
+        return () => {
+            window.removeEventListener('auth:session-expired', handleSessionExpired);
+        };
+    }, [logout]);
+
+    // 카운트다운 종료 시 자동 로그아웃
+    useEffect(() => {
+        if (isIdle && remainingTime <= 0) {
+            handleAutoLogout();
+        }
+    }, [isIdle, remainingTime, handleAutoLogout]);
+
+    // Heartbeat 주기적 전송 - 환경 변수 사용
+    useEffect(() => {
+        if (!user) return;
+
+        const heartbeatInterval = setInterval(() => {
+            const timeSinceActivity = Date.now() - getLastActivityTime();
+
+            // 마지막 활동 시간이 heartbeat 간격보다 짧으면 전송
+            if (timeSinceActivity < ENV.HEARTBEAT_INTERVAL) {
+                sendHeartbeat();
+            }
+        }, ENV.HEARTBEAT_INTERVAL);
+
+        return () => clearInterval(heartbeatInterval);
+    }, [user, sendHeartbeat, getLastActivityTime]);
+
+    // 초기 세션 체크
     useEffect(() => {
         checkSession();
     }, []);
-
-    // 주기적 세션 체크 (기존 로직 그대로 유지)
-    useEffect(() => {
-        const interval = setInterval(() => {
-            if (user) {
-                checkSession();
-            }
-        }, 5 * 60 * 1000);
-
-        return () => clearInterval(interval);
-    }, [user]);
 
     return (
         <AuthContext.Provider
@@ -125,6 +239,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }}
         >
             {children}
+
+            {user && (  // ✅ user 있을 때만
+                <IdleTimeoutModal
+                    isOpen={showIdleModal}
+                    remainingSeconds={Math.ceil(remainingTime / 1000)}
+                    onContinue={handleContinueSession}
+                    onLogout={logout}
+                />
+            )}
+
+            {showAutoLogoutAlert && (
+                <AutoLogoutAlertModal
+                    onClose={() => setShowAutoLogoutAlert(false)}
+                />
+            )}
         </AuthContext.Provider>
     );
 };

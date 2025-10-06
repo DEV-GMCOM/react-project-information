@@ -11,6 +11,15 @@ const isDevelopment = import.meta.env.DEV;
 // const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/information';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
+// ✅ 파일 맨 위에 추가
+let logoutCallback: (() => void) | null = null;
+
+// ✅ logout 콜백 등록 함수 export
+export const setLogoutCallback = (callback: () => void) => {
+    logoutCallback = callback;
+};
+
+
 export const apiClient = axios.create({
     baseURL: API_BASE_URL,
     timeout: 300000, // 5분 타임아웃
@@ -104,17 +113,11 @@ apiClient.interceptors.response.use(
         if (error.response?.status === 401) {
             if (!window.location.pathname.includes('/login')) {
                 localStorage.removeItem('session_id');
-                // =================================================================
-                // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 부분을 수정 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-                //
-                // 이 라인은 React Router를 무시하고 페이지를 강제로 새로고침하여
-                // 'basename' 관련 경고를 유발합니다.
-                // 따라서 이 코드를 삭제하거나 주석 처리하여 apiClient가 페이지 이동에
-                // 관여하지 않도록 합니다.
-                // window.location.href = '/information/login';
-                //
-                // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 이 부분을 수정 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-                // =================================================================
+
+                // ✅ 수정: AuthContext의 logout 호출
+                if (logoutCallback) {
+                    logoutCallback();
+                }
             }
             enhancedError.userMessage = '인증이 만료되었습니다. 다시 로그인해주세요.';
         } else if (error.response?.status === 403) {
