@@ -156,25 +156,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // 계속 사용하기
     const handleContinueSession = () => {
         console.log('✅ 계속 사용하기 클릭');
+
+        // ✅ 1. 먼저 모달 닫기 (이렇게 해야 enabled가 true로 변경됨)
         setShowIdleModal(false);
-        resetTimer();
-        sendHeartbeat();
+
+        // ✅ 2. 타이머 리셋 및 heartbeat는 약간의 딜레이 후 실행
+        setTimeout(() => {
+            resetTimer();
+            sendHeartbeat();
+        }, 50);
     };
 
-    // Idle 타이머 - 환경 변수 사용
+    // Idle 타이머 - enabled는 user 기반으로만
     const { isIdle, remainingTime, resetTimer, getLastActivityTime } = useIdleTimer({
         timeout: ENV.IDLE_TIMEOUT,
-        warningTime: ENV.IDLE_WARNING_COUNTDOWN,  // ✅ 추가: 30초
+        warningTime: ENV.IDLE_WARNING_COUNTDOWN,
         onIdle: () => {
-            if (user) {  // ✅ 추가: user 있을 때만
+            if (user) {
                 console.log('🔴 Idle 감지:', new Date().toLocaleTimeString());
                 setShowIdleModal(true);
             }
         },
-        enabled: !!user  // ✅ user 없으면 타이머 비활성화
-        // onActive: () => {
-        //     setShowIdleModal(false);
-        // }
+        enabled: !!user,  // ✅ user만 체크 (showIdleModal 제거)
+        stopOnIdle: true  // ✅ isIdle일 때 activity 무시
     });
 
     // apiClient에 logout 콜백 등록
@@ -200,11 +204,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, [logout]);
 
     // 카운트다운 종료 시 자동 로그아웃
+    // 자동 로그아웃 체크에 showIdleModal 조건 추가
     useEffect(() => {
-        if (isIdle && remainingTime <= 0) {
+        // ✅ showIdleModal이 false면 체크하지 않음
+        if (isIdle && showIdleModal && remainingTime <= 0) {
+            console.log('⏰ 자동 로그아웃 실행');
             handleAutoLogout();
         }
-    }, [isIdle, remainingTime, handleAutoLogout]);
+    }, [isIdle, showIdleModal, remainingTime, handleAutoLogout]);
 
     // Heartbeat 주기적 전송 - 환경 변수 사용
     useEffect(() => {
