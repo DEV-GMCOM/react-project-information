@@ -392,13 +392,13 @@ const PTPostmortemForm: React.FC = () => {
 
                     {/* 버튼 섹션 - Project Profile과 Project Kickoff 버튼 */}
                     <div className="table-action-section">
-                        <button
-                            type="button"
-                            className="toggle-profile-btn"
-                            onClick={() => setShowProfileTables(!showProfileTables)}
-                        >
-                            Project Profile {showProfileTables ? '숨기기' : '보기'}
-                        </button>
+                        {/*<button*/}
+                        {/*    type="button"*/}
+                        {/*    className="toggle-profile-btn"*/}
+                        {/*    onClick={() => setShowProfileTables(!showProfileTables)}*/}
+                        {/*>*/}
+                        {/*    Project Profile {showProfileTables ? '숨기기' : '보기'}*/}
+                        {/*</button>*/}
                         <button
                             type="button"
                             className="toggle-profile-btn"
@@ -409,143 +409,143 @@ const PTPostmortemForm: React.FC = () => {
                     </div>
 
                     {/* 프로젝트 상세 정보 (Profile 토글) */}
-                    <div
-                        className={`profile-tables-container ${showProfileTables ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
-                        style={{
-                            opacity: showProfileTables ? 1 : 0,
-                            maxHeight: showProfileTables ? '2000px' : '0',
-                            transform: showProfileTables ? 'translateY(0)' : 'translateY(-20px)',
-                            marginBottom: showProfileTables ? '0' : '0',
-                            transition: 'all 1s ease-in-out'
-                        }}
-                    >
-                        {showProfileTables && (
-                            <>
-                                <div className="postmortem-section">
-                                    <h3 className="section-header">
-                                        ■ 프로젝트 상세 정보
-                                    </h3>
-                                    <table className="postmortem-table">
-                                        <tbody>
-                                        <tr>
-                                            <td className="table-header">구분</td>
-                                            <td className="table-header">내용</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="table-cell table-cell-label">목적 및 배경</td>
-                                            <td className="table-cell-input">
-                                                <textarea
-                                                    name="purposeBackground"
-                                                    value={formData.purposeBackground}
-                                                    onChange={handleInputChange}
-                                                    className="postmortem-textarea textarea-medium"
-                                                />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td className="table-cell table-cell-label">주요 내용</td>
-                                            <td className="table-cell-input">
-                                                <textarea
-                                                    name="mainContent"
-                                                    value={formData.mainContent}
-                                                    onChange={handleBulletTextChange}
-                                                    placeholder="프로젝트 Profile 토대로 수정/변경/업데이트 가능"
-                                                    className="postmortem-textarea textarea-large bullet-textarea"
-                                                />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td className="table-cell table-cell-label">핵심 요구사항</td>
-                                            <td className="table-cell-input">
-                                                <textarea
-                                                    name="coreRequirements"
-                                                    value={formData.coreRequirements}
-                                                    onChange={handleBulletTextChange}
-                                                    placeholder="프로젝트 Profile 토대로 수정/변경/업데이트 가능"
-                                                    className="postmortem-textarea textarea-large bullet-textarea"
-                                                />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td className="table-cell table-cell-label">비고</td>
-                                            <td className="table-cell-input">
-                                                <textarea
-                                                    name="comparison"
-                                                    value={formData.comparison}
-                                                    onChange={handleInputChange}
-                                                    className="postmortem-textarea textarea-medium"
-                                                />
-                                            </td>
-                                        </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
+                    {/*<div*/}
+                    {/*    className={`profile-tables-container ${showProfileTables ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}*/}
+                    {/*    style={{*/}
+                    {/*        opacity: showProfileTables ? 1 : 0,*/}
+                    {/*        maxHeight: showProfileTables ? '2000px' : '0',*/}
+                    {/*        transform: showProfileTables ? 'translateY(0)' : 'translateY(-20px)',*/}
+                    {/*        marginBottom: showProfileTables ? '0' : '0',*/}
+                    {/*        transition: 'all 1s ease-in-out'*/}
+                    {/*    }}*/}
+                    {/*>*/}
+                    {/*    {showProfileTables && (*/}
+                    {/*        <>*/}
+                    {/*            <div className="postmortem-section">*/}
+                    {/*                <h3 className="section-header">*/}
+                    {/*                    ■ 프로젝트 상세 정보*/}
+                    {/*                </h3>*/}
+                    {/*                <table className="postmortem-table">*/}
+                    {/*                    <tbody>*/}
+                    {/*                    <tr>*/}
+                    {/*                        <td className="table-header">구분</td>*/}
+                    {/*                        <td className="table-header">내용</td>*/}
+                    {/*                    </tr>*/}
+                    {/*                    <tr>*/}
+                    {/*                        <td className="table-cell table-cell-label">목적 및 배경</td>*/}
+                    {/*                        <td className="table-cell-input">*/}
+                    {/*                            <textarea*/}
+                    {/*                                name="purposeBackground"*/}
+                    {/*                                value={formData.purposeBackground}*/}
+                    {/*                                onChange={handleInputChange}*/}
+                    {/*                                className="postmortem-textarea textarea-medium"*/}
+                    {/*                            />*/}
+                    {/*                        </td>*/}
+                    {/*                    </tr>*/}
+                    {/*                    <tr>*/}
+                    {/*                        <td className="table-cell table-cell-label">주요 내용</td>*/}
+                    {/*                        <td className="table-cell-input">*/}
+                    {/*                            <textarea*/}
+                    {/*                                name="mainContent"*/}
+                    {/*                                value={formData.mainContent}*/}
+                    {/*                                onChange={handleBulletTextChange}*/}
+                    {/*                                placeholder="프로젝트 Profile 토대로 수정/변경/업데이트 가능"*/}
+                    {/*                                className="postmortem-textarea textarea-large bullet-textarea"*/}
+                    {/*                            />*/}
+                    {/*                        </td>*/}
+                    {/*                    </tr>*/}
+                    {/*                    <tr>*/}
+                    {/*                        <td className="table-cell table-cell-label">핵심 요구사항</td>*/}
+                    {/*                        <td className="table-cell-input">*/}
+                    {/*                            <textarea*/}
+                    {/*                                name="coreRequirements"*/}
+                    {/*                                value={formData.coreRequirements}*/}
+                    {/*                                onChange={handleBulletTextChange}*/}
+                    {/*                                placeholder="프로젝트 Profile 토대로 수정/변경/업데이트 가능"*/}
+                    {/*                                className="postmortem-textarea textarea-large bullet-textarea"*/}
+                    {/*                            />*/}
+                    {/*                        </td>*/}
+                    {/*                    </tr>*/}
+                    {/*                    <tr>*/}
+                    {/*                        <td className="table-cell table-cell-label">비고</td>*/}
+                    {/*                        <td className="table-cell-input">*/}
+                    {/*                            <textarea*/}
+                    {/*                                name="comparison"*/}
+                    {/*                                value={formData.comparison}*/}
+                    {/*                                onChange={handleInputChange}*/}
+                    {/*                                className="postmortem-textarea textarea-medium"*/}
+                    {/*                            />*/}
+                    {/*                        </td>*/}
+                    {/*                    </tr>*/}
+                    {/*                    </tbody>*/}
+                    {/*                </table>*/}
+                    {/*            </div>*/}
 
-                                {/* 프로젝트 검토 테이블 */}
-                                <div className="postmortem-section">
-                                    <h3 className="section-header">
-                                        ■ 프로젝트 검토
-                                    </h3>
-                                    <table className="postmortem-table">
-                                        <tbody>
-                                        <tr>
-                                            <td className="table-header">구분</td>
-                                            <td className="table-header">내용</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="table-cell table-cell-label">SWOT 분석</td>
-                                            <td className="table-cell-input">
-                                                <textarea
-                                                    name="swotAnalysis"
-                                                    value={formData.swotAnalysis}
-                                                    onChange={handleBulletTextChange}
-                                                    placeholder="경쟁사 대비 강점과 약점, 기회요인과 위협요인 분석"
-                                                    className="postmortem-textarea textarea-large bullet-textarea"
-                                                />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td className="table-cell table-cell-label">방향성</td>
-                                            <td className="table-cell-input">
-                                                <textarea
-                                                    name="direction"
-                                                    value={formData.direction}
-                                                    onChange={handleBulletTextChange}
-                                                    placeholder="PT 컨셉, 프로그램 구성 등"
-                                                    className="postmortem-textarea textarea-large bullet-textarea"
-                                                />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td className="table-cell table-cell-label">자원계획</td>
-                                            <td className="table-cell-input">
-                                                <textarea
-                                                    name="resourcePlan"
-                                                    value={formData.resourcePlan}
-                                                    onChange={handleBulletTextChange}
-                                                    placeholder="팀구성, 외주업체, 투입비용"
-                                                    className="postmortem-textarea textarea-large bullet-textarea"
-                                                />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td className="table-cell table-cell-label">작성자 의견</td>
-                                            <td className="table-cell-input">
-                                                <textarea
-                                                    name="writerOpinion"
-                                                    value={formData.writerOpinion}
-                                                    onChange={handleBulletTextChange}
-                                                    placeholder="프로젝트 진행여부 판단 의견 요약"
-                                                    className="postmortem-textarea textarea-large bullet-textarea"
-                                                />
-                                            </td>
-                                        </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </>
-                        )}
-                    </div>
+                    {/*            /!* 프로젝트 검토 테이블 *!/*/}
+                    {/*            <div className="postmortem-section">*/}
+                    {/*                <h3 className="section-header">*/}
+                    {/*                    ■ 프로젝트 검토*/}
+                    {/*                </h3>*/}
+                    {/*                <table className="postmortem-table">*/}
+                    {/*                    <tbody>*/}
+                    {/*                    <tr>*/}
+                    {/*                        <td className="table-header">구분</td>*/}
+                    {/*                        <td className="table-header">내용</td>*/}
+                    {/*                    </tr>*/}
+                    {/*                    <tr>*/}
+                    {/*                        <td className="table-cell table-cell-label">SWOT 분석</td>*/}
+                    {/*                        <td className="table-cell-input">*/}
+                    {/*                            <textarea*/}
+                    {/*                                name="swotAnalysis"*/}
+                    {/*                                value={formData.swotAnalysis}*/}
+                    {/*                                onChange={handleBulletTextChange}*/}
+                    {/*                                placeholder="경쟁사 대비 강점과 약점, 기회요인과 위협요인 분석"*/}
+                    {/*                                className="postmortem-textarea textarea-large bullet-textarea"*/}
+                    {/*                            />*/}
+                    {/*                        </td>*/}
+                    {/*                    </tr>*/}
+                    {/*                    <tr>*/}
+                    {/*                        <td className="table-cell table-cell-label">방향성</td>*/}
+                    {/*                        <td className="table-cell-input">*/}
+                    {/*                            <textarea*/}
+                    {/*                                name="direction"*/}
+                    {/*                                value={formData.direction}*/}
+                    {/*                                onChange={handleBulletTextChange}*/}
+                    {/*                                placeholder="PT 컨셉, 프로그램 구성 등"*/}
+                    {/*                                className="postmortem-textarea textarea-large bullet-textarea"*/}
+                    {/*                            />*/}
+                    {/*                        </td>*/}
+                    {/*                    </tr>*/}
+                    {/*                    <tr>*/}
+                    {/*                        <td className="table-cell table-cell-label">자원계획</td>*/}
+                    {/*                        <td className="table-cell-input">*/}
+                    {/*                            <textarea*/}
+                    {/*                                name="resourcePlan"*/}
+                    {/*                                value={formData.resourcePlan}*/}
+                    {/*                                onChange={handleBulletTextChange}*/}
+                    {/*                                placeholder="팀구성, 외주업체, 투입비용"*/}
+                    {/*                                className="postmortem-textarea textarea-large bullet-textarea"*/}
+                    {/*                            />*/}
+                    {/*                        </td>*/}
+                    {/*                    </tr>*/}
+                    {/*                    <tr>*/}
+                    {/*                        <td className="table-cell table-cell-label">작성자 의견</td>*/}
+                    {/*                        <td className="table-cell-input">*/}
+                    {/*                            <textarea*/}
+                    {/*                                name="writerOpinion"*/}
+                    {/*                                value={formData.writerOpinion}*/}
+                    {/*                                onChange={handleBulletTextChange}*/}
+                    {/*                                placeholder="프로젝트 진행여부 판단 의견 요약"*/}
+                    {/*                                className="postmortem-textarea textarea-large bullet-textarea"*/}
+                    {/*                            />*/}
+                    {/*                        </td>*/}
+                    {/*                    </tr>*/}
+                    {/*                    </tbody>*/}
+                    {/*                </table>*/}
+                    {/*            </div>*/}
+                    {/*        </>*/}
+                    {/*    )}*/}
+                    {/*</div>*/}
 
                     {/* 프로젝트 착수 보고 (Kickoff 토글) */}
                     <div
