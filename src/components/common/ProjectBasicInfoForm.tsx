@@ -716,6 +716,34 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             <button className="modal-close-btn" onClick={() => setShowSearchModal(false)}>×</button>
                         </div>
                         <div className="modal-body">
+                            {/* ✅ 입력란 추가 - formData.projectName 직접 사용 */}
+                            {/* ✅ 수정: handleInternalChange 사용 */}
+                            <div className="input-with-search" style={{ marginBottom: '20px' }}>
+                                <input
+                                    type="text"
+                                    value={currentFormData.projectName}
+                                    onChange={(e) => handleInternalChange('projectName', e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            setCurrentPage(1);
+                                            searchProjects(1);
+                                        }
+                                    }}
+                                    placeholder="프로젝트명을 입력하세요"
+                                    className="project-input"
+                                />
+                                <button
+                                    onClick={() => {
+                                        setCurrentPage(1);
+                                        searchProjects(1);
+                                    }}
+                                    className="search-btn"
+                                >
+                                    🔍
+                                </button>
+                            </div>
+
                             <div className="search-results">{renderSearchResults()}</div>
                             {totalPages > 1 && (
                                 <div className="pagination">
