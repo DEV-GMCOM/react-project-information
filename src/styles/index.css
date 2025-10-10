@@ -1,4 +1,21 @@
-/* src/styles/index.css */
+/* src/styles/index.css - 맨 위에 추가 */
+
+/* 브라우저 다크모드 무시 - 항상 라이트 모드 강제 */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="url"],
+input[type="date"],
+input[type="number"],
+input[type="password"],
+textarea,
+select {
+    color-scheme: light; /* 브라우저에게 라이트 모드만 사용하라고 지시 */
+    background-color: white !important;
+    color: #333 !important;
+    border: 1px solid #ccc !important;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -59,3 +76,71 @@ a:hover {
     font-size: 14px;
   }
 }
+
+
+
+/*!* ==================== 다크모드 전역 스타일 추가 ==================== *!*/
+/*@media (prefers-color-scheme: dark) {*/
+/*    body {*/
+/*        !*background-color: #1a1a1a;*!*/
+/*        !*color: #e0e0e0;*!*/
+/*        background-color: #e0e0e0;*/
+/*        color: #1a1a1a;*/
+/*    }*/
+
+/*    !* 모든 입력 필드에 기본 다크모드 스타일 적용 *!*/
+/*    input[type="text"],*/
+/*    input[type="email"],*/
+/*    input[type="tel"],*/
+/*    input[type="url"],*/
+/*    input[type="date"],*/
+/*    input[type="number"],*/
+/*    input[type="password"],*/
+/*    textarea,*/
+/*    select {*/
+/*        background-color: #2d2d2d !important;*/
+/*        color: #e0e0e0 !important;*/
+/*        border-color: #444 !important;*/
+/*    }*/
+
+/*    !* 포커스 상태 *!*/
+/*    input:focus,*/
+/*    textarea:focus,*/
+/*    select:focus {*/
+/*        background-color: #333 !important;*/
+/*        border-color: #555 !important;*/
+/*    }*/
+
+/*    !* placeholder 색상 *!*/
+/*    input::placeholder,*/
+/*    textarea::placeholder {*/
+/*        color: #888 !important;*/
+/*        opacity: 1;*/
+/*    }*/
+
+/*    !* disabled 상태 *!*/
+/*    input:disabled,*/
+/*    textarea:disabled,*/
+/*    select:disabled {*/
+/*        background-color: #222 !important;*/
+/*        color: #666 !important;*/
+/*        opacity: 0.6;*/
+/*    }*/
+
+/*    !* readonly 상태 *!*/
+/*    input[readonly],*/
+/*    textarea[readonly] {*/
+/*        background-color: #252525 !important;*/
+/*        color: #999 !important;*/
+/*    }*/
+
+/*    !* 컨텐츠 영역 *!*/
+/*    .content {*/
+/*        background-color: #1a1a1a;*/
+/*    }*/
+
+/*    !* 날짜 선택기 아이콘 색상 조정 *!*/
+/*    input[type="date"]::-webkit-calendar-picker-indicator {*/
+/*        filter: invert(0.8);*/
+/*    }*/
+/*}*/

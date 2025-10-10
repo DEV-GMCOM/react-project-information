@@ -4,6 +4,13 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './styles/index.css'
+import { getAppVersion } from './api/version';
+
+const version = getAppVersion();
+console.log(`🚀 ERP Information Frontend v${version.shortHash} (${version.branch}) - Built at ${version.buildTime}`);
+
+// 브라우저에서 접근 가능하도록
+(window as any).__APP_VERSION__ = version;
 
 // Vite 환경변수에서 basename 가져오기
 const basename = import.meta.env.VITE_BASE_PATH || '/information'
