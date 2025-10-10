@@ -4,6 +4,7 @@ import '../../styles/PTPostmortem.css';
 import ProjectBasicInfoForm from "../../components/common/ProjectBasicInfoForm.tsx";
 import { ExtendedProjectData } from '../../types/project';
 import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../../api/utils/apiClient';
 
 interface PTPostmortemData {
     // 프로젝트 기본 정보 (Profile/Kickoff 토글에서 사용)
@@ -165,34 +166,32 @@ const PTPostmortemForm: React.FC = () => {
         setIsLoading(true);
         setError(null);
 
+        //
         try {
-            const response = await fetch(`${apiBase}/api/projects/${projectId}/pt-postmortem`);
+            const response = await apiClient.get(`/projects/${projectId}/pt-postmortem`);
+            const data = response.data;
 
-            if (!response.ok) {
-                if (response.status === 404) {
-                    return;
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
+            if (data) {
+                setFormData(prev => ({
+                    ...prev,
+                    ptReview: data.pt_review || '',
+                    ptResult: data.pt_result || '',
+                    reason: data.reason || '',
+                    directionConcept: data.direction_concept || '',
+                    program: data.program || '',
+                    operation: data.produce || '',  // DB의 produce를 operation으로 매핑
+                    quotation: data.quotation || '',
+                    managerOpinion: data.pt_manager_opinion || '',
+                    writerName: data.writer_name || '',
+                    writerDepartment: data.writer_department || ''
+                }));
             }
-
-            const data: PTPostmortemResponse = await response.json();
-
-            setFormData(prev => ({
-                ...prev,
-                ptReview: data.pt_review || '',
-                ptResult: data.pt_result || '',
-                reason: data.reason || '',
-                directionConcept: data.direction_concept || '',
-                program: data.program || '',
-                operation: data.operation || '',
-                quotation: data.quotation || '',
-                managerOpinion: data.manager_opinion || '',
-                writerName: data.writer_name || '',
-                writerDepartment: data.writer_department || ''
-            }));
-
-        } catch (error) {
+        } catch (error: any) {
             console.error('PT Postmortem 데이터 로드 실패:', error);
+            // 404 에러는 데이터가 없는 것이므로 에러 처리하지 않음
+            if (error.response?.status === 404) {
+                return;
+            }
             setError('PT Postmortem 데이터를 불러오는데 실패했습니다.');
         } finally {
             setIsLoading(false);
@@ -209,6 +208,45 @@ const PTPostmortemForm: React.FC = () => {
         setIsLoading(true);
         setError(null);
 
+        // try {
+        //     const apiData = {
+        //         pt_review: data.ptReview,
+        //         pt_result: data.ptResult,
+        //         reason: data.reason,
+        //         direction_concept: data.directionConcept,
+        //         program: data.program,
+        //         operation: data.operation,
+        //         quotation: data.quotation,
+        //         manager_opinion: data.managerOpinion,
+        //         writer_name: data.writerName,
+        //         writer_department: data.writerDepartment
+        //     };
+        //
+        //     const response = await fetch(`${apiBase}/api/projects/${projectId}/pt-postmortem`, {
+        //         method: 'POST',
+        //         headers: {
+        //             'Content-Type': 'application/json',
+        //         },
+        //         body: JSON.stringify(apiData)
+        //     });
+        //
+        //     if (!response.ok) {
+        //         const errorData = await response.json();
+        //         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        //     }
+        //
+        //     const result: PTPostmortemResponse = await response.json();
+        //     console.log('PT Postmortem 저장 성공:', result);
+        //
+        //     return true;
+        //
+        // } catch (error) {
+        //     console.error('PT Postmortem 저장 실패:', error);
+        //     setError(`저장 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+        //     return false;
+        // } finally {
+        //     setIsLoading(false);
+        // }
         try {
             const apiData = {
                 pt_review: data.ptReview,
@@ -216,32 +254,18 @@ const PTPostmortemForm: React.FC = () => {
                 reason: data.reason,
                 direction_concept: data.directionConcept,
                 program: data.program,
-                operation: data.operation,
+                operation: data.operation,  // 프론트의 operation이 백엔드의 produce로 전달됨
                 quotation: data.quotation,
                 manager_opinion: data.managerOpinion,
                 writer_name: data.writerName,
                 writer_department: data.writerDepartment
             };
 
-            const response = await fetch(`${apiBase}/api/projects/${projectId}/pt-postmortem`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(apiData)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-            }
-
-            const result: PTPostmortemResponse = await response.json();
-            console.log('PT Postmortem 저장 성공:', result);
-
+            const response = await apiClient.post(`/projects/${projectId}/pt-postmortem`, apiData);
+            console.log('PT Postmortem 저장 성공:', response.data);
             return true;
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('PT Postmortem 저장 실패:', error);
             setError(`저장 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
             return false;

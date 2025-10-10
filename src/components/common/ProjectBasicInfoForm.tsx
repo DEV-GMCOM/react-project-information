@@ -347,6 +347,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
 
     const selectProject = async (project: ProjectData) => {
         try {
+            setSearchLoading(true);
             const response = await apiClient.get(`/projects/${project.project_id}`);
             const projectData = response.data;
             const updates: Record<string, string> = {
@@ -386,9 +387,13 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
             alert(`프로젝트 데이터를 가져오는 중 오류가 발생했습니다: ${errorMessage}`);
             console.error('프로젝트 선택 오류:', error);
         }
+        finally {
+            setSearchLoading(false);
+        }
 
         //[프로젝트 검토] 테이블을 위한 데이터 요청
         try {
+            setSearchLoading(true);
             const profileResponse = await apiClient.get(`/projects/${project.project_id}/profile`);
             if (profileResponse.data) {
                 setProjectReview({
@@ -409,6 +414,85 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                 proceedDecision: ''
             });
         }
+        finally {
+            setSearchLoading(false);
+        }
+
+        try {
+            setSearchLoading(true);
+            // 착수보고 데이터 가져오기 (kickoff)
+            const kickoffResponse = await apiClient(`/projects/${project.project_id}/kickoff`);
+
+            if (kickoffResponse.data) {
+                setKickoff(prev => ({
+                    ...prev,
+                    department: kickoffResponse.data.department || '',
+                    presenter: kickoffResponse.data.presenter || '',
+                    personnel: kickoffResponse.data.personnel || '',
+                    collaboration: kickoffResponse.data.collaboration || '',
+                    schedule: kickoffResponse.data.progress_schedule || '',
+                    others: kickoffResponse.data.other_notes || ''
+                }));
+                // setSaveMode('update');
+            } else {
+                // setSaveMode('insert');
+            }
+            //
+            // // 3. 작성자 정보 설정
+            // setKickoffData(prev => ({
+            //     ...prev,
+            //     writerName: '작성자명',
+            //     writerDepartment: '소속부서'
+            // }));
+            //
+            // // 4. 프로젝트 파일 목록 로드
+            // await loadProjectFiles(projectId);
+
+        } catch (error) {
+            const errorMessage = handleApiError(error);
+            console.error('프로젝트 데이터 로드 오류:', errorMessage);
+            alert(`프로젝트 데이터를 불러오는 중 오류가 발생했습니다: ${errorMessage}`);
+        } finally {
+            setSearchLoading(false);
+        }
+
+
+        try {
+            setSearchLoading(true);
+            // setError(null);
+
+            // const data = await apiCall(`/api/projects/${projectId}/postmortem`);
+            const response = await apiClient.get(`/projects/${project.project_id}/proj-postmortem`);
+            const data = response.data;
+
+            if (data) {
+                // 백엔드 데이터를 프론트엔드 형식으로 변환
+                setPtPostmortem(prev => ({
+                    ...prev,
+                    executionDate: data.execution_date || '',
+                    internalDepartment: data.internal_department || '',
+                    internalTeam: data.internal_team || [{ category: '', details: '' }],
+                    externalPartners: data.external_partners || [{ category: '', details: '' }],
+                    quantitativeEvaluation: data.quantitative_evaluation || '',
+                    qualitativeEvaluation: data.qualitative_evaluation || '',
+                    issuesAndImprovements: data.issues_and_improvements || '',
+                    managerOpinion: data.manager_opinion || '',
+                    writerName: data.writer_name || '',
+                    writerDepartment: data.writer_department || ''
+                }));
+            }
+        } catch (err: any) {
+            console.error('Postmortem 데이터 로드 오류:', err);
+            // 404는 데이터가 없는 것이므로 에러로 처리하지 않음
+            if (err.response?.status === 404) {
+                return;
+            }
+            // setError(err instanceof Error ? err.message : 'Postmortem 데이터를 불러오는 중 오류가 발생했습니다.');
+        } finally {
+            setSearchLoading(false);
+        }
+
+
     };
 
     const formatDateForInput = (dateStr?: string): string => {

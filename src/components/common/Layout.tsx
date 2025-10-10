@@ -91,6 +91,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 { path: '/admin/permissions/restrictions', name: '한정 관리' }, // 시간별, 외부접근별
             ]
         },
+
+
         // {
         //     path: '/admin/users',
         //     name: '사용자 관리',
@@ -319,17 +321,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         {/* 구분선 */}
                         <div className="nav-divider"></div>
 
-                        {/* 관리자 메뉴 섹션 */}
-                        <div className="nav-section nav-section-admin">
-                            {sidebarOpen && (
-                                <div className="section-header">
-                                    <div className="section-title">관리자 메뉴</div>
-                                </div>
-                            )}
-                            <ul className="nav-list">
-                                {adminMenuItems.map(renderMenuItem)}
-                            </ul>
-                        </div>
+                        {/*/!* 관리자 메뉴 섹션 *!/*/}
+                        {/*<div className="nav-section nav-section-admin">*/}
+                        {/*    {sidebarOpen && (*/}
+                        {/*        <div className="section-header">*/}
+                        {/*            <div className="section-title">관리자 메뉴</div>*/}
+                        {/*        </div>*/}
+                        {/*    )}*/}
+                        {/*    <ul className="nav-list">*/}
+                        {/*        {adminMenuItems.map(renderMenuItem)}*/}
+                        {/*    </ul>*/}
+                        {/*</div>*/}
                     </nav>
                 </aside>
 

@@ -4,6 +4,8 @@ import '../../styles/ProjectPostmortem.css';
 import ProjectBasicInfoForm from "../../components/common/ProjectBasicInfoForm.tsx";
 import { ExtendedProjectData } from '../../types/project';
 import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../../api/utils/apiClient';
+
 
 // API 연동을 위한 interface 추가
 interface ProjectPostmortemApiData {
@@ -191,23 +193,23 @@ const ProjectPostmortemForm: React.FC = () => {
     const internalCategories = ['기획', 'Proj 메인', '무대 및 연출', '인력', '제작'];
     const externalCategories = ['무대', '전시', '영상장비', '음향', '영상제작', '조명', '음악제작', 'VJ', '진행인력', '경호', '렌탈', '기타'];
 
-    // API 호출 함수들
-    const apiCall = async (url: string, options?: RequestInit) => {
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8001'}${url}`, {
-            headers: {
-                'Content-Type': 'application/json',
-                ...options?.headers,
-            },
-            ...options,
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ detail: '알 수 없는 오류가 발생했습니다.' }));
-            throw new Error(errorData.detail || `API 오류: ${response.status}`);
-        }
-
-        return response.json();
-    };
+    // // API 호출 함수들
+    // const apiCall = async (url: string, options?: RequestInit) => {
+    //     const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8001'}${url}`, {
+    //         headers: {
+    //             'Content-Type': 'application/json',
+    //             ...options?.headers,
+    //         },
+    //         ...options,
+    //     });
+    //
+    //     if (!response.ok) {
+    //         const errorData = await response.json().catch(() => ({ detail: '알 수 없는 오류가 발생했습니다.' }));
+    //         throw new Error(errorData.detail || `API 오류: ${response.status}`);
+    //     }
+    //
+    //     return response.json();
+    // };
 
     // 프로젝트 Postmortem 데이터 로드
     const loadPostmortemData = async (projectId: number) => {
@@ -215,7 +217,9 @@ const ProjectPostmortemForm: React.FC = () => {
             setLoading(true);
             setError(null);
 
-            const data = await apiCall(`/api/projects/${projectId}/postmortem`);
+            // const data = await apiCall(`/api/projects/${projectId}/postmortem`);
+            const response = await apiClient.get(`/projects/${projectId}/proj-postmortem`);
+            const data = response.data;
 
             if (data) {
                 // 백엔드 데이터를 프론트엔드 형식으로 변환
@@ -233,8 +237,12 @@ const ProjectPostmortemForm: React.FC = () => {
                     writerDepartment: data.writer_department || ''
                 }));
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('Postmortem 데이터 로드 오류:', err);
+            // 404는 데이터가 없는 것이므로 에러로 처리하지 않음
+            if (err.response?.status === 404) {
+                return;
+            }
             setError(err instanceof Error ? err.message : 'Postmortem 데이터를 불러오는 중 오류가 발생했습니다.');
         } finally {
             setLoading(false);
@@ -243,24 +251,45 @@ const ProjectPostmortemForm: React.FC = () => {
 
     // 프로젝트 Postmortem 데이터 저장
     const savePostmortemData = async (projectId: number, data: ProjectPostmortemData) => {
-        // 프론트엔드 데이터를 백엔드 API 형식으로 변환
-        const apiData: ProjectPostmortemApiData = {
-            execution_date: data.executionDate,
-            internal_department: data.internalDepartment,
-            internal_team: data.internalTeam,
-            external_partners: data.externalPartners,
-            quantitative_evaluation: data.quantitativeEvaluation,
-            qualitative_evaluation: data.qualitativeEvaluation,
-            issues_and_improvements: data.issuesAndImprovements,
-            manager_opinion: data.managerOpinion,
-            writer_name: data.writerName,
-            writer_department: data.writerDepartment
-        };
+        // // 프론트엔드 데이터를 백엔드 API 형식으로 변환
+        // const apiData: ProjectPostmortemApiData = {
+        //     execution_date: data.executionDate,
+        //     internal_department: data.internalDepartment,
+        //     internal_team: data.internalTeam,
+        //     external_partners: data.externalPartners,
+        //     quantitative_evaluation: data.quantitativeEvaluation,
+        //     qualitative_evaluation: data.qualitativeEvaluation,
+        //     issues_and_improvements: data.issuesAndImprovements,
+        //     manager_opinion: data.managerOpinion,
+        //     writer_name: data.writerName,
+        //     writer_department: data.writerDepartment
+        // };
+        //
+        // return await apiCall(`/api/projects/${projectId}/postmortem`, {
+        //     method: 'PUT',
+        //     body: JSON.stringify(apiData),
+        // });
+        try {
+            // 프론트엔드 데이터를 백엔드 API 형식으로 변환
+            const apiData: ProjectPostmortemApiData = {
+                execution_date: data.executionDate,
+                internal_department: data.internalDepartment,
+                internal_team: data.internalTeam,
+                external_partners: data.externalPartners,
+                quantitative_evaluation: data.quantitativeEvaluation,
+                qualitative_evaluation: data.qualitativeEvaluation,
+                issues_and_improvements: data.issuesAndImprovements,
+                manager_opinion: data.managerOpinion,
+                writer_name: data.writerName,
+                writer_department: data.writerDepartment
+            };
 
-        return await apiCall(`/api/projects/${projectId}/postmortem`, {
-            method: 'PUT',
-            body: JSON.stringify(apiData),
-        });
+            const response = await apiClient.post(`/projects/${projectId}/proj-postmortem`, apiData);
+            return response.data;
+        } catch (error) {
+            console.error('Postmortem 저장 오류:', error);
+            throw error;
+        }
     };
 
     // 프로젝트 ID가 변경될 때 데이터 로드
