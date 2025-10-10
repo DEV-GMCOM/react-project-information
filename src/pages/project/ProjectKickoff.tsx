@@ -105,18 +105,18 @@ const ProjectKickoffForm: React.FC = () => {
         try {
             setLoading(true);
 
-            // 1. 프로젝트 검토 데이터 가져오기 (profile)
-            const profileResponse = await apiClient(`/projects/${projectId}/profile`);
-
-            if (profileResponse.data) {
-                setKickoffData(prev => ({
-                    ...prev,
-                    swotAnalysis: profileResponse.data.swot_analysis || '',
-                    resourcePlan: profileResponse.data.resource_plan || '',
-                    writerOpinion: profileResponse.data.writer_opinion || '',
-                    proceedDecision: profileResponse.data.proceed_decision || '' // 진행부결사유 올바른 매핑
-                }));
-            }
+            // // 1. 프로젝트 검토 데이터 가져오기 (profile)
+            // const profileResponse = await apiClient(`/projects/${projectId}/profile`);
+            //
+            // if (profileResponse.data) {
+            //     setKickoffData(prev => ({
+            //         ...prev,
+            //         swotAnalysis: profileResponse.data.swot_analysis || '',
+            //         resourcePlan: profileResponse.data.resource_plan || '',
+            //         writerOpinion: profileResponse.data.writer_opinion || '',
+            //         proceedDecision: profileResponse.data.proceed_decision || '' // 진행부결사유 올바른 매핑
+            //     }));
+            // }
 
             // 2. 착수보고 데이터 가져오기 (kickoff)
             const kickoffResponse = await apiClient(`/projects/${projectId}/kickoff`);
@@ -397,80 +397,80 @@ const ProjectKickoffForm: React.FC = () => {
                     />
                 </div>
 
-                {/* 프로젝트 검토 테이블 (토글로 제어) */}
-                <div
-                    className={`profile-tables-container ${showProfileTables ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
-                    style={{
-                        opacity: showProfileTables ? 1 : 0,
-                        maxHeight: showProfileTables ? '2000px' : '0',
-                        transform: showProfileTables ? 'translateY(0)' : 'translateY(-20px)',
-                        transition: 'all 1s ease-in-out'
-                    }}
-                >
-                    {showProfileTables && (
-                        <div className="kickoff-section">
-                            <h3 className="section-header">
-                                🔒 프로젝트 검토
-                            </h3>
-                            <table className="kickoff-table">
-                                <tbody>
-                                <tr>
-                                    <td className="table-header">구분</td>
-                                    <td className="table-header">내용</td>
-                                </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label">SWOT 분석</td>
-                                    <td className="table-cell-input">
-                                        <textarea
-                                            name="swotAnalysis"
-                                            value={kickoffData.swotAnalysis || ''}
-                                            className="kickoff-textarea textarea-xlarge bullet-textarea"
-                                            readOnly
-                                            style={{ backgroundColor: '#f5f5f5' }}
-                                        />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label">리소스 활용방안</td>
-                                    <td className="table-cell-input">
-                                        <textarea
-                                            name="resourcePlan"
-                                            value={kickoffData.resourcePlan || ''}
-                                            className="kickoff-textarea textarea-large bullet-textarea"
-                                            readOnly
-                                            style={{ backgroundColor: '#f5f5f5' }}
-                                        />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label">작성자 의견</td>
-                                    <td className="table-cell-input">
-                                        <textarea
-                                            name="writerOpinion"
-                                            value={kickoffData.writerOpinion || ''}
-                                            className="kickoff-textarea textarea-large bullet-textarea"
-                                            readOnly
-                                            style={{ backgroundColor: '#f5f5f5' }}
-                                        />
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="table-cell table-cell-label">진행 부결 사유</td>
-                                    <td className="table-cell-input">
-                                        <textarea
-                                            name="proceedDecision"
-                                            value={kickoffData.proceedDecision || ''}
-                                            className="kickoff-textarea textarea-large bullet-textarea"
-                                            readOnly
-                                            style={{ backgroundColor: '#f5f5f5' }}
-                                        />
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
+                {/*/!* 프로젝트 검토 테이블 (토글로 제어) *!/*/}
+                {/*<div*/}
+                {/*    className={`profile-tables-container ${showProfileTables ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}*/}
+                {/*    style={{*/}
+                {/*        opacity: showProfileTables ? 1 : 0,*/}
+                {/*        maxHeight: showProfileTables ? '2000px' : '0',*/}
+                {/*        transform: showProfileTables ? 'translateY(0)' : 'translateY(-20px)',*/}
+                {/*        transition: 'all 1s ease-in-out'*/}
+                {/*    }}*/}
+                {/*>*/}
+                {/*    {showProfileTables && (*/}
+                {/*        <div className="kickoff-section">*/}
+                {/*            <h3 className="section-header">*/}
+                {/*                🔒 프로젝트 검토*/}
+                {/*            </h3>*/}
+                {/*            <table className="kickoff-table">*/}
+                {/*                <tbody>*/}
+                {/*                <tr>*/}
+                {/*                    <td className="table-header">구분</td>*/}
+                {/*                    <td className="table-header">내용</td>*/}
+                {/*                </tr>*/}
+                {/*                <tr>*/}
+                {/*                    <td className="table-cell table-cell-label">SWOT 분석</td>*/}
+                {/*                    <td className="table-cell-input">*/}
+                {/*                        <textarea*/}
+                {/*                            name="swotAnalysis"*/}
+                {/*                            value={kickoffData.swotAnalysis || ''}*/}
+                {/*                            className="kickoff-textarea textarea-xlarge bullet-textarea"*/}
+                {/*                            readOnly*/}
+                {/*                            style={{ backgroundColor: '#f5f5f5' }}*/}
+                {/*                        />*/}
+                {/*                    </td>*/}
+                {/*                </tr>*/}
+                {/*                <tr>*/}
+                {/*                    <td className="table-cell table-cell-label">리소스 활용방안</td>*/}
+                {/*                    <td className="table-cell-input">*/}
+                {/*                        <textarea*/}
+                {/*                            name="resourcePlan"*/}
+                {/*                            value={kickoffData.resourcePlan || ''}*/}
+                {/*                            className="kickoff-textarea textarea-large bullet-textarea"*/}
+                {/*                            readOnly*/}
+                {/*                            style={{ backgroundColor: '#f5f5f5' }}*/}
+                {/*                        />*/}
+                {/*                    </td>*/}
+                {/*                </tr>*/}
+                {/*                <tr>*/}
+                {/*                    <td className="table-cell table-cell-label">작성자 의견</td>*/}
+                {/*                    <td className="table-cell-input">*/}
+                {/*                        <textarea*/}
+                {/*                            name="writerOpinion"*/}
+                {/*                            value={kickoffData.writerOpinion || ''}*/}
+                {/*                            className="kickoff-textarea textarea-large bullet-textarea"*/}
+                {/*                            readOnly*/}
+                {/*                            style={{ backgroundColor: '#f5f5f5' }}*/}
+                {/*                        />*/}
+                {/*                    </td>*/}
+                {/*                </tr>*/}
+                {/*                <tr>*/}
+                {/*                    <td className="table-cell table-cell-label">진행 부결 사유</td>*/}
+                {/*                    <td className="table-cell-input">*/}
+                {/*                        <textarea*/}
+                {/*                            name="proceedDecision"*/}
+                {/*                            value={kickoffData.proceedDecision || ''}*/}
+                {/*                            className="kickoff-textarea textarea-large bullet-textarea"*/}
+                {/*                            readOnly*/}
+                {/*                            style={{ backgroundColor: '#f5f5f5' }}*/}
+                {/*                        />*/}
+                {/*                    </td>*/}
+                {/*                </tr>*/}
+                {/*                </tbody>*/}
+                {/*            </table>*/}
+                {/*        </div>*/}
+                {/*    )}*/}
+                {/*</div>*/}
 
                 {/* 프로젝트 착수보고 */}
                 <div className="kickoff-section">

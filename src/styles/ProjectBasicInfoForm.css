@@ -76,3 +76,19 @@
     color: #6c757d; /* 헤더 색상을 약간 연하게 */
 }
 
+/* 토글 버튼 색상 변화 */
+.toggle-profile-btn.active {
+    background-color: #0056b3; /* 활성화 상태 - 초록색 계열 */
+}
+
+.toggle-profile-btn.inactive {
+    background-color: #6c757d; /* 비활성화 상태 - 회색 계열 */
+}
+
+.toggle-profile-btn.active:hover {
+    background-color: #00408f;
+}
+
+.toggle-profile-btn.inactive:hover {
+    background-color: #5a6268;
+}

@@ -20,6 +20,36 @@ interface ContactSearchData {
     };
 }
 
+interface ProjectReview {
+    swotAnalysis?: string;
+    resourcePlan?: string;
+    writerOpinion?: string;
+    proceedDecision?: string; // 진행/부결 사유
+}
+
+interface KickoffReport {
+    department: string;
+    presenter: string;
+    personnel: string;
+    collaboration: string;
+    plannedExpense: string;
+    progressSchedule: string;
+    riskFactors: string;
+    nextReport: string;
+}
+
+interface PTPostmortem {
+    ptReview: string;
+    ptResult: string;
+    reason: string;
+    directionConcept: string;
+    program: string;
+    operation: string;   // 연출
+    quotation: string;   // 견적
+    managerOpinion: string;
+}
+
+
 type ExternalSearchHandlerResult = 'handled' | 'skip' | void;
 type ExternalSearchHandler = () => ExternalSearchHandlerResult | Promise<ExternalSearchHandlerResult>;
 
@@ -46,6 +76,28 @@ interface ProjectBasicInfoFormProps {
     onDetailSectionChange?: (visible: boolean) => void;
     detailSectionCollapsible?: boolean;
     detailSectionAnimationDuration?: number;
+
+    // ===== 여기부터 추가된 Props =====
+    // 프로젝트 검토 Section
+    showReviewSection?: boolean;
+    enableReviewSectionToggle?: boolean;
+    onReviewSectionChange?: (visible: boolean) => void;
+
+    // Project Kickoff Section
+    showKickoffSection?: boolean;
+    enableKickoffSectionToggle?: boolean;
+    onKickoffSectionChange?: (visible: boolean) => void;
+
+    // PT Postmortem Section
+    showPTPostmortemSection?: boolean;
+    enablePTPostmortemSectionToggle?: boolean;
+    onPTPostmortemSectionChange?: (visible: boolean) => void;
+
+    // Project Postmortem Section
+    showProjectPostmortemSection?: boolean;
+    enableProjectPostmortemSectionToggle?: boolean;
+    onProjectPostmortemSectionChange?: (visible: boolean) => void;
+    // ===== 추가된 Props 끝 =====
 
     // 프로젝트 선택 시 ID만 전달
     onProjectIdSelected?: (projectId: number) => void;
@@ -74,6 +126,24 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                                                        detailSectionCollapsible = true,
                                                                        detailSectionAnimationDuration = 1000,
 
+                                                                       // ===== 여기부터 추가된 Props destructuring =====
+                                                                       showReviewSection: showReviewSectionProp = false,
+                                                                       enableReviewSectionToggle = false,
+                                                                       onReviewSectionChange,
+
+                                                                       showKickoffSection: showKickoffSectionProp = false,
+                                                                       enableKickoffSectionToggle = false,
+                                                                       onKickoffSectionChange,
+
+                                                                       showPTPostmortemSection: showPTPostmortemSectionProp = false,
+                                                                       enablePTPostmortemSectionToggle = false,
+                                                                       onPTPostmortemSectionChange,
+
+                                                                       showProjectPostmortemSection: showProjectPostmortemSectionProp = false,
+                                                                       enableProjectPostmortemSectionToggle = false,
+                                                                       onProjectPostmortemSectionChange,
+                                                                       // ===== 추가된 Props destructuring 끝 =====
+
                                                                        // 프로젝트 ID 전달 콜백
                                                                        onProjectIdSelected,
                                                                    }) => {
@@ -92,6 +162,56 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     const [contactSearchResults, setContactSearchResults] = useState<ContactSearchData[]>([]);
     const [contactSearchLoading, setContactSearchLoading] = useState(false);
 
+    // ===== 여기부터 추가된 State =====
+    const [internalShowReviewSection, setInternalShowReviewSection] = useState<boolean>(showReviewSectionProp);
+    const [internalShowKickoffSection, setInternalShowKickoffSection] = useState<boolean>(showKickoffSectionProp);
+    const [internalShowPTPostmortemSection, setInternalShowPTPostmortemSection] = useState<boolean>(showPTPostmortemSectionProp);
+    const [internalShowProjectPostmortemSection, setInternalShowProjectPostmortemSection] = useState<boolean>(showProjectPostmortemSectionProp);
+    // ===== 추가된 State 끝 =====
+
+    const [projectReview, setProjectReview] = useState<ProjectReview>({
+        swotAnalysis: '',
+        resourcePlan: '',
+        writerOpinion: '',
+        proceedDecision: '',
+    });
+
+    const [kickoff, setKickoff] = useState<KickoffReport>({
+        department: '',
+        presenter: '',
+        personnel: '',
+        collaboration: '',
+        plannedExpense: '',
+        progressSchedule: '',
+        riskFactors: '',
+        nextReport: '',
+    });
+
+    const handleKickoffInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+        const { name, value } = e.target;
+        setKickoff(prev => ({ ...prev, [name]: value }));
+    };
+
+    const [ptPostmortem, setPtPostmortem] = useState<PTPostmortem>({
+        ptReview: '',
+        ptResult: '',
+        reason: '',
+        directionConcept: '',
+        program: '',
+        operation: '',
+        quotation: '',
+        managerOpinion: '',
+    });
+
+    const handlePTChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+        const { name, value } = e.target;
+        setPtPostmortem(prev => ({ ...prev, [name]: value }));
+    };
+
     useEffect(() => {
         if (!onChange) {
             setInternalFormData(formData);
@@ -103,6 +223,13 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         ? showDetailSectionProp
         : internalShowDetailSection;
 
+    // ===== 여기부터 추가된 Visibility 변수들 =====
+    const isReviewSectionVisible = showReviewSectionProp !== undefined ? showReviewSectionProp : internalShowReviewSection;
+    const isKickoffSectionVisible = showKickoffSectionProp !== undefined ? showKickoffSectionProp : internalShowKickoffSection;
+    const isPTPostmortemSectionVisible = showPTPostmortemSectionProp !== undefined ? showPTPostmortemSectionProp : internalShowPTPostmortemSection;
+    const isProjectPostmortemSectionVisible = showProjectPostmortemSectionProp !== undefined ? showProjectPostmortemSectionProp : internalShowProjectPostmortemSection;
+    // ===== 추가된 Visibility 변수들 끝 =====
+
     const handleDetailSectionToggle = () => {
         const newValue = !isDetailSectionVisible;
         if (onDetailSectionChange) {
@@ -111,6 +238,44 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
             setInternalShowDetailSection(newValue);
         }
     };
+
+    // ===== 여기부터 추가된 Toggle Handlers =====
+    const handleReviewSectionToggle = () => {
+        const newValue = !isReviewSectionVisible;
+        if (onReviewSectionChange) {
+            onReviewSectionChange(newValue);
+        } else {
+            setInternalShowReviewSection(newValue);
+        }
+    };
+
+    const handleKickoffSectionToggle = () => {
+        const newValue = !isKickoffSectionVisible;
+        if (onKickoffSectionChange) {
+            onKickoffSectionChange(newValue);
+        } else {
+            setInternalShowKickoffSection(newValue);
+        }
+    };
+
+    const handlePTPostmortemSectionToggle = () => {
+        const newValue = !isPTPostmortemSectionVisible;
+        if (onPTPostmortemSectionChange) {
+            onPTPostmortemSectionChange(newValue);
+        } else {
+            setInternalShowPTPostmortemSection(newValue);
+        }
+    };
+
+    const handleProjectPostmortemSectionToggle = () => {
+        const newValue = !isProjectPostmortemSectionVisible;
+        if (onProjectPostmortemSectionChange) {
+            onProjectPostmortemSectionChange(newValue);
+        } else {
+            setInternalShowProjectPostmortemSection(newValue);
+        }
+    };
+    // ===== 추가된 Toggle Handlers 끝 =====
 
     const handleInternalChange = (name: keyof ExtendedProjectData, value: string) => {
         if (onChange) {
@@ -220,6 +385,29 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
             const errorMessage = handleApiError(error);
             alert(`프로젝트 데이터를 가져오는 중 오류가 발생했습니다: ${errorMessage}`);
             console.error('프로젝트 선택 오류:', error);
+        }
+
+        //[프로젝트 검토] 테이블을 위한 데이터 요청
+        try {
+            const profileResponse = await apiClient.get(`/projects/${project.project_id}/profile`);
+            if (profileResponse.data) {
+                setProjectReview({
+                    swotAnalysis: profileResponse.data.swot_analysis || '',
+                    resourcePlan: profileResponse.data.resource_plan || '',
+                    writerOpinion: profileResponse.data.writer_opinion || '',
+                    proceedDecision: profileResponse.data.proceed_decision || ''
+                });
+                console.log('✅ 프로젝트 검토 데이터 로드 성공:', profileResponse.data);
+            }
+        } catch (profileError) {
+            console.warn('⚠️ 프로젝트 검토(Profile) 데이터 로드 실패:', profileError);
+            // 실패해도 기본 정보는 표시되도록 에러를 무시
+            setProjectReview({
+                swotAnalysis: '',
+                resourcePlan: '',
+                writerOpinion: '',
+                proceedDecision: ''
+            });
         }
     };
 
@@ -619,19 +807,73 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                         </tbody>
                     </table>
 
-                    {enableDetailSectionToggle && detailSectionCollapsible && (
+                    {/*{enableDetailSectionToggle && detailSectionCollapsible && (*/}
+                    {/*    <div className="table-action-section">*/}
+                    {/*        <button*/}
+                    {/*            type="button"*/}
+                    {/*            className="toggle-profile-btn"*/}
+                    {/*            onClick={handleDetailSectionToggle}*/}
+                    {/*            aria-expanded={isDetailSectionVisible}*/}
+                    {/*            aria-controls="detail-section-container"*/}
+                    {/*        >*/}
+                    {/*            Project Profile {isDetailSectionVisible ? '숨기기' : '보기'}*/}
+                    {/*        </button>*/}
+                    {/*    </div>*/}
+                    {/*)}*/}
+
+                    {/* ===== 여기부터 추가된 토글 버튼 섹션 ===== */}
+                    {/*{(enableKickoffSectionToggle || enablePTPostmortemSectionToggle || enableProjectPostmortemSectionToggle) && (*/}
+                    {((enableDetailSectionToggle && detailSectionCollapsible) || enableKickoffSectionToggle || enablePTPostmortemSectionToggle || enableProjectPostmortemSectionToggle) && (
                         <div className="table-action-section">
-                            <button
-                                type="button"
-                                className="toggle-profile-btn"
-                                onClick={handleDetailSectionToggle}
-                                aria-expanded={isDetailSectionVisible}
-                                aria-controls="detail-section-container"
-                            >
-                                Project Profile {isDetailSectionVisible ? '숨기기' : '보기'}
-                            </button>
+                            {enableDetailSectionToggle && detailSectionCollapsible && (
+                                <button
+                                    type="button"
+                                    // className="toggle-profile-btn"
+                                    className={`toggle-profile-btn ${isDetailSectionVisible ? 'active' : 'inactive'}`}
+                                    onClick={handleDetailSectionToggle}
+                                    aria-expanded={isDetailSectionVisible}
+                                    aria-controls="detail-section-container"
+                                >
+                                    {/*Project Profile {isDetailSectionVisible ? '숨기기' : '보기'}*/}
+                                    프로젝트 상세정보
+                                </button>
+                            )}
+                            {enableKickoffSectionToggle && (
+                                <button
+                                    type="button"
+                                    // className="toggle-profile-btn"
+                                    className={`toggle-profile-btn ${isKickoffSectionVisible ? 'active' : 'inactive'}`}
+                                    onClick={handleKickoffSectionToggle}
+                                >
+                                    {/*Project Kickoff {isKickoffSectionVisible ? '숨기기' : '보기'}*/}
+                                    프로젝트 착수보고
+                                </button>
+                            )}
+                            {enablePTPostmortemSectionToggle && (
+                                <button
+                                    type="button"
+                                    // className="toggle-profile-btn"
+                                    className={`toggle-profile-btn ${isPTPostmortemSectionVisible ? 'active' : 'inactive'}`}
+                                    onClick={handlePTPostmortemSectionToggle}
+                                >
+                                    {/*PT Postmortem {isPTPostmortemSectionVisible ? '숨기기' : '보기'}*/}
+                                    PT 결과분석
+                                </button>
+                            )}
+                            {enableProjectPostmortemSectionToggle && (
+                                <button
+                                    type="button"
+                                    // className="toggle-profile-btn"
+                                    className={`toggle-profile-btn ${isProjectPostmortemSectionVisible ? 'active' : 'inactive'}`}
+                                    onClick={handleProjectPostmortemSectionToggle}
+                                >
+                                    {/*Project Postmortem {isProjectPostmortemSectionVisible ? '숨기기' : '보기'}*/}
+                                    프로젝트 결과분석
+                                </button>
+                            )}
                         </div>
                     )}
+                    {/* ===== 추가된 토글 버튼 섹션 끝 ===== */}
 
                     {(enableDetailSectionToggle || isDetailSectionVisible) && (
                         <div
@@ -701,10 +943,556 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                             </tbody>
                                         </table>
                                     </div>
+
+                                    <div className="kickoff-section">
+                                        <h3 className="section-header">
+                                            🔒 프로젝트 검토
+                                        </h3>
+                                        <table className="kickoff-table">
+                                            <tbody>
+                                            <tr>
+                                                <td className="table-header">구분</td>
+                                                <td className="table-header">내용</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="table-cell table-cell-label">SWOT 분석</td>
+                                                <td className="table-cell-input">
+                                        <textarea
+                                            name="swotAnalysis"
+                                            value={projectReview.swotAnalysis || ''}
+                                            className="kickoff-textarea textarea-xlarge bullet-textarea"
+                                            readOnly
+                                            style={{ backgroundColor: '#f5f5f5' }}
+                                        />
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td className="table-cell table-cell-label">리소스 활용방안</td>
+                                                <td className="table-cell-input">
+                                        <textarea
+                                            name="resourcePlan"
+                                            value={projectReview.resourcePlan || ''}
+                                            className="kickoff-textarea textarea-large bullet-textarea"
+                                            readOnly
+                                            style={{ backgroundColor: '#f5f5f5' }}
+                                        />
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td className="table-cell table-cell-label">작성자 의견</td>
+                                                <td className="table-cell-input">
+                                        <textarea
+                                            name="writerOpinion"
+                                            value={projectReview.writerOpinion || ''}
+                                            className="kickoff-textarea textarea-large bullet-textarea"
+                                            readOnly
+                                            style={{ backgroundColor: '#f5f5f5' }}
+                                        />
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td className="table-cell table-cell-label">진행 부결 사유</td>
+                                                <td className="table-cell-input">
+                                        <textarea
+                                            name="proceedDecision"
+                                            value={projectReview.proceedDecision || ''}
+                                            className="kickoff-textarea textarea-large bullet-textarea"
+                                            readOnly
+                                            style={{ backgroundColor: '#f5f5f5' }}
+                                        />
+                                                </td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
                                 </>
                             )}
                         </div>
                     )}
+
+
+                    {/* ===== 여기부터 추가된 테이블 섹션들 ===== */}
+
+                    {/* 프로젝트 검토 Section */}
+                    {enableReviewSectionToggle && (
+                        <div
+                            className={`profile-tables-container ${isReviewSectionVisible ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
+                            style={{
+                                opacity: isReviewSectionVisible ? 1 : 0,
+                                maxHeight: isReviewSectionVisible ? '2000px' : '0',
+                                transform: isReviewSectionVisible ? 'translateY(0)' : 'translateY(-20px)',
+                                transition: `all ${detailSectionAnimationDuration}ms ease-in-out`
+                            }}
+                        >
+                            {isReviewSectionVisible && (
+                                <div className={className}>
+                                    <h3 className="section-header">■ 프로젝트 검토</h3>
+                                    <table className={tableClassName}>
+                                        <tbody>
+                                        <tr>
+                                            <td className="table-header">구분</td>
+                                            <td className="table-header">내용</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="table-cell table-cell-label">SWOT 분석</td>
+                                            <td className="table-cell-input">
+                                                {/* 빈 테이블 */}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td className="table-cell table-cell-label">리소스 활용방안</td>
+                                            <td className="table-cell-input">
+                                                {/* 빈 테이블 */}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td className="table-cell table-cell-label">작성자 의견</td>
+                                            <td className="table-cell-input">
+                                                {/* 빈 테이블 */}
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* 프로젝트 착수보고 Section */}
+                    {enableKickoffSectionToggle && (
+                        // <div
+                        //     className={`profile-tables-container ${isKickoffSectionVisible ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
+                        //     style={{
+                        //         opacity: isKickoffSectionVisible ? 1 : 0,
+                        //         maxHeight: isKickoffSectionVisible ? '2000px' : '0',
+                        //         transform: isKickoffSectionVisible ? 'translateY(0)' : 'translateY(-20px)',
+                        //         transition: `all ${detailSectionAnimationDuration}ms ease-in-out`
+                        //     }}
+                        // >
+                        //     {isKickoffSectionVisible && (
+                        //         <div className={className}>
+                        //             <h3 className="section-header">■ 프로젝트 착수보고</h3>
+                        //             <table className={tableClassName}>
+                        //                 <tbody>
+                        //                 <tr>
+                        //                     <td className="table-header">구분</td>
+                        //                     <td className="table-header">내용</td>
+                        //                 </tr>
+                        //                 <tr>
+                        //                     <td className="table-cell table-cell-label">담당부서</td>
+                        //                     <td className="table-cell-input">
+                        //                         {/* 빈 테이블 */}
+                        //                     </td>
+                        //                 </tr>
+                        //                 <tr>
+                        //                     <td className="table-cell table-cell-label">PT발표자</td>
+                        //                     <td className="table-cell-input">
+                        //                         {/* 빈 테이블 */}
+                        //                     </td>
+                        //                 </tr>
+                        //                 <tr>
+                        //                     <td className="table-cell table-cell-label">기획자</td>
+                        //                     <td className="table-cell-input">
+                        //                         {/* 빈 테이블 */}
+                        //                     </td>
+                        //                 </tr>
+                        //                 <tr>
+                        //                     <td className="table-cell table-cell-label">협업조직</td>
+                        //                     <td className="table-cell-input">
+                        //                         {/* 빈 테이블 */}
+                        //                     </td>
+                        //                 </tr>
+                        //                 <tr>
+                        //                     <td className="table-cell table-cell-label">추진 일정</td>
+                        //                     <td className="table-cell-input">
+                        //                         {/* 빈 테이블 */}
+                        //                     </td>
+                        //                 </tr>
+                        //                 <tr>
+                        //                     <td className="table-cell table-cell-label">기타</td>
+                        //                     <td className="table-cell-input">
+                        //                         {/* 빈 테이블 */}
+                        //                     </td>
+                        //                 </tr>
+                        //                 </tbody>
+                        //             </table>
+                        //         </div>
+                        //     )}
+                        // </div>
+
+                        <div
+                            className={`profile-tables-container ${isKickoffSectionVisible ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
+                            style={{
+                                opacity: isKickoffSectionVisible ? 1 : 0,
+                                maxHeight: isKickoffSectionVisible ? '2000px' : '0',
+                                transform: isKickoffSectionVisible ? 'translateY(0)' : 'translateY(-20px)',
+                                marginBottom: isKickoffSectionVisible ? '0' : '0',
+                                transition: 'all 1s ease-in-out'
+                            }}
+                        >
+                            {isKickoffSectionVisible && (
+                                // <div className="postmortem-section">
+                                <div className={`${className} ${readOnly ? 'readonly-mode' : ''}`}>
+                                    {/*<h3 className="section-header">*/}
+                                    {/*    ■ 프로젝트 착수보고*/}
+                                    {/*</h3>*/}
+                                    <h3 className="section-header">
+                                        {readOnly ? '🔒' : '■'} 프로젝트 착수보고
+                                    </h3>
+                                    {/*<table className="postmortem-table">*/}
+                                    <table className={tableClassName}>
+                                        <tbody>
+                                        <tr>
+                                            <td className="table-header">구분</td>
+                                            <td className="table-header">내용</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="table-cell table-cell-label">담당부서</td>
+                                            <td className="table-cell-input">
+                                            <textarea
+                                                name="department"
+                                                value={kickoff.department}
+                                                onChange={handleKickoffInputChange}
+                                                placeholder="X본부 Y팀"
+                                                className="postmortem-textarea textarea-small bullet-textarea"
+                                                readOnly={readOnly}
+                                            />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td className="table-cell table-cell-label">PT발표자</td>
+                                            <td className="table-cell-input">
+                                                <input
+                                                    type="text"
+                                                    name="presenter"
+                                                    value={kickoff.presenter}
+                                                    onChange={handleInputChange}
+                                                    className="postmortem-input"
+                                                    readOnly={readOnly}
+                                                />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td className="table-cell table-cell-label">
+                                                투입인력 및<br/>
+                                                역할, 기여도
+                                            </td>
+                                            <td className="table-cell-input">
+                                            <textarea
+                                                name="personnel"
+                                                value={kickoff.personnel}
+                                                onChange={handleKickoffInputChange}
+                                                placeholder="메인 XXX PM ( 기여도 YY% 예정 )&#10;서브 XXX PM ( 기여도 YY% 예정 )&#10;서브 XXX PM ( 기여도 YY% 예정 )"
+                                                className="postmortem-textarea textarea-large bullet-textarea"
+                                                readOnly={readOnly}
+                                            />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td className="table-cell table-cell-label">협업조직</td>
+                                            <td className="table-cell-input">
+                                            <textarea
+                                                name="collaboration"
+                                                value={kickoff.collaboration}
+                                                onChange={handleKickoffInputChange}
+                                                placeholder="키비주얼 : 디자인팀&#10;3D 디자인 : XX 사&#10;영상 : 영상팀"
+                                                className="postmortem-textarea textarea-large bullet-textarea"
+                                                readOnly={readOnly}
+                                            />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td className="table-cell table-cell-label">기획 예상경비</td>
+                                            <td className="table-cell-input">
+                                            <textarea
+                                                name="plannedExpense"
+                                                value={kickoff.plannedExpense}
+                                                onChange={handleKickoffInputChange}
+                                                placeholder="출장, 야근택시비, 용역비 등"
+                                                className="postmortem-textarea textarea-medium bullet-textarea"
+                                                readOnly={readOnly}
+                                            />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td className="table-cell table-cell-label">
+                                                진행 일정<br/>
+                                                (마일스톤)
+                                            </td>
+                                            <td className="table-cell-input">
+                                            <textarea
+                                                name="progressSchedule"
+                                                value={kickoff.progressSchedule}
+                                                onChange={handleKickoffInputChange}
+                                                placeholder="주차별 또는 월별 주요 일정"
+                                                className="postmortem-textarea textarea-large bullet-textarea"
+                                                readOnly={readOnly}
+                                            />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td className="table-cell table-cell-label">위험요소</td>
+                                            <td className="table-cell-input">
+                                            <textarea
+                                                name="riskFactors"
+                                                value={kickoff.riskFactors}
+                                                onChange={handleKickoffInputChange}
+                                                placeholder="예상되는 리스크와 대응방안"
+                                                className="postmortem-textarea textarea-medium bullet-textarea"
+                                                readOnly={readOnly}
+                                            />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td className="table-cell table-cell-label">차기 보고</td>
+                                            <td className="table-cell-input">
+                                            <textarea
+                                                name="nextReport"
+                                                value={kickoff.nextReport}
+                                                onChange={handleKickoffInputChange}
+                                                placeholder="다음 보고 예정일과 내용"
+                                                className="postmortem-textarea textarea-small"
+                                                readOnly={readOnly}
+                                            />
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                    )}
+
+                    {/* PT 결과 분석 Section */}
+                    {enablePTPostmortemSectionToggle && (
+                        <div
+                            className={`profile-tables-container ${isPTPostmortemSectionVisible ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
+                            style={{
+                                opacity: isPTPostmortemSectionVisible ? 1 : 0,
+                                maxHeight: isPTPostmortemSectionVisible ? '2000px' : '0',
+                                transform: isPTPostmortemSectionVisible ? 'translateY(0)' : 'translateY(-20px)',
+                                transition: `all ${detailSectionAnimationDuration}ms ease-in-out`
+                            }}
+                        >
+                            {isPTPostmortemSectionVisible && (
+                                <div className={`${className} ${readOnly ? 'readonly-mode' : ''}`}>
+                                    <h3 className="section-header">{readOnly ? '🔒' : '■'} PT 결과 분석</h3>
+                                    <table className={tableClassName}>
+                                        <tbody>
+                                        <tr>
+                                            <td className="table-header">구분</td>
+                                            <td className="table-header">내용</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td className="table-cell table-cell-label">PT 내용 Review</td>
+                                            <td className="table-cell-input">
+                                                <textarea
+                                                    name="ptReview"
+                                                    value={ptPostmortem.ptReview}
+                                                    onChange={handlePTChange}
+                                                    placeholder="발표 과정, 질의응답, 분위기 등"
+                                                    className="postmortem-textarea textarea-large bullet-textarea"
+                                                    readOnly={readOnly}
+                                                />
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td className="table-cell table-cell-label">PT 결과</td>
+                                            <td className="table-cell-input">
+                                                <input
+                                                    type="text"
+                                                    name="ptResult"
+                                                    value={ptPostmortem.ptResult}
+                                                    onChange={handlePTChange}
+                                                    placeholder="낙찰 / 탈락"
+                                                    className={`postmortem-input ${readOnly ? 'readonly-input' : ''}`}
+                                                    readOnly={readOnly}
+                                                />
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td className="table-cell table-cell-label">이유</td>
+                                            <td className="table-cell-input">
+                                                <textarea
+                                                    name="reason"
+                                                    value={ptPostmortem.reason}
+                                                    onChange={handlePTChange}
+                                                    placeholder="성공/실패 요인 분석"
+                                                    className="postmortem-textarea textarea-large bullet-textarea"
+                                                    readOnly={readOnly}
+                                                />
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td className="table-cell table-cell-label">방향성/컨셉</td>
+                                            <td className="table-cell-input">
+                                                <textarea
+                                                    name="directionConcept"
+                                                    value={ptPostmortem.directionConcept}
+                                                    onChange={handlePTChange}
+                                                    className="postmortem-textarea textarea-medium bullet-textarea"
+                                                    readOnly={readOnly}
+                                                />
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td className="table-cell table-cell-label">프로그램</td>
+                                            <td className="table-cell-input">
+                                                <textarea
+                                                    name="program"
+                                                    value={ptPostmortem.program}
+                                                    onChange={handlePTChange}
+                                                    className="postmortem-textarea textarea-medium bullet-textarea"
+                                                    readOnly={readOnly}
+                                                />
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td className="table-cell table-cell-label">연출</td>
+                                            <td className="table-cell-input">
+                                                <textarea
+                                                    name="operation"
+                                                    value={ptPostmortem.operation}
+                                                    onChange={handlePTChange}
+                                                    className="postmortem-textarea textarea-medium bullet-textarea"
+                                                    readOnly={readOnly}
+                                                />
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td className="table-cell table-cell-label">견적</td>
+                                            <td className="table-cell-input">
+                                                <textarea
+                                                    name="quotation"
+                                                    value={ptPostmortem.quotation}
+                                                    onChange={handlePTChange}
+                                                    className="postmortem-textarea textarea-medium bullet-textarea"
+                                                    readOnly={readOnly}
+                                                />
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td className="table-cell table-cell-label">담당PM 의견</td>
+                                            <td className="table-cell-input">
+                                                <textarea
+                                                    name="managerOpinion"
+                                                    value={ptPostmortem.managerOpinion}
+                                                    onChange={handlePTChange}
+                                                    placeholder="향후 개선사항, 교훈 등"
+                                                    className="postmortem-textarea textarea-large bullet-textarea"
+                                                    readOnly={readOnly}
+                                                />
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* 프로젝트 실행 후 보고 & 평가 Section */}
+                    {enableProjectPostmortemSectionToggle && (
+                        <div
+                            className={`profile-tables-container ${isProjectPostmortemSectionVisible ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
+                            style={{
+                                opacity: isProjectPostmortemSectionVisible ? 1 : 0,
+                                maxHeight: isProjectPostmortemSectionVisible ? '3000px' : '0',
+                                transform: isProjectPostmortemSectionVisible ? 'translateY(0)' : 'translateY(-20px)',
+                                transition: `all ${detailSectionAnimationDuration}ms ease-in-out`
+                            }}
+                        >
+                            {isProjectPostmortemSectionVisible && (
+                                <>
+                                    {/* 프로젝트 실행 후 보고 */}
+                                    <div className={className}>
+                                        <h3 className="section-header">■ 프로젝트 실행 후 보고</h3>
+                                        <table className={tableClassName}>
+                                            <tbody>
+                                            <tr>
+                                                <td className="table-header">구분</td>
+                                                <td className="table-header">내용</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="table-cell table-cell-label">실행일</td>
+                                                <td className="table-cell-input">
+                                                    {/* 빈 테이블 */}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td className="table-cell table-cell-label">담당부서</td>
+                                                <td className="table-cell-input">
+                                                    {/* 빈 테이블 */}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td className="table-cell table-cell-label">내부팀 구성</td>
+                                                <td className="table-cell-input">
+                                                    {/* 빈 테이블 */}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td className="table-cell table-cell-label">외부 파트너</td>
+                                                <td className="table-cell-input">
+                                                    {/* 빈 테이블 */}
+                                                </td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* 실행 후 평가 */}
+                                    <div className={className}>
+                                        <h3 className="section-header">■ 실행 후 평가</h3>
+                                        <table className={tableClassName}>
+                                            <tbody>
+                                            <tr>
+                                                <td className="table-header">구분</td>
+                                                <td className="table-header">내용</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="table-cell table-cell-label">정량적 평가</td>
+                                                <td className="table-cell-input">
+                                                    {/* 빈 테이블 */}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td className="table-cell table-cell-label">정성적 평가</td>
+                                                <td className="table-cell-input">
+                                                    {/* 빈 테이블 */}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td className="table-cell table-cell-label">문제점 및 개선사항</td>
+                                                <td className="table-cell-input">
+                                                    {/* 빈 테이블 */}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td className="table-cell table-cell-label">담당자 의견</td>
+                                                <td className="table-cell-input">
+                                                    {/* 빈 테이블 */}
+                                                </td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+                    {/* ===== 추가된 테이블 섹션들 끝 ===== */}
+
                 </div>
             </div>
 
