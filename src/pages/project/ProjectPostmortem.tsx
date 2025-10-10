@@ -190,6 +190,9 @@ const ProjectPostmortemForm: React.FC = () => {
         writerDepartment: ''
     });
 
+    //***************************************************************************************************
+    // 아래 내용 반드시 바뀌어야 한다. 서버의 테이블에 저장된 값으로 가져와 동적으로 배정하고, 또한 응답값을 동적으로 분류되도록..
+    //***************************************************************************************************
     const internalCategories = ['기획', 'Proj 메인', '무대 및 연출', '인력', '제작'];
     const externalCategories = ['무대', '전시', '영상장비', '음향', '영상제작', '조명', '음악제작', 'VJ', '진행인력', '경호', '렌탈', '기타'];
 
@@ -211,36 +214,108 @@ const ProjectPostmortemForm: React.FC = () => {
     //     return response.json();
     // };
 
+    // 날짜 형식 변환 함수 추가 (파일 상단에)
+    const formatDateForInput = (dateString: string | null): string => {
+        if (!dateString) return '';
+
+        // "2025-10-10" → "2025.10.10" 또는 input에 맞는 형식으로
+        // 만약 input type="date"라면 "2025-10-10" 그대로 사용
+        // 만약 일반 text input이라면 원하는 형식으로 변환
+
+        // 하이픈을 점으로 변환하는 경우:
+        return dateString.replace(/-/g, '.');
+    };
+
     // 프로젝트 Postmortem 데이터 로드
     const loadPostmortemData = async (projectId: number) => {
         try {
             setLoading(true);
             setError(null);
 
-            // const data = await apiCall(`/api/projects/${projectId}/postmortem`);
             const response = await apiClient.get(`/projects/${projectId}/proj-postmortem`);
             const data = response.data;
 
-            if (data) {
+            console.log('📥 백엔드에서 받은 데이터:', data);  // 디버깅용
+
+            if (data && data.postmortem) {
+                const postmortem = data.postmortem;
+
+                // 🔥 available_parts로 category ID → 이름 매핑 생성
+                const categoryIdToName: { [key: number]: string } = {};
+                (data.available_parts || []).forEach((part: any) => {
+                    categoryIdToName[part.category] = part.name;
+                });
+                console.log('📋 Category 매핑:', categoryIdToName);
+
+                // teams를 category 기준으로 내부팀과 외부협력사로 분리
+                const internalTeams = (data.teams || [])
+                    .filter((t: any) => t.category < 100)
+                    .map((t: any) => ({
+                        category: categoryIdToName[t.category] || String(t.category),  // ✅ ID → 이름 변환
+                        details: t.details || ''
+                    }));
+
+                const externalPartners = (data.teams || [])
+                    .filter((t: any) => t.category >= 100)
+                    .map((t: any) => ({
+                        category: categoryIdToName[t.category] || String(t.category),  // ✅ ID → 이름 변환
+                        details: t.details || ''
+                    }));
+
+                console.log('✅ 내부팀:', internalTeams);
+                console.log('✅ 외부협력사:', externalPartners);
+
+
                 // 백엔드 데이터를 프론트엔드 형식으로 변환
                 setFormData(prev => ({
                     ...prev,
-                    executionDate: data.execution_date || '',
-                    internalDepartment: data.internal_department || '',
-                    internalTeam: data.internal_team || [{ category: '', details: '' }],
-                    externalPartners: data.external_partners || [{ category: '', details: '' }],
-                    quantitativeEvaluation: data.quantitative_evaluation || '',
-                    qualitativeEvaluation: data.qualitative_evaluation || '',
-                    issuesAndImprovements: data.issues_and_improvements || '',
-                    managerOpinion: data.manager_opinion || '',
-                    writerName: data.writer_name || '',
-                    writerDepartment: data.writer_department || ''
+                    executionDate: formatDateForInput(postmortem.execution_date),
+                    internalDepartment: postmortem.internal_department || '',
+                    internalTeam: internalTeams.length > 0 ? internalTeams : [{ category: '', details: '' }],
+                    externalPartners: externalPartners.length > 0 ? externalPartners : [{ category: '', details: '' }],
+                    quantitativeEvaluation: postmortem.quantitative_evaluation || '',
+                    qualitativeEvaluation: postmortem.qualitative_evaluation || '',
+                    issuesAndImprovements: postmortem.issues_and_improvements || '',
+                    managerOpinion: postmortem.manager_opinion || '',
+                    writerName: postmortem.writer_name || '',
+                    writerDepartment: postmortem.writer_department || ''
+                }));
+
+                console.log('✅ 데이터 로드 완료');
+            } else {
+                // 데이터가 없을 때 초기화
+                console.log('ℹ️  저장된 데이터 없음 - 초기화');
+                setFormData(prev => ({
+                    ...prev,
+                    executionDate: '',
+                    internalDepartment: '',
+                    internalTeam: [{ category: '', details: '' }],
+                    externalPartners: [{ category: '', details: '' }],
+                    quantitativeEvaluation: '',
+                    qualitativeEvaluation: '',
+                    issuesAndImprovements: '',
+                    managerOpinion: '',
+                    writerName: '',
+                    writerDepartment: ''
                 }));
             }
         } catch (err: any) {
-            console.error('Postmortem 데이터 로드 오류:', err);
+            console.error('❌ Postmortem 데이터 로드 오류:', err);
             // 404는 데이터가 없는 것이므로 에러로 처리하지 않음
             if (err.response?.status === 404) {
+                setFormData(prev => ({
+                    ...prev,
+                    executionDate: '',
+                    internalDepartment: '',
+                    internalTeam: [{ category: '', details: '' }],
+                    externalPartners: [{ category: '', details: '' }],
+                    quantitativeEvaluation: '',
+                    qualitativeEvaluation: '',
+                    issuesAndImprovements: '',
+                    managerOpinion: '',
+                    writerName: '',
+                    writerDepartment: ''
+                }));
                 return;
             }
             setError(err instanceof Error ? err.message : 'Postmortem 데이터를 불러오는 중 오류가 발생했습니다.');
@@ -382,13 +457,15 @@ const ProjectPostmortemForm: React.FC = () => {
             // 1. 최신 데이터 다시 로드
             await loadPostmortemData(projectId);
 
-            // 2. 성공 메시지 표시
+            // 2. alert로 명확한 피드백
+            alert('Project Postmortem이 성공적으로 저장되었습니다.');
+
+            // 3. 배너도 표시 (선택사항)
             setSuccessMessage('Project Postmortem이 성공적으로 저장되었습니다.');
             setTimeout(() => setSuccessMessage(null), 3000);
 
-            // 3. 스크롤을 맨 위로 이동
+            // 4. 스크롤을 맨 위로 이동
             window.scrollTo({ top: 0, behavior: 'smooth' });
-
         } catch (err) {
             console.error('저장 오류:', err);
             const errorMessage = err instanceof Error ? err.message : 'Project Postmortem 저장 중 오류가 발생했습니다.';

@@ -462,23 +462,21 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
             // setError(null);
 
             // const data = await apiCall(`/api/projects/${projectId}/postmortem`);
-            const response = await apiClient.get(`/projects/${project.project_id}/proj-postmortem`);
+            const response = await apiClient.get(`/projects/${project.project_id}/pt-postmortem`);
             const data = response.data;
 
             if (data) {
                 // 백엔드 데이터를 프론트엔드 형식으로 변환
                 setPtPostmortem(prev => ({
                     ...prev,
-                    executionDate: data.execution_date || '',
-                    internalDepartment: data.internal_department || '',
-                    internalTeam: data.internal_team || [{ category: '', details: '' }],
-                    externalPartners: data.external_partners || [{ category: '', details: '' }],
-                    quantitativeEvaluation: data.quantitative_evaluation || '',
-                    qualitativeEvaluation: data.qualitative_evaluation || '',
-                    issuesAndImprovements: data.issues_and_improvements || '',
+                    ptReview: data.pt_review || '',
+                    ptResult: data.pt_result || '',
+                    reason: data.reason || '',
+                    directionConcept: data.direction_concept || '',
+                    program: data.program || '',
+                    operation: data.operation || '',
+                    quotation: data.quotation || '',
                     managerOpinion: data.manager_opinion || '',
-                    writerName: data.writer_name || '',
-                    writerDepartment: data.writer_department || ''
                 }));
             }
         } catch (err: any) {
