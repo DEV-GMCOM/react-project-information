@@ -329,7 +329,7 @@ const PTPostmortemForm: React.FC = () => {
         <div className="pt-postmortem-container">
             <header className="postmortem-header">
                 <h1 className="postmortem-title">별첨 2-4. PT Postmortem</h1>
-                <div className="postmortem-logo">GMC</div>
+                <div className="postmortem-logo">GMCOM</div>
             </header>
 
             <main className="postmortem-main">
