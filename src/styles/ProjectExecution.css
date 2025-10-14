@@ -1,0 +1,870 @@
+/* PTChecklist.css */
+
+/* 메인 컨테이너 */
+.project-execution-container {
+    font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    min-height: 100vh;
+}
+
+/* 헤더 */
+.project-execution-header {
+    background-color: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* PTChecklist.css */
+
+
+.project-execution-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.project-execution-logo {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* 메인 컨텐츠 섹션 */
+.project-execution-main {
+    background-color: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 타이틀 영역 */
+.project-execution-title-section {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+}
+
+.project-execution-subtitle {
+    margin: 0;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.project-execution-writer {
+    margin-top: 10px;
+}
+
+.writer-form {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+}
+
+.writer-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.writer-field-label {
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 80px;
+}
+
+.writer-field-input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 150px;
+}
+
+/* 섹션 */
+.project-execution-section {
+    margin-bottom: 30px;
+}
+
+/* 섹션 헤더 */
+.section-header {
+    background-color: #f8f9fa;
+    color: #333;
+    padding: 8px 12px;
+    margin: 0;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* 테이블 스타일 */
+/* 기존 checklist-table의 margin-top 제거 */
+.project-execution-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333;
+    margin-top: 0px; /* 15px에서 0px로 변경 */
+}
+/* 테이블 헤더 */
+.table-header {
+    background-color: #333;
+    color: white;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #333;
+    text-align: center;
+}
+
+/* 테이블 셀 */
+.table-cell {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    font-size: 13px;
+}
+
+.table-cell-label {
+    background-color: #f8f9fa;
+    width: 120px;
+    text-align: center;
+    vertical-align: middle;
+    font-weight: 500;
+}
+
+.table-cell-rowspan {
+    vertical-align: middle;
+    text-align: center;
+    font-weight: bold;
+    background-color: #f0f0f0;
+    width: 100px;
+    writing-mode: horizontal-tb;
+}
+
+.table-cell-input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    vertical-align: top;
+}
+
+/* 체크리스트 아이템 셀 */
+.project-execution-item-cell {
+    padding: 12px;
+}
+
+/* 체크리스트 아이템 */
+.project-execution-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* 체크박스 라벨 */
+.project-execution-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 500;
+    cursor: pointer;
+    color: #333;
+}
+
+/* 체크박스 */
+.project-execution-checkbox {
+    margin: 0;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #007bff;
+}
+
+.project-execution-checkbox:checked {
+    background-color: #007bff;
+}
+
+/* 입력 필드 */
+.project-execution-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    color: #333 !important;
+}
+
+.project-execution-input:focus {
+    background-color: white !important;
+    color: #333 !important;
+}
+
+/* 체크리스트 텍스트에어리어 */
+.project-execution-textarea {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #333 !important;
+    line-height: 1.4;
+    resize: vertical;
+    min-height: 40px;
+    background-color: #fafafa;
+}
+
+.project-execution-textarea:focus {
+    background-color: white !important;
+    color: #333 !important;
+    outline: 2px solid #007bff;
+    outline-offset: -2px;
+    border-color: #007bff;
+}
+
+.project-execution-textarea::placeholder {
+    color: #999;
+    font-style: italic;
+}
+
+/* 버튼 영역 */
+.project-execution-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-secondary:hover {
+    background-color: #545b62;
+}
+
+
+/* 자동완성 스타일 조정 */
+.project-execution-input:-webkit-autofill,
+.project-execution-input:-webkit-autofill:hover,
+.project-execution-input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px white inset !important;
+    -webkit-text-fill-color: #333 !important;
+    background-color: white !important;
+    border-color: transparent !important;
+}
+
+.project-execution-textarea:-webkit-autofill,
+.project-execution-textarea:-webkit-autofill:hover,
+.project-execution-textarea:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px white inset !important;
+    -webkit-text-fill-color: #333 !important;
+    background-color: white !important;
+}
+
+/* 체크박스 커스텀 스타일 */
+.project-execution-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #007bff;
+    border-radius: 3px;
+    background-color: white;
+    position: relative;
+    cursor: pointer;
+}
+
+.project-execution-checkbox:checked {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.project-execution-checkbox:checked::after {
+    content: '✓';
+    position: absolute;
+    top: -2px;
+    left: 1px;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.project-execution-checkbox:hover {
+    border-color: #0056b3;
+}
+
+.project-execution-checkbox:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* 체크된 항목의 라벨 스타일 */
+.project-execution-checkbox:checked + .project-execution-label {
+    color: #007bff;
+}
+
+/* 라벨 텍스트 스타일 개선 */
+.project-execution-label {
+    user-select: none;
+    transition: color 0.2s ease;
+}
+
+.project-execution-label:hover {
+    color: #007bff;
+}
+
+/* 긴 텍스트가 있는 라벨의 줄 간격 조정 */
+.project-execution-label br {
+    line-height: 1.6;
+}
+
+
+/* 체크리스트 완료 상태 시각적 피드백 */
+.project-execution-item.completed {
+    background-color: #f8f9fa;
+    border-left: 4px solid #28a745;
+    padding-left: 12px;
+}
+
+/* 텍스트에어리어 높이 자동 조정 */
+.project-execution-textarea {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.project-execution-textarea:focus {
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+/* 접근성 개선 */
+.project-execution-checkbox:focus-visible {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+.project-execution-label:focus-within {
+    background-color: rgba(0, 123, 255, 0.05);
+    border-radius: 4px;
+    padding: 2px;
+}
+
+/* 체크박스와 라벨 정렬 개선 */
+.project-execution-label {
+    align-items: flex-start;
+    margin-top: 2px;
+}
+
+.project-execution-checkbox {
+    margin-top: 2px;
+}
+
+/* 테이블 행 간격 조정 */
+.project-execution-table tbody tr {
+    border-bottom: 1px solid #eee;
+}
+
+.project-execution-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+/* 스크롤바 스타일링 */
+.project-execution-textarea::-webkit-scrollbar {
+    width: 8px;
+}
+
+.project-execution-textarea::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.project-execution-textarea::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.project-execution-textarea::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+
+
+/* --- 검색 버튼 --- */
+.input-with-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.search-btn {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-btn:hover {
+    background: #e9ecef;
+}
+
+/* --- 모달 --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* --- 검색 테이블 --- */
+.search-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.search-table th,
+.search-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.search-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+.select-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.select-btn:hover {
+    background: #0056b3;
+}
+
+.loading, .no-results {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+
+/* MeetingMinutes.css 파일 맨 아래에 추가하세요 */
+
+/* --- [제안] 생성 액션 패널 --- */
+.generation-panel {
+    display: flex;
+    justify-content: space-between; /* 옵션은 왼쪽, 버튼은 오른쪽으로 배치 */
+    align-items: center;
+    padding: 20px;
+    background-color: #f8f9fa; /* 다른 섹션과 구분되는 연한 배경색 */
+    border-radius: 6px;
+    margin-top: 30px; /* 위 섹션과의 간격 */
+    margin-bottom: 30px; /* 아래 저장 버튼과의 간격 */
+}
+
+.generation-options {
+    display: flex;
+    align-items: center;
+    gap: 30px; /* 체크박스 사이 간격 */
+}
+
+/* 기존 버튼 영역의 justify-content를 오른쪽 정렬로 수정 */
+.project-execution-actions {
+    display: flex;
+    justify-content: flex-end; /* 오른쪽 정렬로 변경 */
+    gap: 15px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+/* --- 파일 업로드 섹션 --- */
+.file-upload-section {
+    margin-top: 15px;
+    margin-bottom: 20px;
+}
+
+.file-drop-zone {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.file-drop-zone.drag-over {
+    background-color: #e9ecef;
+    border-color: #007bff;
+}
+
+.drop-zone-message {
+    /* ... 메시지 스타일 ... */
+}
+
+.file-list {
+    /* ... 파일 목록 스타일 ... */
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+/* ... 이하 file-info, file-name, file-remove-btn 등 상세 스타일 ... */
+
+
+/* 공통 스타일(.table-action-section)을 덮어쓰기 위한 코드 */
+.project-execution-main .table-action-section {
+    justify-content: center; /* 우측 정렬(flex-end)을 중앙 정렬(center)로 변경 */
+    margin-top: 5rem;
+
+    /* 또는 text-align을 사용해도 됩니다. */
+    /* display: block; */
+    /* text-align: center; */
+}
+
+.upload-separator {
+    text-align: center; /* 텍스트를 가운데 정렬합니다. */
+    font-size: 1.6rem;  /* 기본 폰트 크기보다 1.2배 크게 합니다. */
+    font-weight: bold;  /* 폰트를 굵게 만듭니다. */
+    color: #888;         /* 텍스트 색상을 약간 연하게 조정합니다. */
+    margin: 20px 0;     /* 위 아래 요소와 20px의 간격을 줍니다. */
+}
+
+.rfp-attach-btn {
+    padding: 12px 24px;      /* 버튼 크기도 약간 키워 균형을 맞춥니다. */
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;         /* ◀◀◀ 폰트 크기를 14px에서 16px로 키웠습니다. */
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.rfp-attach-btn:hover {
+    background-color: #0056b3;
+}
+
+.rfp-attach-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* ProjectExecution.css 파일 맨 아래에 추가하세요. */
+
+/* --- 파일 유형 선택 모달 --- */
+.file-category-modal {
+    width: 90%;
+    max-width: 450px; /* 모달 너비 조정 */
+}
+
+/* 모달 내부 라디오 버튼 그룹 */
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* 항목 간 간격 */
+    margin-top: 20px;
+    padding: 10px;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.radio-label:hover {
+    background-color: #f8f9fa;
+}
+
+.radio-label input[type="radio"] {
+    /* 기본 라디오 버튼을 더 크게 만듭니다 */
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* 모달 하단 버튼 영역 */
+.file-category-modal .modal-actions {
+    justify-content: flex-end; /* 버튼을 오른쪽으로 정렬 */
+}
+
+/* ProjectExecution.css 파일 맨 아래에 추가하거나 기존 코드를 이 내용으로 교체하세요. */
+
+/* --- 파일 유형 선택 모달 --- */
+.file-category-modal {
+    width: 90%;
+    max-width: 450px;
+}
+
+/* 모달 내부 라디오 버튼 그룹 */
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+    padding: 10px;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* 라디오 버튼과 텍스트 사이 간격 조정 */
+    font-size: 28px;
+    cursor: pointer;
+    padding: 12px; /* 내부 여백 추가 */
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+/* ▼▼▼ [수정] 라디오 버튼과 텍스트 스타일 변경 ▼▼▼ */
+.radio-label span {
+    color: #333;           /* 텍스트 색상을 진하게 변경 */
+    font-weight: 600;       /* 텍스트를 굵게 (bold) 처리 */
+}
+
+.radio-label input[type="radio"] {
+    width: 20px;            /* 라디오 버튼의 너비 키움 */
+    height: 20px;           /* 라디오 버튼의 높이 키움 */
+    cursor: pointer;
+}
+/* ▲▲▲ 수정 완료 ▲▲▲ */
+
+
+.radio-label:hover {
+    background-color: #f8f9fa;
+}
+
+/* 모달 하단 버튼 영역 */
+.file-category-modal .modal-actions {
+    justify-content: flex-end;
+}
+
+/* ProjectExecution.css */
+
+/* --- 실행 파일 리스트 테이블 스타일 --- */
+
+.execution-file-list-table {
+    width: 100%;
+    border-collapse: collapse; /* 셀 사이의 경계를 합칩니다 */
+    margin-bottom: 30px; /* 테이블 아래쪽 여백 */
+    border: 1px solid #ddd; /* 테이블 전체 외곽선 */
+}
+
+/* 테이블 헤더(th)와 데이터 셀(td)의 공통 스타일 */
+.execution-file-list-table th,
+.execution-file-list-table td {
+    padding: 12px 15px; /* 셀 내부 여백 */
+    border: 1px solid #ddd; /* 셀 경계선 */
+    text-align: left;
+    vertical-align: middle; /* 내용을 수직 중앙 정렬 */
+}
+
+/* 테이블 헤더(th) 전용 스타일 */
+.execution-file-list-table th {
+    /*background-color: #f8f9fa; !* 헤더 배경색 *!*/
+    background-color: #000000; /* 헤더 배경색 */
+    color: white;
+    font-weight: 600; /* 폰트 굵게 */
+    text-align: center; /* 헤더 텍스트는 가운데 정렬 */
+    font-size: 14px;
+}
+
+/* 카테고리 셀 스타일 */
+.execution-file-list-table .category-cell {
+    text-align: center;
+    font-weight: 500;
+    font-size: 14px;
+    background-color: #f7f7f7;
+}
+
+/* 파일 목록이 들어갈 셀 스타일 */
+.execution-file-list-table .file-list-cell {
+    padding: 15px;
+}
+
+.execution-file-list-table .file-list-cell p {
+    margin: 0;
+    color: #888;
+    font-size: 13px;
+}
+
+
+/* src/styles/ProjectExecution.css */
+
+/* 파일 목록 셀 내부의 파일들을 감싸는 컨테이너 */
+.file-items-container {
+    display: flex;
+    flex-direction: column; /* 파일들을 세로로 쌓습니다. */
+    gap: 8px; /* 파일 아이템 사이의 간격 */
+}
+
+/* 파일 목록이 없을 때 표시되는 메시지 */
+.no-files-message {
+    color: #888;
+    font-size: 13px;
+    padding: 10px 0;
+}
+
+/* 테이블 내의 개별 파일 아이템 (기존 .file-item과 약간 다름) */
+.execution-file-list-table .file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.execution-file-list-table .file-item .file-info {
+    display: flex;
+    flex-direction: column; /* 파일명과 상세정보를 세로로 배치 */
+    align-items: flex-start;
+}
+
+.execution-file-list-table .file-item .file-details {
+    margin-top: 4px;
+}
+
+/* 테이블 내 파일 액션 버튼 그룹 */
+.file-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.file-download-btn,
+.execution-file-list-table .file-remove-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+
+/* src/styles/ProjectExecution.css 파일에 추가 */
+
+/* --- 최종 버튼 영역 --- */
+.button-section {
+    text-align: right; /* 버튼을 오른쪽으로 정렬 */
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.submit-btn {
+    padding: 12px 25px;
+    background-color: #3498db; /* 프로젝트의 주요 색상 */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.submit-btn:hover {
+    background-color: #2980b9;
+}
+
+.submit-btn:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+

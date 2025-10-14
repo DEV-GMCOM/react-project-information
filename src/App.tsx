@@ -35,6 +35,9 @@ import ProjectPostmortem from './pages/project/ProjectPostmortem'; // 프로젝�
 import PTChecklist from './pages/project/PTChecklist'; // PT 준비 체크리스트
 
 import ProjectBasicInfoTest from './pages/project/ProjectBasicInforTest'; // PT 준비 체크리스트
+import MeetingMinutes from './pages/working/MeetingMinutes';
+import ProjectExecution from './pages/project/ProjectExecution';
+
 import './styles/App.css';
 
 function App() {
@@ -179,6 +182,18 @@ function App() {
                         </ProtectedRoute>
                     }
                 />
+
+                <Route
+                    path="/project-execution"
+                    element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <ProjectExecution />
+                            </Layout>
+                        </ProtectedRoute>
+                    }
+                />
+
                 {/*<Route path="/project-postmortem" element={<ProjectPostmortem />} />*/}
                 <Route
                     path="/project-postmortem"
@@ -407,6 +422,18 @@ function App() {
                         </ProtectedRoute>
                     }
                 />
+
+                <Route
+                    path="/working/meeting-minutes" // Layout.tsx에 정의한 path와 일치해야 합니다.
+                    element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <MeetingMinutes />
+                            </Layout>
+                        </ProtectedRoute>
+                    }
+                />
+
                 {/*<Route path="/project/postmortem-project" element={<ProjectPostmortem />} />*/}
                 <Route
                     path="/project/postmortem-project"

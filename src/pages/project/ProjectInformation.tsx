@@ -56,6 +56,11 @@ interface ProjectData {
     expected_effects?: string;
     risk_factors?: string;
     business_type?: string;
+
+    // ▼▼▼ [추가] 아래 두 줄을 추가하여 API 응답 데이터 타입을 일치시킵니다. ▼▼▼
+    score_table?: string;
+    bid_amount?: string;
+
     reports?: Array<{
         id: number;
         report_date: string;
@@ -98,6 +103,9 @@ interface ProjectInformationFormData {
     // rfpReviewScore: number | '';
     futureValueScore: number | '';
     relationshipScore: number | '';
+
+    scoreTable: string | '';
+    bidAmount: string | '';
 }
 
 /** 담당자 검색 결과 항목의 타입을 정의합니다. */
@@ -185,6 +193,9 @@ const ProjectInformationForm: React.FC = () => {
         // rfpReviewScore: '',
         futureValueScore: '',
         relationshipScore: '',
+
+        scoreTable: '',
+        bidAmount: '',
     });
     const [showSearchModal, setShowSearchModal] = useState(false);
     const [searchResults, setSearchResults] = useState<ProjectData[]>([]);
@@ -359,6 +370,12 @@ const ProjectInformationForm: React.FC = () => {
                 comparison: detailedProject.deliverables || '',
                 coreRequirements: detailedProject.special_requirements || '',
                 additionalInfo: reportsData,
+
+
+                // ▼▼▼ [추가] 아래 두 줄을 추가하세요. ▼▼▼
+                scoreTable: detailedProject.score_table || '',
+                bidAmount: detailedProject.bid_amount || '',
+
                 // 불러오기 전, 관련 필드 초기화
                 swotAnalysis: '',
                 resourcePlan: '',
@@ -496,6 +513,11 @@ const ProjectInformationForm: React.FC = () => {
             project_period_start: formData.eventDate ? formData.eventDate.replace(/\./g, '-') : null,
             project_period_end: formData.submissionSchedule ? formData.submissionSchedule.replace(/\./g, '-') : null,
             ot_schedule: formData.otSchedule ? formData.otSchedule.replace(/\./g, '-') : null,
+
+            // ▼▼▼ [추가] 아래 두 줄을 추가하세요. ▼▼▼
+            scoreTable: formData.scoreTable || '',
+            bidAmount: formData.bidAmount || '',
+
             company_id: selectedCompany?.id,
             client_contact_id: selectedContact?.id,
             writer_emp_id: selectedProject?.writer_info?.emp_id || user.emp_id,
@@ -1003,6 +1025,39 @@ const ProjectInformationForm: React.FC = () => {
                             <td className="table-cell table-cell-label">예상 경쟁사</td>
                             <td className="table-cell-input"><input type="text" name="expectedCompetitors" value={formData.expectedCompetitors} onChange={handleInputChange} className="project-input"/></td>
                         </tr>
+
+
+                        <tr>
+                            <td className="table-cell table-cell-label">배점표</td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="scoreTable"
+                                    value={formData.scoreTable}
+                                    onChange={handleInputChange}
+                                    className={`project-input`}
+                                    // className={`kickoff-input ${readOnly ? 'readonly-input' : ''}`}
+                                    // readOnly={readOnly}
+                                />
+                            </td>
+                            <td className="table-cell table-cell-label">
+                                제출/투찰 금액<br/>
+                                (단위 : 천만원)
+                            </td>
+                            <td className="table-cell-input">
+                                <input
+                                    type="text"
+                                    name="bidAmount"
+                                    value={formData.bidAmount}
+                                    onChange={handleInputChange}
+                                    placeholder="XX.X, Y%"
+                                    className={`project-input`}
+                                    // className={`kickoff-input ${readOnly ? 'readonly-input' : ''}`}
+                                    // readOnly={readOnly}
+                                />
+                            </td>
+                        </tr>
+
                         </tbody>
                     </table>
                 </div>
