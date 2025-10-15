@@ -1,25 +1,18 @@
-// CompanyProfile.tsx - 완전한 소스 코드 (모든 수정 사항 반영)
-
 import React, { useState, useEffect } from 'react';
 import clsx from 'clsx';
-// ▼▼▼ apiClient를 import 합니다. ▼▼▼
+// ▼▼▼ apiClient 경로는 실제 프로젝트 구조에 맞게 확인해주세요. ▼▼▼
 import apiClient from '../../api/utils/apiClient';
 import { handleApiError } from '../../api/utils/errorUtils';
 import { usePermissions } from '../../hooks/usePermissions';
 import '../../styles/CompanyProfile.css';
 
-// --- 타입 정의 ---
+// --- 타입 정의 (생략 없음) ---
 interface ContactReportResponse {
     id: number;
     contact_date: string;
     content: string;
     created_at: string;
     updated_at?: string;
-}
-
-interface ContactReportCreate {
-    contact_date: string;
-    content: string;
 }
 
 interface CompanyContactData {
@@ -51,6 +44,10 @@ interface CompanyData {
     representative?: string;
     created_at: string;
     contacts?: CompanyContactData[];
+    basic_overview?: string;
+    contact_info?: string;
+    bank_name?: string;
+    account_number?: string;
 }
 
 interface CompanyProfile {
@@ -154,6 +151,63 @@ const initialContactState: ContactProfile = {
     notes: ''
 };
 
+
+// ==============================================================================
+//  ✅ 1. 최종 수정된 담당자 검색 입력 컴포넌트
+// ==============================================================================
+interface ContactSearchInputProps {
+    searchTerm: string;
+    // ✨ [수정] onSearch가 searchTerm을 인자로 받도록 변경
+    onSearch: (searchTerm: string) => void;
+    // ✨ [수정] 부모의 상태를 직접 수정할 수 있도록 setSearchTerm prop 추가
+    setSearchTerm: (value: string) => void;
+}
+
+// ✨ [수정] props에서 setSearchTerm을 받아옵니다.
+const ContactSearchInput: React.FC<ContactSearchInputProps> = ({ searchTerm, onSearch, setSearchTerm }) => {
+    // 자체 내부 상태를 사용하여 자소 분리 현상을 방지합니다.
+    const [localTerm, setLocalTerm] = useState(searchTerm);
+
+    // 부모의 searchTerm prop이 변경될 때(예: 모달에서 수정)마다 내부 상태를 동기화합니다.
+    useEffect(() => {
+        setLocalTerm(searchTerm);
+    }, [searchTerm]);
+
+    const handleSearch = () => {
+        // 검색을 실행할 때, 내부 상태값으로 부모의 onSearch 함수를 호출합니다.
+        onSearch(localTerm);
+    };
+
+    return (
+        <div className="input-with-search contact-search-field contact-search-visible">
+            <input
+                type="text"
+                placeholder="담당자 이름으로 검색"
+                value={localTerm}
+                onChange={(e) => {
+                    // ✨ [수정] onChange에서는 내부 상태와 부모 상태를 모두 업데이트합니다.
+                    setLocalTerm(e.target.value);
+                    setSearchTerm(e.target.value);
+                }}
+                className="profile-input"
+                onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                        handleSearch();
+                    }
+                }}
+            />
+            <button
+                type="button"
+                className="search-btn"
+                onClick={handleSearch}
+                title="담당자 검색"
+            >
+                🔍
+            </button>
+        </div>
+    );
+};
+
 const CompanyProfileForm: React.FC = () => {
     const { hasFinanceAccess, canEditFinance } = usePermissions();
     const [formData, setFormData] = useState<CompanyProfile>(initialCompanyState);
@@ -172,19 +226,20 @@ const CompanyProfileForm: React.FC = () => {
     const [searchKeyword, setSearchKeyword] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+
     const [contactSearchTerm, setContactSearchTerm] = useState('');
     const [contactSearchResults, setContactSearchResults] = useState<ContactSearchData[]>([]);
     const [contactSearchLoading, setContactSearchLoading] = useState(false);
     const [showContactSearchModal, setShowContactSearchModal] = useState(false);
     const [contactSearchCurrentPage, setContactSearchCurrentPage] = useState(1);
     const [contactSearchTotalPages, setContactSearchTotalPages] = useState(1);
+
     const [contactReports, setContactReports] = useState<ContactReportResponse[]>([]);
     const [newReportDate, setNewReportDate] = useState('');
     const [newReportContent, setNewReportContent] = useState('');
     const [reportLoading, setReportLoading] = useState(false);
     const [tempReports, setTempReports] = useState<Array<{id: string, contact_date: string, content: string, isTemp: boolean}>>([]);
     const [originalTempReports, setOriginalTempReports] = useState<Array<{id: string, contact_date: string, content: string, isTemp: boolean}>>([]);
-
     const [showSimilarCompaniesModal, setShowSimilarCompaniesModal] = useState(false);
     const [similarCompanies, setSimilarCompanies] = useState<CompanyData[]>([]);
 
@@ -214,14 +269,11 @@ const CompanyProfileForm: React.FC = () => {
         setContactFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleContactSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setContactSearchTerm(e.target.value);
-    };
-
-    const handleContactSearch = async () => {
+    const handleContactSearch = async (term: string) => {
+        setContactSearchTerm(term);
         setShowContactSearchModal(true);
         setContactSearchCurrentPage(1);
-        await searchContacts(contactSearchTerm, 1);
+        await searchContacts(term, 1);
     };
 
     const handleAddReport = () => {
@@ -230,12 +282,7 @@ const CompanyProfileForm: React.FC = () => {
             return;
         }
         const tempId = `temp_${Date.now()}`;
-        const newTempReport = {
-            id: tempId,
-            contact_date: newReportDate,
-            content: newReportContent,
-            isTemp: true
-        };
+        const newTempReport = { id: tempId, contact_date: newReportDate, content: newReportContent, isTemp: true };
         setTempReports(prev => {
             const updated = [...prev, newTempReport];
             return updated.sort((a, b) => new Date(a.contact_date).getTime() - new Date(b.contact_date).getTime());
@@ -246,16 +293,8 @@ const CompanyProfileForm: React.FC = () => {
     };
 
     const getAllReports = () => {
-        const dbReports = contactReports.map(report => ({
-            ...report,
-            isTemp: false
-        }));
-        const allReports = [...dbReports, ...tempReports];
-        return allReports.sort((a, b) => new Date(a.contact_date).getTime() - new Date(b.contact_date).getTime());
-    };
-
-    const handlePrint = () => {
-        window.print();
+        const dbReports = contactReports.map(report => ({ ...report, isTemp: false }));
+        return [...dbReports, ...tempReports].sort((a, b) => new Date(a.contact_date).getTime() - new Date(b.contact_date).getTime());
     };
 
     const handleCancelAllChanges = () => {
@@ -281,14 +320,9 @@ const CompanyProfileForm: React.FC = () => {
     const searchCompanies = async (keyword: string, page: number) => {
         try {
             setSearchLoading(true);
-            const params = {
-                search: keyword,
-                skip: (page - 1) * 10,
-                limit: 10
-            };
+            const params = { search: keyword, skip: (page - 1) * 10, limit: 10 };
             const listResponse = await apiClient.get('/company-profile/', { params });
             const countResponse = await apiClient.get('/company-profile/count', { params });
-
             setSearchResults(listResponse.data);
             setTotalPages(Math.ceil(countResponse.data.total_count / 10));
         } catch (error) {
@@ -314,12 +348,10 @@ const CompanyProfileForm: React.FC = () => {
                 bankName: detailedCompany.bank_name || '',
                 accountNumber: detailedCompany.account_number || ''
             };
-
             setFormData(newFormData);
             setOriginalFormData(newFormData);
             setCompanyContacts(detailedCompany.contacts || []);
             setSelectedCompany(detailedCompany);
-
             setSelectedContact(null);
             setShowContactInformations(false);
             setContactFormData(initialContactState);
@@ -329,7 +361,6 @@ const CompanyProfileForm: React.FC = () => {
             setContactReports([]);
             setTempReports([]);
             setOriginalTempReports([]);
-
             alert(`회사 "${detailedCompany.company_name}"이 선택되었습니다.`);
         } catch (error) {
             handleApiError(error);
@@ -340,14 +371,9 @@ const CompanyProfileForm: React.FC = () => {
     const searchContacts = async (keyword: string, page: number) => {
         try {
             setContactSearchLoading(true);
-            const params = {
-                search: keyword,
-                skip: (page - 1) * 10,
-                limit: 10
-            };
+            const params = { search: keyword, skip: (page - 1) * 10, limit: 10 };
             const listResponse = await apiClient.get('/company-profile/contacts/search', { params });
             const countResponse = await apiClient.get('/company-profile/contacts/search/count', { params });
-
             setContactSearchResults(listResponse.data);
             setContactSearchTotalPages(Math.ceil(countResponse.data.total_count / 10));
         } catch (error) {
@@ -361,7 +387,6 @@ const CompanyProfileForm: React.FC = () => {
     const selectSearchedContact = async (contact: ContactSearchData) => {
         try {
             await selectCompany(contact.company.id);
-
             const contactData: CompanyContactData = {
                 id: contact.id,
                 contact_name: contact.contact_name,
@@ -378,7 +403,6 @@ const CompanyProfileForm: React.FC = () => {
                 project_experience: contact.project_experience,
                 notes: contact.notes
             };
-
             selectContact(contactData);
             setShowContactSearchModal(false);
             setContactSearchTerm('');
@@ -406,10 +430,7 @@ const CompanyProfileForm: React.FC = () => {
         if (!selectedCompany || !selectedContact || tempReports.length === 0) return true;
         try {
             for (const tempReport of tempReports) {
-                const payload = {
-                    contact_date: tempReport.contact_date,
-                    content: tempReport.content
-                };
+                const payload = { contact_date: tempReport.contact_date, content: tempReport.content };
                 await apiClient.post(`/company-profile/${selectedCompany.id}/contacts/${selectedContact.id}/reports`, payload);
             }
             await loadContactReports(selectedContact.id);
@@ -422,14 +443,12 @@ const CompanyProfileForm: React.FC = () => {
         }
     };
 
-    // 저장 함수 - 통합 방식
     const handleSave = async (forceSave: boolean = false) => {
         if (!isFormDirty && !forceSave) {
             alert('변경된 내용이 없습니다.');
             return;
         }
 
-        // 신규 등록인 경우
         if (!selectedCompany) {
             if (!formData.companyName.trim()) {
                 alert('회사명을 입력해주세요.');
@@ -469,7 +488,6 @@ const CompanyProfileForm: React.FC = () => {
                     creationPayload.contacts.push(contactPayload);
                 }
 
-                // force_save 파라미터와 함께 요청
                 const response = await apiClient.post('/company-profile/', creationPayload, {
                     params: { force_save: forceSave }
                 });
@@ -479,13 +497,13 @@ const CompanyProfileForm: React.FC = () => {
 
                 const newFormData = {
                     companyName: newlyCreatedCompany.company_name,
-                    basicOverview: (newlyCreatedCompany as any).basic_overview || '',
+                    basicOverview: newlyCreatedCompany.basic_overview || '',
                     representative: newlyCreatedCompany.representative || '',
                     businessNumber: newlyCreatedCompany.business_number || '',
-                    contactInfo: (newlyCreatedCompany as any).contact_info || '',
+                    contactInfo: newlyCreatedCompany.contact_info || '',
                     address: newlyCreatedCompany.address || '',
-                    bankName: (newlyCreatedCompany as any).bank_name || '',
-                    accountNumber: (newlyCreatedCompany as any).account_number || ''
+                    bankName: newlyCreatedCompany.bank_name || '',
+                    accountNumber: newlyCreatedCompany.account_number || ''
                 };
                 setFormData(newFormData);
                 setOriginalFormData(newFormData);
@@ -504,7 +522,6 @@ const CompanyProfileForm: React.FC = () => {
                 setIsFormDirty(false);
 
             } catch (error: any) {
-                // 409 Conflict: 유사 회사 발견
                 if (error.response?.status === 409) {
                     const detail = error.response.data.detail;
                     setSimilarCompanies(detail.similar_companies || []);
@@ -514,9 +531,7 @@ const CompanyProfileForm: React.FC = () => {
                     alert(`저장 실패: ${handleApiError(error)}`);
                 }
             }
-        }
-        // 기존 회사 수정인 경우
-        else {
+        } else {
             try {
                 const companyDataChanged = JSON.stringify(formData) !== JSON.stringify(originalFormData);
                 const contactDataChanged = JSON.stringify(contactFormData) !== JSON.stringify(originalContactData);
@@ -583,7 +598,6 @@ const CompanyProfileForm: React.FC = () => {
         }
     };
 
-    // 유사 회사 확인 모달
     const SimilarCompaniesModal: React.FC = () => {
         return showSimilarCompaniesModal ? (
             <div className="modal-overlay" onClick={(e) => e.stopPropagation()}>
@@ -656,7 +670,7 @@ const CompanyProfileForm: React.FC = () => {
                                 style={{ backgroundColor: '#28a745' }}
                                 onClick={async () => {
                                     setShowSimilarCompaniesModal(false);
-                                    await handleSave(true); // force_save=true
+                                    await handleSave(true);
                                 }}
                             >
                                 그래도 신규 등록
@@ -674,7 +688,6 @@ const CompanyProfileForm: React.FC = () => {
             </div>
         ) : null;
     };
-
 
     const selectContact = (contact: CompanyContactData) => {
         setSelectedContact(contact);
@@ -843,8 +856,13 @@ const CompanyProfileForm: React.FC = () => {
         ) : null;
     };
 
+    // ==============================================================================
+    //  ✅ 2. 최종 수정된 담당자 검색 모달
+    // ==============================================================================
     const ContactSearchModal: React.FC = () => {
-        // ESC 키 이벤트 리스너
+        // ✨ 1. 모달 전용 내부 검색어 상태를 생성합니다.
+        const [localSearchTerm, setLocalSearchTerm] = useState('');
+
         useEffect(() => {
             const handleEscKey = (e: KeyboardEvent) => {
                 if (e.key === 'Escape') {
@@ -853,13 +871,29 @@ const CompanyProfileForm: React.FC = () => {
             };
 
             if (showContactSearchModal) {
+                // ✨ 2. 모달이 보일 때만 부모의 검색어를 내부 상태로 복사합니다.
+                setLocalSearchTerm(contactSearchTerm);
                 window.addEventListener('keydown', handleEscKey);
             }
 
             return () => {
                 window.removeEventListener('keydown', handleEscKey);
             };
-        }, [showContactSearchModal]);
+        }, [showContactSearchModal]); // 의존성 배열에 contactSearchTerm을 제거해야 합니다.
+
+        // const handleModalSearch = () => {
+        //     // ✨ 3. 검색 시, 내부 검색어(localSearchTerm)를 부모 상태(contactSearchTerm)에 반영하고 검색을 실행합니다.
+        //     setContactSearchTerm(localSearchTerm);
+        //     setContactSearchCurrentPage(1);
+        //     searchContacts(localSearchTerm, 1);
+        // };
+        const handleModalSearch = () => {
+            setContactSearchCurrentPage(1);
+            // ✨ 2. 검색 시, 항상 내부 검색어(localSearchTerm)를 사용합니다.
+            searchContacts(localSearchTerm, 1);
+            // 부모 상태도 업데이트하여 동기화를 유지합니다.
+            setContactSearchTerm(localSearchTerm);
+        };
 
         return showContactSearchModal ? (
             <div className="modal-overlay" onClick={() => setShowContactSearchModal(false)}>
@@ -873,18 +907,16 @@ const CompanyProfileForm: React.FC = () => {
                             ✕
                         </button>
                     </div>
-
                     <div className="modal-body">
-                        {/* 검색 입력 필드 추가 */}
                         <div className="input-with-search" style={{ marginBottom: '15px' }}>
                             <input
                                 type="text"
-                                value={contactSearchTerm}
-                                onChange={(e) => setContactSearchTerm(e.target.value)}
+                                // ✨ 4. value와 onChange를 모두 내부 상태(localSearchTerm)에 연결합니다.
+                                value={localSearchTerm}
+                                onChange={(e) => setLocalSearchTerm(e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
-                                        setContactSearchCurrentPage(1);
-                                        searchContacts(contactSearchTerm, 1);
+                                        handleModalSearch();
                                     }
                                 }}
                                 placeholder="담당자 이름으로 검색 (Enter: 검색, ESC: 닫기)"
@@ -892,10 +924,7 @@ const CompanyProfileForm: React.FC = () => {
                                 autoFocus
                             />
                             <button
-                                onClick={() => {
-                                    setContactSearchCurrentPage(1);
-                                    searchContacts(contactSearchTerm, 1);
-                                }}
+                                onClick={handleModalSearch}
                                 className="search-btn"
                                 title="검색"
                             >
@@ -903,6 +932,7 @@ const CompanyProfileForm: React.FC = () => {
                             </button>
                         </div>
 
+                        {/* ... (이하 검색 결과 렌더링 로직은 기존과 동일) ... */}
                         {contactSearchLoading ? (
                             <div className="loading">검색 중...</div>
                         ) : (
@@ -910,6 +940,7 @@ const CompanyProfileForm: React.FC = () => {
                                 {contactSearchResults.length === 0 ? (
                                     <div className="no-results">검색 결과가 없습니다.</div>
                                 ) : (
+                                    // ✨✨✨ 2. 누락되었던 테이블 구현 부분을 여기에 추가합니다. ✨✨✨
                                     <table className="search-table">
                                         <thead>
                                         <tr>
@@ -955,6 +986,7 @@ const CompanyProfileForm: React.FC = () => {
                                                 className={`page-btn ${contactSearchCurrentPage === page ? 'active' : ''}`}
                                                 onClick={() => {
                                                     setContactSearchCurrentPage(page);
+                                                    // ✨ 5. 페이지네이션 시에도 부모 상태(contactSearchTerm)를 사용합니다.
                                                     searchContacts(contactSearchTerm, page);
                                                 }}
                                             >
@@ -989,15 +1021,6 @@ const CompanyProfileForm: React.FC = () => {
                     <h2 className="profile-subtitle">
                         광고주 Profile
                     </h2>
-                    <div className="profile-writer">
-                        <div className="writer-form">
-                            <div>
-                                최종 작성자 :
-                                {/*{writerInfo ? `${writerInfo.name} (${writerInfo.department || ''})` : '정보 없음'}*/}
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
 
                 <div className="profile-section">
@@ -1017,16 +1040,6 @@ const CompanyProfileForm: React.FC = () => {
                             <td className="table-cell table-cell-label">회사명</td>
                             <td className="table-cell-input">
                                 <div className="input-with-search">
-                                    {/*<input*/}
-                                    {/*    type="text"*/}
-                                    {/*    name="companyName"*/}
-                                    {/*    value={formData.companyName}*/}
-                                    {/*    onChange={handleInputChange}*/}
-                                    {/*    className={clsx('profile-input', {*/}
-                                    {/*        'input-modified': formData.companyName !== originalFormData.companyName*/}
-                                    {/*    })}*/}
-                                    {/*    placeholder="회사명을 입력하고 검색하세요"*/}
-                                    {/*/>*/}
                                     <input
                                         type="text"
                                         name="companyName"
@@ -1034,7 +1047,7 @@ const CompanyProfileForm: React.FC = () => {
                                         onChange={handleInputChange}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') {
-                                                e.preventDefault(); // form submit 방지
+                                                e.preventDefault();
                                                 handleCompanySearch();
                                             }
                                         }}
@@ -1155,28 +1168,13 @@ const CompanyProfileForm: React.FC = () => {
                             <td className="table-cell table-cell-label table-cell-top">담당자</td>
                             <td className="table-cell-input" colSpan={3}>
                                 <div className="contact-section">
-                                    <div className="input-with-search contact-search-field contact-search-visible">
-                                        <input
-                                            type="text"
-                                            placeholder="담당자 이름으로 검색"
-                                            value={contactSearchTerm}
-                                            onChange={handleContactSearchChange}
-                                            className="profile-input"
-                                            onKeyPress={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    handleContactSearch();
-                                                }
-                                            }}
-                                        />
-                                        <button
-                                            type="button"
-                                            className="search-btn"
-                                            onClick={handleContactSearch}
-                                            title="담당자 검색"
-                                        >
-                                            🔍
-                                        </button>
-                                    </div>
+                                    {/* ✅ 2. ContactSearchInput에 필요한 모든 props (searchTerm, setSearchTerm, onSearch)를 전달합니다. */}
+                                    <ContactSearchInput
+                                        searchTerm={contactSearchTerm}
+                                        setSearchTerm={setContactSearchTerm}
+                                        onSearch={handleContactSearch}
+                                    />
+
                                     {companyContacts.length > 0 ? (
                                         <div className="contact-list">
                                             {companyContacts.map((contact) => (
@@ -1394,7 +1392,7 @@ const CompanyProfileForm: React.FC = () => {
                         <button
                             type="button"
                             className="action-btn save-btn"
-                            onClick={() => handleSave(false)}  // 👈 변경
+                            onClick={() => handleSave(false)}
                             disabled={!isFormDirty}
                             title={!isFormDirty ? "변경된 데이터가 있어야만 저장 가능합니다." : ""}
                         >
@@ -1416,4 +1414,3 @@ const CompanyProfileForm: React.FC = () => {
 };
 
 export default CompanyProfileForm;
-

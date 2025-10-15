@@ -161,9 +161,13 @@ interface ProjectEvaluationScore {
     notes?: string;
 }
 
+
 const ProjectInformationForm: React.FC = () => {
 
     const { user } = useAuth(); // ◀◀◀ 2. useAuth()를 호출하여 로그인한 user 객체를 가져옵니다.
+
+// ✅ contactSearchInputRef를 여기서 선언합니다.
+    const contactSearchInputRef = useRef<HTMLInputElement>(null);
 
     // === 기존 상태들 모두 그대로 유지 ===
     const [formData, setFormData] = useState<ProjectInformationFormData>({
@@ -207,7 +211,7 @@ const ProjectInformationForm: React.FC = () => {
     const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
     const [lastUpdater, setLastUpdater] = useState<WriterInfo | null>(null);
     const [showContactSearchModal, setShowContactSearchModal] = useState(false);
-    const [contactSearchTerm, setContactSearchTerm] = useState('');
+    // const [contactSearchTerm, setContactSearchTerm] = useState('');
     const [contactSearchResults, setContactSearchResults] = useState<ContactSearchData[]>([]);
     const [contactSearchLoading, setContactSearchLoading] = useState(false);
     const [showContactDetailModal, setShowContactDetailModal] = useState(false);
@@ -227,10 +231,45 @@ const ProjectInformationForm: React.FC = () => {
     const futureValueScoreRef = useRef<HTMLInputElement>(null);
     const relationshipScoreRef = useRef<HTMLInputElement>(null);
     const scoreRefMap = { revenueScore: revenueScoreRef, feasibilityScore: feasibilityScoreRef, futureValueScore: futureValueScoreRef, relationshipScore: relationshipScoreRef };
+    // 회사명 검색어를 위한 별도의 state를 추가합니다.
+    const [companySearchTerm, setCompanySearchTerm] = useState('');
+
 
     // === 평가 관련 상태 추가 (내부 로직용) ===
     const [evaluationCriteria, setEvaluationCriteria] = useState<ProjectEvaluationCriteria[]>([]);
     const [evaluationScores, setEvaluationScores] = useState<{ [key: number]: number }>({});
+
+    // // 1. useEffect를 사용하여 contactSearchTerm 변경 시 디바운싱 적용
+    // useEffect(() => {
+    //     // 모달이 닫혀있으면 아무것도 하지 않음
+    //     if (!showContactSearchModal) return;
+    //
+    //     // 사용자가 입력을 멈추면 300ms 후에 검색 실행
+    //     const searchTimer = setTimeout(() => {
+    //         // searchContacts 함수를 호출해야 합니다!
+    //         searchContacts(contactSearchTerm);
+    //     }, 300); // 딜레이를 300ms로 조절하여 반응성을 높입니다.
+    //
+    //     // 사용자가 다시 타이핑을 시작하면 이전 타이머를 취소
+    //     return () => {
+    //         clearTimeout(searchTimer);
+    //     };
+    // }, [contactSearchTerm, showContactSearchModal]); // 이 부분은 그대로 유지
+
+
+    // 2. 회사명 검색에도 동일하게 디바운싱 적용
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            if (showCompanySearchModal && companySearchTerm) {
+                searchCompaniesAPI(companySearchTerm);
+            }
+        }, 500);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [companySearchTerm, showCompanySearchModal]);
+
 
     // === 기존 useEffect들 그대로 유지 ===
     useEffect(() => {
@@ -778,14 +817,15 @@ const ProjectInformationForm: React.FC = () => {
     };
 
     const handleOpenContactSearchModal = () => {
-        setContactSearchTerm('');
         setContactSearchResults([]);
         setShowContactSearchModal(true);
-        searchContacts('');
     };
 
+    // 담당자 검색 API 호출 함수를 ref를 사용하도록 수정합니다.
     const handleContactSearchAPI = async () => {
-        await searchContacts(contactSearchTerm);
+        // ref에서 현재 값을 직접 읽어옵니다.
+        const term = contactSearchInputRef.current?.value || '';
+        await searchContacts(term);
     };
 
     const selectContact = (contact: ContactSearchData) => {
@@ -807,7 +847,10 @@ const ProjectInformationForm: React.FC = () => {
         setShowContactSearchModal(false);
     };
 
+    // 모달을 여는 함수를 수정하여, 모달이 열릴 때 state를 초기화하도록 합니다.
     const handleOpenCompanySearchModal = async () => {
+        // 현재 발주처 입력값을 기본 검색어로 설정
+        setCompanySearchTerm(formData.client);
         setShowCompanySearchModal(true);
         await searchCompaniesAPI(formData.client);
     };
@@ -1241,8 +1284,24 @@ const ProjectInformationForm: React.FC = () => {
                         <div className="modal-body">
                             <div className="input-with-search" style={{ marginBottom: '15px' }}>
                                 <div className="search-prefix">{formData.client ? `${formData.client} :` : '전체 고객사 :'}</div>
-                                <input type="text" value={contactSearchTerm} onChange={e => setContactSearchTerm(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleContactSearchAPI(); }} placeholder="담당자 이름 검색" className="project-input" />
+
+                                {/*담당자 검색 모달 JSX를 아래와 같이 수정합니다.*/}
+                                {/* ▼▼▼ [핵심] 이 부분을 교체합니다 ▼▼▼ */}
+                                <input
+                                    ref={contactSearchInputRef}
+                                    type="text"
+                                    defaultValue="" // value와 onChange를 모두 제거하고 defaultValue 사용
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                                            handleContactSearchAPI();
+                                        }
+                                    }}
+                                    placeholder="담당자 이름 검색"
+                                    className="project-input"
+                                />
                                 <button onClick={handleContactSearchAPI} className="search-btn" title="담당자 검색">🔍</button>
+                                {/* ▲▲▲ 수정 완료 ▲▲▲ */}
+
                             </div>
                             {contactSearchLoading ? (
                                 <div className="loading">검색 중...</div>
@@ -1310,8 +1369,26 @@ const ProjectInformationForm: React.FC = () => {
                         </div>
                         <div className="modal-body">
                             <div className="input-with-search" style={{ marginBottom: '15px' }}>
-                                <input type="text" defaultValue={formData.client} onKeyDown={e => { if (e.key === 'Enter') searchCompaniesAPI((e.target as HTMLInputElement).value); }} placeholder="회사 이름으로 검색" className="project-input" />
-                                <button onClick={() => { const input = document.querySelector('.modal-body .project-input') as HTMLInputElement; if (input) searchCompaniesAPI(input.value); }} className="search-btn" style={{ padding: '0 12px' }}>🔍</button>
+                                {/*발주처(회사명) 검색 모달 JSX도 동일한 방식으로 수정합니다.*/}
+                                <input
+                                    type="text"
+                                    value={companySearchTerm}
+                                    onChange={(e) => setCompanySearchTerm(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                                            searchCompaniesAPI(companySearchTerm);
+                                        }
+                                    }}
+                                    placeholder="회사 이름으로 검색"
+                                    className="project-input"
+                                />
+                                <button
+                                    onClick={() => searchCompaniesAPI(companySearchTerm)}
+                                    className="search-btn"
+                                    style={{ padding: '0 12px' }}
+                                >
+                                    🔍
+                                </button>
                             </div>
                             {companySearchLoading ? (
                                 <div className="loading">검색 중...</div>
