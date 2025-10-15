@@ -671,6 +671,12 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                 <div className={className}>
                     <h3 className="section-header">{readOnly ? '🔒 (검색만 가능)' : '■'} 프로젝트 기본 정보</h3>
                     <table className={tableClassName}>
+                        <colgroup>
+                            <col style={{ width: '15%' }} />
+                            <col style={{ width: '35%' }} />
+                            <col style={{ width: '15%' }} />
+                            <col style={{ width: '35%' }} />
+                        </colgroup>
                         <tbody>
                         <tr>
                             <td className="table-header">구분</td>
@@ -935,20 +941,6 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                         </tbody>
                     </table>
 
-                    {/*{enableDetailSectionToggle && detailSectionCollapsible && (*/}
-                    {/*    <div className="table-action-section">*/}
-                    {/*        <button*/}
-                    {/*            type="button"*/}
-                    {/*            className="toggle-profile-btn"*/}
-                    {/*            onClick={handleDetailSectionToggle}*/}
-                    {/*            aria-expanded={isDetailSectionVisible}*/}
-                    {/*            aria-controls="detail-section-container"*/}
-                    {/*        >*/}
-                    {/*            Project Profile {isDetailSectionVisible ? '숨기기' : '보기'}*/}
-                    {/*        </button>*/}
-                    {/*    </div>*/}
-                    {/*)}*/}
-
                     {/* ===== 여기부터 추가된 토글 버튼 섹션 ===== */}
                     {/*{(enableKickoffSectionToggle || enablePTPostmortemSectionToggle || enableProjectPostmortemSectionToggle) && (*/}
                     {((enableDetailSectionToggle && detailSectionCollapsible) || enableKickoffSectionToggle || enablePTPostmortemSectionToggle || enableProjectPostmortemSectionToggle) && (
@@ -1191,66 +1183,6 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
 
                     {/* 프로젝트 착수보고 Section */}
                     {enableKickoffSectionToggle && (
-                        // <div
-                        //     className={`profile-tables-container ${isKickoffSectionVisible ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
-                        //     style={{
-                        //         opacity: isKickoffSectionVisible ? 1 : 0,
-                        //         maxHeight: isKickoffSectionVisible ? '2000px' : '0',
-                        //         transform: isKickoffSectionVisible ? 'translateY(0)' : 'translateY(-20px)',
-                        //         transition: `all ${detailSectionAnimationDuration}ms ease-in-out`
-                        //     }}
-                        // >
-                        //     {isKickoffSectionVisible && (
-                        //         <div className={className}>
-                        //             <h3 className="section-header">■ 프로젝트 착수보고</h3>
-                        //             <table className={tableClassName}>
-                        //                 <tbody>
-                        //                 <tr>
-                        //                     <td className="table-header">구분</td>
-                        //                     <td className="table-header">내용</td>
-                        //                 </tr>
-                        //                 <tr>
-                        //                     <td className="table-cell table-cell-label">담당부서</td>
-                        //                     <td className="table-cell-input">
-                        //                         {/* 빈 테이블 */}
-                        //                     </td>
-                        //                 </tr>
-                        //                 <tr>
-                        //                     <td className="table-cell table-cell-label">PT발표자</td>
-                        //                     <td className="table-cell-input">
-                        //                         {/* 빈 테이블 */}
-                        //                     </td>
-                        //                 </tr>
-                        //                 <tr>
-                        //                     <td className="table-cell table-cell-label">기획자</td>
-                        //                     <td className="table-cell-input">
-                        //                         {/* 빈 테이블 */}
-                        //                     </td>
-                        //                 </tr>
-                        //                 <tr>
-                        //                     <td className="table-cell table-cell-label">협업조직</td>
-                        //                     <td className="table-cell-input">
-                        //                         {/* 빈 테이블 */}
-                        //                     </td>
-                        //                 </tr>
-                        //                 <tr>
-                        //                     <td className="table-cell table-cell-label">추진 일정</td>
-                        //                     <td className="table-cell-input">
-                        //                         {/* 빈 테이블 */}
-                        //                     </td>
-                        //                 </tr>
-                        //                 <tr>
-                        //                     <td className="table-cell table-cell-label">기타</td>
-                        //                     <td className="table-cell-input">
-                        //                         {/* 빈 테이블 */}
-                        //                     </td>
-                        //                 </tr>
-                        //                 </tbody>
-                        //             </table>
-                        //         </div>
-                        //     )}
-                        // </div>
-
                         <div
                             ref={kickoffSectionRef} // ref 연결
                             className={`profile-tables-container ${isKickoffSectionVisible ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
@@ -1282,12 +1214,20 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                         <tr>
                                             <td className="table-cell table-cell-label">담당부서</td>
                                             <td className="table-cell-input">
-                                            <textarea
+                                            {/*<textarea*/}
+                                            {/*    name="department"*/}
+                                            {/*    value={kickoff.department}*/}
+                                            {/*    onChange={handleKickoffInputChange}*/}
+                                            {/*    placeholder="X본부 Y팀"*/}
+                                            {/*    className="postmortem-textarea textarea-small bullet-textarea"*/}
+                                            {/*    readOnly={readOnly}*/}
+                                            {/*/>*/}
+                                            <input
+                                                type="text"
                                                 name="department"
                                                 value={kickoff.department}
                                                 onChange={handleKickoffInputChange}
-                                                placeholder="X본부 Y팀"
-                                                className="postmortem-textarea textarea-small bullet-textarea"
+                                                className="postmortem-input"
                                                 readOnly={readOnly}
                                             />
                                             </td>

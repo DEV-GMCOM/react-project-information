@@ -100,9 +100,32 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     // 개발 중인 메뉴 항목들
     const devMenuItems: MenuItem[] = [
         {
+            path: '/admin/permissions/policies',
+            name: '권한관리',
+            icon: '🚫️',
+            // subMenus: [
+            //     { path: '/admin/permissions/policies', name: '정책 관리' },     //
+            //     { path: '/admin/permissions/roles', name: '역할 관리' },        // 직급별, 부서별, 개인별
+            //     { path: '/admin/permissions/pages', name: '페이지 관리' },       //
+            //     { path: '/admin/permissions/restrictions', name: '한정 관리' }, // 시간별, 외부접근별
+            // ]
+        },
+        {
             path: '/working/meeting-minutes',
             name: '회의록',
             icon: '🗒️',
+            // subMenus: [
+            //     { path: '/admin/permissions/policies', name: '정책 관리' },     //
+            //     { path: '/admin/permissions/roles', name: '역할 관리' },        // 직급별, 부서별, 개인별
+            //     { path: '/admin/permissions/pages', name: '페이지 관리' },       //
+            //     { path: '/admin/permissions/restrictions', name: '한정 관리' }, // 시간별, 외부접근별
+            // ]
+        },
+        {
+            path: '/working/fms',
+            name: 'GMCOM 저장소',
+            icon: '📀',
+            // icon: '💾',
             // subMenus: [
             //     { path: '/admin/permissions/policies', name: '정책 관리' },     //
             //     { path: '/admin/permissions/roles', name: '역할 관리' },        // 직급별, 부서별, 개인별

@@ -1,7 +1,7 @@
-/* MeetingMinutes.css */
+/* FileManagementSystem.css */
 
 /* 메인 컨테이너 */
-.meeting-minutes-container {
+.file-management-system-container {
     font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
     max-width: 1200px;
     margin: 0 auto;
@@ -11,7 +11,7 @@
 }
 
 /* 헤더 */
-.meeting-minutes-header {
+.file-management-system-header {
     background-color: white;
     padding: 20px;
     margin-bottom: 20px;
@@ -25,19 +25,19 @@
 /* PTChecklist.css */
 
 
-.meeting-minutes-title {
+.file-management-system-title {
     margin: 0;
     font-size: 24px;
     font-weight: bold;
 }
 
-.meeting-minutes-logo {
+.file-management-system-logo {
     font-size: 18px;
     font-weight: bold;
 }
 
 /* 메인 컨텐츠 섹션 */
-.meeting-minutes-main {
+.file-management-system-main {
     background-color: white;
     padding: 20px;
     margin-bottom: 20px;
@@ -46,7 +46,7 @@
 }
 
 /* 타이틀 영역 */
-.meeting-minutes-title-section {
+.file-management-system-title-section {
     text-align: center;
     margin-bottom: 20px;
     padding: 15px;
@@ -54,13 +54,13 @@
     border-radius: 6px;
 }
 
-.meeting-minutes-subtitle {
+.file-management-system-subtitle {
     margin: 0;
     font-size: 20px;
     font-weight: bold;
 }
 
-.meeting-minutes-writer {
+.file-management-system-writer {
     margin-top: 10px;
 }
 
@@ -91,7 +91,7 @@
 }
 
 /* 섹션 */
-.meeting-minutes-section {
+.file-management-system-section {
     margin-bottom: 30px;
 }
 
@@ -107,7 +107,7 @@
 
 /* 테이블 스타일 */
 /* 기존 checklist-table의 margin-top 제거 */
-.meeting-minutes-table {
+.file-management-system-table {
     width: 100%;
     border-collapse: collapse;
     border: 1px solid #333;
@@ -155,19 +155,19 @@
 }
 
 /* 체크리스트 아이템 셀 */
-.meeting-minutes-item-cell {
+.file-management-system-item-cell {
     padding: 12px;
 }
 
 /* 체크리스트 아이템 */
-.meeting-minutes-item {
+.file-management-system-item {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
 /* 체크박스 라벨 */
-.meeting-minutes-label {
+.file-management-system-label {
     display: flex;
     align-items: flex-start;
     gap: 8px;
@@ -179,7 +179,7 @@
 }
 
 /* 체크박스 */
-.meeting-minutes-checkbox {
+.file-management-system-checkbox {
     margin: 0;
     flex-shrink: 0;
     width: 16px;
@@ -188,12 +188,12 @@
     accent-color: #007bff;
 }
 
-.meeting-minutes-checkbox:checked {
+.file-management-system-checkbox:checked {
     background-color: #007bff;
 }
 
 /* 입력 필드 */
-.meeting-minutes-input {
+.file-management-system-input {
     width: 100%;
     border: none;
     outline: none;
@@ -201,13 +201,13 @@
     color: #333 !important;
 }
 
-.meeting-minutes-input:focus {
+.file-management-system-input:focus {
     background-color: white !important;
     color: #333 !important;
 }
 
 /* 체크리스트 텍스트에어리어 */
-.meeting-minutes-textarea {
+.file-management-system-textarea {
     width: 100%;
     border: 1px solid #ddd;
     border-radius: 4px;
@@ -221,7 +221,7 @@
     background-color: #fafafa;
 }
 
-.meeting-minutes-textarea:focus {
+.file-management-system-textarea:focus {
     background-color: white !important;
     color: #333 !important;
     outline: 2px solid #007bff;
@@ -229,13 +229,13 @@
     border-color: #007bff;
 }
 
-.meeting-minutes-textarea::placeholder {
+.file-management-system-textarea::placeholder {
     color: #999;
     font-style: italic;
 }
 
 /* 버튼 영역 */
-.meeting-minutes-actions {
+.file-management-system-actions {
     display: flex;
     justify-content: center;
     gap: 15px;
@@ -276,25 +276,25 @@
 
 
 /* 자동완성 스타일 조정 */
-.meeting-minutes-input:-webkit-autofill,
-.meeting-minutes-input:-webkit-autofill:hover,
-.meeting-minutes-input:-webkit-autofill:focus {
+.file-management-system-input:-webkit-autofill,
+.file-management-system-input:-webkit-autofill:hover,
+.file-management-system-input:-webkit-autofill:focus {
     -webkit-box-shadow: 0 0 0 1000px white inset !important;
     -webkit-text-fill-color: #333 !important;
     background-color: white !important;
     border-color: transparent !important;
 }
 
-.meeting-minutes-textarea:-webkit-autofill,
-.meeting-minutes-textarea:-webkit-autofill:hover,
-.meeting-minutes-textarea:-webkit-autofill:focus {
+.file-management-system-textarea:-webkit-autofill,
+.file-management-system-textarea:-webkit-autofill:hover,
+.file-management-system-textarea:-webkit-autofill:focus {
     -webkit-box-shadow: 0 0 0 1000px white inset !important;
     -webkit-text-fill-color: #333 !important;
     background-color: white !important;
 }
 
 /* 체크박스 커스텀 스타일 */
-.meeting-minutes-checkbox {
+.file-management-system-checkbox {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -307,12 +307,12 @@
     cursor: pointer;
 }
 
-.meeting-minutes-checkbox:checked {
+.file-management-system-checkbox:checked {
     background-color: #007bff;
     border-color: #007bff;
 }
 
-.meeting-minutes-checkbox:checked::after {
+.file-management-system-checkbox:checked::after {
     content: '✓';
     position: absolute;
     top: -2px;
@@ -322,99 +322,99 @@
     font-weight: bold;
 }
 
-.meeting-minutes-checkbox:hover {
+.file-management-system-checkbox:hover {
     border-color: #0056b3;
 }
 
-.meeting-minutes-checkbox:focus {
+.file-management-system-checkbox:focus {
     outline: 2px solid #007bff;
     outline-offset: 2px;
 }
 
 /* 체크된 항목의 라벨 스타일 */
-.meeting-minutes-checkbox:checked + .meeting-minutes-label {
+.file-management-system-checkbox:checked + .file-management-system-label {
     color: #007bff;
 }
 
 /* 라벨 텍스트 스타일 개선 */
-.meeting-minutes-label {
+.file-management-system-label {
     user-select: none;
     transition: color 0.2s ease;
 }
 
-.meeting-minutes-label:hover {
+.file-management-system-label:hover {
     color: #007bff;
 }
 
 /* 긴 텍스트가 있는 라벨의 줄 간격 조정 */
-.meeting-minutes-label br {
+.file-management-system-label br {
     line-height: 1.6;
 }
 
 
 /* 체크리스트 완료 상태 시각적 피드백 */
-.meeting-minutes-item.completed {
+.file-management-system-item.completed {
     background-color: #f8f9fa;
     border-left: 4px solid #28a745;
     padding-left: 12px;
 }
 
 /* 텍스트에어리어 높이 자동 조정 */
-.meeting-minutes-textarea {
+.file-management-system-textarea {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.meeting-minutes-textarea:focus {
+.file-management-system-textarea:focus {
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
 /* 접근성 개선 */
-.meeting-minutes-checkbox:focus-visible {
+.file-management-system-checkbox:focus-visible {
     outline: 2px solid #007bff;
     outline-offset: 2px;
 }
 
-.meeting-minutes-label:focus-within {
+.file-management-system-label:focus-within {
     background-color: rgba(0, 123, 255, 0.05);
     border-radius: 4px;
     padding: 2px;
 }
 
 /* 체크박스와 라벨 정렬 개선 */
-.meeting-minutes-label {
+.file-management-system-label {
     align-items: flex-start;
     margin-top: 2px;
 }
 
-.meeting-minutes-checkbox {
+.file-management-system-checkbox {
     margin-top: 2px;
 }
 
 /* 테이블 행 간격 조정 */
-.meeting-minutes-table tbody tr {
+.file-management-system-table tbody tr {
     border-bottom: 1px solid #eee;
 }
 
-.meeting-minutes-table tbody tr:last-child {
+.file-management-system-table tbody tr:last-child {
     border-bottom: none;
 }
 
 /* 스크롤바 스타일링 */
-.meeting-minutes-textarea::-webkit-scrollbar {
+.file-management-system-textarea::-webkit-scrollbar {
     width: 8px;
 }
 
-.meeting-minutes-textarea::-webkit-scrollbar-track {
+.file-management-system-textarea::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 4px;
 }
 
-.meeting-minutes-textarea::-webkit-scrollbar-thumb {
+.file-management-system-textarea::-webkit-scrollbar-thumb {
     background: #c1c1c1;
     border-radius: 4px;
 }
 
-.meeting-minutes-textarea::-webkit-scrollbar-thumb:hover {
+.file-management-system-textarea::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
 
@@ -554,7 +554,7 @@
 }
 
 /* 기존 버튼 영역의 justify-content를 오른쪽 정렬로 수정 */
-.meeting-minutes-actions {
+.file-management-system-actions {
     display: flex;
     justify-content: flex-end; /* 오른쪽 정렬로 변경 */
     gap: 15px;
