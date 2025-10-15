@@ -1,6 +1,8 @@
 /* ==========================================================================
    Project Execution Page Styles
    ========================================================================== */
+/* src/styles/ProjectExecution.css 파일 하단에 아래 내용을 추가합니다. */
+
 
 /* --- 1. 기본 레이아웃 (Main Layout) --- */
 .project-execution-container {
@@ -75,22 +77,24 @@
 
 
 /* --- 4. 서버 파일 리스트 테이블 (Server File List Table) --- */
-.execution-file-list-table {
+/* 💡 .project-execution-main 선택자를 추가하여 CSS 우선순위를 높여 충돌을 방지합니다. */
+
+.project-execution-main .execution-file-list-table {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 30px;
     border: 1px solid #ddd;
 }
 
-.execution-file-list-table th,
-.execution-file-list-table td {
+.project-execution-main .execution-file-list-table th,
+.project-execution-main .execution-file-list-table td {
     padding: 12px 15px;
     border: 1px solid #ddd;
     text-align: left;
     vertical-align: middle;
 }
 
-.execution-file-list-table th {
+.project-execution-main .execution-file-list-table th {
     background-color: #000000;
     color: white;
     font-weight: 600;
@@ -98,33 +102,31 @@
     font-size: 14px;
 }
 
-.execution-file-list-table .category-cell {
+.project-execution-main .execution-file-list-table .category-cell {
     text-align: center;
     font-weight: 500;
     font-size: 14px;
     background-color: #f7f7f7;
 }
 
-.execution-file-list-table .file-list-cell {
+.project-execution-main .execution-file-list-table .file-list-cell {
     padding: 15px;
-    vertical-align: top; /* 파일이 많을 경우 위쪽부터 정렬 */
+    vertical-align: top;
 }
 
-/* 셀 내부의 파일 목록 컨테이너 */
-.file-items-container {
+.project-execution-main .file-items-container {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.no-files-message {
+.project-execution-main .no-files-message {
     color: #888;
     font-size: 13px;
     padding: 10px 0;
 }
 
-/* 테이블 내의 개별 파일 아이템 */
-.execution-file-list-table .file-item {
+.project-execution-main .execution-file-list-table .file-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -133,25 +135,25 @@
     border-radius: 4px;
 }
 
-.execution-file-list-table .file-info {
+.project-execution-main .execution-file-list-table .file-info {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
 }
 
-.execution-file-list-table .file-details {
+.project-execution-main .execution-file-list-table .file-details {
     margin-top: 4px;
     font-size: 12px;
     color: #666;
 }
 
-.file-actions {
+.project-execution-main .file-actions {
     display: flex;
     gap: 8px;
 }
 
-.file-download-btn,
-.execution-file-list-table .file-remove-btn {
+.project-execution-main .file-download-btn,
+.project-execution-main .execution-file-list-table .file-remove-btn {
     background: none;
     border: none;
     cursor: pointer;
@@ -159,11 +161,10 @@
     color: #555;
     transition: color 0.2s;
 }
-.file-download-btn:hover,
-.execution-file-list-table .file-remove-btn:hover {
+.project-execution-main .file-download-btn:hover,
+.project-execution-main .execution-file-list-table .file-remove-btn:hover {
     color: #000;
 }
-
 
 /* --- 5. 파일 업로드 영역 (File Upload Area) --- */
 .file-upload-section {
@@ -382,4 +383,12 @@
     gap: 10px;
     padding: 16px 20px;
     border-top: 1px solid #eee;
+}
+
+/*.project-execution-table .project-code-cell {*/
+.execution-file-list-table .project-code-cell {
+    text-align: center !important;
+    font-weight: bold;
+    font-size: 3.0em; /* 기존 폰트보다 300% 크게 */
+    color: #0548f3;   /* 부트스트랩의 'danger' 계열 강조 색상 */
 }

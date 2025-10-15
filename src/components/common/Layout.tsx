@@ -71,14 +71,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             name: '3. PT 결과분석',
             icon: '🔍'
         },
-        // {
-        //     path: '/project-execution',
-        //     name: '4. 프로젝트 실행파일링',
-        //     icon: '📁'
-        // },
+        {
+            path: '/project-execution',
+            name: '4. 프로젝트 실행파일링',
+            icon: '📁'
+        },
         {
             path: '/project-postmortem',
-            name: '4. 프로젝트 결과분석',
+            name: '5. 프로젝트 결과분석',
             icon: '📊'
         },
     ];
@@ -341,17 +341,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         {/* 구분선 */}
                         <div className="nav-divider"></div>
 
-                        {/*/!* 관리자 메뉴 섹션 *!/*/}
-                        {/*<div className="nav-section nav-section-admin">*/}
-                        {/*    {sidebarOpen && (*/}
-                        {/*        <div className="section-header">*/}
-                        {/*            <div className="section-title">개발 중인 항목</div>*/}
-                        {/*        </div>*/}
-                        {/*    )}*/}
-                        {/*    <ul className="nav-list">*/}
-                        {/*        {devMenuItems.map(renderMenuItem)}*/}
-                        {/*    </ul>*/}
-                        {/*</div>*/}
+                        {/* 관리자 메뉴 섹션 */}
+                        <div className="nav-section nav-section-admin">
+                            {sidebarOpen && (
+                                <div className="section-header">
+                                    <div className="section-title">개발 중인 항목</div>
+                                </div>
+                            )}
+                            <ul className="nav-list">
+                                {devMenuItems.map(renderMenuItem)}
+                            </ul>
+                        </div>
 
                         {/* 구분선 */}
                         <div className="nav-divider"></div>

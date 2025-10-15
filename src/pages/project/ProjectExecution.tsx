@@ -1,9 +1,14 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 
+// ▼▼▼ [추가] 지적해주신 빠진 import 구문입니다 ▼▼▼
+import { ExtendedProjectData, IProject } from '../../types/project';
+
+import ProjectBasicInfoForm from '../../components/common/ProjectBasicInfoForm';
 import '../../styles/FormPage.css';
 import '../../styles/ProjectExecution.css';
 
 // --- 데이터 구조 정의 (Interfaces) ---
+// ... (IServerFile, ISubCategory, IMainCategory, IStagedFile 인터페이스는 기존과 동일) ...
 interface IServerFile {
     id: number;
     original_file_name: string;
@@ -29,7 +34,9 @@ interface IStagedFile {
     categoryId: string;
 }
 
+
 // --- 파일 유형 선택 모달 컴포넌트 ---
+// ... (FileCategoryModal 컴포넌트는 기존과 동일) ...
 interface FileCategoryModalProps {
     isOpen: boolean;
     categories: IMainCategory[];
@@ -91,13 +98,10 @@ const FileCategoryModal: React.FC<FileCategoryModalProps> = ({ isOpen, categorie
 const ProjectExecution: React.FC = () => {
     // --- 상태 및 ref ---
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    // ▼▼▼ [추가] 저장 버튼의 로딩 상태를 관리하는 state ▼▼▼
     const [loading, setLoading] = useState<boolean>(false);
-
     const [isFileUploading, setIsFileUploading] = useState<boolean>(false);
     const [isDragOver, setIsDragOver] = useState<boolean>(false);
-    const [selectedProjectId, setSelectedProjectId] = useState<number | null>(1);
+    const [selectedProject, setSelectedProject] = useState<IProject | null>(null);
     const allowedExtensions = ['txt', 'pdf', 'ppt', 'pptx', 'doc', 'docx', 'hwp', 'hwpx', 'png', 'jpg', 'jpeg', 'xls', 'xlsx', 'zip', 'rar', '7z'];
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [droppedFiles, setDroppedFiles] = useState<FileList | null>(null);
@@ -106,44 +110,117 @@ const ProjectExecution: React.FC = () => {
     const [serverFiles, setServerFiles] = useState<IServerFile[]>([]);
     const [stagedFiles, setStagedFiles] = useState<IStagedFile[]>([]);
 
+    const [projectFormData, setProjectFormData] = useState<ExtendedProjectData>({
+        projectName: '',
+        inflowPath: '',
+        client: '',
+        manager: '',
+        eventDate: '',
+        eventLocation: '',
+        attendees: '',
+        eventNature: '',
+        otSchedule: '',
+        submissionSchedule: '',
+        expectedRevenue: '',
+        expectedCompetitors: '',
+        scoreTable: '',
+        bidAmount: '',
+    });
+
+    const handleProjectSelect = useCallback((project: IProject | null) => {
+        setSelectedProject(project);
+    }, []);
+
+    // ▼▼▼ [추가] 추가 정보 섹션들의 상태를 정의합니다. ▼▼▼
+    const [showProfileTables, setShowProfileTables] = useState(false);
+    const [showKickoff, setShowKickoff] = useState(false);
+    const [showPTPostmortem, setShowPTPostmortem] = useState(false);
+
+    // ▼▼▼ [추가] onProjectIdSelected에 연결할 핸들러를 정의합니다. ▼▼▼
+    const handleProjectIdSelected = (projectId: number) => {
+        // ID만 넘어오므로, 전체 프로젝트 정보가 필요한 다른 로직을 위해
+        // state에는 project_id만 담은 임시 객체를 저장합니다.
+        // 실제 API 호출 시에는 이 ID를 사용합니다.
+        setSelectedProject({ project_id: projectId } as IProject);
+    };
+
+    // ▼▼▼ [추가] onDetailSectionChange에 연결할 핸들러를 정의합니다. ▼▼▼
+    const handleToggleStateChange = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
+        setter(prev => !prev);
+    };
+
     // --- 데이터 로딩 (useEffect) ---
+    // ▼▼▼ [추가] 컴포넌트가 처음 로드될 때 '분류 기준'을 항상 불러옵니다. ▼▼▼
     useEffect(() => {
-        const fetchInitialData = async () => {
+        const categoryData: IMainCategory[] = [
+            {
+                id: 1, name: '업무추진사항', subCategories:
+                    [
+                        { id: 101, name: '미팅/회의' },
+                        { id: 102, name: '제출 문서' },
+                        { id: 103, name: '제출 견적' },
+                        { id: 104, name: '기타 관련 파일' }
+                    ]
+            },
+            {
+                id: 2, name: '디자인/기획', subCategories:
+                    [
+                        { id: 201, name: '시안' },
+                        { id: 202, name: '최종 디자인' }
+                    ]
+            }
+        ];
+        setCategories(categoryData);
+    }, []); // 빈 배열을 전달하여 최초 1회만 실행
+
+    // ▼▼▼ [수정] '파일 목록'은 프로젝트 선택 여부에 따라 다르게 불러옵니다. ▼▼▼
+    useEffect(() => {
+        // 프로젝트가 선택되지 않은 초기 상태에서만 예제 데이터를 설정합니다.
+        if (!selectedProject) {
+            // 1. 분류 기준 데이터 설정
             const categoryData: IMainCategory[] = [
-                {
-                    id: 1, name: '업무추진사항', subCategories:
-                        [
-                            { id: 101, name: '미팅/회의' },
-                            { id: 102, name: '제출 문서' },
-                            { id: 103, name: '제출 견적' },
-                            { id: 104, name: '기타 관련 파일' }
-                        ]
-                },
-                {
-                    id: 2, name: '디자인/기획', subCategories:
-                        [
-                            { id: 201, name: '시안' },
-                            { id: 202, name: '최종 디자인' }
-                        ]
-                }
+                { id: 1, name: '업무추진사항', subCategories: [ { id: 101, name: '미팅/회의' }, { id: 102, name: '제출 문서' }, { id: 103, name: '제출 견적' }, { id: 104, name: '기타 관련 파일' } ] },
+                { id: 2, name: '디자인/기획', subCategories: [ { id: 201, name: '시안' }, { id: 202, name: '최종 디자인' } ] }
             ];
             setCategories(categoryData);
-            const fileData: IServerFile[] = [
+
+            // 2. 서버 파일 리스트 예제 데이터 복구
+            const serverFileData: IServerFile[] = [
                 { id: 1, original_file_name: '2025년 1차 회의록.docx', file_size: 12345, file_type: 'docx', uploaded_at: '2025-10-14T10:00:00Z', is_readonly: false, mainCategoryId: 1, subCategoryId: 101 },
                 { id: 2, original_file_name: '2025년 2차 회의록.pdf', file_size: 54321, file_type: 'pdf', uploaded_at: '2025-10-15T11:00:00Z', is_readonly: false, mainCategoryId: 1, subCategoryId: 101 },
                 { id: 3, original_file_name: '최종 제안서.pptx', file_size: 98765, file_type: 'pptx', uploaded_at: '2025-10-16T14:30:00Z', is_readonly: false, mainCategoryId: 1, subCategoryId: 102 },
                 { id: 4, original_file_name: 'A시안.jpg', file_size: 123456, file_type: 'jpg', uploaded_at: '2025-10-17T16:00:00Z', is_readonly: false, mainCategoryId: 2, subCategoryId: 201 },
             ];
-            setServerFiles(fileData);
-        };
-        fetchInitialData();
-    }, [selectedProjectId]);
+            setServerFiles(serverFileData);
 
-    // --- 테이블 렌더링을 위한 데이터 구조 가공 (useMemo) ---
+            // 3. 파일 업로드 선택박스(stagedFiles) 예제 데이터 복구
+            const sampleFile = new File(["이것은 더미 파일입니다."], "기획안_v1.hwp", { type: "application/haansofthwp" });
+            const stagedFileData: IStagedFile[] = [
+                {
+                    id: `sample-staged-file-1`,
+                    file: sampleFile,
+                    categoryId: '1-102', // '제출 문서'로 임의 지정
+                }
+            ];
+            setStagedFiles(stagedFileData);
+        }
+        // 프로젝트가 선택되면, 해당 프로젝트의 데이터를 불러옵니다.
+        else {
+            console.log(`${selectedProject.project_id} 프로젝트의 파일 목록을 API로 불러옵니다.`);
+            // TODO: 실제 API를 호출하여 아래 예제 데이터를 교체해야 합니다.
+            const fileDataForProject: IServerFile[] = [
+                { id: 5, original_file_name: `[${selectedProject.project_name}] 최종보고서.pdf`, file_size: 789123, file_type: 'pdf', uploaded_at: '2025-10-20T17:00:00Z', is_readonly: false, mainCategoryId: 1, subCategoryId: 102 },
+            ];
+            setServerFiles(fileDataForProject);
+
+            // 프로젝트가 선택되었으므로, 업로드 대기 파일 목록은 비워주는 것이 자연스럽습니다.
+            setStagedFiles([]);
+        }
+    }, [selectedProject]); // selectedProject 상태가 변경될 때마다 이 로직이 실행됩니다.
+
+    // ... (이하 모든 핸들러, 헬퍼 함수 및 useMemo는 기존과 동일하게 유지) ...
     const groupedData = useMemo(() => {
         if (categories.length === 0) return [];
-
-        // 1. 각 소분류별로 파일을 그룹화하는 것은 동일합니다.
         const filesBySubCategory = new Map<number, IServerFile[]>();
         serverFiles.forEach(file => {
             if (!filesBySubCategory.has(file.subCategoryId)) {
@@ -151,23 +228,15 @@ const ProjectExecution: React.FC = () => {
             }
             filesBySubCategory.get(file.subCategoryId)?.push(file);
         });
-
-        // 2. 렌더링 구조를 만듭니다. (로직 변경)
         return categories.map(mainCat => {
             const subCategoriesWithFiles = mainCat.subCategories.map(subCat => {
                 const files = filesBySubCategory.get(subCat.id) || [];
-                // 각 소분류에 해당하는 파일들만 간단히 매핑합니다. (rowspan 계산 제거)
                 return { ...subCat, files };
             });
-
-            // 대분류의 rowspan은 이제 단순히 소속된 소분류의 개수입니다.
             const mainRowSpan = subCategoriesWithFiles.length || 1;
-
             return { ...mainCat, subCategories: subCategoriesWithFiles, rowSpan: mainRowSpan };
         });
     }, [categories, serverFiles]);
-
-    // --- 헬퍼 및 유틸리티 함수 ---
     const getCategoryNameById = useCallback((categoryId: string): string => {
         if (!categoryId || categories.length === 0) return '분류 없음';
         const [mainId, subId] = categoryId.split('-').map(Number);
@@ -176,7 +245,6 @@ const ProjectExecution: React.FC = () => {
         const subCategory = mainCategory.subCategories.find(sub => sub.id === subId);
         return subCategory ? subCategory.name : '알 수 없는 분류';
     }, [categories]);
-
     const formatFileSize = (bytes: number): string => {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -184,8 +252,6 @@ const ProjectExecution: React.FC = () => {
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
-
-    // --- 파일 처리 핸들러 ---
     const stageFilesForUpload = (files: FileList | null, categoryIdString: string) => {
         if (!files || files.length === 0) return;
         const newStagedFiles: IStagedFile[] = Array.from(files).map(file => ({
@@ -195,29 +261,19 @@ const ProjectExecution: React.FC = () => {
         }));
         setStagedFiles(prev => [...prev, ...newStagedFiles]);
     };
-
     const removeStagedFile = (fileId: string) => {
         setStagedFiles(prevStagedFiles => prevStagedFiles.filter(f => f.id !== fileId));
     };
-
-    // ▼▼▼ [추가] 저장 버튼 클릭 시 실행될 핸들러 함수 ▼▼▼
     const handleSubmit = async () => {
-        if (!selectedProjectId) {
+        if (!selectedProject?.project_id) {
             alert("프로젝트가 선택되지 않았습니다.");
             return;
         }
-
         setLoading(true);
         console.log("저장 버튼 클릭됨. 저장할 데이터가 있다면 API 호출을 여기에 구현합니다.");
-
         try {
-            // 이 페이지에 저장할 데이터가 있다면 API 호출을 구현합니다.
-            // 예시: await apiClient.put(`/projects/${selectedProjectId}/execution`, { some_data: 'value' });
-
-            // 현재는 API 호출을 시뮬레이션합니다.
             await new Promise(resolve => setTimeout(resolve, 1500));
             alert("성공적으로 저장되었습니다.");
-
         } catch (error) {
             console.error("저장 중 오류 발생:", error);
             alert("저장에 실패했습니다.");
@@ -225,12 +281,10 @@ const ProjectExecution: React.FC = () => {
             setLoading(false);
         }
     };
-
     const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         stageFilesForUpload(e.target.files, selectedCategoryRef.current);
         selectedCategoryRef.current = '';
     };
-
     const handleCategoryConfirm = (categoryIdString: string) => {
         setShowCategoryModal(false);
         if (droppedFiles) {
@@ -241,14 +295,12 @@ const ProjectExecution: React.FC = () => {
             fileInputRef.current?.click();
         }
     };
-
     const handleUploadStagedFiles = async () => {
         if (stagedFiles.length === 0) return;
         setIsFileUploading(true);
         console.log("업로드를 시작합니다:", stagedFiles);
         try {
-            // ... 실제 API 호출 로직 ...
-            await new Promise(resolve => setTimeout(resolve, 2000)); // 2초 딜레이 시뮬레이션
+            await new Promise(resolve => setTimeout(resolve, 2000));
             alert(`${stagedFiles.length}개의 파일이 성공적으로 업로드되었습니다.`);
             setStagedFiles([]);
         } catch (error) {
@@ -258,8 +310,6 @@ const ProjectExecution: React.FC = () => {
             setIsFileUploading(false);
         }
     };
-
-    // 드래그앤드롭 및 모달 관련 핸들러
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setIsDragOver(false);
@@ -284,8 +334,6 @@ const ProjectExecution: React.FC = () => {
         e.preventDefault();
         setIsDragOver(false);
     };
-
-    // 서버 파일 관련 핸들러
     const handleFileDownload = (file: IServerFile) => { console.log("다운로드:", file.original_file_name); };
     const handleFileDelete = (file: IServerFile) => { console.log("서버 파일 삭제:", file.original_file_name); };
 
@@ -298,31 +346,55 @@ const ProjectExecution: React.FC = () => {
             </div>
 
             <div className="project-execution-main">
+
                 <div className="project-execution-title-section">
                     <h2 className="project-execution-subtitle">실행 관련 파일 리스트</h2>
                     <div className="profile-writer"><div className="writer-form"><div>최종 작성자 :</div></div></div>
                 </div>
 
-                <div>
-                    <table className="execution-file-list-table">
-                        <thead>
-                        <tr>
-                            <th>프로젝트 코드</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td>2025-12-어쩌고저쩌고</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <ProjectBasicInfoForm
+                    formData={projectFormData}
+                    readOnly={true}
+
+                    showSearch={true}
+                    onProjectIdSelected={handleProjectIdSelected}
+
+                    // Project Profile
+                    enableDetailSectionToggle={true}
+                    showDetailSection={showProfileTables}
+                    // onDetailSectionChange={handleToggleStateChange}
+                    onDetailSectionChange={() => handleToggleStateChange(setShowProfileTables)}
+
+                    // Project Kickoff
+                    enableKickoffSectionToggle={true}
+                    showKickoffSection={showKickoff}
+                    // onKickoffSectionChange={setShowKickoff}
+                    onKickoffSectionChange={() => handleToggleStateChange(setShowKickoff)}
+
+                    // PT Postmortem
+                    enablePTPostmortemSectionToggle={true}
+                    showPTPostmortemSection={showPTPostmortem}
+                    // onPTPostmortemSectionChange={setShowPTPostmortem}
+                    onPTPostmortemSectionChange={() => handleToggleStateChange(setShowPTPostmortem)}
+
+                    // // Project Postmortem
+                    // enableProjectPostmortemSectionToggle={true}
+                    // // showProjectPostmortemSection={showProjPostmortem}
+                    // // onProjectPostmortemSectionChange={setShowProjPostmortem}
+
+                    includeDataSections={["basic", "detail"]}
+                    // 현재 구현에서는 필요가 없을듯 하여 일단 막아놓음. by longjaw.
+                    // className="project-section"
+                    // tableClassName="project-table"
+                    // inputClassName="project-input"
+                />
 
                 <div className="project-execution-section">
                     <h3 className="section-header">■ 서버 파일 리스트</h3>
                 </div>
 
-                <table className="execution-file-list-table">
+                {/* ... (이하 JSX 테이블 및 파일 업로드 영역은 기존과 동일) ... */}
+                <table className="execution-file-list-table server-file-data-table">
                     <thead>
                     <tr>
                         <th style={{ width: '15%' }}>대분류</th>
@@ -334,17 +406,14 @@ const ProjectExecution: React.FC = () => {
                     {groupedData.map(mainCat => (
                         mainCat.subCategories.map((subCat, subIndex) => (
                             <tr key={subCat.id}>
-                                {/* 첫 번째 소분류 행에만 대분류 셀을 렌더링합니다. */}
                                 {subIndex === 0 && (
                                     <td className="category-cell" rowSpan={mainCat.rowSpan}>
                                         {mainCat.name}
                                     </td>
                                 )}
-                                {/* 소분류 셀은 항상 렌더링합니다. */}
                                 <td className="category-cell">
                                     {subCat.name}
                                 </td>
-                                {/* 파일 목록 셀: 파일이 여러 개라도 하나의 셀 안에 모두 렌더링합니다. */}
                                 <td className="file-list-cell">
                                     {subCat.files.length === 0 ? (
                                         <p className="no-files-message">업로드된 파일이 없습니다.</p>
@@ -372,11 +441,9 @@ const ProjectExecution: React.FC = () => {
                     ))}
                     </tbody>
                 </table>
-
                 <div className="project-execution-section">
                     <h3 className="section-header">■ 파일 업로드</h3>
                 </div>
-
                 <div className="file-upload-section">
                     <input ref={fileInputRef} type="file" multiple accept={allowedExtensions.map(ext => `.${ext}`).join(',')} onChange={handleFileInputChange} style={{ display: 'none' }} />
                     <div className={`file-drop-zone ${isDragOver ? 'drag-over' : ''}`} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={handleFileSelect}>
@@ -410,7 +477,6 @@ const ProjectExecution: React.FC = () => {
                             </div>
                         )}
                     </div>
-
                     {stagedFiles.length > 0 && (
                         <div className="upload-actions">
                             <button className="btn-primary" onClick={handleUploadStagedFiles} disabled={isFileUploading}>
@@ -419,9 +485,6 @@ const ProjectExecution: React.FC = () => {
                         </div>
                     )}
                 </div>
-
-
-                {/* 버튼 영역 */}
                 <div className="button-section">
                     <button
                         type="button"
@@ -432,15 +495,10 @@ const ProjectExecution: React.FC = () => {
                         {loading ? '저장 중...' : '저장'}
                     </button>
                 </div>
-
             </div>
 
             <FileCategoryModal isOpen={showCategoryModal} categories={categories} onClose={handleModalClose} onConfirm={handleCategoryConfirm} />
-
-
         </div>
-
-
     );
 };
 

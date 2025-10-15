@@ -164,3 +164,5 @@ export interface CompanyProfileData {
     company_name: string;
     contacts: CompanyContactData[];
 }
+
+export type IProject = ProjectData;
