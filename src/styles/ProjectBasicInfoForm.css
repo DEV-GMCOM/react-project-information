@@ -92,3 +92,28 @@
 .toggle-profile-btn.inactive:hover {
     background-color: #5a6268;
 }
+
+/* src/styles/ProjectBasicInfoForm.css 파일 하단에 추가 */
+
+.scroll-up-wrapper {
+    text-align: right;
+    padding: 10px 10px;
+}
+
+.scroll-up-btn {
+    background-color: #e9ecef;
+    color: #495057;
+    border: 1px solid #ced4da;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.scroll-up-btn:hover {
+    background-color: #dee2e6;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}

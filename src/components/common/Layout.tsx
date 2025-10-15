@@ -1,5 +1,5 @@
 // src/components/common/Layout.tsx
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import '../../styles/Layout.css';
 import { useAuth } from '../../contexts/AuthContext';
@@ -29,6 +29,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     const headerTitle = import.meta.env.VITE_APP_TITLE || 'GMCOM Information System';
 
+    // ▼▼▼ [추가] 이 useEffect 블록 하나만 추가하면 됩니다. ▼▼▼
+    useEffect(() => {
+        const allMenuItems = [...mainMenuItems, ...devMenuItems, ...adminMenuItems];
+        // 현재 URL 경로와 일치하는 하위 메뉴를 가진 상위 메뉴를 찾습니다.
+        const activeParentMenu = allMenuItems.find(item =>
+            item.subMenus?.some(subMenu => location.pathname === subMenu.path)
+        );
+
+        // 만약 해당하는 상위 메뉴가 있고, 그 메뉴가 아직 펼쳐져 있지 않다면,
+        if (activeParentMenu && !expandedMenus.includes(activeParentMenu.path)) {
+            // expandedMenus 상태에 해당 상위 메뉴의 경로를 추가하여 펼칩니다.
+            setExpandedMenus(prev => [...prev, activeParentMenu.path]);
+        }
+    }, [location.pathname]); // URL 경로가 변경될 때마다 이 로직이 실행됩니다.
 
     // 기본 메뉴 항목들
     const mainMenuItems: MenuItem[] = [

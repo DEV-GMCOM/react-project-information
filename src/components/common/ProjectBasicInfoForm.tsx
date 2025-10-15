@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ProjectBasicInfo, ProjectData, WriterInfo, CompanyContactData, CompanyProfileData, ExtendedProjectData } from '../../types/project';
 import { handleApiError } from '../../api/utils/errorUtils';
 import apiClient from '../../api/utils/apiClient';
@@ -103,6 +103,15 @@ interface ProjectBasicInfoFormProps {
     onProjectIdSelected?: (projectId: number) => void;
 }
 
+// ▼▼▼ [추가] 위로 가기 버튼 컴포넌트를 정의합니다. ▼▼▼
+const ScrollUpButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+    <div className="scroll-up-wrapper">
+        <button type="button" className="scroll-up-btn" onClick={onClick} title="위로 이동">
+            ▲
+        </button>
+    </div>
+);
+
 const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                                                        formData,
                                                                        onChange,
@@ -162,12 +171,36 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     const [contactSearchResults, setContactSearchResults] = useState<ContactSearchData[]>([]);
     const [contactSearchLoading, setContactSearchLoading] = useState(false);
 
-    // ===== 여기부터 추가된 State =====
     const [internalShowReviewSection, setInternalShowReviewSection] = useState<boolean>(showReviewSectionProp);
     const [internalShowKickoffSection, setInternalShowKickoffSection] = useState<boolean>(showKickoffSectionProp);
     const [internalShowPTPostmortemSection, setInternalShowPTPostmortemSection] = useState<boolean>(showPTPostmortemSectionProp);
     const [internalShowProjectPostmortemSection, setInternalShowProjectPostmortemSection] = useState<boolean>(showProjectPostmortemSectionProp);
-    // ===== 추가된 State 끝 =====
+
+    // ▼▼▼ [추가] 2. 스크롤할 대상 DOM 요소를 참조할 ref들을 생성합니다. ▼▼▼
+    const actionSectionRef = useRef<HTMLDivElement>(null); // 버튼 섹션 (스크롤 업 대상)
+    const detailSectionRef = useRef<HTMLDivElement>(null);
+    const kickoffSectionRef = useRef<HTMLDivElement>(null);
+    const ptPostmortemSectionRef = useRef<HTMLDivElement>(null);
+    const projectPostmortemSectionRef = useRef<HTMLDivElement>(null);
+
+    // // ▼▼▼ [추가] 3. 각 섹션의 '열림' 상태가 변경될 때 아래로 스크롤하는 useEffect 훅들입니다. ▼▼▼
+    // const scrollToRef = (ref: React.RefObject<HTMLDivElement>) => {
+    //     // 렌더링 후 스크롤이 자연스럽게 이루어지도록 약간의 지연을 줍니다.
+    //     setTimeout(() => {
+    //         ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    //     }, 100);
+    // };
+
+    // useEffect(() => { if (isDetailSectionVisible) scrollToRef(detailSectionRef); }, [isDetailSectionVisible]);
+    // useEffect(() => { if (isKickoffSectionVisible) scrollToRef(kickoffSectionRef); }, [isKickoffSectionVisible]);
+    // useEffect(() => { if (isPTPostmortemSectionVisible) scrollToRef(ptPostmortemSectionRef); }, [isPTPostmortemSectionVisible]);
+    // useEffect(() => { if (isProjectPostmortemSectionVisible) scrollToRef(projectPostmortemSectionRef); }, [isProjectPostmortemSectionVisible]);
+
+
+    // ▼▼▼ [추가] 4. 버튼 섹션으로 스크롤 업하는 핸들러 함수입니다. ▼▼▼
+    const handleScrollToActions = () => {
+        actionSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
 
     const [projectReview, setProjectReview] = useState<ProjectReview>({
         swotAnalysis: '',
@@ -229,6 +262,19 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     const isPTPostmortemSectionVisible = showPTPostmortemSectionProp !== undefined ? showPTPostmortemSectionProp : internalShowPTPostmortemSection;
     const isProjectPostmortemSectionVisible = showProjectPostmortemSectionProp !== undefined ? showProjectPostmortemSectionProp : internalShowProjectPostmortemSection;
     // ===== 추가된 Visibility 변수들 끝 =====
+
+    // ▼▼▼ [추가] 이 위치에 스크롤 관련 함수와 useEffect 훅들을 추가합니다. ▼▼▼
+    const scrollToRef = (ref: React.RefObject<HTMLDivElement>) => {
+        setTimeout(() => {
+            ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    };
+
+    useEffect(() => { if (isDetailSectionVisible) scrollToRef(detailSectionRef); }, [isDetailSectionVisible]);
+    useEffect(() => { if (isKickoffSectionVisible) scrollToRef(kickoffSectionRef); }, [isKickoffSectionVisible]);
+    useEffect(() => { if (isPTPostmortemSectionVisible) scrollToRef(ptPostmortemSectionRef); }, [isPTPostmortemSectionVisible]);
+    useEffect(() => { if (isProjectPostmortemSectionVisible) scrollToRef(projectPostmortemSectionRef); }, [isProjectPostmortemSectionVisible]);
+
 
     const handleDetailSectionToggle = () => {
         const newValue = !isDetailSectionVisible;
@@ -906,7 +952,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                     {/* ===== 여기부터 추가된 토글 버튼 섹션 ===== */}
                     {/*{(enableKickoffSectionToggle || enablePTPostmortemSectionToggle || enableProjectPostmortemSectionToggle) && (*/}
                     {((enableDetailSectionToggle && detailSectionCollapsible) || enableKickoffSectionToggle || enablePTPostmortemSectionToggle || enableProjectPostmortemSectionToggle) && (
-                        <div className="table-action-section">
+                        <div className="table-action-section" ref={actionSectionRef}>
+                        {/*<div className="table-action-section">*/}
                             {enableDetailSectionToggle && detailSectionCollapsible && (
                                 <button
                                     type="button"
@@ -956,10 +1003,11 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                         </div>
                     )}
                     {/* ===== 추가된 토글 버튼 섹션 끝 ===== */}
-
+                    {/* 상세 정보 섹션 */}
                     {(enableDetailSectionToggle || isDetailSectionVisible) && (
                         <div
                             id="detail-section-container"
+                            ref={detailSectionRef} // ref 연결
                             className={`profile-tables-container ${isDetailSectionVisible ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
                             style={{
                                 opacity: isDetailSectionVisible ? 1 : 0,
@@ -1087,7 +1135,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                             </tbody>
                                         </table>
                                     </div>
-
+                                    <ScrollUpButton onClick={handleScrollToActions} />
                                 </>
                             )}
                         </div>
@@ -1204,6 +1252,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                         // </div>
 
                         <div
+                            ref={kickoffSectionRef} // ref 연결
                             className={`profile-tables-container ${isKickoffSectionVisible ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
                             style={{
                                 opacity: isKickoffSectionVisible ? 1 : 0,
@@ -1214,7 +1263,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             }}
                         >
                             {isKickoffSectionVisible && (
-                                // <div className="postmortem-section">
+                                <>
+                                {/*<div className="postmortem-section">*/}
                                 <div className={`${className} ${readOnly ? 'readonly-mode' : ''}`}>
                                     {/*<h3 className="section-header">*/}
                                     {/*    ■ 프로젝트 착수보고*/}
@@ -1342,7 +1392,10 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                         </tbody>
                                     </table>
                                 </div>
-                            )}
+                                <ScrollUpButton onClick={handleScrollToActions} />
+                                </>
+
+                                )}
                         </div>
 
                     )}
@@ -1350,6 +1403,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                     {/* PT 결과 분석 Section */}
                     {enablePTPostmortemSectionToggle && (
                         <div
+                            ref={ptPostmortemSectionRef} // ref 연결
                             className={`profile-tables-container ${isPTPostmortemSectionVisible ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
                             style={{
                                 opacity: isPTPostmortemSectionVisible ? 1 : 0,
@@ -1359,6 +1413,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             }}
                         >
                             {isPTPostmortemSectionVisible && (
+                                <>
                                 <div className={`${className} ${readOnly ? 'readonly-mode' : ''}`}>
                                     <h3 className="section-header">{readOnly ? '🔒' : '■'} PT 결과 분석</h3>
                                     <table className={tableClassName}>
@@ -1479,6 +1534,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                         </tbody>
                                     </table>
                                 </div>
+                                <ScrollUpButton onClick={handleScrollToActions} />
+                                </>
                             )}
                         </div>
                     )}
@@ -1486,6 +1543,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                     {/* 프로젝트 실행 후 보고 & 평가 Section */}
                     {enableProjectPostmortemSectionToggle && (
                         <div
+                            ref={projectPostmortemSectionRef} // ref 연결
                             className={`profile-tables-container ${isProjectPostmortemSectionVisible ? 'profile-tables-enter-active' : 'profile-tables-exit-active'}`}
                             style={{
                                 opacity: isProjectPostmortemSectionVisible ? 1 : 0,
@@ -1569,6 +1627,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                             </tbody>
                                         </table>
                                     </div>
+                                    <ScrollUpButton onClick={handleScrollToActions} />
                                 </>
                             )}
                         </div>

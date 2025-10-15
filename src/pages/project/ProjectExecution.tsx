@@ -150,28 +150,29 @@ const ProjectExecution: React.FC = () => {
     };
 
     // --- 데이터 로딩 (useEffect) ---
-    // ▼▼▼ [추가] 컴포넌트가 처음 로드될 때 '분류 기준'을 항상 불러옵니다. ▼▼▼
-    useEffect(() => {
-        const categoryData: IMainCategory[] = [
-            {
-                id: 1, name: '업무추진사항', subCategories:
-                    [
-                        { id: 101, name: '미팅/회의' },
-                        { id: 102, name: '제출 문서' },
-                        { id: 103, name: '제출 견적' },
-                        { id: 104, name: '기타 관련 파일' }
-                    ]
-            },
-            {
-                id: 2, name: '디자인/기획', subCategories:
-                    [
-                        { id: 201, name: '시안' },
-                        { id: 202, name: '최종 디자인' }
-                    ]
-            }
-        ];
-        setCategories(categoryData);
-    }, []); // 빈 배열을 전달하여 최초 1회만 실행
+    // // ▼▼▼ [추가] 컴포넌트가 처음 로드될 때 '분류 기준'을 항상 불러옵니다. ▼▼▼
+    // useEffect(() => {
+    //     const categoryData: IMainCategory[] = [
+    //         {
+    //             id: 1, name: '업무추진사항', subCategories:
+    //                 [
+    //                     { id: 101, name: '미팅/회의' },
+    //                     { id: 102, name: 'RFP 문서 / 기타 요구사항' },
+    //                     { id: 103, name: '제출 견적' },
+    //                     { id: 104, name: '제출 문서' },
+    //                     { id: 105, name: '기타 관련 파일' }
+    //                 ]
+    //         },
+    //         {
+    //             id: 2, name: '디자인/기획', subCategories:
+    //                 [
+    //                     { id: 201, name: '시안' },
+    //                     { id: 202, name: '최종 디자인' }
+    //                 ]
+    //         }
+    //     ];
+    //     setCategories(categoryData);
+    // }, []); // 빈 배열을 전달하여 최초 1회만 실행
 
     // ▼▼▼ [수정] '파일 목록'은 프로젝트 선택 여부에 따라 다르게 불러옵니다. ▼▼▼
     useEffect(() => {
@@ -179,8 +180,23 @@ const ProjectExecution: React.FC = () => {
         if (!selectedProject) {
             // 1. 분류 기준 데이터 설정
             const categoryData: IMainCategory[] = [
-                { id: 1, name: '업무추진사항', subCategories: [ { id: 101, name: '미팅/회의' }, { id: 102, name: '제출 문서' }, { id: 103, name: '제출 견적' }, { id: 104, name: '기타 관련 파일' } ] },
-                { id: 2, name: '디자인/기획', subCategories: [ { id: 201, name: '시안' }, { id: 202, name: '최종 디자인' } ] }
+                {
+                    id: 1, name: '업무추진사항',
+                    subCategories: [
+                        { id: 101, name: '미팅/회의' },
+                        { id: 102, name: 'RFP/기타 고객요구사항' },
+                        { id: 103, name: '제출 견적' },
+                        { id: 104, name: '제출 문서' },
+                        { id: 105, name: '기타 관련 파일' }
+                    ]
+                },
+                {
+                    id: 2, name: '디자인/기획',
+                    subCategories: [
+                        { id: 201, name: '시안' },
+                        { id: 202, name: '최종 디자인' }
+                    ]
+                }
             ];
             setCategories(categoryData);
 
@@ -199,7 +215,7 @@ const ProjectExecution: React.FC = () => {
                 {
                     id: `sample-staged-file-1`,
                     file: sampleFile,
-                    categoryId: '1-102', // '제출 문서'로 임의 지정
+                    categoryId: '1-104', // '제출 문서'로 임의 지정
                 }
             ];
             setStagedFiles(stagedFileData);
