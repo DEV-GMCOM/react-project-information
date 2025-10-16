@@ -27,7 +27,7 @@
 /* ✅ Idle 타임아웃 모달*/
 .modal-content.idle-timeout-modal {
     text-align: center;
-    max-width: 500px;
+    max-width: 420px;
 }
 
 /* Idle 타임아웃 모달 */
@@ -72,6 +72,7 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
+    flex: 1; /* 💡 이 한 줄을 추가합니다. */
 }
 
 /* 버튼 스타일 */

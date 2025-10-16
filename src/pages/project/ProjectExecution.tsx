@@ -368,42 +368,44 @@ const ProjectExecution: React.FC = () => {
                     <div className="profile-writer"><div className="writer-form"><div>최종 작성자 :</div></div></div>
                 </div>
 
-                <ProjectBasicInfoForm
-                    formData={projectFormData}
-                    readOnly={true}
+                <div className="project-default-profile-section">
+                    <ProjectBasicInfoForm
+                        formData={projectFormData}
+                        readOnly={true}
 
-                    showSearch={true}
-                    onProjectIdSelected={handleProjectIdSelected}
+                        showSearch={true}
+                        onProjectIdSelected={handleProjectIdSelected}
 
-                    // Project Profile
-                    enableDetailSectionToggle={true}
-                    showDetailSection={showProfileTables}
-                    // onDetailSectionChange={handleToggleStateChange}
-                    onDetailSectionChange={() => handleToggleStateChange(setShowProfileTables)}
+                        // Project Profile
+                        enableDetailSectionToggle={true}
+                        showDetailSection={showProfileTables}
+                        // onDetailSectionChange={handleToggleStateChange}
+                        onDetailSectionChange={() => handleToggleStateChange(setShowProfileTables)}
 
-                    // Project Kickoff
-                    enableKickoffSectionToggle={true}
-                    showKickoffSection={showKickoff}
-                    // onKickoffSectionChange={setShowKickoff}
-                    onKickoffSectionChange={() => handleToggleStateChange(setShowKickoff)}
+                        // Project Kickoff
+                        enableKickoffSectionToggle={true}
+                        showKickoffSection={showKickoff}
+                        // onKickoffSectionChange={setShowKickoff}
+                        onKickoffSectionChange={() => handleToggleStateChange(setShowKickoff)}
 
-                    // PT Postmortem
-                    enablePTPostmortemSectionToggle={true}
-                    showPTPostmortemSection={showPTPostmortem}
-                    // onPTPostmortemSectionChange={setShowPTPostmortem}
-                    onPTPostmortemSectionChange={() => handleToggleStateChange(setShowPTPostmortem)}
+                        // PT Postmortem
+                        enablePTPostmortemSectionToggle={true}
+                        showPTPostmortemSection={showPTPostmortem}
+                        // onPTPostmortemSectionChange={setShowPTPostmortem}
+                        onPTPostmortemSectionChange={() => handleToggleStateChange(setShowPTPostmortem)}
 
-                    // // Project Postmortem
-                    // enableProjectPostmortemSectionToggle={true}
-                    // // showProjectPostmortemSection={showProjPostmortem}
-                    // // onProjectPostmortemSectionChange={setShowProjPostmortem}
+                        // // Project Postmortem
+                        // enableProjectPostmortemSectionToggle={true}
+                        // // showProjectPostmortemSection={showProjPostmortem}
+                        // // onProjectPostmortemSectionChange={setShowProjPostmortem}
 
-                    includeDataSections={["basic", "detail"]}
-                    // 현재 구현에서는 필요가 없을듯 하여 일단 막아놓음. by longjaw.
-                    // className="project-section"
-                    // tableClassName="project-table"
-                    // inputClassName="project-input"
-                />
+                        includeDataSections={["basic", "detail"]}
+                        // 현재 구현에서는 필요가 없을듯 하여 일단 막아놓음. by longjaw.
+                        // className="project-section"
+                        // tableClassName="project-table"
+                        // inputClassName="project-input"
+                    />
+                </div>
 
                 <div className="project-execution-section">
                     <h3 className="section-header">■ 서버 파일 리스트</h3>

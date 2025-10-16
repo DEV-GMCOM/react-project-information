@@ -392,3 +392,17 @@
     font-size: 3.0em; /* 기존 폰트보다 300% 크게 */
     color: #0548f3;   /* 부트스트랩의 'danger' 계열 강조 색상 */
 }
+
+.project-default-profile-section {
+    background-color: #f3f0ff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.project-default-profile-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}

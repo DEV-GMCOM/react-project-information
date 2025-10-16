@@ -1009,8 +1009,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                 transition: `all ${detailSectionAnimationDuration}ms ease-in-out`
                             }}
                         >
-                            {isDetailSectionVisible && (
-                                <>
+                            {/*{isDetailSectionVisible && (*/}
+                            {/*    <>*/}
                                     {/* [수정] 최상위 div에 readOnly 값에 따라 'readonly-mode' 클래스를 추가합니다. */}
                                     <div className={`${className} ${readOnly ? 'readonly-mode' : ''}`}>
                                         <h3 className="section-header">{readOnly ? '🔒' : '■'} 프로젝트 상세 정보</h3>
@@ -1128,8 +1128,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                         </table>
                                     </div>
                                     <ScrollUpButton onClick={handleScrollToActions} />
-                                </>
-                            )}
+                            {/*    </>*/}
+                            {/*)}*/}
                         </div>
                     )}
 
@@ -1194,8 +1194,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                 transition: 'all 1s ease-in-out'
                             }}
                         >
-                            {isKickoffSectionVisible && (
-                                <>
+                            {/*{isKickoffSectionVisible && (*/}
+                            {/*    <>*/}
                                 {/*<div className="postmortem-section">*/}
                                 <div className={`${className} ${readOnly ? 'readonly-mode' : ''}`}>
                                     {/*<h3 className="section-header">*/}
@@ -1333,9 +1333,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                     </table>
                                 </div>
                                 <ScrollUpButton onClick={handleScrollToActions} />
-                                </>
-
-                                )}
+                                {/*</>*/}
+                                {/*)}*/}
                         </div>
 
                     )}
@@ -1352,8 +1351,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                 transition: `all ${detailSectionAnimationDuration}ms ease-in-out`
                             }}
                         >
-                            {isPTPostmortemSectionVisible && (
-                                <>
+                            {/*{isPTPostmortemSectionVisible && (*/}
+                            {/*    <>*/}
                                 <div className={`${className} ${readOnly ? 'readonly-mode' : ''}`}>
                                     <h3 className="section-header">{readOnly ? '🔒' : '■'} PT 결과 분석</h3>
                                     <table className={tableClassName}>
@@ -1475,8 +1474,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                     </table>
                                 </div>
                                 <ScrollUpButton onClick={handleScrollToActions} />
-                                </>
-                            )}
+                            {/*    </>*/}
+                            {/*)}*/}
                         </div>
                     )}
 
@@ -1492,8 +1491,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                 transition: `all ${detailSectionAnimationDuration}ms ease-in-out`
                             }}
                         >
-                            {isProjectPostmortemSectionVisible && (
-                                <>
+                            {/*{isProjectPostmortemSectionVisible && (*/}
+                            {/*    <>*/}
                                     {/* 프로젝트 실행 후 보고 */}
                                     <div className={className}>
                                         <h3 className="section-header">■ 프로젝트 실행 후 보고</h3>
@@ -1568,8 +1567,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                         </table>
                                     </div>
                                     <ScrollUpButton onClick={handleScrollToActions} />
-                                </>
-                            )}
+                            {/*    </>*/}
+                            {/*)}*/}
                         </div>
                     )}
                     {/* ===== 추가된 테이블 섹션들 끝 ===== */}
