@@ -1126,7 +1126,10 @@ const ProjectInformationForm: React.FC = () => {
                         <tr>
                             <td className="table-cell table-cell-label blue-highlight-label">SWOT 분석</td>
                             <td className="table-cell-input" colSpan={4}>
-                                <textarea name="swotAnalysis" value={formData.swotAnalysis} onChange={handleBulletTextChange} placeholder="- 강점: 독보적 경험과 노하우 활요, 높은 수주가능성&#10;- 약점: 내수율 저조&#10;- 기회: 매출달성에 기여, 차기 Proj 기약&#10;- 위험: 내정자에 따른 휴먼 리소스 소모" className="profile-textarea textarea-xlarge bullet-textarea" />
+                                <textarea name="swotAnalysis" value={formData.swotAnalysis} onChange={handleBulletTextChange} placeholder="- 강점: 독보적 경험과 노하우 활요, 높은 수주가능성&#10;- 약점: 내수율 저조&#10;- 기회: 매출달성에 기여, 차기 Proj 기약&#10;- 위험: 내정자에 따른 휴먼 리소스 소모" className="profile-textarea textarea-xlarge bullet-textarea"/>
+                                {/*<textarea name="swotAnalysis" value={formData.swotAnalysis} onChange={handleBulletTextChange} placeholder="- 강점: 독보적 경험과 노하우 활요, 높은 수주가능성&#10;- 약점: 내수율 저조&#10;- 기회: 매출달성에 기여, 차기 Proj 기약&#10;- 위험: 내정자에 따른 휴먼 리소스 소모" className="profile-textarea textarea-xlarge bullet-textarea"/>*/}
+                                {/*<textarea name="swotAnalysis" value={formData.swotAnalysis} onChange={handleBulletTextChange} placeholder="- 강점: 독보적 경험과 노하우 활요, 높은 수주가능성&#10;- 약점: 내수율 저조&#10;- 기회: 매출달성에 기여, 차기 Proj 기약&#10;- 위험: 내정자에 따른 휴먼 리소스 소모" className="profile-textarea textarea-xlarge bullet-textarea"/>*/}
+                                {/*<textarea name="swotAnalysis" value={formData.swotAnalysis} onChange={handleBulletTextChange} placeholder="- 강점: 독보적 경험과 노하우 활요, 높은 수주가능성&#10;- 약점: 내수율 저조&#10;- 기회: 매출달성에 기여, 차기 Proj 기약&#10;- 위험: 내정자에 따른 휴먼 리소스 소모" className="profile-textarea textarea-xlarge bullet-textarea"/>*/}
                             </td>
                         </tr>
                         <tr>

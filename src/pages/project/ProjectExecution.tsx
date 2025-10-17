@@ -196,6 +196,13 @@ const ProjectExecution: React.FC = () => {
                         { id: 201, name: '시안' },
                         { id: 202, name: '최종 디자인' }
                     ]
+                },
+                {
+                    id: 3, name: '지출/정산',
+                    subCategories: [
+                        { id: 301, name: '지출 결의' },
+                        { id: 302, name: '정산' }
+                    ]
                 }
             ];
             setCategories(categoryData);

@@ -53,7 +53,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         // },
         {
             path: '/information',
-            name: '0. 기본정보',
+            name: '기본정보',
             icon: '📋',
             subMenus: [
                 { path: '/info-management/advertiser', name: '기업 / 광고주 ( 담당자 )' },
@@ -67,32 +67,32 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         // },
         // {
         //     path: '/project-profile',
-        //     name: '2. 프로젝트 프로파일',
+        //     name: '2. 프로젝트 프로파일', // ProjectProfile -> ProjectInformation 으로 흡수
         //     icon: '📝'
         // },
         {
             path: '/project-kickoff',
-            name: '1. 프로젝트 착수서',
+            name: '프로젝트 착수서',
             icon: '🚀'
         },
         {
             path: '/pt-checklist',
-            name: '2. PT 자체평가',
+            name: 'PT 전 체크',
             icon: '✅'
         },
         {
             path: '/pt-postmortem',
-            name: '3. PT 결과분석',
+            name: 'PT 결과분석',
             icon: '🔍'
         },
         {
             path: '/project-execution',
-            name: '4. 프로젝트 실행파일링',
+            name: '프로젝트 실행파일링',
             icon: '📁'
         },
         {
             path: '/project-postmortem',
-            name: '5. 프로젝트 결과분석',
+            name: '프로젝트 결과분석',
             icon: '📊'
         },
     ];
@@ -124,8 +124,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {
             path: '/working/fms',
             name: 'GMCOM 저장소',
-            icon: '📀',
-            // icon: '💾',
+            icon: '💾',
+            // icon: '📀',
+            // subMenus: [
+            //     { path: '/admin/permissions/policies', name: '정책 관리' },     //
+            //     { path: '/admin/permissions/roles', name: '역할 관리' },        // 직급별, 부서별, 개인별
+            //     { path: '/admin/permissions/pages', name: '페이지 관리' },       //
+            //     { path: '/admin/permissions/restrictions', name: '한정 관리' }, // 시간별, 외부접근별
+            // ]
+        },
+        {
+            path: '/working/clock-in-out',
+            name: '출퇴근 체크',
+            icon: '⏱️',
+            // subMenus: [
+            //     { path: '/admin/permissions/policies', name: '정책 관리' },     //
+            //     { path: '/admin/permissions/roles', name: '역할 관리' },        // 직급별, 부서별, 개인별
+            //     { path: '/admin/permissions/pages', name: '페이지 관리' },       //
+            //     { path: '/admin/permissions/restrictions', name: '한정 관리' }, // 시간별, 외부접근별
+            // ]
+        },
+        {
+            path: '/working/scheduling',
+            name: '스케쥴링',
+            icon: '📅',
             // subMenus: [
             //     { path: '/admin/permissions/policies', name: '정책 관리' },     //
             //     { path: '/admin/permissions/roles', name: '역할 관리' },        // 직급별, 부서별, 개인별
