@@ -244,35 +244,50 @@
     border-top: 1px solid #eee;
 }
 
-.btn-primary {
-    background-color: #007bff;
+.generation-panel .btn-secondary {
+    background-color: #6c757d !important;
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    font-size: 14px;
+    border-radius: 5px;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
+
+    /* 사이즈업을 위한 핵심 속성 */
+    padding: 12px 32px;   /* 상하좌우 여백 증가 */
+    font-size: 16px !important;      /* 폰트 크기 증가 */
 }
 
-.btn-primary:hover {
-    background-color: #0056b3;
+.generation-panel .btn-secondary:hover {
+    background-color: #545b62 !important;
 }
 
-.btn-secondary {
-    background-color: #6c757d;
+/*.btn-primary {*/
+/*    background-color: #007bff;*/
+/*    color: white;*/
+/*    border: none;*/
+/*    padding: 10px 20px;*/
+/*    border-radius: 4px;*/
+/*    font-size: 14px;*/
+/*    cursor: pointer;*/
+/*    font-weight: 500;*/
+/*}*/
+.meeting-minutes-actions .btn-primary {
+    background-color: #007bff !important;
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    font-size: 14px;
+    border-radius: 5px;   /* 살짝 더 둥글게 */
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;     /* 글자 두께 */
+
+    /* 사이즈업을 위한 핵심 속성 */
+    padding: 12px 32px;   /* 상하좌우 여백 증가 */
+    font-size: 16px !important;      /* 폰트 크기 증가 */
 }
 
-.btn-secondary:hover {
-    background-color: #545b62;
+.meeting-minutes-actions .btn-primary:hover {
+    background-color: #0056b3 !important;
 }
+
 
 
 /* 자동완성 스타일 조정 */
@@ -572,7 +587,7 @@
 .file-drop-zone {
     border: 2px dashed #ccc;
     border-radius: 8px;
-    padding: 20px;
+    padding: 4rem !important;
     text-align: center;
     cursor: pointer;
     transition: background-color 0.2s ease;
@@ -589,6 +604,35 @@
 
 .file-list {
     /* ... 파일 목록 스타일 ... */
+}
+/* 공유 방식 라벨 스타일링 */
+.share-method-label {
+    font-size: 16px;   /* 텍스트 크기 키움 */
+    line-height: 24px; /* 큰 체크박스 높이에 맞춰 세로 정렬 */
+    padding: 2px 5px;  /* 포커스 시 가이드라인이 텍스트를 침범하지 않도록 여백 추가 */
+    margin-right: 15px;/* 체크박스 간 간격 확보 */
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* 연관 프로젝트 선택 표시를 위한 컨테이너 */
+.project-selection-display {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px;
+    min-height: 38px; /* input 높이와 유사하게 */
+    box-sizing: border-box;
+}
+
+.project-selection-placeholder {
+    color: #999;
+    font-size: 14px;
+    padding-left: 8px;
 }
 
 .file-item {
@@ -767,6 +811,28 @@
     top: -2px;
     left: 1px;
 }
+/* 큰 체크박스 */
+.checkbox-medium {
+    width: 16px; /* 1.5배 크기 */
+    height: 16px;
+}
+
+/* [수정] 체크된 박스를 flex 컨테이너로 만들어 V표시를 쉽게 중앙 정렬합니다. */
+.checkbox-medium:checked {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* [수정] 큰 체크박스의 V 표시를 더 키우고, 위치 속성을 제거하여 flex 정렬이 적용되도록 합니다. */
+.checkbox-medium:checked::after {
+    /* position, top, left 속성은 제거합니다. */
+    font-size: 14px;   /* V 표시를 조금 더 키웠습니다. */
+    line-height: 1;    /* 세로 중앙 정렬을 더 용이하게 합니다. */
+    font-weight: bold;
+    color: white;
+    content: '✓';
+}
 
 /* 큰 체크박스 */
 .checkbox-large {
@@ -859,6 +925,31 @@
     height: 12px;
 }
 
+/* MeetingMinutes.css 파일 하단에 추가 */
+
+/* 생성 패널 내부 라벨 스타일 개선 */
+.generation-options .meeting-minutes-label {
+    display: flex;
+    align-items: center; /* 세로 중앙 정렬 */
+    gap: 12px;           /* 체크박스/라디오와 텍스트 사이 간격 */
+    font-size: 16px;     /* 글자 크기 키움 */
+    margin-bottom: 15px; /* 라벨 간의 상하 간격 확보 */
+}
+
+/* 마지막 라벨의 하단 마진 제거 */
+.generation-options .meeting-minutes-label:last-child {
+    margin-bottom: 0;
+}
 
 
+/* MeetingMinutes.css 파일 하단에 추가 */
+
+/* --- ▼▼▼ [추가] LLM 결과 섹션의 라벨 스타일 ▼▼▼ --- */
+.llm-result-label {
+    display: flex;
+    align-items: center;  /* 체크박스와 텍스트 세로 중앙 정렬 */
+    gap: 10px;            /* 체크박스와 텍스트 사이 간격 */
+    font-size: 15px;      /* 텍스트 크기 조정 */
+}
+/* --- ▲▲▲ 추가 종료 ▲▲▲ --- */
 

@@ -1,248 +1,3 @@
-// // src/pages/working/MeetingMinutes.tsx
-//
-// import React, { useState, useRef, useEffect } from 'react'; // useState, useRef, useEffect 추가
-//
-// import '../../styles/FormPage.css';
-// import '../../styles/MeetingMinutes.css';
-//
-// const MeetingMinutes: React.FC = () => {
-//
-//     // 1. 파일 입력(input) DOM에 접근하기 위한 ref
-//     const fileInputRef = useRef<HTMLInputElement>(null);
-//
-//     // 2. 파일 목록, 업로드 상태 등을 관리하는 state
-//     const [serverFiles, setServerFiles] = useState<any[]>([]); // 서버에 업로드된 파일 목록
-//     const [isFileUploading, setIsFileUploading] = useState<boolean>(false); // 파일 업로드 진행 상태
-//     const [isDragOver, setIsDragOver] = useState<boolean>(false); // 드래그-앤-드롭 UI 상태
-//
-//     // 3. 현재 작업중인 프로젝트 ID (가정)
-//     // 이 값은 상위 컴포넌트나 URL로부터 받아와야 합니다.
-//     const [selectedProjectId, setSelectedProjectId] = useState<number | null>(1);
-//
-//     // 4. 허용할 파일 확장자 목록
-//     const allowedExtensions = ['txt', 'pdf', 'ppt', 'pptx', 'doc', 'docx', 'hwp', 'hwpx', 'png', 'jpg', 'jpeg', 'xls', 'xlsx', 'zip', 'rar', '7z'];
-//
-//
-//
-//     // 파일 선택창을 여는 함수
-//     const handleFileSelect = () => {
-//         fileInputRef.current?.click();
-//     };
-//
-//     // 파일이 드래그하여 드롭 영역에 들어왔을 때
-//     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-//         e.preventDefault();
-//         setIsDragOver(true);
-//     };
-//
-//     // 파일 드래그가 드롭 영역을 벗어났을 때
-//     const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-//         e.preventDefault();
-//         setIsDragOver(false);
-//     };
-//
-//     // 파일이 드롭되었을 때 또는 파일 선택창에서 선택되었을 때
-//     const handleFiles = async (files: FileList | null) => {
-//         if (!files || files.length === 0) return;
-//         // 이곳에 실제 파일 업로드 API를 호출하는 로직이 들어갑니다.
-//         console.log("업로드할 파일:", files);
-//         // 예: uploadFiles(files);
-//     };
-//
-//     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-//         e.preventDefault();
-//         setIsDragOver(false);
-//         handleFiles(e.dataTransfer.files);
-//     };
-//
-//     const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-//         handleFiles(e.target.files);
-//     };
-//
-//     // 파일 다운로드 처리 함수
-//     const handleFileDownload = (file: any) => {
-//         console.log("다운로드할 파일:", file);
-//         // 이곳에 파일 다운로드 API 호출 로직이 들어갑니다.
-//     };
-//
-//     // 파일 삭제 처리 함수
-//     const handleFileDelete = (file: any) => {
-//         if (window.confirm(`${file.original_file_name} 파일을 정말 삭제하시겠습니까?`)) {
-//             console.log("삭제할 파일:", file);
-//             // 이곳에 파일 삭제 API 호출 로직이 들어갑니다.
-//         }
-//     };
-//
-//     // 파일 크기를 읽기 쉽게 변환하는 유틸리티 함수
-//     const formatFileSize = (bytes: number): string => {
-//         if (bytes === 0) return '0 Bytes';
-//         const k = 1024;
-//         const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-//         const i = Math.floor(Math.log(bytes) / Math.log(k));
-//         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-//     };
-//
-//     return (
-//         <div className="meeting-minutes-container">
-//             {/* ... 헤더 부분은 동일 ... */}
-//             <div className="meeting-minutes-header">
-//                 <div>
-//                     <h1 className="meeting-minutes-title">회의록 자동 문서화</h1>
-//                 </div>
-//                 <div className="meeting-minutes-logo">GMCOM</div>
-//             </div>
-//
-//             <div className="meeting-minutes-main">
-//                 {/* ... 다른 섹션들은 동일 ... */}
-//                 <div className="meeting-minutes-title-section">
-//                     <h2 className="meeting-minutes-subtitle">회의록 음성 파일</h2>
-//                     <div className="profile-writer">
-//                         <div className="writer-form">
-//                             <div>최종 작성자 :</div>
-//                         </div>
-//                     </div>
-//                 </div>
-//                 <div className="meeting-minutes-section">
-//                     <h3 className="section-header">■ 파일 리스트</h3>
-//                 </div>
-//
-//                 <div className="table-action-section">
-//                     <input
-//                         ref={fileInputRef}
-//                         type="file"
-//                         multiple
-//                         accept=".txt,.text,.md,.pdf,.ppt,.pptx,.doc,.docx,.hwp,.hwpx,.png,.jpg,.jpeg,.xls,.xlsx,.zip,.rar,.7z"
-//                         onChange={handleFileInputChange}
-//                         style={{ display: 'none' }}
-//                     />
-//                     {/*<button*/}
-//                     {/*    type="button"*/}
-//                     {/*    className="rfp-attach-btn"*/}
-//                     {/*    onClick={handleFileSelect}*/}
-//                     {/*    disabled={!selectedProjectId || isFileUploading}*/}
-//                     {/*>*/}
-//                     {/*    {isFileUploading ? '업로드 중...' : `음성 파일 첨부${serverFiles.length > 0 ? ` (${serverFiles.length})` : ''}`}*/}
-//                     {/*</button>*/}
-//                 </div>
-//
-//                 {/* 파일 업로드 영역 */}
-//                 <div className="file-upload-section">
-//                     <div
-//                         className={`file-drop-zone ${isDragOver ? 'drag-over' : ''}`}
-//                         onDragOver={handleDragOver}
-//                         onDragLeave={handleDragLeave}
-//                         onDrop={handleDrop}
-//                         onClick={handleFileSelect}
-//                     >
-//                         {serverFiles.length === 0 ? (
-//                             <div className="drop-zone-message">
-//                                 <div className="drop-zone-icon">📁</div>
-//                                 <div className="drop-zone-text">
-//                                     <p>파일을 여기로 드래그하거나 클릭하여 업로드하세요</p>
-//                                     <p className="drop-zone-hint">
-//                                         지원 형식: {allowedExtensions.join(', ')} (최대 100MB)
-//                                     </p>
-//                                 </div>
-//                             </div>
-//                         ) : (
-//                             <div className="file-list">
-//                                 {serverFiles.map(file => (
-//                                     <div key={`server-${file.id}`} className="file-item uploaded-file">
-//                                         <div className="file-info">
-//                                             <div className="file-name">
-//                                                 <button
-//                                                     className="file-download-link"
-//                                                     onClick={(e) => {
-//                                                         e.stopPropagation();
-//                                                         handleFileDownload(file);
-//                                                     }}
-//                                                     title="클릭하여 다운로드"
-//                                                 >
-//                                                     📄 {file.original_file_name}
-//                                                 </button>
-//                                                 {file.is_readonly && <span className="readonly-badge">🔒</span>}
-//                                             </div>
-//                                             <div className="file-details">
-//                                                 <span className="file-size">{formatFileSize(file.file_size)}</span>
-//                                                 <span className="file-type">{file.file_type?.toUpperCase()}</span>
-//                                                 <span className="upload-date">
-//                                                     {new Date(file.uploaded_at).toLocaleString('ko-KR')}
-//                                                 </span>
-//                                             </div>
-//                                         </div>
-//                                         <button
-//                                             className="file-remove-btn"
-//                                             onClick={(e) => {
-//                                                 e.stopPropagation();
-//                                                 handleFileDelete(file);
-//                                             }}
-//                                             title="파일 삭제"
-//                                         >
-//                                             🗑️
-//                                         </button>
-//                                     </div>
-//                                 ))}
-//
-//                                 <div
-//                                     className="drop-zone-add-more"
-//                                     onClick={handleFileSelect}
-//                                     style={{ display: isFileUploading ? 'none' : 'flex' }}
-//                                 >
-//                                     <span>+ 더 많은 파일 추가</span>
-//                                 </div>
-//                             </div>
-//                         )}
-//                     </div>
-//
-//                     {isFileUploading && (
-//                         <div className="upload-progress">
-//                             <div className="upload-spinner">⏳</div>
-//                             <span>파일을 업로드하고 있습니다...</span>
-//                         </div>
-//                     )}
-//                 </div>
-//
-//
-//                 {/* --- ▼▼▼ [제안] 생성 관련 UI를 하나의 패널로 그룹화 ▼▼▼ --- */}
-//                 <div className="generation-panel">
-//                     <div className="generation-options">
-//                         <label className="meeting-minutes-label">
-//                             <input className="meeting-minutes-checkbox" type="checkbox" name="summary" defaultChecked />
-//                             내용(안건) 정리
-//                         </label>
-//                         <label className="meeting-minutes-label">
-//                             <input className="meeting-minutes-checkbox" type="checkbox" name="concept" />
-//                             컨셉 문서
-//                         </label>
-//                         <label className="meeting-minutes-label">
-//                             <input className="meeting-minutes-checkbox" type="checkbox" name="draft" />
-//                             Draft 기획서
-//                         </label>
-//                     </div>
-//                     <button className="btn-primary">생성</button>
-//                 </div>
-//                 {/* --- ▲▲▲ 생성 패널 종료 ▲▲▲ --- */}
-//
-//                 <div className="meeting-minutes-section">
-//                     <h3 className="section-header">■ 생성된 텍스트</h3>
-//                 </div>
-//                 <div className="meeting-minutes-section">
-//                     <h3 className="section-header">■ 생성된 Draft 기획서, 컨셉문서, 주요 안건 정리</h3>
-//                 </div>
-//
-//                 {/* --- ▼▼▼ 최종 저장 버튼은 명확하게 분리 ▼▼▼ --- */}
-//                 <div className="meeting-minutes-actions">
-//                     <button className="btn-secondary">저장</button>
-//                 </div>
-//                 {/* --- ▲▲▲ 최종 저장 버튼 종료 ▲▲▲ --- */}
-//
-//             </div>
-//         </div>
-//     );
-// };
-//
-// export default MeetingMinutes;
-
 
 import React, { useState, useRef, useEffect } from 'react';
 
@@ -377,6 +132,7 @@ const MeetingMinutes: React.FC = () => {
 
     // 2. 파일 목록, 업로드 상태 등을 관리하는 state
     const [serverFiles, setServerFiles] = useState<any[]>([]);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // ✅ 새로 선택한 로컬 파일 목록
     const [isFileUploading, setIsFileUploading] = useState<boolean>(false);
     const [isDragOver, setIsDragOver] = useState<boolean>(false);
 
@@ -406,9 +162,10 @@ const MeetingMinutes: React.FC = () => {
 
     const [showEmployeeModal, setShowEmployeeModal] = useState(false);
     const [shareMethods, setShareMethods] = useState({
-        jandi: true,
-        email: false,
+        email: true,
+        jandi: false,
     });
+    const [shareMethod, setShareMethod] = useState<'email' | 'jandi'>('email');
     const [tags, setTags] = useState<string>('');
     // --- ▲▲▲ 상태 관리 종료 ▲▲▲ ---
 
@@ -424,10 +181,16 @@ const MeetingMinutes: React.FC = () => {
     const [showProjectSearchModal, setShowProjectSearchModal] = useState(false);
     const [projectSearchLoading, setProjectSearchLoading] = useState(false);
     const [projectSearchResults, setProjectSearchResults] = useState<Project[]>([]);
+    const [modalSearchTerm, setModalSearchTerm] = useState('');
 
     const [showEmployeeSearchModal, setShowEmployeeSearchModal] = useState(false);
     const [sharedWith, setSharedWith] = useState<Employee[]>([]); // Employee 객체 배열로 관리
     // --- ▲▲▲ 상태 관리 종료 ▲▲▲ ---
+
+
+    const [meetingTitle, setMeetingTitle] = useState<string>('');
+    const [meetingDateTime, setMeetingDateTime] = useState<string>('');
+    const [meetingPlace, setMeetingPlace] = useState<string>('');
 
     // 드래그 앤 드롭 핸들러
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -440,9 +203,21 @@ const MeetingMinutes: React.FC = () => {
         setIsDragOver(false);
     };
 
+    // const handleFiles = async (files: FileList | null) => {
+    //     if (!files || files.length === 0) return;
+    //     console.log("업로드할 파일:", files);
+    // };
+    // 수정할 코드
     const handleFiles = async (files: FileList | null) => {
         if (!files || files.length === 0) return;
-        console.log("업로드할 파일:", files);
+
+        const newFiles = Array.from(files);
+        // 기존에 선택된 파일 목록에 새로 추가된 파일을 합칩니다.
+        setSelectedFiles(prevFiles => [...prevFiles, ...newFiles]);
+
+        console.log("선택된 파일 목록:", newFiles);
+        // 여기에 실제 파일 업로드 API 호출 로직을 추가할 수 있습니다.
+        // 예: uploadFiles(newFiles);
     };
 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -465,6 +240,11 @@ const MeetingMinutes: React.FC = () => {
         }
     };
 
+    const handleRemoveSelectedFile = (fileToRemove: File) => {
+        setSelectedFiles(prevFiles => prevFiles.filter(file => file !== fileToRemove));
+    };
+
+
     // 파일 크기 포맷 함수
     const formatFileSize = (bytes: number): string => {
         if (bytes === 0) return '0 Bytes';
@@ -474,12 +254,22 @@ const MeetingMinutes: React.FC = () => {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
-    // --- ▼▼▼ [추가] 프로젝트 검색 핸들러 ▼▼▼ ---
-    const handleProjectSearch = async () => {
-        setProjectSearchLoading(true);
+    // --- ▼▼▼ [수정] 프로젝트 검색 핸들러 ▼▼▼ ---
+    // const openProjectSearchModal = () => {
+    //     setModalSearchTerm(''); // 모달을 열 때 검색어 초기화
+    //     setShowProjectSearchModal(true);
+    //     handleProjectSearch(''); // 초기 목록을 보여주기 위해 빈 검색어로 검색
+    // };
+    const openProjectSearchModal = () => {
+        setModalSearchTerm(projectName); // 모달을 열 때 현재 프로젝트명을 모달 검색어 초기값으로 설정
         setShowProjectSearchModal(true);
+        handleProjectSearch(projectName); // 현재 프로젝트명으로 초기 검색 실행
+    };
+
+    const handleProjectSearch = async (term: string) => {
+        setProjectSearchLoading(true);
         try {
-            const results = await projectService.getProjects({ search: projectName });
+            const results = await projectService.getProjects({ search: term });
             setProjectSearchResults(results);
         } catch (error) {
             console.error("프로젝트 검색 오류:", error);
@@ -493,6 +283,12 @@ const MeetingMinutes: React.FC = () => {
         setProjectName(project.project_name);
         setSelectedProjectId(project.id);
         setShowProjectSearchModal(false);
+    };
+
+    // [추가] 프로젝트 선택 취소 핸들러
+    const cancelProjectSelection = () => {
+        setProjectName('');
+        setSelectedProjectId(null);
     };
     // --- ▲▲▲ 프로젝트 검색 핸들러 종료 ▲▲▲ ---
 
@@ -529,7 +325,13 @@ const MeetingMinutes: React.FC = () => {
     };
 
     const handleShareMethodChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, checked } = e.target;
+        const { name, checked } = e.target as { name: keyof typeof shareMethods; checked: boolean };
+
+        // 마지막 남은 하나를 끄려고 할 때, 변경을 막음
+        if (!checked && ( (name === 'email' && !shareMethods.jandi) || (name === 'jandi' && !shareMethods.email) )) {
+            return; // 아무것도 하지 않음
+        }
+
         setShareMethods(prev => ({ ...prev, [name]: checked }));
     };
 
@@ -569,60 +371,83 @@ const MeetingMinutes: React.FC = () => {
 
                 <div className="meeting-minutes-section">
                     <h3 className="section-header">■ 기본 정보</h3>
-                    {/*<div style={{ padding: '15px' }}>*/}
-                    {/*    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>*/}
-                    {/*        <div className="writer-field">*/}
-                    {/*            <label className="writer-field-label">프로젝트명</label>*/}
-                    {/*            <div className="input-with-search">*/}
-                    {/*                <input type="text" className="writer-field-input" style={{width: '100%'}} placeholder="프로젝트를 검색하여 선택" />*/}
-                    {/*                <button className="search-btn">🔍</button>*/}
-                    {/*            </div>*/}
-                    {/*        </div>*/}
-                    {/*        <div className="writer-field">*/}
-                    {/*            <label className="writer-field-label">공유할 인원</label>*/}
-                    {/*            <div className="input-with-search">*/}
-                    {/*                <input type="text" className="writer-field-input" style={{width: '100%'}} value={sharedWith.join(', ')} readOnly />*/}
-                    {/*                <button className="search-btn" onClick={() => setShowEmployeeModal(true)}>+</button>*/}
-                    {/*            </div>*/}
-                    {/*        </div>*/}
-                    {/*        <div className="writer-field">*/}
-                    {/*            <label className="writer-field-label">공유 방식</label>*/}
-                    {/*            <label className="meeting-minutes-label">*/}
-                    {/*                <input type="checkbox" className="meeting-minutes-checkbox checkbox-large" style={{ transform: 'scale(1.5)'}} name="jandi" checked={shareMethods.jandi} onChange={handleShareMethodChange} />*/}
-                    {/*                잔디*/}
-                    {/*            </label>*/}
-                    {/*            <label className="meeting-minutes-label">*/}
-                    {/*                <input type="checkbox" className="meeting-minutes-checkbox checkbox-large" style={{ transform: 'scale(1.5)'}} name="email" checked={shareMethods.email} onChange={handleShareMethodChange} />*/}
-                    {/*                이메일*/}
-                    {/*            </label>*/}
-                    {/*        </div>*/}
-                    {/*        <div className="writer-field">*/}
-                    {/*            <label className="writer-field-label">태그</label>*/}
-                    {/*            <input type="text" className="writer-field-input" style={{width: '100%'}} value={tags} onChange={(e) => setTags(e.target.value)} placeholder="쉼표(,)로 구분, 검색 시 활용 (10자 이내)" />*/}
-                    {/*        </div>*/}
-                    {/*    </div>*/}
-                    {/*</div>*/}
-                    {/* --- ▼▼▼ [수정] 기본 정보 레이아웃 및 기능 ▼▼▼ --- */}
+                    {/* --- ▼▼▼ [최종 수정] 기본 정보 레이아웃 및 기능 ▼▼▼ --- */}
                     <div style={{ padding: '15px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            <div className="writer-field" style={{ flexWrap: 'nowrap' }}>
-                                <label className="writer-field-label">연관 프로젝트</label>
-                                <div className="input-with-search" style={{ flexGrow: 1 }}>
+                            {/* ✅ 회의록 제목 필드 추가 */}
+                            <div className="writer-field">
+                                <label className="writer-field-label">회의록 제목</label>
+                                <input
+                                    type="text"
+                                    className="writer-field-input"
+                                    style={{width: '100%'}}
+                                    value={meetingTitle}
+                                    onChange={(e) => setMeetingTitle(e.target.value)}
+                                    placeholder="회의록 제목을 입력하세요"
+                                />
+                            </div>
+
+                            {/* ✅ 회의 일시 및 장소 필드 추가 */}
+                            <div style={{ display: 'flex', gap: '20px' }}>
+                                <div className="writer-field" style={{ flex: 1 }}>
+                                    <label className="writer-field-label">회의 일시</label>
+                                    <input
+                                        type="datetime-local"
+                                        className="writer-field-input"
+                                        style={{width: '100%'}}
+                                        value={meetingDateTime}
+                                        onChange={(e) => setMeetingDateTime(e.target.value)}
+                                    />
+                                </div>
+                                <div className="writer-field" style={{ flex: 1 }}>
+                                    <label className="writer-field-label">회의 장소</label>
                                     <input
                                         type="text"
                                         className="writer-field-input"
-                                        style={{ width: '100%' }}
-                                        placeholder="프로젝트명 입력 후 엔터 또는 🔍 클릭"
-                                        value={projectName}
-                                        onChange={e => setProjectName(e.target.value)}
-                                        onKeyDown={e => { if (e.key === 'Enter') handleProjectSearch(); }}
+                                        style={{width: '100%'}}
+                                        value={meetingPlace}
+                                        onChange={(e) => setMeetingPlace(e.target.value)}
+                                        placeholder="회의 장소를 입력하세요"
                                     />
-                                    <button className="search-btn" onClick={handleProjectSearch}>🔍</button>
                                 </div>
                             </div>
-                            <div className="writer-field" style={{ alignItems: 'flex-start' }}>
-                                <label className="writer-field-label" style={{ paddingTop: '5px' }}>공유할 인원</label>
-                                <div className="input-with-search" style={{ flexGrow: 1, display: 'flex', flexWrap: 'wrap', gap: '5px', border: '1px solid #ddd', borderRadius: '4px', padding: '5px' }}>
+                            {/* --- ▼▼▼ [수정] 연관 프로젝트 UI ▼▼▼ --- */}
+                            <div className="writer-field">
+                                <label className="writer-field-label">연관 프로젝트</label>
+                                <div className="project-selection-display" style={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid #ddd', borderRadius: '4px', padding: '5px', minHeight: '38px' }}>
+                                    {projectName ? (
+                                        <span
+                                            className="status-badge company-badge with-reset"
+                                            style={{
+                                                maxWidth: '100%', // 부모 너비를 넘지 않도록 설정
+                                                minWidth: 0,       // flex 아이템이 작아질 수 있도록 허용
+                                            }}
+                                        >
+                                            <span
+                                                className="badge-text"
+                                                title={projectName}
+                                                style={{
+                                                    whiteSpace: 'nowrap',   // 텍스트가 줄바꿈되지 않도록
+                                                    overflow: 'hidden',     // 넘치는 텍스트 숨기기
+                                                    textOverflow: 'ellipsis', // 넘치는 텍스트를 ...으로 표시
+                                                }}
+                                            >
+                                                {projectName}
+                                            </span>
+                                            <span className="badge-reset-icon" onClick={cancelProjectSelection} title="프로젝트 선택 취소">×</span>
+                                        </span>
+                                    ) : (
+                                        <span style={{ color: '#999', fontSize: '14px', paddingLeft: '8px' }}>오른쪽 검색 버튼으로 프로젝트를 선택하세요</span>
+                                    )}
+                                    <button className="search-btn" onClick={openProjectSearchModal} style={{ marginLeft: 'auto' }}>🔍</button>
+                                </div>
+                            </div>
+                            {/* --- ▲▲▲ 수정 종료 ▲▲▲ --- */}
+                            {/*<div className="writer-field" style={{ alignItems: 'flex-start' }}>*/}
+                            {/*    <label className="writer-field-label" style={{ paddingTop: '5px' }}>회의록 공유</label>*/}
+                            <div className="writer-field"> {/* ✅ style 속성 제거 */}
+                                <label className="writer-field-label">회의록 공유</label> {/* ✅ style 속성 제거 */}
+                                <div className="input-with-search" style={{ flexGrow: 1, display: 'flex', flexWrap: 'wrap', gap: '5px', border: '1px solid #ddd', borderRadius: '4px', padding: '5px', minHeight: '38px' }}>
                                     {sharedWith.map(emp => (
                                         <span key={emp.id} className="status-badge company-badge with-reset">
                                             <span className="badge-text">{emp.name}({emp.department})</span>
@@ -632,15 +457,15 @@ const MeetingMinutes: React.FC = () => {
                                     <button className="search-btn" onClick={() => setShowEmployeeSearchModal(true)} style={{ marginLeft: 'auto', alignSelf: 'center' }}>+</button>
                                 </div>
                             </div>
-                            <div className="writer-field">
-                                <label className="writer-field-label">공유 방식</label>
-                                <label className="meeting-minutes-label">
-                                    <input type="checkbox" className="meeting-minutes-checkbox checkbox-large" style={{ transform: 'scale(1.5)'}} name="jandi" checked={shareMethods.jandi} onChange={handleShareMethodChange} />
-                                    잔디
+                            <div className="writer-field" style={{ alignItems: 'center' }}>
+                                <label className="writer-field-label">전달 방법</label>
+                                <label className="meeting-minutes-label share-method-label">
+                                    <input type="checkbox" className="meeting-minutes-checkbox checkbox-large" name="email" checked={shareMethods.email} onChange={handleShareMethodChange} />
+                                    <span>이메일</span>
                                 </label>
-                                <label className="meeting-minutes-label">
-                                    <input type="checkbox" className="meeting-minutes-checkbox checkbox-large" style={{ transform: 'scale(1.5)'}} name="email" checked={shareMethods.email} onChange={handleShareMethodChange} />
-                                    이메일
+                                <label className="meeting-minutes-label share-method-label">
+                                    <input type="checkbox" className="meeting-minutes-checkbox checkbox-large" name="jandi" checked={shareMethods.jandi} onChange={handleShareMethodChange} />
+                                    <span>잔디</span>
                                 </label>
                             </div>
                             <div className="writer-field">
@@ -662,6 +487,19 @@ const MeetingMinutes: React.FC = () => {
                                 <button className="modal-close-btn" onClick={() => setShowProjectSearchModal(false)}>×</button>
                             </div>
                             <div className="modal-body">
+                                {/* --- ▼▼▼ [수정] 모달 내 검색창 추가 ▼▼▼ --- */}
+                                <div className="input-with-search" style={{ marginBottom: '15px' }}>
+                                    <input
+                                        type="text"
+                                        className="project-input"
+                                        placeholder="프로젝트명으로 검색"
+                                        value={modalSearchTerm}
+                                        onChange={e => setModalSearchTerm(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter') handleProjectSearch(modalSearchTerm); }}
+                                    />
+                                    <button className="search-btn" onClick={() => handleProjectSearch(modalSearchTerm)}>🔍</button>
+                                </div>
+                                {/* --- ▲▲▲ 수정 종료 ▲▲▲ --- */}
                                 {projectSearchLoading ? (
                                     <div className="loading">검색 중...</div>
                                 ) : (
@@ -709,7 +547,7 @@ const MeetingMinutes: React.FC = () => {
 
 
                 <div className="meeting-minutes-section">
-                    <h3 className="section-header">■ 회의록 음성 파일</h3>
+                    <h3 className="section-header">■ 회의록 리스트</h3>
                 </div>
 
                 <input
@@ -731,7 +569,8 @@ const MeetingMinutes: React.FC = () => {
                         onDrop={handleDrop}
                         onClick={handleFileSelect}
                     >
-                        {serverFiles.length === 0 ? (
+                        {/* ✅ serverFiles와 selectedFiles가 모두 비어있을 때만 메시지 표시 */}
+                        {serverFiles.length === 0 && selectedFiles.length === 0 ? (
                             <div className="drop-zone-message">
                                 <div className="drop-zone-icon">📁</div>
                                 <div className="drop-zone-text">
@@ -743,35 +582,29 @@ const MeetingMinutes: React.FC = () => {
                             </div>
                         ) : (
                             <div className="file-list">
+                                {/* 서버에 이미 업로드된 파일 목록 */}
                                 {serverFiles.map(file => (
                                     <div key={`server-${file.id}`} className="file-item uploaded-file">
+                                        {/* ... 기존 서버 파일 렌더링 코드 ... */}
+                                    </div>
+                                ))}
+
+                                {/* ✅ 새로 선택된 로컬 파일 목록 */}
+                                {selectedFiles.map((file, index) => (
+                                    <div key={`local-${index}`} className="file-item">
                                         <div className="file-info">
                                             <div className="file-name">
-                                                <button
-                                                    className="file-download-link"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleFileDownload(file);
-                                                    }}
-                                                    title="클릭하여 다운로드"
-                                                >
-                                                    📄 {file.original_file_name}
-                                                </button>
-                                                {file.is_readonly && <span className="readonly-badge">🔒</span>}
+                                                📄 {file.name}
                                             </div>
                                             <div className="file-details">
-                                                <span className="file-size">{formatFileSize(file.file_size)}</span>
-                                                <span className="file-type">{file.file_type?.toUpperCase()}</span>
-                                                <span className="upload-date">
-                                                    {new Date(file.uploaded_at).toLocaleString('ko-KR')}
-                                                </span>
+                                                <span className="file-size">{formatFileSize(file.size)}</span>
                                             </div>
                                         </div>
                                         <button
                                             className="file-remove-btn"
                                             onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleFileDelete(file);
+                                                e.stopPropagation(); // 드롭존 클릭 방지
+                                                handleRemoveSelectedFile(file);
                                             }}
                                             title="파일 삭제"
                                         >
@@ -780,9 +613,13 @@ const MeetingMinutes: React.FC = () => {
                                     </div>
                                 ))}
 
+                                {/* 파일 추가 버튼 */}
                                 <div
                                     className="drop-zone-add-more"
-                                    onClick={handleFileSelect}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleFileSelect();
+                                    }}
                                     style={{ display: isFileUploading ? 'none' : 'flex' }}
                                 >
                                     <span>+ 더 많은 파일 추가</span>
@@ -834,7 +671,7 @@ const MeetingMinutes: React.FC = () => {
                             </label>
                         </div>
                     </div>
-                    <button className="btn-primary" onClick={handleGenerate}>생성</button>
+                    <button className="btn-secondary" onClick={handleGenerate}>LLM 회의록 생성</button>
                 </div>
                 {/* --- ▲▲▲ 생성 패널 종료 ▲▲▲ --- */}
 
@@ -855,22 +692,24 @@ const MeetingMinutes: React.FC = () => {
                 </div>
                 {/* --- ▲▲▲ STT 텍스트 종료 ▲▲▲ --- */}
 
-                {/* --- ▼▼▼ [수정] LLM 생성 결과 (요청사항 6, 7) ▼▼▼ --- */}
+                {/* --- ▼▼▼ [수정] LLM 생성 결과 ▼▼▼ --- */}
                 <div className="meeting-minutes-section">
                     <h3 className="section-header">■ 생성된 Draft 기획서, 컨셉문서, 주요 안건 정리</h3>
                     <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
                         {llmResults.map(result => (
                             llmDocTypes[result.id as keyof typeof llmDocTypes] && (
                                 <div key={result.id}>
-                                    <label className="meeting-minutes-label">
+                                    {/* ✅ className="llm-result-label" 추가 */}
+                                    <label className="meeting-minutes-label llm-result-label">
                                         <input
-                                            className="meeting-minutes-checkbox checkbox-large"
+                                            // className="meeting-minutes-checkbox" /* ✅ checkbox-large 클래스 제거 */
+                                            className="meeting-minutes-checkbox checkbox-large" /* ✅ checkbox-large 클래스 제거 */
                                             type="checkbox"
                                             checked={result.save}
                                             onChange={() => handleLlmResultSaveChange(result.id)}
-                                            style={{ transform: 'scale(1.5)'}}
+                                            /* ✅ style 속성 제거 */
                                         />
-                                        {result.title} (서버에 저장)
+                                        <span>{result.title} (서버에 저장)</span>
                                     </label>
                                     <textarea className="meeting-minutes-textarea" rows={20} value={result.content} readOnly style={{marginTop: '5px'}} />
                                 </div>
@@ -882,7 +721,7 @@ const MeetingMinutes: React.FC = () => {
 
                 {/* --- ▼▼▼ [수정] 최종 저장 버튼 (요청사항 11) ▼▼▼ --- */}
                 <div className="meeting-minutes-actions" style={{justifyContent: 'center'}}>
-                    <button className="btn-secondary" onClick={handleSave}>최종 저장</button>
+                    <button className="btn-primary" onClick={handleSave}>저장&nbsp;&nbsp;&nbsp;&&nbsp;&nbsp;&nbsp;전송</button>
                 </div>
                 {/* --- ▲▲▲ 최종 저장 버튼 종료 ▲▲▲ --- */}
 
