@@ -203,10 +203,14 @@ const ProjectKickoffForm: React.FC = () => {
     // 프로젝트 파일 목록 로드
     const loadProjectFiles = async (projectId: number) => {
         try {
+            console.log(`프로젝트 ${projectId}의 RFP 파일 목록 로드 시작`);
             const files = await fileUploadService.getRfpFiles(projectId);
+            console.log('로드된 파일:', files);
             setServerFiles(files);
         } catch (error) {
             console.error('파일 목록 로드 실패:', error);
+            // 파일이 없어도 에러로 처리하지 않음
+            setServerFiles([]);
         }
     };
 
@@ -275,7 +279,8 @@ const ProjectKickoffForm: React.FC = () => {
                 fileUploadService.uploadFileAuto(
                     selectedProjectId,
                     file,
-                    'rfp',
+                    // 'rfp',
+                    1,
                     (progress) => {
                         // 진행률 표시 (옵션)
                         console.log(`${file.name}: ${progress.toFixed(1)}%`);
@@ -395,7 +400,8 @@ const ProjectKickoffForm: React.FC = () => {
                         fileUploadService.uploadFileAuto(
                             selectedProjectId,
                             localFile.file,
-                            'rfp',
+                            // 'rfp',
+                            1,
                             (progress) => {
                                 console.log(`${localFile.file.name}: ${progress.toFixed(1)}%`);
                             }
@@ -809,7 +815,7 @@ const ProjectKickoffForm: React.FC = () => {
                     {/* 대기중인 파일 안내 */}
                     {localFiles.length > 0 && !isFileUploading && (
                         <div className="upload-info">
-                            💡 {localFiles.length}개의 파일이 업로드 대기 중입니다. '저장' 버튼을 눌러주세요.
+                            💡 {localFiles.length}개의 파일이 업로드 대기 중입니다. '수정' 버튼을 눌러주세요.
                         </div>
                     )}
                 </div>

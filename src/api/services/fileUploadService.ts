@@ -26,6 +26,8 @@ export interface FileAttachmentInfo {
     is_active: boolean;
     is_readonly: boolean;
     access_level: string;
+    uploaded_chunks?: number;
+    total_chunks?: number;
 }
 
 export interface FileUploadError {
@@ -82,16 +84,18 @@ export class FileUploadService {
     async uploadFileAuto(
         projectId: number,
         file: File,
-        attachmentType: string = 'rfp',
+        // attachmentType: string = 'rfp',
+        attachmentTypeId: number = 1,
         onProgress?: (progress: number) => void
     ): Promise<UploadedFileInfo> {
         // 파일 크기 체크
         if (file.size > this.LARGE_FILE_THRESHOLD) {
             console.log(`큰 파일(${this.formatFileSize(file.size)}) - 이어올리기 방식 사용`);
-            return this.uploadFileWithResume(projectId, file, attachmentType, onProgress);
+            // return this.uploadFileWithResume(projectId, file, attachmentType, onProgress);
+            return this.uploadFileWithResume(projectId, file, attachmentTypeId, onProgress);
         } else {
             console.log(`작은 파일(${this.formatFileSize(file.size)}) - 일반 업로드 방식 사용`);
-            return this.uploadFile(projectId, file, attachmentType);
+            return this.uploadFile(projectId, file, attachmentTypeId);
         }
     }
 
@@ -99,12 +103,14 @@ export class FileUploadService {
     async initResumableUpload(
         projectId: number,
         file: File,
-        attachmentType: string = 'rfp'
+        // attachmentType: string = 'rfp'
+        attachmentTypeId: number = 1
     ): Promise<ResumableUploadInit> {
         const formData = new FormData();
         formData.append('file_name', file.name);
         formData.append('file_size', file.size.toString());
-        formData.append('attachment_type_id', this.getAttachmentTypeId(attachmentType).toString());
+        // formData.append('attachment_type_id', this.getAttachmentTypeId(attachmentType).toString());
+        formData.append('attachment_type_id', attachmentTypeId.toString());
 
         const response = await apiClient.post(
             `/projects/${projectId}/files/resumable/init`,
@@ -162,11 +168,12 @@ export class FileUploadService {
     async uploadFileWithResume(
         projectId: number,
         file: File,
-        attachmentType: string = 'rfp',
+        // attachmentType: string = 'rfp',
+        attachmentTypeId: number = 1,
         onProgress?: (progress: number) => void
     ): Promise<UploadedFileInfo> {
         // 세션 초기화
-        const initResult = await this.initResumableUpload(projectId, file, attachmentType);
+        const initResult = await this.initResumableUpload(projectId, file, attachmentTypeId);
         const { upload_session_id, total_chunks, chunk_size } = initResult;
 
         try {
@@ -250,11 +257,13 @@ export class FileUploadService {
     async uploadFile(
         projectId: number,
         file: File,
-        attachmentType: string = 'rfp'
+        // attachmentType: string = 'rfp'
+        attachmentTypeId: number = 1
     ): Promise<UploadedFileInfo> {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('attachment_type', attachmentType);
+        // formData.append('attachment_type', attachmentType);
+        formData.append('attachment_type_id', attachmentTypeId.toString());
 
         const response = await apiClient.post(
             `/projects/${projectId}/files/upload`,
