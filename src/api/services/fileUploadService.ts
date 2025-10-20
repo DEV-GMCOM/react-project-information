@@ -39,7 +39,193 @@ export interface MultipleUploadResponse {
     message?: string;
 }
 
+
+
+// ✅ 이어올리기 관련 인터페이스 추가
+export interface ResumableUploadInit {
+    file_id: number;
+    upload_session_id: string;
+    total_chunks: number;
+    chunk_size: number;
+}
+
+export interface ChunkUploadResponse {
+    upload_session_id: string;
+    chunk_index: number;
+    uploaded_chunks: number;
+    total_chunks: number;
+    is_complete: boolean;
+    file_id?: number;
+}
+
+export interface UploadStatus {
+    file_id: number;
+    uploaded_chunks: number;
+    total_chunks: number;
+    status: string;
+    progress: number;
+    upload_started_at: string;
+}
+
+
+
 export class FileUploadService {
+
+
+    private readonly CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+    private readonly LARGE_FILE_THRESHOLD = 50 * 1024 * 1024; // 50MB - 이 크기 이상이면 이어올리기 사용
+
+
+    /**
+     * 파일 크기에 따라 자동으로 업로드 방식 선택
+     */
+    async uploadFileAuto(
+        projectId: number,
+        file: File,
+        attachmentType: string = 'rfp',
+        onProgress?: (progress: number) => void
+    ): Promise<UploadedFileInfo> {
+        // 파일 크기 체크
+        if (file.size > this.LARGE_FILE_THRESHOLD) {
+            console.log(`큰 파일(${this.formatFileSize(file.size)}) - 이어올리기 방식 사용`);
+            return this.uploadFileWithResume(projectId, file, attachmentType, onProgress);
+        } else {
+            console.log(`작은 파일(${this.formatFileSize(file.size)}) - 일반 업로드 방식 사용`);
+            return this.uploadFile(projectId, file, attachmentType);
+        }
+    }
+
+    // ✅ 이어올리기 세션 초기화
+    async initResumableUpload(
+        projectId: number,
+        file: File,
+        attachmentType: string = 'rfp'
+    ): Promise<ResumableUploadInit> {
+        const formData = new FormData();
+        formData.append('file_name', file.name);
+        formData.append('file_size', file.size.toString());
+        formData.append('attachment_type_id', this.getAttachmentTypeId(attachmentType).toString());
+
+        const response = await apiClient.post(
+            `/projects/${projectId}/files/resumable/init`,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+        );
+
+        return response.data;
+    }
+
+    // ✅ 청크 업로드
+    async uploadChunk(
+        uploadSessionId: string,
+        chunkIndex: number,
+        chunkData: Blob
+    ): Promise<ChunkUploadResponse> {
+        const formData = new FormData();
+        formData.append('upload_session_id', uploadSessionId);
+        formData.append('chunk_index', chunkIndex.toString());
+        formData.append('chunk', chunkData, `chunk_${chunkIndex}`);
+
+        const response = await apiClient.post(
+            `/files/resumable/chunk`,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+        );
+
+        return response.data;
+    }
+
+
+    // ✅ 업로드 상태 조회
+    async getUploadStatus(uploadSessionId: string): Promise<UploadStatus> {
+        const response = await apiClient.get(`/files/resumable/${uploadSessionId}/status`);
+        return response.data;
+    }
+
+    // ✅ 업로드 취소
+    async cancelResumableUpload(uploadSessionId: string): Promise<void> {
+        await apiClient.delete(`/files/resumable/${uploadSessionId}`);
+    }
+
+
+    /**
+     * 파일을 청크로 분할하여 업로드
+     */
+    async uploadFileWithResume(
+        projectId: number,
+        file: File,
+        attachmentType: string = 'rfp',
+        onProgress?: (progress: number) => void
+    ): Promise<UploadedFileInfo> {
+        // 세션 초기화
+        const initResult = await this.initResumableUpload(projectId, file, attachmentType);
+        const { upload_session_id, total_chunks, chunk_size } = initResult;
+
+        try {
+            // 청크별 업로드
+            for (let chunkIndex = 0; chunkIndex < total_chunks; chunkIndex++) {
+                const start = chunkIndex * chunk_size;
+                const end = Math.min(start + chunk_size, file.size);
+                const chunkData = file.slice(start, end);
+
+                const result = await this.uploadChunk(upload_session_id, chunkIndex, chunkData);
+
+                // 진행률 콜백
+                if (onProgress) {
+                    onProgress((result.uploaded_chunks / result.total_chunks) * 100);
+                }
+
+                // 완료 시 파일 정보 반환
+                if (result.is_complete && result.file_id) {
+                    const fileInfo = await this.getFileInfo(projectId, result.file_id);
+                    return {
+                        id: fileInfo.id,
+                        file_name: fileInfo.file_name,
+                        original_file_name: fileInfo.original_file_name,
+                        file_size: fileInfo.file_size,
+                        file_type: fileInfo.file_type,
+                        uploaded_at: fileInfo.uploaded_at,
+                        download_url: `/api/projects/${projectId}/files/${fileInfo.id}/download`
+                    };
+                }
+            }
+
+            throw new Error('업로드가 완료되지 않았습니다');
+        } catch (error) {
+            // 에러 발생 시 업로드 취소
+            try {
+                await this.cancelResumableUpload(upload_session_id);
+            } catch (cancelError) {
+                console.error('업로드 취소 실패:', cancelError);
+            }
+            throw error;
+        }
+    }
+
+    private getAttachmentTypeId(attachmentType: string): number {
+        const typeMap: Record<string, number> = {
+            'rfp': 1,
+            'meeting_minutes': 2,
+            'proposal': 3,
+            'contract': 4,
+            'submission': 5,
+            'design': 6,
+            'development': 7,
+            'other': 99
+        };
+        return typeMap[attachmentType] || 99;
+    }
+
+
+
     // RFP 파일 다중 업로드
     async uploadRfpFiles(projectId: number, files: File[]): Promise<MultipleUploadResponse> {
         const formData = new FormData();

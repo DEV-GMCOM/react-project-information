@@ -8,6 +8,8 @@ import { projectKickoffService } from '../../api/services/projectKickoffService'
 import { fileUploadService, FileAttachmentInfo } from '../../api/services/fileUploadService';
 import '../../styles/ProjectKickoff.css';
 
+import { SmartFileUpload } from '../../components/project/SmartFileUpload';
+
 // 착수보고에서만 관리할 데이터
 interface KickoffFormData {
     // 착수보고 전용 필드들
@@ -41,6 +43,14 @@ const ProjectKickoffForm: React.FC = () => {
     const [isFileUploading, setIsFileUploading] = useState(false);
     const [isDragOver, setIsDragOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // ✅ 추가: 로컬에서 선택한 파일들 (아직 업로드 안됨)
+    interface LocalFile {
+        id: string;
+        file: File;
+        preview?: string; // 이미지 미리보기용 (옵션)
+    }
+    const [localFiles, setLocalFiles] = useState<LocalFile[]>([]);
 
     const allowedExtensions = ['txt', 'text', 'md', 'pdf', 'ppt', 'pptx', 'doc', 'docx', 'hwp', 'hwpx', 'png', 'jpg', 'jpeg', 'xls', 'xlsx', 'zip', 'rar', '7z'];
 
@@ -81,6 +91,41 @@ const ProjectKickoffForm: React.FC = () => {
         writerOpinion: '',
         proceedDecision: ''
     });
+
+
+    // 파일을 로컬 상태에만 추가 (업로드는 하지 않음)
+    const addFilesToLocal = (files: FileList) => {
+        const validFiles: LocalFile[] = [];
+        const errors: string[] = [];
+
+        Array.from(files).forEach(file => {
+            if (validateFileType(file.name)) {
+                if (file.size <= 100 * 1024 * 1024) {
+                    validFiles.push({
+                        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        file: file
+                    });
+                } else {
+                    errors.push(`파일 크기가 너무 큽니다: ${file.name} (최대 100MB)`);
+                }
+            } else {
+                errors.push(`지원하지 않는 파일 형식입니다: ${file.name}`);
+            }
+        });
+
+        if (errors.length > 0) {
+            alert(errors.join('\n'));
+        }
+
+        if (validFiles.length > 0) {
+            setLocalFiles(prev => [...prev, ...validFiles]);
+        }
+    };
+
+// 로컬 파일 제거
+    const removeLocalFile = (fileId: string) => {
+        setLocalFiles(prev => prev.filter(f => f.id !== fileId));
+    };
 
     // 파일 크기 포맷팅
     const formatFileSize = (bytes: number): string => {
@@ -220,8 +265,22 @@ const ProjectKickoffForm: React.FC = () => {
         }
 
         try {
+
+            // const uploadPromises = validFiles.map(file =>
+            //     fileUploadService.uploadFile(selectedProjectId, file, 'rfp')
+            // );
+
+            // ✅ 변경: 각 파일마다 크기에 따라 자동으로 업로드 방식 선택
             const uploadPromises = validFiles.map(file =>
-                fileUploadService.uploadFile(selectedProjectId, file, 'rfp')
+                fileUploadService.uploadFileAuto(
+                    selectedProjectId,
+                    file,
+                    'rfp',
+                    (progress) => {
+                        // 진행률 표시 (옵션)
+                        console.log(`${file.name}: ${progress.toFixed(1)}%`);
+                    }
+                )
             );
 
             const uploadedFiles = await Promise.all(uploadPromises);
@@ -297,7 +356,8 @@ const ProjectKickoffForm: React.FC = () => {
         setIsDragOver(false);
         const files = e.dataTransfer.files;
         if (files.length > 0) {
-            uploadFiles(files);
+            // uploadFiles(files);
+            addFilesToLocal(files); // ✅ 변경: 로컬에만 추가
         }
     };
 
@@ -308,7 +368,8 @@ const ProjectKickoffForm: React.FC = () => {
     const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files.length > 0) {
-            uploadFiles(files);
+            // uploadFiles(files);
+            addFilesToLocal(files); // ✅ 변경: 로컬에만 추가
         }
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
@@ -324,6 +385,55 @@ const ProjectKickoffForm: React.FC = () => {
 
         try {
             setLoading(true);
+
+            // 1️⃣ 먼저 로컬 파일들을 업로드
+            if (localFiles.length > 0) {
+                setIsFileUploading(true);
+
+                try {
+                    const uploadPromises = localFiles.map(localFile =>
+                        fileUploadService.uploadFileAuto(
+                            selectedProjectId,
+                            localFile.file,
+                            'rfp',
+                            (progress) => {
+                                console.log(`${localFile.file.name}: ${progress.toFixed(1)}%`);
+                            }
+                        )
+                    );
+
+                    const uploadedFiles = await Promise.all(uploadPromises);
+
+                    // 서버 파일 목록에 추가
+                    setServerFiles(prev => [...prev, ...uploadedFiles.map(file => ({
+                        id: file.id,
+                        project_id: selectedProjectId,
+                        file_name: file.file_name,
+                        original_file_name: file.original_file_name,
+                        file_path: '',
+                        file_size: file.file_size,
+                        file_type: file.file_type || '',
+                        mime_type: '',
+                        attachment_type: 'rfp',
+                        uploaded_by: 1,
+                        uploaded_at: file.uploaded_at,
+                        is_active: true,
+                        is_readonly: true,
+                        access_level: 'project'
+                    }))]);
+
+                    // 로컬 파일 목록 비우기
+                    setLocalFiles([]);
+
+                } catch (fileError: any) {
+                    console.error('파일 업로드 실패:', fileError);
+                    alert(`파일 업로드 실패: ${fileError.message || '알 수 없는 오류'}`);
+                    return; // 파일 업로드 실패 시 폼 저장하지 않음
+                } finally {
+                    setIsFileUploading(false);
+                }
+            }
+
 
             const submitData = {
                 project_id: selectedProjectId,
@@ -558,7 +668,10 @@ const ProjectKickoffForm: React.FC = () => {
                     </table>
                 </div>
 
-                {/* RFP 첨부 버튼 */}
+                {/*/!* RFP 첨부 버튼 *!/*/}
+                <h3 className="section-header">
+                    ■ RFP 파일 업로드
+                </h3>
                 <div className="table-action-section">
                     <input
                         ref={fileInputRef}
@@ -568,17 +681,17 @@ const ProjectKickoffForm: React.FC = () => {
                         onChange={handleFileInputChange}
                         style={{ display: 'none' }}
                     />
-                    <button
-                        type="button"
-                        className="rfp-attach-btn"
-                        onClick={handleFileSelect}
-                        disabled={!selectedProjectId || isFileUploading}
-                    >
-                        {isFileUploading ? '업로드 중...' : `RFP 첨부${serverFiles.length > 0 ? ` (${serverFiles.length})` : ''}`}
-                    </button>
+                    {/*<button*/}
+                    {/*    type="button"*/}
+                    {/*    className="rfp-attach-btn"*/}
+                    {/*    onClick={handleFileSelect}*/}
+                    {/*    disabled={!selectedProjectId || isFileUploading}*/}
+                    {/*>*/}
+                    {/*    {isFileUploading ? '업로드 중...' : `RFP 첨부${serverFiles.length > 0 ? ` (${serverFiles.length})` : ''}`}*/}
+                    {/*</button>*/}
                 </div>
 
-                {/* 파일 업로드 영역 */}
+                {/*/!* 파일 업로드 영역 *!/*/}
                 <div className="file-upload-section">
                     <div
                         className={`file-drop-zone ${isDragOver ? 'drag-over' : ''}`}
@@ -587,38 +700,77 @@ const ProjectKickoffForm: React.FC = () => {
                         onDrop={handleDrop}
                         onClick={handleFileSelect}
                     >
-                        {serverFiles.length === 0 ? (
+                        {/*{serverFiles.length === 0 ? (*/}
+                        {/*    <div className="drop-zone-message">*/}
+                        {/*        <div className="drop-zone-icon">📁</div>*/}
+                        {/*        <div className="drop-zone-text">*/}
+                        {/*            <p>파일을 여기로 드래그하거나 클릭하여 업로드하세요</p>*/}
+                        {/*            <p className="drop-zone-hint">*/}
+                        {/*                지원 형식: {allowedExtensions.join(', ')} (최대 100MB)*/}
+                        {/*            </p>*/}
+                        {/*        </div>*/}
+                        {/*    </div>*/}
+                        {/*) : (*/}
+                        {/* 파일이 하나도 없을 때 */}
+                        {localFiles.length === 0 && serverFiles.length === 0 ? (
                             <div className="drop-zone-message">
                                 <div className="drop-zone-icon">📁</div>
                                 <div className="drop-zone-text">
-                                    <p>파일을 여기로 드래그하거나 클릭하여 업로드하세요</p>
+                                    <p>파일을 드래그하여 놓거나 클릭하여 선택하세요</p>
                                     <p className="drop-zone-hint">
-                                        지원 형식: {allowedExtensions.join(', ')} (최대 100MB)
+                                        지원 형식: PDF, DOC, PPT, HWP, 이미지, 압축파일 등 (최대 100MB)
                                     </p>
                                 </div>
                             </div>
                         ) : (
                             <div className="file-list">
-                                {serverFiles.map(file => (
-                                    <div key={`server-${file.id}`} className="file-item uploaded-file">
+                                {localFiles.map((localFile) => (
+                                    <div key={localFile.id} className="file-item local-file">
                                         <div className="file-info">
                                             <div className="file-name">
-                                                <button
-                                                    className="file-download-link"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleFileDownload(file);
-                                                    }}
-                                                    title="클릭하여 다운로드"
-                                                >
-                                                    📄 {file.original_file_name}
-                                                </button>
-                                                {file.is_readonly && <span className="readonly-badge">🔒</span>}
+                                                {localFile.file.name}
+                                                <span className="file-status pending">업로드 대기중</span>
                                             </div>
                                             <div className="file-details">
-                                                <span className="file-size">{formatFileSize(file.file_size)}</span>
-                                                <span className="file-type">{file.file_type?.toUpperCase()}</span>
-                                                <span className="upload-date">
+                                <span className="file-size">
+                                    {formatFileSize(localFile.file.size)}
+                                </span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            className="file-remove-btn"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                removeLocalFile(localFile.id);
+                                            }}
+                                            title="파일 제거"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))}
+
+                                {/* ✅ 서버 파일 목록 (이미 업로드됨) */}
+                                {serverFiles.map((file) => (
+                                    <div
+                                        key={file.id}
+                                        className="file-item server-file"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleFileDownload(file);
+                                        }}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <div className="file-info">
+                                            <div className="file-name">
+                                                {file.original_file_name}
+                                                <span className="file-status uploaded">✓ 업로드됨</span>
+                                            </div>
+                                            <div className="file-details">
+                                                <span className="file-size">
+                                                    {formatFileSize(file.file_size)}
+                                                </span>
+                                                <span className="file-date">
                                                     {new Date(file.uploaded_at).toLocaleString('ko-KR')}
                                                 </span>
                                             </div>
@@ -653,7 +805,79 @@ const ProjectKickoffForm: React.FC = () => {
                             <span>파일을 업로드하고 있습니다...</span>
                         </div>
                     )}
+
+                    {/* 대기중인 파일 안내 */}
+                    {localFiles.length > 0 && !isFileUploading && (
+                        <div className="upload-info">
+                            💡 {localFiles.length}개의 파일이 업로드 대기 중입니다. '저장' 버튼을 눌러주세요.
+                        </div>
+                    )}
                 </div>
+
+                {/*/!* ✅ 새로 추가: SmartFileUpload 컴포넌트 *!/*/}
+                {/*<div className="table-action-section">*/}
+                {/*    <h4>RFP 파일 첨부 {serverFiles.length > 0 && `(${serverFiles.length}개)`}</h4>*/}
+                {/*</div>*/}
+
+                {/*<div className="file-upload-section">*/}
+                {/*    <SmartFileUpload*/}
+                {/*        projectId={selectedProjectId || 0}*/}
+                {/*        attachmentType="rfp"*/}
+                {/*        allowManualMode={false}  // 자동 모드 (50MB 기준)*/}
+                {/*        onUploadComplete={(file) => {*/}
+                {/*            console.log('업로드 완료:', file);*/}
+                {/*            // 파일 목록 갱신*/}
+                {/*            loadProjectFiles(selectedProjectId!);*/}
+                {/*        }}*/}
+                {/*        onError={(error) => {*/}
+                {/*            alert(`업로드 실패: ${error}`);*/}
+                {/*        }}*/}
+                {/*    />*/}
+
+                {/*    /!* 업로드된 파일 목록 표시 *!/*/}
+                {/*    {serverFiles.length > 0 && (*/}
+                {/*        <div className="uploaded-files-list">*/}
+                {/*            <div className="files-header">*/}
+                {/*                <h4>업로드된 파일 ({serverFiles.length})</h4>*/}
+                {/*            </div>*/}
+                {/*            <div className="files-container">*/}
+                {/*                {serverFiles.map((file) => (*/}
+                {/*                    <div*/}
+                {/*                        key={file.id}*/}
+                {/*                        className="uploaded-file-item"*/}
+                {/*                        onClick={() => handleFileDownload(file)}*/}
+                {/*                        style={{ cursor: 'pointer' }}*/}
+                {/*                    >*/}
+                {/*                        <div className="file-header">*/}
+                {/*                            <div className="file-info">*/}
+                {/*                                <span className="file-name">{file.original_file_name}</span>*/}
+                {/*                                <div className="file-details">*/}
+                {/*                                    <span className="file-size">*/}
+                {/*                                        {formatFileSize(file.file_size)}*/}
+                {/*                                    </span>*/}
+                {/*                                    <span className="file-date">*/}
+                {/*                                        {new Date(file.uploaded_at).toLocaleString('ko-KR')}*/}
+                {/*                                    </span>*/}
+                {/*                                </div>*/}
+                {/*                            </div>*/}
+                {/*                            <button*/}
+                {/*                                className="file-remove-btn"*/}
+                {/*                                onClick={(e) => {*/}
+                {/*                                    e.stopPropagation();*/}
+                {/*                                    handleFileDelete(file);*/}
+                {/*                                }}*/}
+                {/*                                title="파일 삭제"*/}
+                {/*                            >*/}
+                {/*                                🗑️*/}
+                {/*                            </button>*/}
+                {/*                        </div>*/}
+                {/*                    </div>*/}
+                {/*                ))}*/}
+                {/*            </div>*/}
+                {/*        </div>*/}
+                {/*    )}*/}
+                {/*</div>*/}
+
 
                 {/* 버튼 영역 */}
                 <div className="button-section">

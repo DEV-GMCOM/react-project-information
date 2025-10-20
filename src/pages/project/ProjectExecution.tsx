@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 
 // ▼▼▼ [추가] 지적해주신 빠진 import 구문입니다 ▼▼▼
 import { ExtendedProjectData, IProject } from '../../types/project';
+import { fileUploadService } from '../../api/services/fileUploadService';  // ✅ 추가
 
 import ProjectBasicInfoForm from '../../components/common/ProjectBasicInfoForm';
 import '../../styles/FormPage.css';
@@ -318,21 +319,62 @@ const ProjectExecution: React.FC = () => {
             fileInputRef.current?.click();
         }
     };
+
+    // ✅ categoryId를 attachment_type으로 변환하는 헬퍼 함수
+    const getAttachmentTypeFromCategory = (categoryId: string): string => {
+        const [mainId, subId] = categoryId.split('-').map(Number);
+
+        const typeMap: Record<string, string> = {
+            '1-101': 'meeting_minutes',  // 미팅/회의
+            '1-102': 'rfp',               // RFP/기타 고객요구사항
+            '1-103': 'submission',        // 제출 견적
+            '1-104': 'submission',        // 제출 문서
+            '1-105': 'other',             // 기타 관련 파일
+            '2-201': 'design',            // 시안
+            '2-202': 'design',            // 최종 디자인
+            '3-301': 'other',             // 지출 결의
+            '3-302': 'other',             // 정산
+        };
+
+        return typeMap[categoryId] || 'other';
+    };
+
     const handleUploadStagedFiles = async () => {
         if (stagedFiles.length === 0) return;
+
         setIsFileUploading(true);
         console.log("업로드를 시작합니다:", stagedFiles);
+
         try {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            alert(`${stagedFiles.length}개의 파일이 성공적으로 업로드되었습니다.`);
+            const uploadPromises = stagedFiles.map(stagedFile => {
+                const attachmentType = getAttachmentTypeFromCategory(stagedFile.categoryId);
+
+                return fileUploadService.uploadFileAuto(
+                    selectedProject?.project_id || 0,
+                    stagedFile.file,
+                    attachmentType,
+                    (progress: number) => {  // ✅ 타입 명시
+                        console.log(`${stagedFile.file.name}: ${progress.toFixed(1)}%`);
+                    }
+                );
+            });
+
+            const uploadedFiles = await Promise.all(uploadPromises);
+
+            alert(`${uploadedFiles.length}개의 파일이 성공적으로 업로드되었습니다.`);
             setStagedFiles([]);
-        } catch (error) {
+
+            // TODO: 서버에서 파일 목록 다시 로드하는 로직 추가
+
+        } catch (error: any) {
             console.error("파일 업로드 중 오류 발생:", error);
-            alert("파일 업로드에 실패했습니다.");
+            alert(`파일 업로드에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
         } finally {
             setIsFileUploading(false);
         }
     };
+
+
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setIsDragOver(false);

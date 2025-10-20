@@ -5,6 +5,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { projectService } from '../../api/services/projectService';
 import { employeeService } from '../../api/services/employeeService';
 import { Project, Employee } from '../../api/types';
+import { fileUploadService } from '../../api/services/fileUploadService';  // ✅ 추가
+
 
 // 제공된 CSS 파일들이 상위에서 import 되었다고 가정합니다.
 import '../../styles/FormPage.css';
@@ -335,7 +337,18 @@ const MeetingMinutes: React.FC = () => {
         setShareMethods(prev => ({ ...prev, [name]: checked }));
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {  // ✅ async 추가
+        // 유효성 검증
+        if (!selectedProjectId) {
+            alert("프로젝트를 선택해주세요.");
+            return;
+        }
+
+        if (!selectedSttSource) {
+            alert("LLM 생성을 위한 소스 텍스트를 선택해주세요.");
+            return;
+        }
+
         const dataToSave = {
             projectId: selectedProjectId,
             sttSource: selectedSttSource,
@@ -344,8 +357,47 @@ const MeetingMinutes: React.FC = () => {
             shareMethods,
             tags: tags.split(',').map(t => t.trim()).filter(t => t),
         };
+
         console.log("서버에 저장할 최종 데이터:", dataToSave);
-        alert("데이터가 서버에 저장됩니다. (콘솔 확인)");
+
+        try {
+            setIsFileUploading(true);  // ✅ loading 대신 기존 state 사용
+
+            // 1️⃣ 파일 업로드
+            if (selectedFiles.length > 0) {
+                try {
+                    const uploadPromises = selectedFiles.map((file: File) =>
+                        fileUploadService.uploadFileAuto(
+                            selectedProjectId,  // ✅ projectId 대신 selectedProjectId
+                            file,
+                            'meeting_minutes',
+                            (progress: number) => {  // ✅ 타입 명시
+                                console.log(`${file.name}: ${progress.toFixed(1)}%`);
+                            }
+                        )
+                    );
+
+                    await Promise.all(uploadPromises);
+                    setSelectedFiles([]);
+                    console.log("파일 업로드 완료");
+
+                } catch (fileError: any) {
+                    console.error('파일 업로드 실패:', fileError);
+                    alert(`파일 업로드 실패: ${fileError.message}`);
+                    return;
+                }
+            }
+
+            // 2️⃣ 회의록 데이터 저장
+            // TODO: 실제 API 호출로 교체 필요
+            alert("데이터가 서버에 저장됩니다. (콘솔 확인)");
+
+        } catch (error: any) {
+            console.error('저장 중 오류:', error);
+            alert(`저장 실패: ${error.message}`);
+        } finally {
+            setIsFileUploading(false);  // ✅ loading 대신 기존 state 사용
+        }
     };
 
 
