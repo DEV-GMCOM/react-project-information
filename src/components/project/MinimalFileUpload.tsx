@@ -26,7 +26,7 @@ export const MinimalFileUpload: React.FC<MinimalFileUploadProps> = ({
 
         try {
             const uploadPromises = Array.from(files).map(file =>
-                fileUploadService.uploadFile(projectId, file, 'rfp')
+                fileUploadService.uploadFile(projectId, file, 1)  // 'rfp' → 1
             );
 
             await Promise.all(uploadPromises);

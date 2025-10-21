@@ -13,7 +13,7 @@ interface FileUploadComponentProps {
     onError?: (error: string) => void;
     className?: string;
     multiple?: boolean;
-    attachmentType?: string;
+    attachmentTypeId?: number;
 }
 
 interface LocalFileInfo {
@@ -34,7 +34,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
                                                                             onError,
                                                                             className = '',
                                                                             multiple = true,
-                                                                            attachmentType = 'rfp'
+                                                                            attachmentTypeId = 1 // ✅ attachmentType = 'rfp' → attachmentTypeId = 1
                                                                         }) => {
     const [localFiles, setLocalFiles] = useState<LocalFileInfo[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
@@ -190,7 +190,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
                         const uploadedFile = await fileUploadService.uploadFile(
                             projectId,
                             localFile.file,
-                            attachmentType
+                            attachmentTypeId
                         );
 
                         setLocalFiles(prev => prev.map(f =>
@@ -233,7 +233,7 @@ export const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
         } finally {
             setIsUploading(false);
         }
-    }, [localFiles, projectId, multiple, attachmentType, onFilesUploaded, onError]);
+    }, [localFiles, projectId, multiple, attachmentTypeId, onFilesUploaded, onError]);
 
     return (
         <div className={`file-upload-component ${className}`}>

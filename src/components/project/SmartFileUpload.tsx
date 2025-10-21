@@ -5,7 +5,7 @@ import { fileUploadService, UploadedFileInfo } from '../../api/services/fileUplo
 
 interface SmartFileUploadProps {
     projectId: number;
-    attachmentType?: string;
+    attachmentTypeId?: number;
     allowManualMode?: boolean; // 사용자가 수동으로 방식 선택 가능 여부
     onUploadComplete?: (file: UploadedFileInfo) => void;
     onError?: (error: string) => void;
@@ -24,7 +24,7 @@ interface UploadingFile {
 
 export const SmartFileUpload: React.FC<SmartFileUploadProps> = ({
                                                                     projectId,
-                                                                    attachmentType = 'rfp',
+                                                                    attachmentTypeId = 1,
                                                                     allowManualMode = false,
                                                                     onUploadComplete,
                                                                     onError
@@ -66,7 +66,7 @@ export const SmartFileUpload: React.FC<SmartFileUploadProps> = ({
                 uploadedFile = await fileUploadService.uploadFileWithResume(
                     projectId,
                     file,
-                    attachmentType,
+                    attachmentTypeId,
                     (progress) => {
                         setUploadingFiles(prev => {
                             const newMap = new Map(prev);
@@ -100,7 +100,7 @@ export const SmartFileUpload: React.FC<SmartFileUploadProps> = ({
                 uploadedFile = await fileUploadService.uploadFile(
                     projectId,
                     file,
-                    attachmentType
+                    attachmentTypeId
                 );
             }
 
@@ -145,7 +145,7 @@ export const SmartFileUpload: React.FC<SmartFileUploadProps> = ({
 
             onError?.(error.message || '업로드 실패');
         }
-    }, [projectId, attachmentType, uploadMode, onUploadComplete, onError, LARGE_FILE_THRESHOLD]);
+    }, [projectId, attachmentTypeId, uploadMode, onUploadComplete, onError, LARGE_FILE_THRESHOLD]);
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;

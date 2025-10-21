@@ -339,6 +339,25 @@ const ProjectExecution: React.FC = () => {
         return typeMap[categoryId] || 'other';
     };
 
+    // getAttachmentTypeFromCategory 함수를 숫자 반환하도록 변경
+    const getAttachmentTypeIdFromCategory = (categoryId: string): number => {
+        const [mainId, subId] = categoryId.split('-').map(Number);
+
+        const typeMap: Record<string, number> = {
+            '1-101': 2,   // meeting_minutes
+            '1-102': 1,   // rfp
+            '1-103': 5,   // submission
+            '1-104': 5,   // submission
+            '1-105': 99,  // other
+            '2-201': 6,   // design
+            '2-202': 6,   // design
+            '3-301': 99,  // other
+            '3-302': 99,  // other
+        };
+
+        return typeMap[categoryId] || 99;
+    };
+
     const handleUploadStagedFiles = async () => {
         if (stagedFiles.length === 0) return;
 
@@ -352,7 +371,7 @@ const ProjectExecution: React.FC = () => {
                 return fileUploadService.uploadFileAuto(
                     selectedProject?.project_id || 0,
                     stagedFile.file,
-                    attachmentType,
+                    getAttachmentTypeIdFromCategory(stagedFile.categoryId),  // ✅ number
                     (progress: number) => {  // ✅ 타입 명시
                         console.log(`${stagedFile.file.name}: ${progress.toFixed(1)}%`);
                     }

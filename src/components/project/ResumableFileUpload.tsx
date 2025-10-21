@@ -4,7 +4,7 @@ import { fileUploadService } from '../../api/services/fileUploadService';
 
 interface ResumableFileUploadProps {
     projectId: number;
-    attachmentType?: string;
+    attachmentTypeId?: number;
     onUploadComplete?: (fileId: number) => void;
     onError?: (error: string) => void;
 }
@@ -19,7 +19,7 @@ interface UploadingFile {
 
 export const ResumableFileUpload: React.FC<ResumableFileUploadProps> = ({
                                                                             projectId,
-                                                                            attachmentType = 'rfp',
+                                                                            attachmentTypeId = 1,
                                                                             onUploadComplete,
                                                                             onError
                                                                         }) => {
@@ -43,7 +43,7 @@ export const ResumableFileUpload: React.FC<ResumableFileUploadProps> = ({
             await fileUploadService.uploadFileWithResume(
                 projectId,
                 file,
-                attachmentType,
+                attachmentTypeId,
                 (progress) => {
                     setUploadingFiles(prev => {
                         const newMap = new Map(prev);
@@ -91,7 +91,7 @@ export const ResumableFileUpload: React.FC<ResumableFileUploadProps> = ({
 
             onError?.(error.message || '업로드 실패');
         }
-    }, [projectId, attachmentType, onUploadComplete, onError]);
+    }, [projectId, attachmentTypeId, onUploadComplete, onError]);
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;

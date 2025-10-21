@@ -370,7 +370,7 @@ const MeetingMinutes: React.FC = () => {
                         fileUploadService.uploadFileAuto(
                             selectedProjectId,  // ✅ projectId 대신 selectedProjectId
                             file,
-                            'meeting_minutes',
+                            2, // 'meeting_minutes',
                             (progress: number) => {  // ✅ 타입 명시
                                 console.log(`${file.name}: ${progress.toFixed(1)}%`);
                             }
