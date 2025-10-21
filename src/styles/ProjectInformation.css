@@ -498,6 +498,11 @@
     max-height: 80vh;
     overflow: hidden;
 }
+/* 프로젝트 검색 모달 전용 사이즈 (다른 모달 영향 없음) */
+.modal-content.search-modal {
+    max-width: 1100px;   /* 원하는 폭으로 조정 (예: 1000~1200px) */
+    width: 95%;
+}
 
 .modal-header {
     display: flex;
@@ -1339,6 +1344,56 @@
 .badge-reset-icon:hover {
     background-color: rgba(220, 53, 69, 0.8); /* 마우스 올리면 빨간색 */
     color: white;
+}
+
+
+
+/* 검색 결과 테이블: 고정 레이아웃 + 말줄임 */
+.search-results-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed; /* ✅ 폭 고정의 핵심 */
+    border: 1px solid #ddd;
+}
+
+.search-results-table th,
+.search-results-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    border-right: 1px solid #eee;
+    overflow: hidden;           /* ✅ 넘치는 텍스트 처리 */
+    text-overflow: ellipsis;    /* ✅ 말줄임표 */
+    white-space: nowrap;        /* ✅ 한 줄로 고정 */
+}
+
+.search-results-table th:last-child,
+.search-results-table td:last-child {
+    border-right: none;
+}
+
+/* ✅ 컬럼별 폭 고정(px는 직관적, 필요 시 %로 변경 가능) */
+/*.search-results-table .col-project { width: 320px; }   !* 프로젝트명 *!*/
+/*.search-results-table .col-client  { width: 200px; }   !* 고객사 *!*/
+/*.search-results-table .col-status  { width: 100px; }   !* 상태 *!*/
+/*.search-results-table .col-writer  { width: 140px; }   !* 작성자 *!*/
+/*.search-results-table .col-dept    { width: 140px; }   !* 부서 *!*/
+/*.search-results-table .col-created { width: 120px; }   !* 생성일 *!*/
+/*.search-results-table .col-select  { width: 80px;  }   !* 선택 버튼 *!*/
+.search-results-table .col-project { width: 30%; }   /* 프로젝트명 */
+.search-results-table .col-client  { width: 20%; }   /* 고객사 */
+.search-results-table .col-status  { width: 10%; }   /* 상태 */
+.search-results-table .col-writer  { width: 12%; }   /* 작성자 */
+.search-results-table .col-dept    { width: 12%; }   /* 부서 */
+.search-results-table .col-created { width: 10%; }   /* 생성일 */
+.search-results-table .col-select  { width: 6%;  }   /* 선택 버튼 */
+
+.search-results-table thead th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    text-align: center;
+}
+.search-results-table td:nth-last-child(1) { /* 마지막 열(선택) */
+    text-align: center;
 }
 
 /* 반응형 디자인 */

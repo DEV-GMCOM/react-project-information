@@ -166,8 +166,8 @@ const ProjectInformationForm: React.FC = () => {
 
     const { user } = useAuth(); // ◀◀◀ 2. useAuth()를 호출하여 로그인한 user 객체를 가져옵니다.
 
-// ✅ contactSearchInputRef를 여기서 선언합니다.
-    const contactSearchInputRef = useRef<HTMLInputElement>(null);
+    // // ✅ contactSearchInputRef를 여기서 선언합니다.
+    // const contactSearchInputRef = useRef<HTMLInputElement>(null);
 
     // === 기존 상태들 모두 그대로 유지 ===
     const [formData, setFormData] = useState<ProjectInformationFormData>({
@@ -239,6 +239,14 @@ const ProjectInformationForm: React.FC = () => {
     const [evaluationCriteria, setEvaluationCriteria] = useState<ProjectEvaluationCriteria[]>([]);
     const [evaluationScores, setEvaluationScores] = useState<{ [key: number]: number }>({});
 
+    // 회사 검색 (페이지네이션)
+    const [companyCurrentPage, setCompanyCurrentPage] = useState(1);
+    const [companyTotalPages, setCompanyTotalPages] = useState(1);
+    // 담당자 검색어 + 페이지네이션
+    const [contactSearchTerm, setContactSearchTerm] = useState('');
+    const [contactCurrentPage, setContactCurrentPage] = useState(1);
+    const [contactTotalPages, setContactTotalPages] = useState(1);
+
     // // 1. useEffect를 사용하여 contactSearchTerm 변경 시 디바운싱 적용
     // useEffect(() => {
     //     // 모달이 닫혀있으면 아무것도 하지 않음
@@ -257,17 +265,28 @@ const ProjectInformationForm: React.FC = () => {
     // }, [contactSearchTerm, showContactSearchModal]); // 이 부분은 그대로 유지
 
 
+    // // 2. 회사명 검색에도 동일하게 디바운싱 적용
+    // useEffect(() => {
+    //     const handler = setTimeout(() => {
+    //         if (showCompanySearchModal && companySearchTerm) {
+    //             searchCompaniesAPI(companySearchTerm);
+    //         }
+    //     }, 500);
+    //
+    //     return () => {
+    //         clearTimeout(handler);
+    //     };
+    // }, [companySearchTerm, showCompanySearchModal]);
     // 2. 회사명 검색에도 동일하게 디바운싱 적용
     useEffect(() => {
         const handler = setTimeout(() => {
             if (showCompanySearchModal && companySearchTerm) {
-                searchCompaniesAPI(companySearchTerm);
+                setCompanyCurrentPage(1);
+                searchCompaniesAPI(companySearchTerm, 1); // ✅ page 인자 추가
             }
         }, 500);
 
-        return () => {
-            clearTimeout(handler);
-        };
+        return () => clearTimeout(handler);
     }, [companySearchTerm, showCompanySearchModal]);
 
 
@@ -439,13 +458,27 @@ const ProjectInformationForm: React.FC = () => {
             try {
                 const profileResponse = await apiClient.get(`/projects/${project.project_id}/profile`);
                 const profileData = profileResponse.data;
-                setFormData(prev => ({
-                    ...prev,
-                    swotAnalysis: profileData.swot_analysis || '',
-                    resourcePlan: profileData.resource_plan || '',
-                    writerOpinion: profileData.writer_opinion || '',
-                    proceedDecision: profileData.proceed_decision || ''
-                }));
+                // setFormData(prev => ({
+                //     ...prev,
+                //     swotAnalysis: profileData.swot_analysis || '',
+                //     resourcePlan: profileData.resource_plan || '',
+                //     writerOpinion: profileData.writer_opinion || '',
+                //     proceedDecision: profileData.proceed_decision || ''
+                // }));
+                // profileData가 null 또는 undefined일 경우 대비
+                if (!profileData) {
+                    console.warn("⚠️ [경고] profileData가 비어있습니다. 빈 값으로 초기화합니다.");
+                    // ✅ return 제거: 뒤의 '평가 점수 로드'까지 계속 진행
+                } else {
+                    setFormData(prev => ({
+                        ...prev,
+                        swotAnalysis:    profileData.swot_analysis ?? '',
+                        resourcePlan:    profileData.resource_plan ?? '',
+                        writerOpinion:   profileData.writer_opinion ?? '',
+                        proceedDecision: profileData.proceed_decision ?? ''
+                    }));
+                }
+
             } catch (error) {
                 console.error("⚠️ [로드 실패] 프로젝트 검토(Profile) 데이터를 가져오는 데 실패했습니다.", error);
                 // 실패해도 UI는 유지하되, 관련 필드는 비워진 상태가 됩니다.
@@ -554,8 +587,8 @@ const ProjectInformationForm: React.FC = () => {
             ot_schedule: formData.otSchedule ? formData.otSchedule.replace(/\./g, '-') : null,
 
             // ▼▼▼ [추가] 아래 두 줄을 추가하세요. ▼▼▼
-            scoreTable: formData.scoreTable || '',
-            bidAmount: formData.bidAmount || '',
+            score_table: formData.scoreTable || '',
+            bid_amount: formData.bidAmount || '',
 
             company_id: selectedCompany?.id,
             client_contact_id: selectedContact?.id,
@@ -692,15 +725,39 @@ const ProjectInformationForm: React.FC = () => {
         }
     };
 
-    const searchContacts = async (searchTerm: string) => {
+    // const searchContacts = async (searchTerm: string) => {
+    //     setContactSearchLoading(true);
+    //     try {
+    //         const response = await apiClient.get('/company-profile/contacts/search', { params: { search: searchTerm } });
+    //         let results: ContactSearchData[] = response.data;
+    //         if (formData.client) {
+    //             results = results.filter(contact => contact.company.company_name === formData.client);
+    //         }
+    //         setContactSearchResults(results);
+    //     } catch (error) {
+    //         handleApiError(error);
+    //     } finally {
+    //         setContactSearchLoading(false);
+    //     }
+    // };
+    // REPLACE: 담당자 검색(페이지네이션)
+    const searchContacts = async (keyword: string, page: number) => {
         setContactSearchLoading(true);
         try {
-            const response = await apiClient.get('/company-profile/contacts/search', { params: { search: searchTerm } });
-            let results: ContactSearchData[] = response.data;
+            const params = { search: keyword, skip: (page - 1) * 10, limit: 10 };
+            const [listRes, countRes] = await Promise.all([
+                apiClient.get('/company-profile/contacts/search', { params }),
+                apiClient.get('/company-profile/contacts/search/count', { params }),
+            ]);
+
+            // (선택) 현재 발주처가 form에 입력돼 있다면 동일 회사만 필터
+            let results: ContactSearchData[] = listRes.data || [];
             if (formData.client) {
-                results = results.filter(contact => contact.company.company_name === formData.client);
+                results = results.filter(c => c.company.company_name === formData.client);
             }
+
             setContactSearchResults(results);
+            setContactTotalPages(Math.max(1, Math.ceil((countRes.data?.total_count || 0) / 10)));
         } catch (error) {
             handleApiError(error);
         } finally {
@@ -720,11 +777,28 @@ const ProjectInformationForm: React.FC = () => {
         }
     };
 
-    const searchCompaniesAPI = async (searchTerm: string) => {
+    // const searchCompaniesAPI = async (searchTerm: string) => {
+    //     setCompanySearchLoading(true);
+    //     try {
+    //         const response = await apiClient.get('/company-profile/', { params: { search: searchTerm } });
+    //         setCompanySearchResults(response.data);
+    //     } catch (error) {
+    //         handleApiError(error);
+    //     } finally {
+    //         setCompanySearchLoading(false);
+    //     }
+    // };
+    // REPLACE: 회사 검색(페이지네이션)
+    const searchCompaniesAPI = async (keyword: string, page: number) => {
         setCompanySearchLoading(true);
         try {
-            const response = await apiClient.get('/company-profile/', { params: { search: searchTerm } });
-            setCompanySearchResults(response.data);
+            const params = { search: keyword, skip: (page - 1) * 10, limit: 10 };
+            const [listRes, countRes] = await Promise.all([
+                apiClient.get('/company-profile/', { params }),
+                apiClient.get('/company-profile/count', { params }),
+            ]);
+            setCompanySearchResults(listRes.data || []);
+            setCompanyTotalPages(Math.max(1, Math.ceil((countRes.data?.total_count || 0) / 10)));
         } catch (error) {
             handleApiError(error);
         } finally {
@@ -816,17 +890,24 @@ const ProjectInformationForm: React.FC = () => {
         setWriterSearchModal(false);
     };
 
+    // const handleOpenContactSearchModal = () => {
+    //     setContactSearchResults([]);
+    //     setShowContactSearchModal(true);
+    // };
+    // REPLACE
     const handleOpenContactSearchModal = () => {
         setContactSearchResults([]);
+        setContactSearchTerm('');      // 입력 초기화
+        setContactCurrentPage(1);      // 페이지 1로
         setShowContactSearchModal(true);
     };
 
-    // 담당자 검색 API 호출 함수를 ref를 사용하도록 수정합니다.
-    const handleContactSearchAPI = async () => {
-        // ref에서 현재 값을 직접 읽어옵니다.
-        const term = contactSearchInputRef.current?.value || '';
-        await searchContacts(term);
-    };
+    // // 담당자 검색 API 호출 함수를 ref를 사용하도록 수정합니다.
+    // const handleContactSearchAPI = async () => {
+    //     // ref에서 현재 값을 직접 읽어옵니다.
+    //     const term = contactSearchInputRef.current?.value || '';
+    //     await searchContacts(term);
+    // };
 
     const selectContact = (contact: ContactSearchData) => {
         setSelectedCompany({
@@ -848,11 +929,18 @@ const ProjectInformationForm: React.FC = () => {
     };
 
     // 모달을 여는 함수를 수정하여, 모달이 열릴 때 state를 초기화하도록 합니다.
+    // const handleOpenCompanySearchModal = async () => {
+    //     // 현재 발주처 입력값을 기본 검색어로 설정
+    //     setCompanySearchTerm(formData.client);
+    //     setShowCompanySearchModal(true);
+    //     await searchCompaniesAPI(formData.client);
+    // };
+    // REPLACE
     const handleOpenCompanySearchModal = async () => {
-        // 현재 발주처 입력값을 기본 검색어로 설정
-        setCompanySearchTerm(formData.client);
+        setCompanySearchTerm(formData.client || '');
         setShowCompanySearchModal(true);
-        await searchCompaniesAPI(formData.client);
+        setCompanyCurrentPage(1);
+        await searchCompaniesAPI(formData.client || '', 1);
     };
 
     const resetClientAndContact = () => {
@@ -889,7 +977,8 @@ const ProjectInformationForm: React.FC = () => {
         // evaluationScores도 함께 업데이트
         if (evaluationCriteria.length > 0) {
             const criteriaMap = {
-                'revenueScore': evaluationCriteria.find(c => c.category === 'revenue')?.id,
+                // 'revenueScore': evaluationCriteria.find(c => c.category === 'revenue')?.id,
+                'revenueScore':      evaluationCriteria.find(c => c.category === 'revenue_profit')?.id, // ✅ 통일
                 'feasibilityScore': evaluationCriteria.find(c => c.category === 'feasibility')?.id,
                 'futureValueScore': evaluationCriteria.find(c => c.category === 'future_value')?.id,
                 'relationshipScore': evaluationCriteria.find(c => c.category === 'relationship')?.id,
@@ -921,6 +1010,16 @@ const ProjectInformationForm: React.FC = () => {
         if (searchResults.length === 0) return <div className="no-results">검색 결과가 없습니다.</div>;
         return (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                {/* ✅ 고정 폭 지정용 colgroup */}
+                <colgroup>
+                    <col className="col-project" />
+                    <col className="col-client" />
+                    <col className="col-status" />
+                    <col className="col-writer" />
+                    <col className="col-dept" />
+                    <col className="col-created" />
+                    <col className="col-select" />
+                </colgroup>
                 <thead>
                 <tr style={{ backgroundColor: '#f8f9fa' }}>
                     <th style={{ padding: '8px', border: '1px solid #ddd' }}>프로젝트명</th>
@@ -1224,7 +1323,7 @@ const ProjectInformationForm: React.FC = () => {
             {/* === 모든 기존 모달들 그대로 유지 === */}
             {showSearchModal && (
                 <div className="modal-overlay" onClick={() => setShowSearchModal(false)}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-content search-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>프로젝트 검색</h3><button className="modal-close-btn" onClick={() => setShowSearchModal(false)}>×</button>
                         </div>
@@ -1285,26 +1384,53 @@ const ProjectInformationForm: React.FC = () => {
                             <button className="modal-close-btn" onClick={() => setShowContactSearchModal(false)}>×</button>
                         </div>
                         <div className="modal-body">
-                            <div className="input-with-search" style={{ marginBottom: '15px' }}>
-                                <div className="search-prefix">{formData.client ? `${formData.client} :` : '전체 고객사 :'}</div>
+                            {/*<div className="input-with-search" style={{ marginBottom: '15px' }}>*/}
+                            {/*    <div className="search-prefix">{formData.client ? `${formData.client} :` : '전체 고객사 :'}</div>*/}
 
-                                {/*담당자 검색 모달 JSX를 아래와 같이 수정합니다.*/}
-                                {/* ▼▼▼ [핵심] 이 부분을 교체합니다 ▼▼▼ */}
+                            {/*    /!*담당자 검색 모달 JSX를 아래와 같이 수정합니다.*!/*/}
+                            {/*    /!* ▼▼▼ [핵심] 이 부분을 교체합니다 ▼▼▼ *!/*/}
+                            {/*    <input*/}
+                            {/*        ref={contactSearchInputRef}*/}
+                            {/*        type="text"*/}
+                            {/*        defaultValue="" // value와 onChange를 모두 제거하고 defaultValue 사용*/}
+                            {/*        onKeyDown={e => {*/}
+                            {/*            if (e.key === 'Enter' && !e.nativeEvent.isComposing) {*/}
+                            {/*                handleContactSearchAPI();*/}
+                            {/*            }*/}
+                            {/*        }}*/}
+                            {/*        placeholder="담당자 이름 검색"*/}
+                            {/*        className="project-input"*/}
+                            {/*    />*/}
+                            {/*    <button onClick={handleContactSearchAPI} className="search-btn" title="담당자 검색">🔍</button>*/}
+                            {/*    /!* ▲▲▲ 수정 완료 ▲▲▲ *!/*/}
+
+                            {/*</div>*/}
+                            {/* REPLACE: 담당자 검색 입력부 */}
+                            <div className="input-with-search" style={{ marginBottom: '15px' }}>
+                                <div className="search-prefix">
+                                    {formData.client ? `${formData.client} :` : '전체 고객사 :'}
+                                </div>
                                 <input
-                                    ref={contactSearchInputRef}
                                     type="text"
-                                    defaultValue="" // value와 onChange를 모두 제거하고 defaultValue 사용
-                                    onKeyDown={e => {
+                                    value={contactSearchTerm}
+                                    onChange={(e) => setContactSearchTerm(e.target.value)}
+                                    onKeyDown={(e) => {
                                         if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                                            handleContactSearchAPI();
+                                            setContactCurrentPage(1);
+                                            searchContacts(contactSearchTerm, 1);
                                         }
                                     }}
                                     placeholder="담당자 이름 검색"
                                     className="project-input"
+                                    autoFocus
                                 />
-                                <button onClick={handleContactSearchAPI} className="search-btn" title="담당자 검색">🔍</button>
-                                {/* ▲▲▲ 수정 완료 ▲▲▲ */}
-
+                                <button
+                                    onClick={() => { setContactCurrentPage(1); searchContacts(contactSearchTerm, 1); }}
+                                    className="search-btn"
+                                    title="담당자 검색"
+                                >
+                                    🔍
+                                </button>
                             </div>
                             {contactSearchLoading ? (
                                 <div className="loading">검색 중...</div>
@@ -1325,6 +1451,47 @@ const ProjectInformationForm: React.FC = () => {
                                     )}
                                     </tbody>
                                 </table>
+                            )}
+                            {/* ✅ 담당자 검색 페이지네이션 */}
+                            {!contactSearchLoading && contactTotalPages > 1 && (
+                                <div className="pagination">
+                                    <button
+                                        disabled={contactCurrentPage === 1}
+                                        onClick={() => { setContactCurrentPage(1); searchContacts(contactSearchTerm, 1); }}
+                                    >
+                                        처음
+                                    </button>
+                                    <button
+                                        disabled={contactCurrentPage === 1}
+                                        onClick={() => {
+                                            const p = contactCurrentPage - 1;
+                                            setContactCurrentPage(p);
+                                            searchContacts(contactSearchTerm, p);
+                                        }}
+                                    >
+                                        이전
+                                    </button>
+                                    <span className="page-info">{contactCurrentPage} / {contactTotalPages}</span>
+                                    <button
+                                        disabled={contactCurrentPage === contactTotalPages}
+                                        onClick={() => {
+                                            const p = contactCurrentPage + 1;
+                                            setContactCurrentPage(p);
+                                            searchContacts(contactSearchTerm, p);
+                                        }}
+                                    >
+                                        다음
+                                    </button>
+                                    <button
+                                        disabled={contactCurrentPage === contactTotalPages}
+                                        onClick={() => {
+                                            setContactCurrentPage(contactTotalPages);
+                                            searchContacts(contactSearchTerm, contactTotalPages);
+                                        }}
+                                    >
+                                        마지막
+                                    </button>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -1371,22 +1538,46 @@ const ProjectInformationForm: React.FC = () => {
                             <button className="modal-close-btn" onClick={() => setShowCompanySearchModal(false)}>×</button>
                         </div>
                         <div className="modal-body">
+                            {/*<div className="input-with-search" style={{ marginBottom: '15px' }}>*/}
+                            {/*    /!*발주처(회사명) 검색 모달 JSX도 동일한 방식으로 수정합니다.*!/*/}
+                            {/*    <input*/}
+                            {/*        type="text"*/}
+                            {/*        value={companySearchTerm}*/}
+                            {/*        onChange={(e) => setCompanySearchTerm(e.target.value)}*/}
+                            {/*        onKeyDown={e => {*/}
+                            {/*            if (e.key === 'Enter' && !e.nativeEvent.isComposing) {*/}
+                            {/*                searchCompaniesAPI(companySearchTerm);*/}
+                            {/*            }*/}
+                            {/*        }}*/}
+                            {/*        placeholder="회사 이름으로 검색"*/}
+                            {/*        className="project-input"*/}
+                            {/*    />*/}
+                            {/*    <button*/}
+                            {/*        onClick={() => searchCompaniesAPI(companySearchTerm)}*/}
+                            {/*        className="search-btn"*/}
+                            {/*        style={{ padding: '0 12px' }}*/}
+                            {/*    >*/}
+                            {/*        🔍*/}
+                            {/*    </button>*/}
+                            {/*</div>*/}
+                            {/* REPLACE: 회사 검색 입력부 */}
                             <div className="input-with-search" style={{ marginBottom: '15px' }}>
-                                {/*발주처(회사명) 검색 모달 JSX도 동일한 방식으로 수정합니다.*/}
                                 <input
                                     type="text"
                                     value={companySearchTerm}
                                     onChange={(e) => setCompanySearchTerm(e.target.value)}
                                     onKeyDown={e => {
                                         if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                                            searchCompaniesAPI(companySearchTerm);
+                                            setCompanyCurrentPage(1);
+                                            searchCompaniesAPI(companySearchTerm, 1);
                                         }
                                     }}
                                     placeholder="회사 이름으로 검색"
                                     className="project-input"
+                                    autoFocus
                                 />
                                 <button
-                                    onClick={() => searchCompaniesAPI(companySearchTerm)}
+                                    onClick={() => { setCompanyCurrentPage(1); searchCompaniesAPI(companySearchTerm, 1); }}
                                     className="search-btn"
                                     style={{ padding: '0 12px' }}
                                 >
@@ -1413,6 +1604,47 @@ const ProjectInformationForm: React.FC = () => {
                                     )}
                                     </tbody>
                                 </table>
+                            )}
+                            {/* ✅ 회사 검색 페이지네이션 */}
+                            {!companySearchLoading && companyTotalPages > 1 && (
+                                <div className="pagination">
+                                    <button
+                                        disabled={companyCurrentPage === 1}
+                                        onClick={() => { setCompanyCurrentPage(1); searchCompaniesAPI(companySearchTerm, 1); }}
+                                    >
+                                        처음
+                                    </button>
+                                    <button
+                                        disabled={companyCurrentPage === 1}
+                                        onClick={() => {
+                                            const p = companyCurrentPage - 1;
+                                            setCompanyCurrentPage(p);
+                                            searchCompaniesAPI(companySearchTerm, p);
+                                        }}
+                                    >
+                                        이전
+                                    </button>
+                                    <span className="page-info">{companyCurrentPage} / {companyTotalPages}</span>
+                                    <button
+                                        disabled={companyCurrentPage === companyTotalPages}
+                                        onClick={() => {
+                                            const p = companyCurrentPage + 1;
+                                            setCompanyCurrentPage(p);
+                                            searchCompaniesAPI(companySearchTerm, p);
+                                        }}
+                                    >
+                                        다음
+                                    </button>
+                                    <button
+                                        disabled={companyCurrentPage === companyTotalPages}
+                                        onClick={() => {
+                                            setCompanyCurrentPage(companyTotalPages);
+                                            searchCompaniesAPI(companySearchTerm, companyTotalPages);
+                                        }}
+                                    >
+                                        마지막
+                                    </button>
+                                </div>
                             )}
                         </div>
                     </div>

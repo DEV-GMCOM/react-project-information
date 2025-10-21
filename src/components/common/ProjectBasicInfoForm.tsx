@@ -102,6 +102,30 @@ interface ProjectBasicInfoFormProps {
     // 프로젝트 선택 시 ID만 전달
     onProjectIdSelected?: (projectId: number) => void;
 }
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+
+const Pagination: React.FC<{
+    page: number;
+    total: number;
+    onChange: (page: number) => void;
+}> = ({ page, total, onChange }) => {
+    if (total <= 1) return null;
+
+    const first = () => onChange(1);
+    const prev = () => onChange(clamp(page - 1, 1, total));
+    const next = () => onChange(clamp(page + 1, 1, total));
+    const last = () => onChange(total);
+
+    return (
+        <div className="pagination">
+            <button disabled={page === 1} onClick={first}>처음</button>
+            <button disabled={page === 1} onClick={prev}>이전</button>
+            <span className="page-info">{page} / {total}</span>
+            <button disabled={page === total} onClick={next}>다음</button>
+            <button disabled={page === total} onClick={last}>마지막</button>
+        </div>
+    );
+};
 
 // ▼▼▼ [추가] 위로 가기 버튼 컴포넌트를 정의합니다. ▼▼▼
 const ScrollUpButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
@@ -170,6 +194,15 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     const [contactSearchTerm, setContactSearchTerm] = useState('');
     const [contactSearchResults, setContactSearchResults] = useState<ContactSearchData[]>([]);
     const [contactSearchLoading, setContactSearchLoading] = useState(false);
+
+    // 회사 검색 (페이지네이션)
+    const [companySearchTerm, setCompanySearchTerm] = useState(formData.client || '');
+    const [companyCurrentPage, setCompanyCurrentPage] = useState(1);
+    const [companyTotalPages, setCompanyTotalPages] = useState(1);
+
+// 담당자 검색 (페이지네이션)
+    const [contactCurrentPage, setContactCurrentPage] = useState(1);
+    const [contactTotalPages, setContactTotalPages] = useState(1);
 
     const [internalShowReviewSection, setInternalShowReviewSection] = useState<boolean>(showReviewSectionProp);
     const [internalShowKickoffSection, setInternalShowKickoffSection] = useState<boolean>(showKickoffSectionProp);
@@ -250,6 +283,28 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
             setInternalFormData(formData);
         }
     }, [formData, onChange]);
+
+    // 회사 디바운스
+    useEffect(() => {
+        const t = setTimeout(() => {
+            if (showCompanySearchModal) {
+                setCompanyCurrentPage(1);
+                searchCompaniesAPI(companySearchTerm, 1);
+            }
+        }, 400);
+        return () => clearTimeout(t);
+    }, [companySearchTerm, showCompanySearchModal]);
+
+    // 담당자 디바운스
+    useEffect(() => {
+        const t = setTimeout(() => {
+            if (showContactSearchModal) {
+                setContactCurrentPage(1);
+                searchContacts(contactSearchTerm, 1);
+            }
+        }, 400);
+        return () => clearTimeout(t);
+    }, [contactSearchTerm, showContactSearchModal]);
 
     const currentFormData = onChange ? formData : internalFormData;
     const isDetailSectionVisible = showDetailSectionProp !== undefined
@@ -409,13 +464,14 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                 otSchedule: projectData.ot_schedule || '',
                 expectedRevenue: projectData.contract_amount?.toString() || '',
                 expectedCompetitors: projectData.expected_competitors || '',
-                scoreTable: '',
-                bidAmount: ''
+                scoreTable: projectData.score_table || '',
+                bidAmount: projectData.bid_amount || '',
             };
             if (includeDataSections.includes('detail')) {
                 updates.purposeBackground = projectData.project_overview || '';
                 updates.mainContent = projectData.project_scope || '';
-                updates.coreRequirements = projectData.project_scope || '';
+                // updates.coreRequirements = projectData.project_scope || '';
+                updates.coreRequirements = projectData.special_requirements || '';
                 updates.comparison = projectData.deliverables || '';
             }
             Object.entries(updates).forEach(([key, value]) => {
@@ -470,14 +526,25 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
             const kickoffResponse = await apiClient(`/projects/${project.project_id}/kickoff`);
 
             if (kickoffResponse.data) {
+                // setKickoff(prev => ({
+                //     ...prev,
+                //     department: kickoffResponse.data.department || '',
+                //     presenter: kickoffResponse.data.presenter || '',
+                //     personnel: kickoffResponse.data.personnel || '',
+                //     collaboration: kickoffResponse.data.collaboration || '',
+                //     schedule: kickoffResponse.data.progress_schedule || '',
+                //     others: kickoffResponse.data.other_notes || ''
+                // }));
                 setKickoff(prev => ({
                     ...prev,
-                    department: kickoffResponse.data.department || '',
-                    presenter: kickoffResponse.data.presenter || '',
-                    personnel: kickoffResponse.data.personnel || '',
-                    collaboration: kickoffResponse.data.collaboration || '',
-                    schedule: kickoffResponse.data.progress_schedule || '',
-                    others: kickoffResponse.data.other_notes || ''
+                    department:        kickoffResponse.data.department || '',
+                    presenter:         kickoffResponse.data.presenter || '',
+                    personnel:         kickoffResponse.data.personnel || '',
+                    collaboration:     kickoffResponse.data.collaboration || '',
+                    plannedExpense:    kickoffResponse.data.planned_expense || '',
+                    progressSchedule:  kickoffResponse.data.progress_schedule || '',
+                    riskFactors:       kickoffResponse.data.risk_factors || '',
+                    nextReport:        kickoffResponse.data.next_report || '',
                 }));
                 // setSaveMode('update');
             } else {
@@ -539,27 +606,60 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
 
     };
 
+    // const formatDateForInput = (dateStr?: string): string => {
+    //     if (!dateStr) return '';
+    //     const date = new Date(dateStr);
+    //     if (isNaN(date.getTime())) return '';
+    //     return date.toISOString().split('T')[0];
+    // };
     const formatDateForInput = (dateStr?: string): string => {
         if (!dateStr) return '';
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return '';
-        return date.toISOString().split('T')[0];
+        // 'YYYY.MM.DD' → 'YYYY-MM-DD'
+        const normalized = dateStr.replace(/\./g, '-');
+        // YYYY-MM-DD만 통과
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return '';
+        return normalized;
     };
 
     const handleCompanySearchClick = async () => {
         await tryExternalThenInternal(onCompanySearch, handleCompanySearch);
     };
 
+    // const handleCompanySearch = async () => {
+    //     setShowCompanySearchModal(true);
+    //     await searchCompaniesAPI(currentFormData.client);
+    // };
+    // REPLACE
     const handleCompanySearch = async () => {
         setShowCompanySearchModal(true);
-        await searchCompaniesAPI(currentFormData.client);
+        setCompanySearchTerm(currentFormData.client || '');
+        setCompanyCurrentPage(1);
+        await searchCompaniesAPI(currentFormData.client || '', 1);
     };
 
-    const searchCompaniesAPI = async (searchTerm: string) => {
+    // const searchCompaniesAPI = async (searchTerm: string) => {
+    //     setCompanySearchLoading(true);
+    //     try {
+    //         const response = await apiClient.get('/company-profile/', { params: { search: searchTerm } });
+    //         setCompanySearchResults(response.data);
+    //     } catch (error) {
+    //         handleApiError(error);
+    //     } finally {
+    //         setCompanySearchLoading(false);
+    //     }
+    // };
+// REPLACE
+    const searchCompaniesAPI = async (keyword: string, page: number) => {
         setCompanySearchLoading(true);
         try {
-            const response = await apiClient.get('/company-profile/', { params: { search: searchTerm } });
-            setCompanySearchResults(response.data);
+            const params = { search: keyword, skip: (page - 1) * 10, limit: 10 };
+            const [listRes, countRes] = await Promise.all([
+                apiClient.get('/company-profile/', { params }),
+                apiClient.get('/company-profile/count', { params }),
+            ]);
+            setCompanySearchResults(listRes.data || []);
+            const total = countRes.data?.total_count ?? 0;
+            setCompanyTotalPages(Math.max(1, Math.ceil(total / 10)));
         } catch (error) {
             handleApiError(error);
         } finally {
@@ -584,22 +684,55 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         await tryExternalThenInternal(onContactSearch, handleContactSearch);
     };
 
+    // const handleContactSearch = () => {
+    //     setContactSearchTerm('');
+    //     setContactSearchResults([]);
+    //     setShowContactSearchModal(true);
+    //     searchContacts('');
+    // };
+    // REPLACE
     const handleContactSearch = () => {
         setContactSearchTerm('');
         setContactSearchResults([]);
+        setContactCurrentPage(1);
         setShowContactSearchModal(true);
-        searchContacts('');
+        searchContacts('', 1);
     };
 
-    const searchContacts = async (searchTerm: string) => {
+    // const searchContacts = async (searchTerm: string) => {
+    //     setContactSearchLoading(true);
+    //     try {
+    //         const response = await apiClient.get('/company-profile/contacts/search', { params: { search: searchTerm } });
+    //         let results: ContactSearchData[] = response.data;
+    //         if (currentFormData.client) {
+    //             results = results.filter(contact => contact.company.company_name === currentFormData.client);
+    //         }
+    //         setContactSearchResults(results);
+    //     } catch (error) {
+    //         handleApiError(error);
+    //     } finally {
+    //         setContactSearchLoading(false);
+    //     }
+    // };
+    // REPLACE
+    const searchContacts = async (keyword: string, page: number) => {
         setContactSearchLoading(true);
         try {
-            const response = await apiClient.get('/company-profile/contacts/search', { params: { search: searchTerm } });
-            let results: ContactSearchData[] = response.data;
+            const params = { search: keyword, skip: (page - 1) * 10, limit: 10 };
+            const [listRes, countRes] = await Promise.all([
+                apiClient.get('/company-profile/contacts/search', { params }),
+                apiClient.get('/company-profile/contacts/search/count', { params }),
+            ]);
+
+            let results: ContactSearchData[] = listRes.data || [];
+            // 현재 발주처가 입력돼 있으면 동일 회사만 필터
             if (currentFormData.client) {
-                results = results.filter(contact => contact.company.company_name === currentFormData.client);
+                results = results.filter(c => c.company.company_name === currentFormData.client);
             }
             setContactSearchResults(results);
+
+            const total = countRes.data?.total_count ?? 0;
+            setContactTotalPages(Math.max(1, Math.ceil(total / 10)));
         } catch (error) {
             handleApiError(error);
         } finally {
@@ -619,8 +752,13 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         onContactSelect?.(contactData);
     };
 
+    // const handleContactSearchAPI = async () => {
+    //     await searchContacts(contactSearchTerm);
+    // }
+    // REPLACE
     const handleContactSearchAPI = async () => {
-        await searchContacts(contactSearchTerm);
+        setContactCurrentPage(1);
+        await searchContacts(contactSearchTerm, 1);
     };
 
     const resetClientAndContact = () => {
@@ -1239,7 +1377,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                                     type="text"
                                                     name="presenter"
                                                     value={kickoff.presenter}
-                                                    onChange={handleInputChange}
+                                                    // onChange={handleInputChange}
+                                                    onChange={handleKickoffInputChange}  // ✅ 올바른 핸들러
                                                     className="postmortem-input"
                                                     readOnly={readOnly}
                                                 />
@@ -1634,18 +1773,44 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             <button className="modal-close-btn" onClick={() => setShowCompanySearchModal(false)}>×</button>
                         </div>
                         <div className="modal-body">
+                            {/*<div className="input-with-search" style={{ marginBottom: '15px' }}>*/}
+                            {/*    <input*/}
+                            {/*        type="text"*/}
+                            {/*        defaultValue={currentFormData.client}*/}
+                            {/*        onKeyDown={e => { if (e.key === 'Enter') searchCompaniesAPI((e.target as HTMLInputElement).value); }}*/}
+                            {/*        placeholder="회사 이름으로 검색"*/}
+                            {/*        className="project-input"*/}
+                            {/*    />*/}
+                            {/*    <button onClick={() => {*/}
+                            {/*        const input = document.querySelector('.modal-body .project-input') as HTMLInputElement;*/}
+                            {/*        if (input) searchCompaniesAPI(input.value);*/}
+                            {/*    }} className="search-btn">*/}
+                            {/*        🔍*/}
+                            {/*    </button>*/}
+                            {/*</div>*/}
+                            {/* REPLACE 회사 검색 모달의 입력부 */}
                             <div className="input-with-search" style={{ marginBottom: '15px' }}>
                                 <input
                                     type="text"
-                                    defaultValue={currentFormData.client}
-                                    onKeyDown={e => { if (e.key === 'Enter') searchCompaniesAPI((e.target as HTMLInputElement).value); }}
+                                    value={companySearchTerm}
+                                    onChange={(e) => setCompanySearchTerm(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                            setCompanyCurrentPage(1);
+                                            searchCompaniesAPI(companySearchTerm, 1);
+                                        }
+                                    }}
                                     placeholder="회사 이름으로 검색"
                                     className="project-input"
+                                    autoFocus
                                 />
-                                <button onClick={() => {
-                                    const input = document.querySelector('.modal-body .project-input') as HTMLInputElement;
-                                    if (input) searchCompaniesAPI(input.value);
-                                }} className="search-btn">
+                                <button
+                                    onClick={() => {
+                                        setCompanyCurrentPage(1);
+                                        searchCompaniesAPI(companySearchTerm, 1);
+                                    }}
+                                    className="search-btn"
+                                >
                                     🔍
                                 </button>
                             </div>
@@ -1681,6 +1846,16 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                     </tbody>
                                 </table>
                             )}
+                            {!companySearchLoading && (
+                                <Pagination
+                                    page={companyCurrentPage}
+                                    total={companyTotalPages}
+                                    onChange={(newPage) => {
+                                        setCompanyCurrentPage(newPage);
+                                        searchCompaniesAPI(companySearchTerm, newPage);
+                                    }}
+                                />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -1693,6 +1868,23 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                             <button className="modal-close-btn" onClick={() => setShowContactSearchModal(false)}>×</button>
                         </div>
                         <div className="modal-body">
+                            {/*<div className="input-with-search" style={{ marginBottom: '15px' }}>*/}
+                            {/*    <div className="search-prefix">*/}
+                            {/*        {currentFormData.client ? `${currentFormData.client} :` : '전체 고객사 :'}*/}
+                            {/*    </div>*/}
+                            {/*    <input*/}
+                            {/*        type="text"*/}
+                            {/*        value={contactSearchTerm}*/}
+                            {/*        onChange={e => setContactSearchTerm(e.target.value)}*/}
+                            {/*        onKeyDown={e => { if (e.key === 'Enter') handleContactSearchAPI(); }}*/}
+                            {/*        placeholder="담당자 이름 검색"*/}
+                            {/*        className="project-input"*/}
+                            {/*    />*/}
+                            {/*    <button onClick={handleContactSearchAPI} className="search-btn">*/}
+                            {/*        🔍*/}
+                            {/*    </button>*/}
+                            {/*</div>*/}
+                            {/* REPLACE 담당자 검색 모달의 입력부(핵심은 페이지 1로 검색) */}
                             <div className="input-with-search" style={{ marginBottom: '15px' }}>
                                 <div className="search-prefix">
                                     {currentFormData.client ? `${currentFormData.client} :` : '전체 고객사 :'}
@@ -1701,11 +1893,20 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                     type="text"
                                     value={contactSearchTerm}
                                     onChange={e => setContactSearchTerm(e.target.value)}
-                                    onKeyDown={e => { if (e.key === 'Enter') handleContactSearchAPI(); }}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                            setContactCurrentPage(1);
+                                            searchContacts(contactSearchTerm, 1);
+                                        }
+                                    }}
                                     placeholder="담당자 이름 검색"
                                     className="project-input"
+                                    autoFocus
                                 />
-                                <button onClick={handleContactSearchAPI} className="search-btn">
+                                <button
+                                    onClick={() => { setContactCurrentPage(1); searchContacts(contactSearchTerm, 1); }}
+                                    className="search-btn"
+                                >
                                     🔍
                                 </button>
                             </div>
@@ -1738,6 +1939,16 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                     )}
                                     </tbody>
                                 </table>
+                            )}
+                            {!contactSearchLoading && (
+                                <Pagination
+                                    page={contactCurrentPage}
+                                    total={contactTotalPages}
+                                    onChange={(newPage) => {
+                                        setContactCurrentPage(newPage);
+                                        searchContacts(contactSearchTerm, newPage);
+                                    }}
+                                />
                             )}
                         </div>
                     </div>
