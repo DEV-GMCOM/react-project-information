@@ -254,7 +254,8 @@
 
     /* 사이즈업을 위한 핵심 속성 */
     padding: 12px 32px;   /* 상하좌우 여백 증가 */
-    font-size: 16px !important;      /* 폰트 크기 증가 */
+    /*font-size: 16px !important;      !* 폰트 크기 증가 *!*/
+    font-size: 2rem;      /* 폰트 크기 증가 */
 }
 
 .generation-panel .btn-secondary:hover {
@@ -952,4 +953,9 @@
     font-size: 15px;      /* 텍스트 크기 조정 */
 }
 /* --- ▲▲▲ 추가 종료 ▲▲▲ --- */
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 

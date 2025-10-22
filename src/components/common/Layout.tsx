@@ -85,15 +85,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             name: 'PT 결과분석',
             icon: '🔍'
         },
-        // {
-        //     path: '/project-execution',
-        //     name: '프로젝트 실행파일링',
-        //     icon: '📁'
-        // },
+        {
+            path: '/project-execution',
+            name: '프로젝트 실행파일링',
+            icon: '📁'
+        },
         {
             path: '/project-postmortem',
             name: '프로젝트 결과분석',
             icon: '📊'
+        },
+        {
+            path: '/working/meeting-minutes',
+            name: '====== 회의록 =======',
+            icon: '🗒️'
         },
     ];
 
@@ -111,49 +116,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             // ]
         },
         {
-            path: '/working/meeting-minutes',
-            name: '회의록',
-            icon: '🗒️',
-            // subMenus: [
-            //     { path: '/admin/permissions/policies', name: '정책 관리' },     //
-            //     { path: '/admin/permissions/roles', name: '역할 관리' },        // 직급별, 부서별, 개인별
-            //     { path: '/admin/permissions/pages', name: '페이지 관리' },       //
-            //     { path: '/admin/permissions/restrictions', name: '한정 관리' }, // 시간별, 외부접근별
-            // ]
-        },
-        {
             path: '/working/fms',
             name: 'GMCOM 저장소',
-            icon: '💾',
-            // icon: '📀',
-            // subMenus: [
-            //     { path: '/admin/permissions/policies', name: '정책 관리' },     //
-            //     { path: '/admin/permissions/roles', name: '역할 관리' },        // 직급별, 부서별, 개인별
-            //     { path: '/admin/permissions/pages', name: '페이지 관리' },       //
-            //     { path: '/admin/permissions/restrictions', name: '한정 관리' }, // 시간별, 외부접근별
-            // ]
+            icon: '💾', // 📀
         },
         {
             path: '/working/clock-in-out',
             name: '출퇴근 체크',
             icon: '⏱️',
-            // subMenus: [
-            //     { path: '/admin/permissions/policies', name: '정책 관리' },     //
-            //     { path: '/admin/permissions/roles', name: '역할 관리' },        // 직급별, 부서별, 개인별
-            //     { path: '/admin/permissions/pages', name: '페이지 관리' },       //
-            //     { path: '/admin/permissions/restrictions', name: '한정 관리' }, // 시간별, 외부접근별
-            // ]
         },
         {
             path: '/working/scheduling',
             name: '스케쥴링',
             icon: '📅',
-            // subMenus: [
-            //     { path: '/admin/permissions/policies', name: '정책 관리' },     //
-            //     { path: '/admin/permissions/roles', name: '역할 관리' },        // 직급별, 부서별, 개인별
-            //     { path: '/admin/permissions/pages', name: '페이지 관리' },       //
-            //     { path: '/admin/permissions/restrictions', name: '한정 관리' }, // 시간별, 외부접근별
-            // ]
         },
     ];
 
@@ -170,7 +145,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 { path: '/admin/permissions/restrictions', name: '한정 관리' }, // 시간별, 외부접근별
             ]
         },
-
 
         // {
         //     path: '/admin/users',
@@ -400,17 +374,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         {/* 구분선 */}
                         <div className="nav-divider"></div>
 
-                        {/*/!* 관리자 메뉴 섹션 *!/*/}
-                        {/*<div className="nav-section nav-section-admin">*/}
-                        {/*    {sidebarOpen && (*/}
-                        {/*        <div className="section-header">*/}
-                        {/*            <div className="section-title">개발 중인 항목</div>*/}
-                        {/*        </div>*/}
-                        {/*    )}*/}
-                        {/*    <ul className="nav-list">*/}
-                        {/*        {devMenuItems.map(renderMenuItem)}*/}
-                        {/*    </ul>*/}
-                        {/*</div>*/}
+                        {/* 관리자 메뉴 섹션 */}
+                        <div className="nav-section nav-section-admin">
+                            {sidebarOpen && (
+                                <div className="section-header">
+                                    <div className="section-title">개발 중인 항목</div>
+                                </div>
+                            )}
+                            <ul className="nav-list">
+                                {devMenuItems.map(renderMenuItem)}
+                            </ul>
+                        </div>
 
                         {/* 구분선 */}
                         <div className="nav-divider"></div>
