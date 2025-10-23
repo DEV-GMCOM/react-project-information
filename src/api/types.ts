@@ -189,3 +189,25 @@ export interface PTChecklist {
     created_at?: string;
     updated_at?: string;
 }
+
+// ✅ [추가] 회의록 데이터 타입
+export interface MeetingMinute {
+    meeting_id: number;
+    meeting_title: string;
+    meeting_datetime: string; // ISO 8601 형식의 날짜 문자열 (예: "2025-10-23T14:30:00")
+    meeting_place: string | null;
+    project_id: number | null;
+    project_name?: string;     // 백엔드에서 JOIN으로 제공
+    creator_name?: string;     // 백엔드에서 JOIN으로 제공
+    attendees_display: string; // "홍길동 외 2명" 또는 "홍길동, 이순신"
+    shared_with: Employee[];   // '기본 정보'의 공유자와 동일한 Employee 객체 배열
+    tags: string[];
+    share_methods: ('email' | 'jandi')[];
+    is_active: boolean;
+    created_at: string;
+    created_by: number;
+
+    // (상세 정보 로드 시 추가될 수 있는 필드)
+    // stt_originals?: any[];
+    has_llm_documents?: boolean; // ✅ [수정] LLM 문서 존재 여부 (백엔드에서 계산)
+}

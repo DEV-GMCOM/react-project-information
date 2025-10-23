@@ -1,18 +1,28 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect,useCallback, ChangeEvent } from 'react';
 
 // [추가] API 서비스 및 타입 import
 import { projectService } from '../../api/services/projectService';
 import { employeeService } from '../../api/services/employeeService';
-import { Project, Employee } from '../../api/types';
+import { Project, Employee, MeetingMinute } from '../../api/types';
 import { fileUploadService } from '../../api/services/fileUploadService';  // ✅ 추가
 
+// ✅ 회의록 서비스 import
+import { meetingMinuteService } from '../../api/services/meetingMinuteService'; // (가정: 새 서비스 파일 필요)
+
+// ✅ [추가] 에러 핸들러 (프로젝트에 이미 있다면 경로 수정)
+import { handleApiError } from '../../api/utils/errorUtils';
 
 // 제공된 CSS 파일들이 상위에서 import 되었다고 가정합니다.
 import '../../styles/FormPage.css';
 import '../../styles/MeetingMinutes.css';
 import '../../styles/ProjectBasicInfoForm.css'; // 검색 모달 등에 필요한 스타일
 
+// --- ▼▼▼ 회의록 목록 컴포넌트 (별도 파일 분리 권장) ▼▼▼ ---
+interface MeetingListProps {
+    meetings: MeetingMinute[];
+    onSelect: (meeting: MeetingMinute) => void;
+}
 // --- ▼▼▼ [수정] 직원 검색 모달 ▼▼▼ ---
 interface EmployeeSearchModalProps {
     onClose: () => void;
@@ -127,6 +137,82 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
 };
 // --- ▲▲▲ 직원 검색 모달 종료 ▲▲▲ ---
 
+const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect }) => {
+    // 날짜 포맷 함수 (필요시)
+    const formatDateTime = (isoString: string) => {
+        try {
+            return new Date(isoString).toLocaleString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+        } catch (e) {
+            return isoString;
+        }
+    };
+
+    return (
+        <table className="meeting-list-table">
+            <thead>
+            <tr>
+                <th>회의명</th>
+                <th>회의일시</th>
+                <th>연계프로젝트</th>
+                <th>작성자</th>
+                <th>참석자</th>
+                <th>태그</th>
+                <th>상태</th>
+            </tr>
+            </thead>
+            <tbody>
+            {meetings.length === 0 ? (
+                <tr>
+                    <td colSpan={7} className="no-results">회의록이 없습니다.</td>
+                </tr>
+            ) : (
+                meetings.map(meeting => (
+                    // <tr key={meeting.meeting_id} onClick={() => onSelect(meeting)} className="meeting-list-item">
+                    //     <td className="meeting-title-cell">
+                    //         {/* 회의명을 클릭 가능하게 */}
+                    //         <span className="meeting-link">{meeting.meeting_title}</span>
+                    //     </td>
+                    //     <td>{new Date(meeting.meeting_datetime).toLocaleString('ko-KR')}</td>
+                    //     <td>{meeting.project_name || '독립 회의'}</td>
+                    //     <td>{meeting.creator_name}</td>
+                    //     <td>{`${meeting.attendees?.length || 0}명`}</td>
+                    //     <td>
+                    //         {meeting.tags?.map(tag => (
+                    //             <span key={tag} className="tag-badge">{tag}</span>
+                    //         ))}
+                    //     </td>
+                    //     {/* <td>{meeting.llm_generated ? 'AI 생성' : '-'}</td> */}
+                    // </tr>
+                    <tr key={meeting.meeting_id} onClick={() => onSelect(meeting)} className="meeting-list-item" title="클릭하여 상세 정보 보기">
+                        <td className="meeting-title-cell">
+                            <span className="meeting-link">{meeting.meeting_title}</span>
+                        </td>
+                        <td>{formatDateTime(meeting.meeting_datetime)}</td>
+                        <td title={meeting.project_name}>{meeting.project_name || 'N/A'}</td>
+                        <td>{meeting.creator_name || 'N/A'}</td>
+                        <td title={meeting.attendees_display}>{meeting.attendees_display}</td>
+                        <td>
+                            {meeting.tags?.map(tag => (
+                                <span key={tag} className="tag-badge" title={tag}>{tag}</span>
+                            ))}
+                        </td>
+                        <td>{meeting.has_llm_documents ? '✔️ AI 생성' : '-'}</td>
+                    </tr>
+                ))
+            )}
+            </tbody>
+        </table>
+    );
+};
+// --- ▲▲▲ 회의록 목록 컴포넌트 종료 ▲▲▲ ---
+
 const MeetingMinutes: React.FC = () => {
 
     // 1. 파일 입력(input) DOM에 접근하기 위한 ref
@@ -176,7 +262,102 @@ const MeetingMinutes: React.FC = () => {
     const [shareMethod, setShareMethod] = useState<'email' | 'jandi'>('email');
     const [attendees, setAttendees] = useState<string>('');
     const [tags, setTags] = useState<string>('');
+    // 탭 상태 관리
+    const [activeTab, setActiveTab] = useState<'my' | 'shared' | 'all'>('my');
     // --- ▲▲▲ 상태 관리 종료 ▲▲▲ ---
+
+    const [myMeetings, setMyMeetings] = useState<MeetingMinute[]>([]);
+    const [sharedMeetings, setSharedMeetings] = useState<MeetingMinute[]>([]);
+    const [listLoading, setListLoading] = useState(false);
+    const [listError, setListError] = useState<string | null>(null);
+
+    // ✅ [신규] 필터 상태 추가
+    const [filterType, setFilterType] = useState<'all' | 'project' | 'independent'>('all');
+
+    // --- ▼▼▼ 회의록 데이터 로딩 함수 ▼▼▼ ---
+    // ✅ useCallback의 함수 정의에 (tab: 'my' | 'shared') 파라미터 추가
+    const loadMeetings = useCallback(async (tab: 'my' | 'shared', filter: typeof filterType) => {
+        setListLoading(true);
+        setListError(null);
+        try {
+            // ✅ API 호출 시 filter 파라미터 추가 (백엔드와 협의 필요)
+            const params = { limit: 50, filter: filter };
+            if (tab === 'my') {
+                const data = await meetingMinuteService.getMyMeetings(params);
+                setMyMeetings(data);
+            } else if (tab === 'shared') {
+                const data = await meetingMinuteService.getSharedMeetings(params);
+                setSharedMeetings(data);
+            }
+        } catch (error) {
+            console.error(`Error loading ${tab} meetings with filter ${filter}:`, error);setListError('회의록 목록을 불러오는 중 오류가 발생했습니다.');
+            handleApiError(error); // 에러 처리 유틸리티 사용
+        } finally {
+            setListLoading(false);
+        }
+        // ✅ useCallback 의존성 배열은 비워둡니다.
+        // loadMeetings 함수 자체가 외부 변수에 의존하지 않으므로,
+        // 여기서 tab을 추가하면 activeTab이 바뀔 때마다 함수가 재생성되어 비효율적입니다.
+    }, []);
+
+    // 탭이 변경될 때 해당 탭의 데이터를 로드
+    useEffect(() => {
+        // 'my' 탭은 기본으로 로드
+        if (activeTab === 'my') {
+            loadMeetings('my', filterType);
+        } else if (activeTab === 'shared') {
+            loadMeetings('shared', filterType);
+        }
+        // ✅ loadMeetings 함수는 useCallback으로 메모이제이션되었으므로 의존성 배열에 추가
+    }, [activeTab, filterType, loadMeetings]);
+
+    // ✅ [신규] 필터 변경 핸들러
+    const handleFilterChange = (event: ChangeEvent<HTMLSelectElement>) => {
+        setFilterType(event.target.value as 'all' | 'project' | 'independent');
+    };
+
+    // --- ▼▼▼ 회의록 선택 핸들러 ▼▼▼ ---
+    const handleMeetingSelect = useCallback((meeting: MeetingMinute) => {
+        console.log('선택된 회의록:', meeting);
+
+        // 기본 정보 섹션의 상태들을 업데이트
+        setMeetingTitle(meeting.meeting_title);
+
+        // setMeetingDateTime(meeting.meeting_datetime ? new Date(meeting.meeting_datetime).toISOString().slice(0, 16) : ''); // datetime-local 형식
+        const localDateTime = meeting.meeting_datetime
+            ? new Date(new Date(meeting.meeting_datetime).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
+            : '';
+        setMeetingDateTime(localDateTime);
+
+        setMeetingPlace(meeting.meeting_place || '');
+        setProjectName(meeting.project_name || '');
+        setSelectedProjectId(meeting.project_id || null);
+
+        // setSharedWith(meeting.shared_with || []); // Employee 객체 배열이라고 가정
+        // '회의록 공유'는 Employee 객체 배열 (API 응답이 그렇다고 가정)
+        setSharedWith(meeting.shared_with || []);
+
+        // '그 외 참석자'는 문자열이라고 가정 (attendees_display 사용)
+        setAttendees(meeting.attendees_display || ''); // attendees가 문자열 배열일 경우
+
+        setTags(meeting.tags?.join(', ') || '');
+
+        setShareMethods({
+            email: meeting.share_methods?.includes('email') ?? true,
+            jandi: meeting.share_methods?.includes('jandi') ?? false
+        });
+
+        // TODO:
+        // 1. 이 회의록에 연결된 파일 목록(serverFiles) 불러오기
+        // 2. 이 회의록의 STT/LLM 결과(sttResults, llmResults) 불러오기
+        //    (예: const details = await meetingMinuteService.getMeetingDetails(meeting.meeting_id);)
+        // 3. (선택) 스크롤을 '기본 정보' 섹션으로 이동
+        // window.scrollTo(0, document.getElementById('basic-info-section')?.offsetTop || 0);
+
+        alert(`[${meeting.meeting_title}] 회의록 정보를 '기본 정보' 섹션에 로드했습니다.`);
+
+    }, []); // 의존성 배열 비움 (다른 상태 변경 시 재생성 방지)
+    // --- ▲▲▲ 회의록 선택 핸들러 종료 ▲▲▲ ---
 
     // 텍스트 파일 내용 읽기 함수
     const readTextFile = (file: File): Promise<string> => {
@@ -210,7 +391,6 @@ const MeetingMinutes: React.FC = () => {
     const [sharedWith, setSharedWith] = useState<Employee[]>([]); // Employee 객체 배열로 관리
     // --- ▲▲▲ 상태 관리 종료 ▲▲▲ ---
 
-
     const [meetingTitle, setMeetingTitle] = useState<string>('');
     const [meetingDateTime, setMeetingDateTime] = useState<string>('');
     const [meetingPlace, setMeetingPlace] = useState<string>('');
@@ -231,22 +411,6 @@ const MeetingMinutes: React.FC = () => {
         setIsDragOver(false);
     };
 
-    // const handleFiles = async (files: FileList | null) => {
-    //     if (!files || files.length === 0) return;
-    //     console.log("업로드할 파일:", files);
-    // };
-    // // 수정할 코드
-    // const handleFiles = async (files: FileList | null) => {
-    //     if (!files || files.length === 0) return;
-    //
-    //     const newFiles = Array.from(files);
-    //     // 기존에 선택된 파일 목록에 새로 추가된 파일을 합칩니다.
-    //     setSelectedFiles(prevFiles => [...prevFiles, ...newFiles]);
-    //
-    //     console.log("선택된 파일 목록:", newFiles);
-    //     // 여기에 실제 파일 업로드 API 호출 로직을 추가할 수 있습니다.
-    //     // 예: uploadFiles(newFiles);
-    // };
     const handleFiles = async (files: FileList | null) => {
         if (!files || files.length === 0) return;
 
@@ -290,11 +454,6 @@ const MeetingMinutes: React.FC = () => {
         }
     };
 
-    // const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    //     e.preventDefault();
-    //     setIsDragOver(false);
-    //     handleFiles(e.dataTransfer.files);
-    // };
     const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
@@ -349,9 +508,6 @@ const MeetingMinutes: React.FC = () => {
         }
     };
 
-    // const handleRemoveSelectedFile = (fileToRemove: File) => {
-    //     setSelectedFiles(prevFiles => prevFiles.filter(file => file !== fileToRemove));
-    // };
     const handleRemoveSelectedFile = (fileToRemove: File) => {
         // ✅ 삭제할 파일이 텍스트 파일인지 확인
         const ext = fileToRemove.name.split('.').pop()?.toLowerCase();
@@ -388,12 +544,6 @@ const MeetingMinutes: React.FC = () => {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
-    // --- ▼▼▼ [수정] 프로젝트 검색 핸들러 ▼▼▼ ---
-    // const openProjectSearchModal = () => {
-    //     setModalSearchTerm(''); // 모달을 열 때 검색어 초기화
-    //     setShowProjectSearchModal(true);
-    //     handleProjectSearch(''); // 초기 목록을 보여주기 위해 빈 검색어로 검색
-    // };
     const openProjectSearchModal = () => {
         setModalSearchTerm(projectName); // 모달을 열 때 현재 프로젝트명을 모달 검색어 초기값으로 설정
         setShowProjectSearchModal(true);
@@ -442,15 +592,6 @@ const MeetingMinutes: React.FC = () => {
         setLlmDocTypes(prev => ({ ...prev, [name]: checked }));
     };
 
-    // const handleGenerate = () => {
-    //     if (!selectedSttSource) {
-    //         alert("LLM 생성을 위한 소스 텍스트를 선택해주세요.");
-    //         return;
-    //     }
-    //     console.log("생성 시작:", { sttEngine, llmDocTypes, selectedSttSource });
-    //     alert("콘솔을 확인하여 생성 요청 데이터를 확인하세요.");
-    //     // API 호출 후 결과로 llmResults 상태 업데이트
-    // };
     const handleGenerate = async () => {
         console.log("LLM 회의록 생성 시작");
         console.log("선택된 STT 엔진:", sttEngine);
@@ -583,21 +724,6 @@ const MeetingMinutes: React.FC = () => {
         }
     };
 
-    // 컴포넌트 내부 상단에 추가
-    useEffect(() => {
-        const style = document.createElement('style');
-        style.textContent = `
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    `;
-        document.head.appendChild(style);
-        return () => {
-            document.head.removeChild(style);
-        };
-    }, []);
-
     return (
         <div className="meeting-minutes-container">
             <div className="meeting-minutes-header">
@@ -618,9 +744,82 @@ const MeetingMinutes: React.FC = () => {
                     </div>
                 </div>
 
+                {/* --- ▼▼▼ 회의록 리스트 탭 섹션 ▼▼▼ --- */}
                 <div className="meeting-minutes-section">
+                    <h3 className="section-header">■ 회의록 리스트</h3>
+
+                    {/* 탭 네비게이션 */}
+                    <div className="tab-navigation">
+                        <button
+                            className={`tab-button ${activeTab === 'my' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('my')}
+                        >
+                            나의 회의록
+                        </button>
+                        <button
+                            className={`tab-button ${activeTab === 'shared' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('shared')}
+                        >
+                            공유받은 회의록
+                        </button>
+                        <button
+                            className={`tab-button ${activeTab === 'all' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('all')}
+                            disabled
+                        >
+                            전체 회의록
+                        </button>
+                    </div>
+
+                    {/* 탭 컨텐츠 */}
+                    <div className="tab-content">
+                        {/* ✅ [신규] 필터 바 추가 */}
+                        <div className="filter-bar">
+                            <select value={filterType} onChange={handleFilterChange}>
+                                <option value="all">전체</option>
+                                <option value="project">프로젝트 연계</option>
+                                <option value="independent">독립 회의록</option>
+                            </select>
+                        </div>
+
+                        {/* ✅ [수정] 로딩/에러/목록 렌더링 로직 추가 */}
+                        {listLoading ? (
+                            <div className="loading">목록을 불러오는 중...</div>
+                        ) : listError ? (
+                            <div className="error">{listError}</div>
+                        ) : (
+                            <>
+                                {activeTab === 'my' && (
+                                    <div className="tab-pane active">
+                                        <MeetingList meetings={myMeetings} onSelect={handleMeetingSelect} />
+                                    </div>
+                                )}
+                                {activeTab === 'shared' && (
+                                    <div className="tab-pane active">
+                                        <MeetingList meetings={sharedMeetings} onSelect={handleMeetingSelect} />
+                                    </div>
+                                )}
+                                {activeTab === 'all' && (
+                                    <div className="tab-pane active">
+                                        <p>전체 회의록 리스트가 여기에 표시됩니다. (권한에 따라)</p>
+                                        {/* TODO: '전체 회의록' 리스트 컴포넌트 렌더링 */}
+                                        {/* 예: <AllMeetingMinutesList /> */}
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </div>
+                {/* --- ▲▲▲ 회의록 리스트 탭 섹션 종료 ▲▲▲ --- */}
+
+                {/*<div className="meeting-minutes-section">*/}
+                {/*    <h3 className="section-header">■ 회의록 리스트</h3>*/}
+                {/*</div>*/}
+
+                <div id="basic-info-section" className="meeting-minutes-section">
                     <h3 className="section-header">■ 기본 정보</h3>
                     {/* --- ▼▼▼ [최종 수정] 기본 정보 레이아웃 및 기능 ▼▼▼ --- */}
+                    {/* (데이터는 handleMeetingSelect에 의해 업데이트됨) */}
                     <div style={{ padding: '15px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                             {/* ✅ 회의록 제목 필드 추가 */}
@@ -708,7 +907,7 @@ const MeetingMinutes: React.FC = () => {
                             </div>
                             <div className="writer-field"> {/* ✅ style 속성 제거 */}
                                 <label className="writer-field-label">그 외 참석자</label> {/* ✅ style 속성 제거 */}
-                                <input type="text" className="writer-field-input" style={{width: '100%'}} value={attendees} onChange={(e) => setAttendees(e.target.value)} placeholder="쉼표(,)로 구분" />
+                                <input type="text" className="writer-field-input" style={{width: '100%'}} value={attendees} onChange={(e) => setAttendees(e.target.value)} placeholder="참석자는 기록용도 일 뿐, 회의록 공유는 이뤄지지 않습니다. 쉼표(,)로 구분" />
                             </div>
                             <div className="writer-field" style={{ alignItems: 'center' }}>
                                 <label className="writer-field-label">전달 방법</label>
@@ -919,7 +1118,7 @@ const MeetingMinutes: React.FC = () => {
                 </div>
 
                 <div className="meeting-minutes-section">
-                    <h3 className="section-header">■ 회의록 리스트</h3>
+                    <h3 className="section-header">■ 파일 리스트</h3>
                 </div>
 
                 <input
