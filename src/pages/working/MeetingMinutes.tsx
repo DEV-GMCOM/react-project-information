@@ -276,12 +276,43 @@ const MeetingMinutes: React.FC = () => {
 
     // --- ▼▼▼ 회의록 데이터 로딩 함수 ▼▼▼ ---
     // ✅ useCallback의 함수 정의에 (tab: 'my' | 'shared') 파라미터 추가
+    // const loadMeetings = useCallback(async (tab: 'my' | 'shared', filter: typeof filterType) => {
+    //     setListLoading(true);
+    //     setListError(null);
+    //     try {
+    //         // ✅ API 호출 시 filter 파라미터 추가 (백엔드와 협의 필요)
+    //         const params = { limit: 50, filter: filter };
+    //         if (tab === 'my') {
+    //             const data = await meetingMinuteService.getMyMeetings(params);
+    //             setMyMeetings(data);
+    //         } else if (tab === 'shared') {
+    //             const data = await meetingMinuteService.getSharedMeetings(params);
+    //             setSharedMeetings(data);
+    //         }
+    //     } catch (error) {
+    //         console.error(`Error loading ${tab} meetings with filter ${filter}:`, error);setListError('회의록 목록을 불러오는 중 오류가 발생했습니다.');
+    //         handleApiError(error); // 에러 처리 유틸리티 사용
+    //     } finally {
+    //         setListLoading(false);
+    //     }
+    //     // ✅ useCallback 의존성 배열은 비워둡니다.
+    //     // loadMeetings 함수 자체가 외부 변수에 의존하지 않으므로,
+    //     // 여기서 tab을 추가하면 activeTab이 바뀔 때마다 함수가 재생성되어 비효율적입니다.
+    // }, []);
     const loadMeetings = useCallback(async (tab: 'my' | 'shared', filter: typeof filterType) => {
         setListLoading(true);
         setListError(null);
         try {
-            // ✅ API 호출 시 filter 파라미터 추가 (백엔드와 협의 필요)
-            const params = { limit: 50, filter: filter };
+            // ✅ filter를 백엔드가 이해하는 has_project로 변환
+            const params: any = { limit: 50 };
+
+            if (filter === 'project') {
+                params.has_project = true;
+            } else if (filter === 'independent') {
+                params.has_project = false;
+            }
+            // filter === 'all'이면 has_project를 전달하지 않음 (undefined)
+
             if (tab === 'my') {
                 const data = await meetingMinuteService.getMyMeetings(params);
                 setMyMeetings(data);
@@ -290,14 +321,12 @@ const MeetingMinutes: React.FC = () => {
                 setSharedMeetings(data);
             }
         } catch (error) {
-            console.error(`Error loading ${tab} meetings with filter ${filter}:`, error);setListError('회의록 목록을 불러오는 중 오류가 발생했습니다.');
-            handleApiError(error); // 에러 처리 유틸리티 사용
+            console.error(`Error loading ${tab} meetings with filter ${filter}:`, error);
+            setListError('회의록 목록을 불러오는 중 오류가 발생했습니다.');
+            handleApiError(error);
         } finally {
             setListLoading(false);
         }
-        // ✅ useCallback 의존성 배열은 비워둡니다.
-        // loadMeetings 함수 자체가 외부 변수에 의존하지 않으므로,
-        // 여기서 tab을 추가하면 activeTab이 바뀔 때마다 함수가 재생성되어 비효율적입니다.
     }, []);
 
     // 탭이 변경될 때 해당 탭의 데이터를 로드
@@ -746,7 +775,7 @@ const MeetingMinutes: React.FC = () => {
 
                 {/* --- ▼▼▼ 회의록 리스트 탭 섹션 ▼▼▼ --- */}
                 <div className="meeting-minutes-section">
-                    <h3 className="section-header">■ 회의록 리스트</h3>
+                    <h3 className="section-header-meetingminutes">■ 회의록 리스트</h3>
 
                     {/* 탭 네비게이션 */}
                     <div className="tab-navigation">
@@ -813,14 +842,15 @@ const MeetingMinutes: React.FC = () => {
                 {/* --- ▲▲▲ 회의록 리스트 탭 섹션 종료 ▲▲▲ --- */}
 
                 {/*<div className="meeting-minutes-section">*/}
-                {/*    <h3 className="section-header">■ 회의록 리스트</h3>*/}
+                {/*    <h3 className="section-header-meetingminutes">■ 회의록 리스트</h3>*/}
                 {/*</div>*/}
 
                 <div id="basic-info-section" className="meeting-minutes-section">
-                    <h3 className="section-header">■ 기본 정보</h3>
+                    <h3 className="section-header-meetingminutes">■ 기본 정보</h3>
                     {/* --- ▼▼▼ [최종 수정] 기본 정보 레이아웃 및 기능 ▼▼▼ --- */}
                     {/* (데이터는 handleMeetingSelect에 의해 업데이트됨) */}
-                    <div style={{ padding: '15px' }}>
+                    {/*<div style={{ padding: '15px' }}>*/}
+                    <div style={{ padding: '2.5rem 1.75rem' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                             {/* ✅ 회의록 제목 필드 추가 */}
                             <div className="writer-field">
@@ -1010,8 +1040,9 @@ const MeetingMinutes: React.FC = () => {
 
                 {/*3. '회의록 기록 방법 선택' 섹션 추가*/}
                 <div className="meeting-minutes-section">
-                    <h3 className="section-header">■ 회의록 기록 방법 선택</h3>
-                    <div style={{padding: '20px', display: 'flex', gap: '20px', justifyContent: 'center'}}>
+                    <h3 className="section-header-meetingminutes">■ 회의록 기록 방법 선택</h3>
+                    {/*<div style={{padding: '20px', display: 'flex', gap: '20px', justifyContent: 'center'}}>*/}
+                    <div style={{ padding: '2.5rem 2.75rem', display: 'flex', gap: '20px', justifyContent: 'center' }}>
                         <label className="recording-method-label" style={{
                             border: '2px solid #ddd',
                             borderRadius: '12px',
@@ -1118,7 +1149,7 @@ const MeetingMinutes: React.FC = () => {
                 </div>
 
                 <div className="meeting-minutes-section">
-                    <h3 className="section-header">■ 파일 리스트</h3>
+                    <h3 className="section-header-meetingminutes">■ 파일 리스트</h3>
                 </div>
 
                 <input
@@ -1219,7 +1250,7 @@ const MeetingMinutes: React.FC = () => {
                 {/*5. 직접 입력 inputbox 추가 (파일 업로드 섹션 바로 다음, line 700 근처)*/}
                 {/*{recordingMethod === 'document' && (*/}
                 {/*    <div className="meeting-minutes-section">*/}
-                {/*        <h3 className="section-header">■ 회의록 직접 입력</h3>*/}
+                {/*        <h3 className="section-header-meetingminutes">■ 회의록 직접 입력</h3>*/}
                 {/*        <textarea*/}
                 {/*            className="meeting-minutes-textarea"*/}
                 {/*            rows={15}*/}
@@ -1232,7 +1263,7 @@ const MeetingMinutes: React.FC = () => {
                 {/*)}*/}
                 {recordingMethod === 'document' && (
                     <div className="meeting-minutes-section">
-                        <h3 className="section-header">
+                        <h3 className="section-header-meetingminutes">
                             ■ 회의록 직접 입력
                             {manualInput && selectedFiles.length > 0 && (
                                 <span style={{fontSize: '14px', color: '#1890ff', marginLeft: '10px'}}>
@@ -1325,7 +1356,8 @@ const MeetingMinutes: React.FC = () => {
 
                 <div className="generation-panel" style={{flexDirection: 'column', gap: '15px', backgroundColor: 'white'}}>
                     {/*<div style={{flexDirection: 'column', gap: '15px'}}>*/}
-                    <button className="btn-secondary" onClick={handleGenerate} style={{fontSize: '2.5rem'}}>LLM 회의록 생성</button>
+                    {/*<button className="btn-secondary" onClick={handleGenerate} style={{fontSize: '2.5rem'}}>LLM 회의록 생성</button>*/}
+                    <button className="btn-secondary" onClick={handleGenerate}>LLM 회의록 생성</button>
                 </div>
 
                 {/* ✅ 프로그레스 바 추가 */}
@@ -1435,7 +1467,7 @@ const MeetingMinutes: React.FC = () => {
 
                 {recordingMethod === 'audio' && (
                     <div className="meeting-minutes-section">
-                        <h3 className="section-header">■ 음성에서 추출한 텍스트 (Source)</h3>
+                        <h3 className="section-header-meetingminutes">■ 음성에서 추출한 텍스트 (Source)</h3>
                         <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
                             {Object.entries(sttResults).map(([key, value]) => (
                                 <div key={key}>
@@ -1452,7 +1484,7 @@ const MeetingMinutes: React.FC = () => {
 
                 {/* --- ▼▼▼ [수정] LLM 생성 결과 ▼▼▼ --- */}
                 <div className="meeting-minutes-section">
-                    <h3 className="section-header">■ 생성된 Draft 기획서, 컨셉문서, 주요 안건 정리</h3>
+                    <h3 className="section-header-meetingminutes">■ 생성된 Draft 기획서, 컨셉문서, 주요 안건 정리</h3>
                     <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
                         {llmResults.map(result => (
                             llmDocTypes[result.id as keyof typeof llmDocTypes] && (

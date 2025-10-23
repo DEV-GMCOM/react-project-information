@@ -90,8 +90,16 @@
     width: 150px;
 }
 
+/*.meeting-minutes-section {*/
+/*    margin-bottom: 30px;*/
+/*}*/
 .meeting-minutes-section {
-    margin-bottom: 30px;
+    background-color: #ffffff; /* 섹션에 흰색 배경 적용 */
+    border: 1px solid #e9ecef; /* 매우 옅은 테두리 */
+    border-radius: 12px; /* 부드러운 모서리 (핵심) */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); /* 은은하고 부드러운 그림자 */
+    margin-bottom: 2.5rem; /* 섹션 간의 충분한 여백 */
+    overflow: hidden; /* 중요: 모서리 반경이 자식 요소(헤더)에도 적용되도록 */
 }
 
 .section-header {
@@ -101,6 +109,20 @@
     margin: 0;
     font-size: 14px;
     font-weight: bold;
+}
+.section-header-meetingminutes {
+    /* 기존 h3 스타일 초기화 */
+    margin: 0;
+
+    /* 제목 표시줄 스타일 */
+    padding: 1.25rem 1.75rem; /* 넉넉한 안쪽 여백 (약 20px 28px) */
+    background-color: #f8f9fa; /* 헤더 배경색 (아주 옅은 회색) */
+    border-bottom: 1px solid #e9ecef; /* 내용과 구분선 */
+
+    /* 폰트 스타일 조정 */
+    font-size: 1.15rem; /* 폰트 크기 살짝 조정 */
+    font-weight: 600; /* 폰트 굵기 */
+    color: #212529; /* 폰트 색상 (진한 회색) */
 }
 
 /* --- [추가] 탭 스타일 --- */
@@ -637,7 +659,8 @@
     margin-bottom: 30px;
 }
 .generation-panel .btn-secondary {
-    background-color: #6c757d !important;
+    /*background-color: #6c757d !important;*/
+    background-color: #007bff !important;
     color: white;
     border: none;
     border-radius: 5px;
@@ -647,7 +670,8 @@
     font-size: 2rem;
 }
 .generation-panel .btn-secondary:hover {
-    background-color: #545b62 !important;
+    /*background-color: #545b62 !important;*/
+    background-color: #0056b3 !important;
 }
 
 .generation-options {

@@ -1,13 +1,16 @@
-// ✅ [신규] src/api/services/meetingMinuteService.ts
+// src/api/services/meetingMinuteService.ts
 
 import apiClient from '../utils/apiClient';
 import { MeetingMinute } from '../types';
 
-// 임시 파라미터 타입 (필요시 확장)
+// 파라미터 타입
 interface GetMeetingsParams {
     limit?: number;
+    skip?: number;
     offset?: number;
     search?: string;
+    project_id?: number;
+    has_project?: boolean; // true: 프로젝트 연계만, false: 독립형, undefined: 전체
 }
 
 const meetingMinuteService = {
@@ -15,8 +18,7 @@ const meetingMinuteService = {
      * 내가 작성한 회의록 목록을 가져옵니다.
      */
     async getMyMeetings(params: GetMeetingsParams = {}): Promise<MeetingMinute[]> {
-        // TODO: 백엔드 엔드포인트 확인 필요
-        const response = await apiClient.get<MeetingMinute[]>('/api/v1/meeting-minutes/my', { params });
+        const response = await apiClient.get<MeetingMinute[]>('/meeting-minutes/my-created', { params });
         return response.data;
     },
 
@@ -24,17 +26,67 @@ const meetingMinuteService = {
      * 나에게 공유된 회의록 목록을 가져옵니다.
      */
     async getSharedMeetings(params: GetMeetingsParams = {}): Promise<MeetingMinute[]> {
-        // TODO: 백엔드 엔드포인트 확인 필요
-        const response = await apiClient.get<MeetingMinute[]>('/api/v1/meeting-minutes/shared', { params });
+        const response = await apiClient.get<MeetingMinute[]>('/meeting-minutes/shared-with-me', { params });
+        return response.data;
+    },
+
+    /**
+     * 전체 회의록 목록을 가져옵니다. (관리자용)
+     */
+    async getAllMeetings(params: GetMeetingsParams = {}): Promise<MeetingMinute[]> {
+        const response = await apiClient.get<MeetingMinute[]>('/meeting-minutes/all', { params });
+        return response.data;
+    },
+
+    /**
+     * 내가 참석한 회의록 목록
+     */
+    async getAttendedMeetings(params: GetMeetingsParams = {}): Promise<MeetingMinute[]> {
+        // ✅ 추가
+        const response = await apiClient.get<MeetingMinute[]>('/meeting-minutes/attended', { params });
         return response.data;
     },
 
     /**
      * 특정 회의록의 상세 정보를 가져옵니다. (파일, STT, LLM 결과 포함)
-     * (지금 당장 필요하진 않지만, 향후 상세 로직을 위해 추가)
      */
     async getMeetingDetails(meetingId: number): Promise<MeetingMinute> {
-        const response = await apiClient.get<MeetingMinute>(`/api/v1/meeting-minutes/${meetingId}`);
+        const response = await apiClient.get<MeetingMinute>(`/meeting-minutes/${meetingId}`);
+        return response.data;
+    },
+
+    /**
+     * 회의록 생성
+     */
+    async createMeeting(data: any): Promise<MeetingMinute> {
+        // ✅ 추가
+        const response = await apiClient.post<MeetingMinute>('/meeting-minutes/', data);
+        return response.data;
+    },
+
+    /**
+     * 회의록 수정
+     */
+    async updateMeeting(meetingId: number, data: any): Promise<MeetingMinute> {
+        // ✅ 추가
+        const response = await apiClient.put<MeetingMinute>(`/meeting-minutes/${meetingId}`, data);
+        return response.data;
+    },
+
+    /**
+     * 회의록 삭제
+     */
+    async deleteMeeting(meetingId: number): Promise<void> {
+        // ✅ 추가
+        await apiClient.delete(`/meeting-minutes/${meetingId}`);
+    },
+
+    /**
+     * 회의록 통계
+     */
+    async getStats(): Promise<any> {
+        // ✅ 추가
+        const response = await apiClient.get('/meeting-minutes/stats/summary');
         return response.data;
     }
 };
