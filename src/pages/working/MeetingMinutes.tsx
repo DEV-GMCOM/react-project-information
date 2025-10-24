@@ -234,11 +234,14 @@ const MeetingMinutes: React.FC = () => {
     const allowedExtensions = recordingMethod === 'document' ? documentExtensions : audioExtensions;
 
     // --- ▼▼▼ 기능 추가에 따른 상태 관리 ▼▼▼ ---
-    const [sttEngine, setSttEngine] = useState<string>('clova');
+    const [sttEngine, setSttEngine] = useState<string>('whisper');
     const [sttResults, setSttResults] = useState({
+        whisper: "Whisper AI를 통해 변환된 텍스트 예시입니다...",
         clova: "Clova Speech를 통해 변환된 텍스트 예시입니다. 이 텍스트는 30라인 이상의 길이를 가질 수 있으며, 스크롤을 통해 전체 내용을 확인할 수 있습니다.",
         google: "Google STT를 통해 변환된 텍스트 예시입니다...",
-        whisper: "Whisper AI를 통해 변환된 텍스트 예시입니다..."
+        aws: "AWS STT를 통해 변환된 텍스트 예시입니다...",
+        azure: "Azure STT를 통해 변환된 텍스트 예시입니다...",
+        vosk: "Vosk STT를 통해 변환된 텍스트 예시입니다...",
     });
     const [selectedSttSource, setSelectedSttSource] = useState<string>('');
 
@@ -1316,6 +1319,10 @@ const MeetingMinutes: React.FC = () => {
                         }}>
                             <h4>1. STT 엔진 선택</h4>
                             <label className="meeting-minutes-label">
+                                <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="whisper" checked={sttEngine === 'whisper'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                Whisper
+                            </label>
+                            <label className="meeting-minutes-label">
                                 <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="clova" checked={sttEngine === 'clova'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
                                 Clova Speech
                             </label>
@@ -1324,8 +1331,16 @@ const MeetingMinutes: React.FC = () => {
                                 Google STT
                             </label>
                             <label className="meeting-minutes-label">
-                                <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="whisper" checked={sttEngine === 'whisper'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                Whisper
+                                <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="aws" checked={sttEngine === 'aws'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                AWS Transcribe
+                            </label>
+                            <label className="meeting-minutes-label">
+                                <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="azure" checked={sttEngine === 'azure'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                Azure Speech
+                            </label>
+                            <label className="meeting-minutes-label">
+                                <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="vosk" checked={sttEngine === 'vosk'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                Vosk STT
                             </label>
                         </div>
                         <div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>
