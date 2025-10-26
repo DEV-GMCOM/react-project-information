@@ -30,6 +30,7 @@ interface EmployeeSearchModalProps {
     initialSelected: Employee[];
 }
 
+
 // 직원 검색 모달을 위한 간단한 컴포넌트
 // 실제 구현에서는 별도의 파일로 분리하는 것이 좋습니다.
 const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSelect, initialSelected }) => {
@@ -236,8 +237,8 @@ const MeetingMinutes: React.FC = () => {
     // --- ▼▼▼ 기능 추가에 따른 상태 관리 ▼▼▼ ---
     const [sttEngine, setSttEngine] = useState<string>('whisper');
     const [sttResults, setSttResults] = useState({
-        whisper: "Whisper AI를 통해 변환된 텍스트 예시입니다...",
-        clova: "Clova Speech를 통해 변환된 텍스트 예시입니다. 이 텍스트는 30라인 이상의 길이를 가질 수 있으며, 스크롤을 통해 전체 내용을 확인할 수 있습니다.",
+        whisper: "Whisper AI를 통해 변환된 텍스트 예시입니다... 이 텍스트는 30라인 이상의 길이를 가질 수 있으며, 스크롤을 통해 전체 내용을 확인할 수 있습니다.",
+        clova: "Clova Speech를 통해 변환된 텍스트 예시입니다...",
         google: "Google STT를 통해 변환된 텍스트 예시입니다...",
         aws: "AWS STT를 통해 변환된 텍스트 예시입니다...",
         azure: "Azure STT를 통해 변환된 텍스트 예시입니다...",
@@ -245,6 +246,7 @@ const MeetingMinutes: React.FC = () => {
     });
     const [selectedSttSource, setSelectedSttSource] = useState<string>('');
 
+    const [llmEngine, setLlmEngine] = useState<string>('claude');
     const [llmDocTypes, setLlmDocTypes] = useState({
         summary: true,
         concept: false,
@@ -267,6 +269,7 @@ const MeetingMinutes: React.FC = () => {
     const [tags, setTags] = useState<string>('');
     // 탭 상태 관리
     const [activeTab, setActiveTab] = useState<'my' | 'shared' | 'all'>('my');
+    const [llmOutput, setLlmOutput] = useState(true);
     // --- ▲▲▲ 상태 관리 종료 ▲▲▲ ---
 
     const [myMeetings, setMyMeetings] = useState<MeetingMinute[]>([]);
@@ -276,6 +279,12 @@ const MeetingMinutes: React.FC = () => {
 
     // ✅ [신규] 필터 상태 추가
     const [filterType, setFilterType] = useState<'all' | 'project' | 'independent'>('all');
+
+    // State 추가 (파일 상단 state 섹션에)
+    type SaveMode = 'create' | 'update';
+    const [saveMode, setSaveMode] = useState<SaveMode>('create');
+    const [currentMeetingId, setCurrentMeetingId] = useState<number | null>(null);
+
 
     // --- ▼▼▼ 회의록 데이터 로딩 함수 ▼▼▼ ---
     // ✅ useCallback의 함수 정의에 (tab: 'my' | 'shared') 파라미터 추가
@@ -695,8 +704,19 @@ const MeetingMinutes: React.FC = () => {
 
     const handleSave = async () => {  // ✅ async 추가
         // 유효성 검증
-        if (!selectedProjectId) {
-            alert("프로젝트를 선택해주세요.");
+        // 수정된 코드 (올바른 검증)
+        if (!meetingTitle || !meetingTitle.trim()) {
+            alert("회의록 제목을 입력해주세요.");
+            return;
+        }
+
+        if (!meetingDateTime) {
+            alert("회의일시를 입력해주세요.");
+            return;
+        }
+
+        if (!meetingPlace || !meetingPlace.trim()) {
+            alert("회의장소를 입력해주세요.");
             return;
         }
 
@@ -717,19 +737,43 @@ const MeetingMinutes: React.FC = () => {
         console.log("서버에 저장할 최종 데이터:", dataToSave);
 
         try {
-            setIsFileUploading(true);  // ✅ loading 대신 기존 state 사용
+            setIsFileUploading(true);
 
-            // 1️⃣ 파일 업로드
+            // 1️⃣ 회의록 데이터 저장 (Create or Update)
+            let meetingId: number;
+
+            const meetingData = {
+                meeting_title: meetingTitle,
+                meeting_datetime: new Date(meetingDateTime).toISOString(),
+                meeting_place: meetingPlace,
+                project_id: selectedProjectId,
+                // attendee_ids, share_ids, tag_names는 Query 파라미터로 전달
+            };
+
+            if (saveMode === 'create') {
+                // ✅ 신규 생성
+                const created = await meetingMinuteService.createMeeting(meetingData);
+                meetingId = created.meeting_id;
+                setCurrentMeetingId(meetingId);
+                setSaveMode('update');
+            } else {
+                // ✅ 업데이트
+                if (!currentMeetingId) {
+                    throw new Error("meeting_id가 없습니다");
+                }
+                await meetingMinuteService.updateMeeting(currentMeetingId, meetingData);
+                meetingId = currentMeetingId;
+            }
+
+            // 2️⃣ 파일 업로드 (meeting_id가 확정된 이후)
             if (selectedFiles.length > 0) {
                 try {
                     const uploadPromises = selectedFiles.map((file: File) =>
-                        fileUploadService.uploadFileAuto(
-                            selectedProjectId,  // ✅ projectId 대신 selectedProjectId
+                        fileUploadService.uploadFile(
+                            null,  // projectId는 null (회의록 파일이므로)
                             file,
-                            2, // 'meeting_minutes',
-                            (progress: number) => {  // ✅ 타입 명시
-                                console.log(`${file.name}: ${progress.toFixed(1)}%`);
-                            }
+                            2,  // meeting_minutes 타입
+                            meetingId  // ✅ meeting_id 전달
                         )
                     );
 
@@ -744,15 +788,18 @@ const MeetingMinutes: React.FC = () => {
                 }
             }
 
-            // 2️⃣ 회의록 데이터 저장
-            // TODO: 실제 API 호출로 교체 필요
-            alert("데이터가 서버에 저장됩니다. (콘솔 확인)");
+            alert("회의록이 성공적으로 저장되었습니다.");
 
         } catch (error: any) {
-            console.error('저장 중 오류:', error);
-            alert(`저장 실패: ${error.message}`);
+            console.error('저장 실패:', error);
+
+            if (error.response?.status === 409) {
+                alert("회의록 정보가 유효하지 않습니다. 새로고침 후 다시 시도해주세요.");
+            } else {
+                alert(`저장 실패: ${error.message}`);
+            }
         } finally {
-            setIsFileUploading(false);  // ✅ loading 대신 기존 state 사용
+            setIsFileUploading(false);
         }
     };
 
@@ -1281,13 +1328,22 @@ const MeetingMinutes: React.FC = () => {
                             onChange={(e) => setManualInput(e.target.value)}
                             placeholder="회의록 내용을 직접 입력하거나, txt/md 파일을 드롭존에서 선택하면 자동으로 내용이 로드됩니다..."
                             style={{
-                                width: '100%',
+                                margin: '0.5rem',
+                                // width: '100%',
+                                width: 'calc(100% - 1rem)',
                                 padding: '15px',
                                 fontFamily: 'monospace', // md 파일의 경우 가독성 향상
                                 whiteSpace: 'pre-wrap', // 줄바꿈 및 공백 유지
-                                wordWrap: 'break-word'
+                                overflowWrap: 'break-word'
                             }}
                         />
+                        <div className="writer-field" style={{ alignItems: 'center', margin: '0 0.5rem' }}>
+                            <label className="meeting-minutes-label share-method-label">
+                                <input type="checkbox" className="meeting-minutes-checkbox checkbox-large" name="llm-output" checked={llmOutput} onChange={(e) => setLlmOutput(e.target.checked)}/>
+                                <span>LLM 문서 생성</span>
+                            </label>
+                        </div>
+
                         {manualInput && (
                             <div style={{marginTop: '10px', fontSize: '12px', color: '#666'}}>
                                 💡 마크다운 형식이 유지됩니다. 자유롭게 편집하세요.
@@ -1296,84 +1352,76 @@ const MeetingMinutes: React.FC = () => {
                     </div>
                 )}
 
-                {/* ✅ 아래 방향 화살표 추가 */}
-                <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
-                    <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>
-                        ⬇
-                    </div>
-                </div>
-
-                {/* --- ▼▼▼ [수정] 생성 관련 UI (요청사항 1, 2, 3, 4) ▼▼▼ --- */}
-                <div className="generation-panel" style={{flexDirection: 'column', gap: '15px'}}>
-                    <div style={{display: 'flex', width: '100%', gap: '20px'}}>
-                        {/*<div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>*/}
-                        <div className="generation-options" style={{
-                            flex: 1,
-                            flexDirection: 'column',
-                            alignItems: 'flex-start',
-                            border: '1px solid #eee',
-                            padding: '15px',
-                            borderRadius: '8px',
-                            opacity: recordingMethod === 'audio' ? 1 : 0.3,
-                            pointerEvents: recordingMethod === 'audio' ? 'auto' : 'none'
-                        }}>
-                            <h4>1. STT 엔진 선택</h4>
-                            <label className="meeting-minutes-label">
-                                <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="whisper" checked={sttEngine === 'whisper'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                Whisper
-                            </label>
-                            <label className="meeting-minutes-label">
-                                <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="clova" checked={sttEngine === 'clova'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                Clova Speech
-                            </label>
-                            <label className="meeting-minutes-label">
-                                <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="google" checked={sttEngine === 'google'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                Google STT
-                            </label>
-                            <label className="meeting-minutes-label">
-                                <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="aws" checked={sttEngine === 'aws'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                AWS Transcribe
-                            </label>
-                            <label className="meeting-minutes-label">
-                                <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="azure" checked={sttEngine === 'azure'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                Azure Speech
-                            </label>
-                            <label className="meeting-minutes-label">
-                                <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="vosk" checked={sttEngine === 'vosk'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                Vosk STT
-                            </label>
+                {recordingMethod === 'audio' && (
+                    <div className="generation-panel" style={{flexDirection: 'column', gap: '15px'}}>
+                        <div style={{display: 'flex', width: '100%', gap: '20px'}}>
+                            {/*<div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>*/}
+                            <div className="generation-options" style={{
+                                flex: 1,
+                                flexDirection: 'column',
+                                alignItems: 'flex-start',
+                                border: '1px solid #eee',
+                                padding: '15px',
+                                borderRadius: '8px',
+                                // opacity: recordingMethod === 'audio' ? 1 : 0.3,
+                                // pointerEvents: recordingMethod === 'audio' ? 'auto' : 'none'
+                                opacity: 0.3,
+                                pointerEvents: 'none'
+                            }}>
+                                <h4>1. STT 엔진 선택</h4>
+                                <label className="meeting-minutes-label">
+                                    <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="whisper" checked={sttEngine === 'whisper'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                    Whisper
+                                </label>
+                                <label className="meeting-minutes-label">
+                                    <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="clova" checked={sttEngine === 'clova'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                    Clova Speech
+                                </label>
+                                <label className="meeting-minutes-label">
+                                    <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="google" checked={sttEngine === 'google'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                    Google STT
+                                </label>
+                                <label className="meeting-minutes-label">
+                                    <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="aws" checked={sttEngine === 'aws'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                    AWS Transcribe
+                                </label>
+                                <label className="meeting-minutes-label">
+                                    <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="azure" checked={sttEngine === 'azure'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                    Azure Speech
+                                </label>
+                                <label className="meeting-minutes-label">
+                                    <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="vosk" checked={sttEngine === 'vosk'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                    Vosk STT
+                                </label>
+                            </div>
+                            <div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>
+                                <h4>2. 생성할 문서 타입</h4>
+                                <label className="meeting-minutes-label">
+                                    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="summary" checked={llmDocTypes.summary} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                    내용(안건) 정리
+                                </label>
+                                <label className="meeting-minutes-label">
+                                    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="concept" checked={llmDocTypes.concept} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                    컨셉 문서
+                                </label>
+                                <label className="meeting-minutes-label">
+                                    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="draft" checked={llmDocTypes.draft} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                    Draft 기획서
+                                </label>
+                            </div>
                         </div>
-                        <div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>
-                            <h4>2. 생성할 문서 타입</h4>
-                            <label className="meeting-minutes-label">
-                                <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="summary" checked={llmDocTypes.summary} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                내용(안건) 정리
-                            </label>
-                            <label className="meeting-minutes-label">
-                                <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="concept" checked={llmDocTypes.concept} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                컨셉 문서
-                            </label>
-                            <label className="meeting-minutes-label">
-                                <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="draft" checked={llmDocTypes.draft} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                Draft 기획서
-                            </label>
-                        </div>
+                        {/*<div style={{flexDirection: 'column', gap: '15px'}}>*/}
+                        {/*<button className="btn-secondary" onClick={handleGenerate} style={{fontSize: '2.5rem'}}>LLM 회의록 생성</button>*/}
+                        <button className="btn-secondary" onClick={handleGenerate} style={{margin: '2rem'}}>STT( Speech To Text ) 변환</button>
                     </div>
-                </div>
-                {/* --- ▲▲▲ 생성 패널 종료 ▲▲▲ --- */}
+                )}
 
-                {/* ✅ 아래 방향 화살표 추가 */}
-                <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
-                    <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>
-                        ⬇
-                    </div>
-                </div>
 
-                <div className="generation-panel" style={{flexDirection: 'column', gap: '15px', backgroundColor: 'white'}}>
-                    {/*<div style={{flexDirection: 'column', gap: '15px'}}>*/}
-                    {/*<button className="btn-secondary" onClick={handleGenerate} style={{fontSize: '2.5rem'}}>LLM 회의록 생성</button>*/}
-                    <button className="btn-secondary" onClick={handleGenerate}>LLM 회의록 생성</button>
-                </div>
+                {/*<div className="generation-panel" style={{flexDirection: 'column', gap: '15px', backgroundColor: 'white'}}>*/}
+                {/*    /!*<div style={{flexDirection: 'column', gap: '15px'}}>*!/*/}
+                {/*    /!*<button className="btn-secondary" onClick={handleGenerate} style={{fontSize: '2.5rem'}}>LLM 회의록 생성</button>*!/*/}
+                {/*    <button className="btn-secondary" onClick={handleGenerate}>STT( Speech To Text ) 변환</button>*/}
+                {/*</div>*/}
 
                 {/* ✅ 프로그레스 바 추가 */}
                 {isGenerating && (
@@ -1473,15 +1521,21 @@ const MeetingMinutes: React.FC = () => {
                     </div>
                 )}
 
-                {/* ✅ 아래 방향 화살표 추가 */}
-                <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
-                    <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>
-                        ⬇
-                    </div>
-                </div>
+                {/*/!* ✅ 아래 방향 화살표 추가 *!/*/}
+                {/*<div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>*/}
+                {/*    <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>*/}
+                {/*        ⬇*/}
+                {/*    </div>*/}
+                {/*</div>*/}
 
                 {recordingMethod === 'audio' && (
                     <div className="meeting-minutes-section">
+                        {/* ✅ 아래 방향 화살표 추가 */}
+                        <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
+                            <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>
+                                ⬇
+                            </div>
+                        </div>
                         <h3 className="section-header-meetingminutes">■ 음성에서 추출한 텍스트 (Source)</h3>
                         <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
                             {Object.entries(sttResults).map(([key, value]) => (
@@ -1490,39 +1544,103 @@ const MeetingMinutes: React.FC = () => {
                                         <input type="radio" name="stt-source" value={key} onChange={(e) => setSelectedSttSource(e.target.value)} style={{marginRight: '8px'}} />
                                         {key.charAt(0).toUpperCase() + key.slice(1)} 결과 (이것을 소스로 사용)
                                     </label>
-                                    <textarea className="meeting-minutes-textarea" rows={30} defaultValue={value} style={{marginTop: '5px'}}/>
+                                    <textarea className="meeting-minutes-textarea" rows={10} defaultValue={value} style={{marginTop: '5px'}}/>
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
 
-                {/* --- ▼▼▼ [수정] LLM 생성 결과 ▼▼▼ --- */}
-                <div className="meeting-minutes-section">
-                    <h3 className="section-header-meetingminutes">■ 생성된 Draft 기획서, 컨셉문서, 주요 안건 정리</h3>
-                    <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
-                        {llmResults.map(result => (
-                            llmDocTypes[result.id as keyof typeof llmDocTypes] && (
-                                <div key={result.id}>
-                                    {/* ✅ className="llm-result-label" 추가 */}
-                                    <label className="meeting-minutes-label llm-result-label">
-                                        <input
-                                            // className="meeting-minutes-checkbox" /* ✅ checkbox-large 클래스 제거 */
-                                            className="meeting-minutes-checkbox checkbox-large" /* ✅ checkbox-large 클래스 제거 */
-                                            type="checkbox"
-                                            checked={result.save}
-                                            onChange={() => handleLlmResultSaveChange(result.id)}
-                                            /* ✅ style 속성 제거 */
-                                        />
-                                        <span>{result.title} (서버에 저장)</span>
+                {/*{ recordingMethod === 'document' && llmOutput && (*/}
+                { ( llmOutput || (recordingMethod === 'audio') ) && (
+                    <div>
+                        <div className="generation-panel" style={{flexDirection: 'column', gap: '15px'}}>
+                            <div style={{display: 'flex', width: '100%', gap: '20px'}}>
+                                {/*<div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>*/}
+                                <div className="generation-options" style={{
+                                    flex: 1,
+                                    flexDirection: 'column',
+                                    alignItems: 'flex-start',
+                                    border: '1px solid #eee',
+                                    padding: '15px',
+                                    borderRadius: '8px',
+                                    // opacity: recordingMethod === 'audio' ? 1 : 0.3,
+                                    // pointerEvents: recordingMethod === 'audio' ? 'auto' : 'none'
+                                }}>
+                                    <h4>1. LLM 선택</h4>
+                                    <label className="meeting-minutes-label">
+                                        <input className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="claude" checked={llmEngine === 'claude'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                        Claude
                                     </label>
-                                    <textarea className="meeting-minutes-textarea" rows={20} value={result.content} readOnly style={{marginTop: '5px'}} />
+                                    <label className="meeting-minutes-label">
+                                        <input className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="chatgpt" checked={llmEngine === 'chatgpt'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                        ChatGPT
+                                    </label>
+                                    <label className="meeting-minutes-label">
+                                        <input className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="gemini" checked={llmEngine === 'gemini'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                        Gemini
+                                    </label>
+                                    <label className="meeting-minutes-label" style={{opacity: 0.3}}>
+                                        <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="perplexity" checked={llmEngine === 'perplexity'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                        Perplexity
+                                    </label>
+                                    <label className="meeting-minutes-label" style={{opacity: 0.3}}>
+                                        <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="grok" checked={llmEngine === 'grok'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                        Grok
+                                    </label>
                                 </div>
-                            )
-                        ))}
+                                <div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>
+                                    <h4>2. 생성할 문서 타입</h4>
+                                    <label className="meeting-minutes-label">
+                                        <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="summary" checked={llmDocTypes.summary} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                        내용(안건) 정리
+                                    </label>
+                                    <label className="meeting-minutes-label">
+                                        <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="concept" checked={llmDocTypes.concept} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                        컨셉 문서
+                                    </label>
+                                    <label className="meeting-minutes-label">
+                                        <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="draft" checked={llmDocTypes.draft} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                        Draft 기획서
+                                    </label>
+                                </div>
+                            </div>
+                            <button className="btn-secondary" onClick={handleGenerate} style={{margin: '2rem'}}>LLM 회의록 생성</button>
+                        </div>
+
+                        <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
+                            <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>
+                                ⬇
+                            </div>
+                        </div>
+
+                        <div className="meeting-minutes-section">
+                            <h3 className="section-header-meetingminutes">■ 생성된 Draft 기획서, 컨셉문서, 주요 안건 정리</h3>
+                            <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
+                                {llmResults.map(result => (
+                                    llmDocTypes[result.id as keyof typeof llmDocTypes] && (
+                                        <div key={result.id}>
+
+                                            <label className="meeting-minutes-label llm-result-label">
+                                                <input
+                                                    // className="meeting-minutes-checkbox" /* ✅ checkbox-large 클래스 제거 */
+                                                    className="meeting-minutes-checkbox checkbox-large" /* ✅ checkbox-large 클래스 제거 */
+                                                    type="checkbox"
+                                                    checked={result.save}
+                                                    onChange={() => handleLlmResultSaveChange(result.id)}
+                                                    // /* ✅ style 속성 제거 */
+                                                />
+                                                <span>{result.title} (서버에 저장)</span>
+                                            </label>
+                                            <textarea className="meeting-minutes-textarea" rows={20} value={result.content} readOnly style={{marginTop: '5px'}} />
+                                        </div>
+                                    )
+                                ))}
+                            </div>
+                        </div>
+
                     </div>
-                </div>
-                {/* --- ▲▲▲ LLM 결과 종료 ▲▲▲ --- */}
+                )}
 
                 {/* --- ▼▼▼ [수정] 최종 저장 버튼 (요청사항 11) ▼▼▼ --- */}
                 <div className="meeting-minutes-actions" style={{justifyContent: 'center'}}>

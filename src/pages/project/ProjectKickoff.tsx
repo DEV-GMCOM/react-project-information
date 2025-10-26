@@ -236,86 +236,86 @@ const ProjectKickoffForm: React.FC = () => {
         }));
     };
 
-    // 파일 업로드 처리
-    const uploadFiles = async (files: FileList) => {
-        if (!selectedProjectId) {
-            alert('프로젝트를 먼저 선택해주세요.');
-            return;
-        }
-
-        setIsFileUploading(true);
-        const validFiles: File[] = [];
-        const errors: string[] = [];
-
-        Array.from(files).forEach(file => {
-            if (validateFileType(file.name)) {
-                if (file.size <= 100 * 1024 * 1024) {
-                    validFiles.push(file);
-                } else {
-                    errors.push(`파일 크기가 너무 큽니다: ${file.name} (최대 100MB)`);
-                }
-            } else {
-                errors.push(`지원하지 않는 파일 형식입니다: ${file.name}`);
-            }
-        });
-
-        if (errors.length > 0) {
-            alert(errors.join('\n'));
-        }
-
-        if (validFiles.length === 0) {
-            setIsFileUploading(false);
-            return;
-        }
-
-        try {
-
-            // const uploadPromises = validFiles.map(file =>
-            //     fileUploadService.uploadFile(selectedProjectId, file, 'rfp')
-            // );
-
-            // ✅ 변경: 각 파일마다 크기에 따라 자동으로 업로드 방식 선택
-            const uploadPromises = validFiles.map(file =>
-                fileUploadService.uploadFileAuto(
-                    selectedProjectId,
-                    file,
-                    // 'rfp',
-                    1,
-                    (progress) => {
-                        // 진행률 표시 (옵션)
-                        console.log(`${file.name}: ${progress.toFixed(1)}%`);
-                    }
-                )
-            );
-
-            const uploadedFiles = await Promise.all(uploadPromises);
-
-            setServerFiles(prev => [...prev, ...uploadedFiles.map(file => ({
-                id: file.id,
-                project_id: selectedProjectId,
-                file_name: file.file_name,
-                original_file_name: file.original_file_name,
-                file_path: '',
-                file_size: file.file_size,
-                file_type: file.file_type || '',
-                mime_type: '',
-                attachment_type: 'rfp',
-                uploaded_by: 1,
-                uploaded_at: file.uploaded_at,
-                is_active: true,
-                is_readonly: true,
-                access_level: 'project'
-            }))]);
-
-            alert(`${uploadedFiles.length}개 파일이 성공적으로 업로드되었습니다.`);
-
-        } catch (error: any) {
-            console.error('파일 업로드 실패:', error);
-            alert(`파일 업로드 실패: ${error.message || '알 수 없는 오류'}`);
-        } finally {
-            setIsFileUploading(false);
-        }
-    };
+    // // 파일 업로드 처리
+    // const uploadFiles = async (files: FileList) => {
+    //     if (!selectedProjectId) {
+    //         alert('프로젝트를 먼저 선택해주세요.');
+    //         return;
+    //     }
+    //
+    //     setIsFileUploading(true);
+    //     const validFiles: File[] = [];
+    //     const errors: string[] = [];
+    //
+    //     Array.from(files).forEach(file => {
+    //         if (validateFileType(file.name)) {
+    //             if (file.size <= 100 * 1024 * 1024) {
+    //                 validFiles.push(file);
+    //             } else {
+    //                 errors.push(`파일 크기가 너무 큽니다: ${file.name} (최대 100MB)`);
+    //             }
+    //         } else {
+    //             errors.push(`지원하지 않는 파일 형식입니다: ${file.name}`);
+    //         }
+    //     });
+    //
+    //     if (errors.length > 0) {
+    //         alert(errors.join('\n'));
+    //     }
+    //
+    //     if (validFiles.length === 0) {
+    //         setIsFileUploading(false);
+    //         return;
+    //     }
+    //
+    //     try {
+    //
+    //         // const uploadPromises = validFiles.map(file =>
+    //         //     fileUploadService.uploadFile(selectedProjectId, file, 'rfp')
+    //         // );
+    //
+    //         // ✅ 변경: 각 파일마다 크기에 따라 자동으로 업로드 방식 선택
+    //         const uploadPromises = validFiles.map(file =>
+    //             fileUploadService.uploadFileAuto(
+    //                 selectedProjectId,
+    //                 file,
+    //                 // 'rfp',
+    //                 1,
+    //                 (progress) => {
+    //                     // 진행률 표시 (옵션)
+    //                     console.log(`${file.name}: ${progress.toFixed(1)}%`);
+    //                 }
+    //             )
+    //         );
+    //
+    //         const uploadedFiles = await Promise.all(uploadPromises);
+    //
+    //         setServerFiles(prev => [...prev, ...uploadedFiles.map(file => ({
+    //             id: file.id,
+    //             project_id: selectedProjectId,
+    //             file_name: file.file_name,
+    //             original_file_name: file.original_file_name,
+    //             file_path: '',
+    //             file_size: file.file_size,
+    //             file_type: file.file_type || '',
+    //             mime_type: '',
+    //             attachment_type: 'rfp',
+    //             uploaded_by: 1,
+    //             uploaded_at: file.uploaded_at,
+    //             is_active: true,
+    //             is_readonly: true,
+    //             access_level: 'project'
+    //         }))]);
+    //
+    //         alert(`${uploadedFiles.length}개 파일이 성공적으로 업로드되었습니다.`);
+    //
+    //     } catch (error: any) {
+    //         console.error('파일 업로드 실패:', error);
+    //         alert(`파일 업로드 실패: ${error.message || '알 수 없는 오류'}`);
+    //     } finally {
+    //         setIsFileUploading(false);
+    //     }
+    // };
 
     // 파일 다운로드
     const handleFileDownload = async (file: FileAttachmentInfo) => {
@@ -408,25 +408,28 @@ const ProjectKickoffForm: React.FC = () => {
                         )
                     );
 
-                    const uploadedFiles = await Promise.all(uploadPromises);
+                    // const uploadedFiles = await Promise.all(uploadPromises);
+                    await Promise.all(uploadPromises);
 
-                    // 서버 파일 목록에 추가
-                    setServerFiles(prev => [...prev, ...uploadedFiles.map(file => ({
-                        id: file.id,
-                        project_id: selectedProjectId,
-                        file_name: file.file_name,
-                        original_file_name: file.original_file_name,
-                        file_path: '',
-                        file_size: file.file_size,
-                        file_type: file.file_type || '',
-                        mime_type: '',
-                        attachment_type: 'rfp',
-                        uploaded_by: 1,
-                        uploaded_at: file.uploaded_at,
-                        is_active: true,
-                        is_readonly: true,
-                        access_level: 'project'
-                    }))]);
+                    // // 서버 파일 목록에 추가
+                    // setServerFiles(prev => [...prev, ...uploadedFiles.map(file => ({
+                    //     id: file.id,
+                    //     project_id: selectedProjectId,
+                    //     file_name: file.file_name,
+                    //     original_file_name: file.original_file_name,
+                    //     file_path: '',
+                    //     file_size: file.file_size,
+                    //     file_type: file.file_type || '',
+                    //     mime_type: '',
+                    //     attachment_type: 'rfp',
+                    //     uploaded_by: 1,
+                    //     uploaded_at: file.uploaded_at,
+                    //     is_active: true,
+                    //     is_readonly: true,
+                    //     access_level: 'project'
+                    // }))]);
+                    // ✅ 업로드 성공 후 서버에서 파일 목록 다시 로드
+                    await loadProjectFiles(selectedProjectId);
 
                     // 로컬 파일 목록 비우기
                     setLocalFiles([]);

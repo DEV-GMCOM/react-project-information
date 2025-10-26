@@ -13,7 +13,8 @@ export interface UploadedFileInfo {
 
 export interface FileAttachmentInfo {
     id: number;
-    project_id: number;
+    project_id: number | null;
+    meeting_id: number | null;
     file_name: string;
     original_file_name: string;
     file_path: string;
@@ -255,25 +256,29 @@ export class FileUploadService {
 
     // 단일 파일 업로드
     async uploadFile(
-        projectId: number,
+        projectId: number | null,  // ✅ nullable로 변경
         file: File,
-        // attachmentType: string = 'rfp'
-        attachmentTypeId: number = 1
+        attachmentTypeId: number = 1,
+        meetingId?: number  // ✅ 추가
     ): Promise<UploadedFileInfo> {
         const formData = new FormData();
         formData.append('file', file);
-        // formData.append('attachment_type', attachmentType);
         formData.append('attachment_type_id', attachmentTypeId.toString());
 
-        const response = await apiClient.post(
-            `/projects/${projectId}/files/upload`,
-            formData,
-            {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            }
-        );
+        if (meetingId) {
+            formData.append('meeting_id', meetingId.toString());
+        }
+
+        // ✅ URL 결정 (회의록 vs 프로젝트)
+        const url = meetingId
+            ? `/meetings/${meetingId}/files/upload`
+            : `/projects/${projectId}/files/upload`;
+
+        const response = await apiClient.post(url, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
 
         return response.data;
     }
@@ -478,8 +483,203 @@ export class FileUploadService {
 
     // 파일 크기 검증 (100MB 제한)
     validateFileSize(size: number): boolean {
-        const maxSize = 100 * 1024 * 1024; // 100MB
+        const maxSize = 500 * 1024 * 1024; // 500MB
         return size <= maxSize;
+    }
+
+    // ===== 회의록 전용 업로드 메서드 추가 =====
+
+    /**
+     * 회의록 파일 업로드 (소형 파일)
+     */
+    async uploadFileForMeeting(
+        meetingId: number,
+        projectId: number | null,
+        file: File,
+        attachmentTypeId: number = 2
+    ): Promise<UploadedFileInfo> {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('meeting_id', meetingId.toString());
+        formData.append('attachment_type_id', attachmentTypeId.toString());
+
+        if (projectId !== null) {
+            formData.append('project_id', projectId.toString());
+        }
+
+        const response = await apiClient.post(
+            `/files/upload`,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+        );
+
+        return response.data;
+    }
+
+    /**
+     * 회의록 파일 업로드 (자동 방식 선택)
+     */
+    async uploadFileForMeetingAuto(
+        meetingId: number,
+        projectId: number | null,
+        file: File,
+        attachmentTypeId: number = 2,
+        onProgress?: (progress: number) => void
+    ): Promise<UploadedFileInfo> {
+        if (file.size > this.LARGE_FILE_THRESHOLD) {
+            console.log(`큰 파일(${this.formatFileSize(file.size)}) - 이어올리기 방식 사용`);
+            return this.uploadFileForMeetingWithResume(
+                meetingId,
+                projectId,
+                file,
+                attachmentTypeId,
+                onProgress
+            );
+        } else {
+            console.log(`작은 파일(${this.formatFileSize(file.size)}) - 일반 업로드 방식 사용`);
+            return this.uploadFileForMeeting(
+                meetingId,
+                projectId,
+                file,
+                attachmentTypeId
+            );
+        }
+    }
+
+    /**
+     * 회의록 파일 이어올리기 업로드 (대용량)
+     */
+    private async uploadFileForMeetingWithResume(
+        meetingId: number,
+        projectId: number | null,
+        file: File,
+        attachmentTypeId: number,
+        onProgress?: (progress: number) => void
+    ): Promise<UploadedFileInfo> {
+        const initResult = await this.initResumableUploadForMeeting(
+            meetingId,
+            projectId,
+            file,
+            attachmentTypeId
+        );
+        const { upload_session_id, total_chunks, chunk_size } = initResult;
+
+        try {
+            for (let chunkIndex = 0; chunkIndex < total_chunks; chunkIndex++) {
+                const start = chunkIndex * chunk_size;
+                const end = Math.min(start + chunk_size, file.size);
+                const chunkData = file.slice(start, end);
+
+                const result = await this.uploadChunk(upload_session_id, chunkIndex, chunkData);
+
+                if (onProgress) {
+                    onProgress((result.uploaded_chunks / result.total_chunks) * 100);
+                }
+
+                if (result.is_complete && result.file_id) {
+                    return await this.getFileInfoGeneric(result.file_id);
+                }
+            }
+
+            throw new Error('업로드가 완료되지 않았습니다');
+        } catch (error) {
+            try {
+                await this.cancelResumableUpload(upload_session_id);
+            } catch (cancelError) {
+                console.error('업로드 취소 실패:', cancelError);
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * 회의록 이어올리기 세션 초기화
+     */
+    private async initResumableUploadForMeeting(
+        meetingId: number,
+        projectId: number | null,
+        file: File,
+        attachmentTypeId: number
+    ): Promise<ResumableUploadInit> {
+        const formData = new FormData();
+        formData.append('file_name', file.name);
+        formData.append('file_size', file.size.toString());
+        formData.append('meeting_id', meetingId.toString());
+        formData.append('attachment_type_id', attachmentTypeId.toString());
+
+        if (projectId !== null) {
+            formData.append('project_id', projectId.toString());
+        }
+
+        const response = await apiClient.post(
+            `/files/resumable/init`,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+        );
+
+        return response.data;
+    }
+
+    /**
+     * 범용 파일 정보 조회
+     */
+    private async getFileInfoGeneric(fileId: number): Promise<UploadedFileInfo> {
+        const response = await apiClient.get(`/files/${fileId}`);
+        const fileInfo = response.data;
+
+        return {
+            id: fileInfo.id,
+            file_name: fileInfo.file_name,
+            original_file_name: fileInfo.original_file_name,
+            file_size: fileInfo.file_size,
+            file_type: fileInfo.file_type,
+            uploaded_at: fileInfo.uploaded_at,
+            download_url: `/api/files/${fileInfo.id}/download`
+        };
+    }
+
+    /**
+     * 회의록 파일 목록 조회
+     */
+    async getMeetingFiles(meetingId: number): Promise<FileAttachmentInfo[]> {
+        const response = await apiClient.get(`/meetings/${meetingId}/files`);
+        return response.data;
+    }
+
+    /**
+     * 범용 파일 다운로드
+     */
+    async downloadFileGeneric(fileId: number, fileName: string): Promise<void> {
+        const response = await apiClient.get(
+            `/files/${fileId}/download`,
+            {
+                responseType: 'blob',
+            }
+        );
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    }
+
+    /**
+     * 범용 파일 삭제
+     */
+    async deleteFileGeneric(fileId: number): Promise<void> {
+        await apiClient.delete(`/files/${fileId}`);
     }
 }
 
