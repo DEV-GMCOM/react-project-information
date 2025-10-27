@@ -13,6 +13,11 @@ import { meetingMinuteService } from '../../api/services/meetingMinuteService'; 
 // ✅ [추가] 에러 핸들러 (프로젝트에 이미 있다면 경로 수정)
 import { handleApiError } from '../../api/utils/errorUtils';
 
+// ✅ [추가] react-datepicker import
+import DatePicker from "react-datepicker";
+import { ko } from 'date-fns/locale'; // 👈 [추가]
+import "react-datepicker/dist/react-datepicker.css";
+
 // 제공된 CSS 파일들이 상위에서 import 되었다고 가정합니다.
 import '../../styles/FormPage.css';
 import '../../styles/MeetingMinutes.css';
@@ -358,7 +363,7 @@ const MeetingMinutes: React.FC = () => {
     };
 
     // --- ▼▼▼ 회의록 선택 핸들러 ▼▼▼ ---
-    const handleMeetingSelect = useCallback((meeting: MeetingMinute) => {
+    const handleMeetingSelect = useCallback(async (meeting: MeetingMinute) => {
         console.log('선택된 회의록:', meeting);
 
         // 기본 정보 섹션의 상태들을 업데이트
@@ -374,13 +379,8 @@ const MeetingMinutes: React.FC = () => {
         setProjectName(meeting.project_name || '');
         setSelectedProjectId(meeting.project_id || null);
 
-        // setSharedWith(meeting.shared_with || []); // Employee 객체 배열이라고 가정
-        // '회의록 공유'는 Employee 객체 배열 (API 응답이 그렇다고 가정)
-        setSharedWith(meeting.shared_with || []);
-
-        // '그 외 참석자'는 문자열이라고 가정 (attendees_display 사용)
-        setAttendees(meeting.attendees_display || ''); // attendees가 문자열 배열일 경우
-
+        setSharedWith(meeting.shared_with || []); // '회의록 공유'는 Employee 객체 배열 (API 응답이 그렇다고 가정)
+        setAttendees(meeting.attendees_display || ''); // attendees가 문자열 배열일 경우 // '그 외 참석자'는 문자열이라고 가정 (attendees_display 사용)
         setTags(meeting.tags?.join(', ') || '');
 
         setShareMethods({
@@ -395,6 +395,23 @@ const MeetingMinutes: React.FC = () => {
         // 3. (선택) 스크롤을 '기본 정보' 섹션으로 이동
         // window.scrollTo(0, document.getElementById('basic-info-section')?.offsetTop || 0);
 
+        // ✅ 1. 회의록에 연결된 파일 목록 불러오기
+        try {
+            const files = await fileUploadService.getMeetingFiles(meeting.meeting_id);
+            setServerFiles(files);
+            console.log(`회의록 ${meeting.meeting_id}의 파일 목록:`, files);
+        } catch (error) {
+            console.error('파일 목록 조회 실패:', error);
+            setServerFiles([]);
+        }
+
+        // ✅ 2. 회의록 ID와 모드 설정
+        setCurrentMeetingId(meeting.meeting_id);
+        setSaveMode('update');
+
+        // TODO: STT/LLM 결과 불러오기 (향후 구현)
+        // const details = await meetingMinuteService.getMeetingDetails(meeting.meeting_id);
+        // setLlmResults(...);
         alert(`[${meeting.meeting_title}] 회의록 정보를 '기본 정보' 섹션에 로드했습니다.`);
 
     }, []); // 의존성 배열 비움 (다른 상태 변경 시 재생성 방지)
@@ -720,35 +737,78 @@ const MeetingMinutes: React.FC = () => {
             return;
         }
 
-        if (!selectedSttSource) {
+        if (llmOutput && !selectedSttSource) {
             alert("LLM 생성을 위한 소스 텍스트를 선택해주세요.");
             return;
         }
 
-        const dataToSave = {
-            projectId: selectedProjectId,
-            sttSource: selectedSttSource,
-            llmResultsToSave: llmResults.filter(r => r.save && r.content),
-            sharedWith,
-            shareMethods,
-            tags: tags.split(',').map(t => t.trim()).filter(t => t),
-        };
-
-        console.log("서버에 저장할 최종 데이터:", dataToSave);
-
         try {
             setIsFileUploading(true);
 
-            // 1️⃣ 회의록 데이터 저장 (Create or Update)
-            let meetingId: number;
+            const dataToSave = {
+                projectId: selectedProjectId,
+                sttSource: selectedSttSource,
+                llmResultsToSave: llmResults.filter(r => r.save && r.content),
+                sharedWith,
+                shareMethods,
+                tags: tags.split(',').map(t => t.trim()).filter(t => t),
+            };
+
+            console.log("서버에 저장할 최종 데이터:", dataToSave);
+
+            // 1️⃣ [수정] 서버로 전송할 전체 데이터 구성
+            // [추가] shareMethods를 ['email', 'jandi'] 형태의 배열로 변환
+            const shareMethodArray = Object.entries(shareMethods)
+                .filter(([, checked]) => checked)
+                .map(([key]) => key);
+
+            // [추가] sharedWith를 [1, 2, 3] 형태의 ID 배열로 변환
+            const sharedWithIds = sharedWith.map(emp => emp.id);
+
+            // [추가] tags를 ['tag1', 'tag2'] 형태의 배열로 변환
+            const tagArray = tags.split(',').map(t => t.trim()).filter(t => t);
+
+            // [추가] manualInput (소스 텍스트)
+            // 'document' 모드일 때 manualInput을 사용, 'audio' 모드일 때 선택된 STT 결과를 사용
+            let sourceText: string | null = null;
+            if (recordingMethod === 'document') {
+                sourceText = manualInput;
+            } else if (recordingMethod === 'audio' && selectedSttSource) {
+                // sttResults에서 선택된 소스(예: 'whisper')의 실제 텍스트 내용을 가져옴
+                sourceText = sttResults[selectedSttSource as keyof typeof sttResults] || null;
+            }
 
             const meetingData = {
                 meeting_title: meetingTitle,
                 meeting_datetime: new Date(meetingDateTime).toISOString(),
                 meeting_place: meetingPlace,
                 project_id: selectedProjectId,
-                // attendee_ids, share_ids, tag_names는 Query 파라미터로 전달
+
+                // --- ▼▼▼ [추가] 누락된 데이터들 ▼▼▼ ---
+
+                // (가정) 백엔드 필드명: 'source_text' (manualInput 또는 STT 결과)
+                source_text: sourceText,
+
+                // (가정) 백엔드 필드명: 'share_methods'
+                share_methods: shareMethodArray,
+
+                // (가정) 백엔드 필드명: 'shared_with_ids' (공유 대상 직원 ID 목록)
+                shared_with_ids: sharedWithIds,
+
+                // (가정) 백엔드 필드명: 'tags'
+                tags: tagArray,
+
+                // (가정) 백엔드 필드명: 'attendees_display' (그 외 참석자 문자열)
+                attendees_display: attendees,
+
+                // (가정) TODO: LLM 결과물(llmResultsToSave)도 API 스펙에 따라 추가해야 할 수 있습니다.
+                // llm_results: llmResults.filter(r => r.save && r.content),
             };
+            // 🛑 디버깅
+            console.log("서버에 저장할 최종 데이터:", meetingData);
+
+            // 1️⃣ 회의록 데이터 저장 (Create or Update)
+            let meetingId: number;
 
             if (saveMode === 'create') {
                 // ✅ 신규 생성
@@ -789,6 +849,12 @@ const MeetingMinutes: React.FC = () => {
             }
 
             alert("회의록이 성공적으로 저장되었습니다.");
+
+            // 현재 활성화된 탭('my' 또는 'shared')의 목록을
+            // 현재 필터 기준으로 다시 불러옵니다.
+            if (activeTab === 'my' || activeTab === 'shared') {
+                loadMeetings(activeTab, filterType);
+            }
 
         } catch (error: any) {
             console.error('저장 실패:', error);
@@ -919,13 +985,42 @@ const MeetingMinutes: React.FC = () => {
                             <div style={{ display: 'flex', gap: '20px' }}>
                                 <div className="writer-field" style={{ flex: 1 }}>
                                     <label className="writer-field-label">회의 일시</label>
-                                    <input
-                                        type="datetime-local"
-                                        className="writer-field-input"
-                                        style={{width: '100%'}}
-                                        value={meetingDateTime}
-                                        onChange={(e) => setMeetingDateTime(e.target.value)}
+
+                                    {/*<input*/}
+                                    {/*    type="datetime-local"*/}
+                                    {/*    className="writer-field-input"*/}
+                                    {/*    style={{width: '100%'}}*/}
+                                    {/*    value={meetingDateTime}*/}
+                                    {/*    onChange={(e) => setMeetingDateTime(e.target.value)}*/}
+                                    {/*/>*/}
+                                    {/* --- ▼▼▼ [수정] react-datepicker로 교체 ▼▼▼ --- */}
+                                    <DatePicker
+                                        locale={ko}
+                                        selected={meetingDateTime ? new Date(meetingDateTime) : null}
+                                        onChange={(date: Date | null) => {
+                                            if (date) {
+                                                // date 객체를 'YYYY-MM-DDTHH:mm' 형식의 로컬 시간 문자열로 변환
+                                                // (기존 handleMeetingSelect에서 사용한 로직과 동일하게)
+                                                const localDateTime = new Date(date.getTime() - (date.getTimezoneOffset() * 60000))
+                                                    .toISOString()
+                                                    .slice(0, 16);
+                                                setMeetingDateTime(localDateTime);
+                                            } else {
+                                                setMeetingDateTime('');
+                                            }
+                                        }}
+                                        showTimeSelect  // 시간 선택 옵션 활성화
+                                        dateFormat="yyyy-MM-dd HH:mm" // 사용자에게 보여질 날짜/시간 형식
+                                        className="writer-field-input" // 기존 스타일 적용
+                                        // ✅ [추가] DatePicker 래퍼에 100% 너비를 적용하기 위한 클래스
+                                        wrapperClassName="date-picker-wrapper"
+
+                                        // ❌ [제거] 이 'style' prop이 TS 오류의 원인이었습니다.
+                                        // style={{width: '100%'}}
+                                        placeholderText="회의 일시를 선택하세요"
+                                        autoComplete="off" // 브라우저 자동완성 끄기
                                     />
+                                    {/* --- ▲▲▲ 수정 종료 ▲▲▲ --- */}
                                 </div>
                                 <div className="writer-field" style={{ flex: 1 }}>
                                     <label className="writer-field-label">회의 장소</label>

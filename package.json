@@ -11,8 +11,11 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@types/react-datepicker": "^6.2.0",
     "axios": "^1.6.2",
+    "date-fns": "^4.1.0",
     "react": "^18.2.0",
+    "react-datepicker": "^8.8.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.1",
     "recharts": "^2.8.0"

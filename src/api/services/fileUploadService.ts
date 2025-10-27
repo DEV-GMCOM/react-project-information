@@ -301,6 +301,7 @@ export class FileUploadService {
         return response.data;
     }
 
+
     // 파일 다운로드 URL 생성
     getDownloadUrl(projectId: number, fileId: number): string {
         return `/api/projects/${projectId}/files/${fileId}/download`;
