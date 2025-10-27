@@ -1295,6 +1295,89 @@ const MeetingMinutes: React.FC = () => {
 
                 <div className="meeting-minutes-section">
                     <h3 className="section-header-meetingminutes">■ 파일 리스트</h3>
+                    {serverFiles.length > 0 ? (
+                        <div style={{padding: '15px'}}>
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '10px'
+                            }}>
+                                {serverFiles.map(file => (
+                                    <div
+                                        key={`server-${file.id}`}
+                                        style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            padding: '12px 16px',
+                                            border: '1px solid #e0e0e0',
+                                            borderRadius: '8px',
+                                            backgroundColor: '#f9f9f9'
+                                        }}
+                                    >
+                                        <div style={{flex: 1}}>
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                marginBottom: '4px'
+                                            }}>
+                                                <span style={{fontSize: '16px'}}>📄</span>
+                                                <span style={{fontWeight: '500'}}>{file.original_file_name}</span>
+                                                <span style={{
+                                                    padding: '2px 8px',
+                                                    backgroundColor: '#e8f5e9',
+                                                    color: '#2e7d32',
+                                                    borderRadius: '4px',
+                                                    fontSize: '12px'
+                                                }}>
+                                    저장됨
+                                </span>
+                                            </div>
+                                            <div style={{
+                                                fontSize: '13px',
+                                                color: '#666',
+                                                display: 'flex',
+                                                gap: '12px'
+                                            }}>
+                                                <span>{formatFileSize(file.file_size)}</span>
+                                                <span>업로드: {new Date(file.uploaded_at).toLocaleDateString('ko-KR')}</span>
+                                                {file.uploader_name && <span>by {file.uploader_name}</span>}
+                                            </div>
+                                        </div>
+                                        <div style={{display: 'flex', gap: '8px'}}>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    window.open(file.download_url, '_blank');
+                                                }}
+                                                style={{
+                                                    padding: '6px 12px',
+                                                    backgroundColor: '#1890ff',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '14px'
+                                                }}
+                                            >
+                                                ⬇️ 다운로드
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <div style={{
+                            padding: '30px',
+                            textAlign: 'center',
+                            color: '#999',
+                            fontSize: '14px'
+                        }}>
+                            저장된 파일이 없습니다.
+                        </div>
+                    )}
                 </div>
 
                 <input
@@ -1317,15 +1400,10 @@ const MeetingMinutes: React.FC = () => {
                         onClick={handleFileSelect}
                     >
                         {/* ✅ serverFiles와 selectedFiles가 모두 비어있을 때만 메시지 표시 */}
-                        {serverFiles.length === 0 && selectedFiles.length === 0 ? (
+                        {/*{serverFiles.length === 0 && selectedFiles.length === 0 ? (*/}
+                        {selectedFiles.length === 0 ? (
                             <div className="drop-zone-message">
                                 <div className="drop-zone-icon">📁</div>
-                                {/*<div className="drop-zone-text">*/}
-                                {/*    <p>파일을 여기로 드래그하거나 클릭하여 업로드하세요</p>*/}
-                                {/*    <p className="drop-zone-hint">*/}
-                                {/*        지원 형식: {allowedExtensions.join(', ')} (최대 100MB)*/}
-                                {/*    </p>*/}
-                                {/*</div>*/}
                                 <div className="drop-zone-text">
                                     <p style={{ fontSize: '1.4rem', marginBottom: '8px' }}>
                                         📎 클릭하거나 파일을 드래그하여 업로드하세요
@@ -1337,13 +1415,6 @@ const MeetingMinutes: React.FC = () => {
                             </div>
                         ) : (
                             <div className="file-list">
-                                {/* 서버에 이미 업로드된 파일 목록 */}
-                                {serverFiles.map(file => (
-                                    <div key={`server-${file.id}`} className="file-item uploaded-file">
-                                        {/* ... 기존 서버 파일 렌더링 코드 ... */}
-                                    </div>
-                                ))}
-
                                 {/* ✅ 새로 선택된 로컬 파일 목록 */}
                                 {selectedFiles.map((file, index) => (
                                     <div key={`local-${index}`} className="file-item">
