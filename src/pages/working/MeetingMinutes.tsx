@@ -5,15 +5,28 @@ import React, { useState, useRef, useEffect,useCallback, ChangeEvent } from 'rea
 import { projectService } from '../../api/services/projectService';
 import { employeeService } from '../../api/services/employeeService';
 import { Project, Employee, MeetingMinute } from '../../api/types';
-import { fileUploadService } from '../../api/services/fileUploadService';  // ✅ 추가
+import { fileUploadService } from '../../api/services/fileUploadService';
 
-// ✅ 회의록 서비스 import
+// 회의록 서비스 import
 import { meetingMinuteService } from '../../api/services/meetingMinuteService'; // (가정: 새 서비스 파일 필요)
 
-// ✅ [추가] 에러 핸들러 (프로젝트에 이미 있다면 경로 수정)
+// [추가] 에러 핸들러 (프로젝트에 이미 있다면 경로 수정)
 import { handleApiError } from '../../api/utils/errorUtils';
+// 1. 새로 만든 서비스와 타입 import
+import {
+    generationService,
+    STTEngine,
+    LLMEngine,
+    DocType
+} from '../../api/services/generationService';
 
-// ✅ [추가] react-datepicker import
+
+
+
+
+
+
+// [추가] react-datepicker import
 import DatePicker from "react-datepicker";
 import { ko } from 'date-fns/locale'; // 👈 [추가]
 import "react-datepicker/dist/react-datepicker.css";
@@ -22,6 +35,11 @@ import "react-datepicker/dist/react-datepicker.css";
 import '../../styles/FormPage.css';
 import '../../styles/MeetingMinutes.css';
 import '../../styles/ProjectBasicInfoForm.css'; // 검색 모달 등에 필요한 스타일
+
+
+
+
+
 
 // --- ▼▼▼ 회의록 목록 컴포넌트 (별도 파일 분리 권장) ▼▼▼ ---
 interface MeetingListProps {
@@ -251,7 +269,8 @@ const MeetingMinutes: React.FC = () => {
     });
     const [selectedSttSource, setSelectedSttSource] = useState<string>('');
 
-    const [llmEngine, setLlmEngine] = useState<string>('claude');
+    // const [llmEngine, setLlmEngine] = useState<string>('claude');
+    const [llmEngine, setLlmEngine] = useState<string>('chatgpt');
     const [llmDocTypes, setLlmDocTypes] = useState({
         summary: true,
         concept: false,
@@ -394,6 +413,9 @@ const MeetingMinutes: React.FC = () => {
         //    (예: const details = await meetingMinuteService.getMeetingDetails(meeting.meeting_id);)
         // 3. (선택) 스크롤을 '기본 정보' 섹션으로 이동
         // window.scrollTo(0, document.getElementById('basic-info-section')?.offsetTop || 0);
+
+        // 백엔드에서 받은 basic_minutes 값을 manualInput 상태에 설정합니다.
+        setManualInput(meeting.basic_minutes || '');
 
         // ✅ 1. 회의록에 연결된 파일 목록 불러오기
         try {
@@ -650,55 +672,164 @@ const MeetingMinutes: React.FC = () => {
         setLlmDocTypes(prev => ({ ...prev, [name]: checked }));
     };
 
-    const handleGenerate = async () => {
-        console.log("LLM 회의록 생성 시작");
-        console.log("선택된 STT 엔진:", sttEngine);
-        console.log("생성할 문서 타입:", llmDocTypes);
+    // const handleGenerate = async () => {
+    //     console.log("LLM 회의록 생성 시작");
+    //     console.log("선택된 STT 엔진:", sttEngine);
+    //     console.log("생성할 문서 타입:", llmDocTypes);
+    //
+    //     setIsGenerating(true);
+    //
+    //     try {
+    //         // Phase 1: STT 변환 (음성 모드일 때만)
+    //         if (recordingMethod === 'audio') {
+    //             setGenerationPhase(1);
+    //             setSttProgress(0);
+    //
+    //             // TODO: 실제 STT API 호출
+    //             // 예시: 진행률 시뮬레이션
+    //             for (let i = 0; i <= 100; i += 10) {
+    //                 setSttProgress(i);
+    //                 await new Promise(resolve => setTimeout(resolve, 300));
+    //             }
+    //
+    //             // 실제 구현 예시:
+    //             // const sttResult = await sttService.convert(selectedFiles[0], sttEngine, (progress) => {
+    //             //     setSttProgress(progress);
+    //             // });
+    //             // setSttResults(prev => ({...prev, [sttEngine]: sttResult}));
+    //         }
+    //
+    //         // Phase 2: LLM 생성
+    //         setGenerationPhase(2);
+    //
+    //         // TODO: 실제 LLM API 호출
+    //         await new Promise(resolve => setTimeout(resolve, 3000)); // 시뮬레이션
+    //
+    //         // 실제 구현 예시:
+    //         // const llmResult = await llmService.generate({
+    //         //     source: recordingMethod === 'audio' ? sttResults[sttEngine] : manualInput,
+    //         //     docTypes: llmDocTypes
+    //         // });
+    //         // setLlmResults(llmResult);
+    //
+    //         alert("회의록 생성이 완료되었습니다.");
+    //
+    //     } catch (error) {
+    //         console.error("생성 중 오류:", error);
+    //         alert("회의록 생성 중 오류가 발생했습니다.");
+    //     } finally {
+    //         setIsGenerating(false);
+    //         setGenerationPhase(0);
+    //         setSttProgress(0);
+    //     }
+    // };
+    // ✅ 3. STT 변환 전용 함수 (신규)
+    const handleGenerateSTT = async () => {
+        // --- 파라미터 유효성 검증 ---
+        if (selectedFiles.length === 0) {
+            alert("STT 변환을 위한 음성 파일을 먼저 업로드해주세요.");
+            return;
+        }
 
         setIsGenerating(true);
+        setGenerationPhase(1); // STT 진행 중 UI 표시
+        setSttProgress(0); // 프로그레스 바 초기화
 
         try {
-            // Phase 1: STT 변환 (음성 모드일 때만)
-            if (recordingMethod === 'audio') {
-                setGenerationPhase(1);
-                setSttProgress(0);
+            const fileToConvert = selectedFiles[0];
+            const engineToUse = sttEngine as STTEngine;
 
-                // TODO: 실제 STT API 호출
-                // 예시: 진행률 시뮬레이션
-                for (let i = 0; i <= 100; i += 10) {
-                    setSttProgress(i);
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                }
+            // --- API 호출 ---
+            const result = await generationService.generateSTT(engineToUse, fileToConvert);
 
-                // 실제 구현 예시:
-                // const sttResult = await sttService.convert(selectedFiles[0], sttEngine, (progress) => {
-                //     setSttProgress(progress);
-                // });
-                // setSttResults(prev => ({...prev, [sttEngine]: sttResult}));
-            }
+            // --- 결과 반영 ---
+            // 백엔드에서 받은 텍스트로 sttResults 상태 업데이트
+            setSttResults(prev => ({
+                ...prev,
+                [result.engine]: result.text
+            }));
 
-            // Phase 2: LLM 생성
-            setGenerationPhase(2);
-
-            // TODO: 실제 LLM API 호출
-            await new Promise(resolve => setTimeout(resolve, 3000)); // 시뮬레이션
-
-            // 실제 구현 예시:
-            // const llmResult = await llmService.generate({
-            //     source: recordingMethod === 'audio' ? sttResults[sttEngine] : manualInput,
-            //     docTypes: llmDocTypes
-            // });
-            // setLlmResults(llmResult);
-
-            alert("회의록 생성이 완료되었습니다.");
+            // UI 업데이트
+            setSttProgress(100);
+            alert(`[${result.engine}] STT 변환이 완료되었습니다.`);
 
         } catch (error) {
-            console.error("생성 중 오류:", error);
-            alert("회의록 생성 중 오류가 발생했습니다.");
+            console.error("STT 변환 중 오류:", error);
+            handleApiError(error); // 공통 에러 핸들러 사용
         } finally {
             setIsGenerating(false);
             setGenerationPhase(0);
-            setSttProgress(0);
+        }
+    };
+
+    // ✅ 4. LLM 생성 전용 함수 (신규)
+    const handleGenerateLLM = async () => {
+
+        // --- 파라미터 유효성 검증 및 조립 ---
+
+        // 1. source_text 조립
+        let source_text: string | null = null;
+        if (recordingMethod === 'document') {
+            source_text = manualInput;
+        } else if (recordingMethod === 'audio') {
+            if (selectedSttSource) {
+                source_text = sttResults[selectedSttSource as keyof typeof sttResults];
+            }
+        }
+
+        if (!source_text || source_text.trim().length < 10) {
+            alert("LLM 생성을 위한 원본 텍스트가 부족합니다.\n(문서 직접 입력 또는 STT 변환/선택 필요)");
+            return;
+        }
+
+        // 2. engine 조립
+        const engine = llmEngine as LLMEngine;
+
+        // 3. doc_types 조립 (❌ 핵심 수정 ❌)
+        // { summary: true, concept: false } -> ["summary"]
+        const doc_types = Object.keys(llmDocTypes)
+            .filter(key => llmDocTypes[key as DocType]) as DocType[];
+
+        if (doc_types.length === 0) {
+            alert("생성할 문서 타입을 1개 이상 선택해주세요.");
+            return;
+        }
+
+        // --- API 호출 ---
+        setIsGenerating(true);
+        setGenerationPhase(2); // LLM 진행 중 UI 표시
+
+        try {
+            const payload = { source_text, engine, doc_types };
+
+            const response = await generationService.generateLLM(payload);
+
+            // --- 결과 반영 ---
+            // 백엔드에서 받은 results 배열을 프론트엔드 llmResults 상태에 맞게 매핑
+            setLlmResults(prev =>
+                prev.map(uiResult => {
+                    // 백엔드 결과에서 일치하는 doc_type 찾기
+                    const backendResult = response.results.find(
+                        res => res.doc_type === uiResult.id
+                    );
+
+                    if (backendResult) {
+                        // 일치하는 결과가 있으면 content 업데이트
+                        return { ...uiResult, content: backendResult.content };
+                    }
+                    // 일치하는 결과가 없으면 (e.g. 프론트에만 있고 요청 안 보냄) 기존 상태 유지
+                    return uiResult;
+                })
+            );
+
+            alert(`[${response.engine}] LLM 문서 생성이 완료되었습니다.`);
+
+        } catch (error) {
+            console.error("LLM 생성 중 오류:", error);
+            handleApiError(error);
+        } finally {
+            setIsGenerating(false);
+            setGenerationPhase(0);
         }
     };
 
@@ -719,7 +850,7 @@ const MeetingMinutes: React.FC = () => {
         setShareMethods(prev => ({ ...prev, [name]: checked }));
     };
 
-    const handleSave = async () => {  // ✅ async 추가
+    const handleSave = async () => {  // async 추가
         // 유효성 검증
         // 수정된 코드 (올바른 검증)
         if (!meetingTitle || !meetingTitle.trim()) {
@@ -770,13 +901,15 @@ const MeetingMinutes: React.FC = () => {
 
             // [추가] manualInput (소스 텍스트)
             // 'document' 모드일 때 manualInput을 사용, 'audio' 모드일 때 선택된 STT 결과를 사용
-            let sourceText: string | null = null;
-            if (recordingMethod === 'document') {
-                sourceText = manualInput;
-            } else if (recordingMethod === 'audio' && selectedSttSource) {
-                // sttResults에서 선택된 소스(예: 'whisper')의 실제 텍스트 내용을 가져옴
-                sourceText = sttResults[selectedSttSource as keyof typeof sttResults] || null;
-            }
+            // 🛑 [수정] sourceText 로직은 basic_minutes와 별개이므로 제거하고
+            // basic_minutes를 직접 할당합니다.
+            // let sourceText: string | null = null;
+            // if (recordingMethod === 'document') {
+            //     sourceText = manualInput;
+            // } else if (recordingMethod === 'audio' && selectedSttSource) {
+            //     // sttResults에서 선택된 소스(예: 'whisper')의 실제 텍스트 내용을 가져옴
+            //     sourceText = sttResults[selectedSttSource as keyof typeof sttResults] || null;
+            // }
 
             const meetingData = {
                 meeting_title: meetingTitle,
@@ -787,7 +920,9 @@ const MeetingMinutes: React.FC = () => {
                 // --- ▼▼▼ [추가] 누락된 데이터들 ▼▼▼ ---
 
                 // (가정) 백엔드 필드명: 'source_text' (manualInput 또는 STT 결과)
-                source_text: sourceText,
+                // source_text: sourceText,
+                // ✅ manualInput 값을 basic_minutes 필드로 전송
+                basic_minutes: manualInput,
 
                 // (가정) 백엔드 필드명: 'share_methods'
                 share_methods: shareMethodArray,
@@ -798,8 +933,16 @@ const MeetingMinutes: React.FC = () => {
                 // (가정) 백엔드 필드명: 'tags'
                 tags: tagArray,
 
-                // (가정) 백엔드 필드명: 'attendees_display' (그 외 참석자 문자열)
-                attendees_display: attendees,
+                // ✅ attendees (그 외 참석자)는 현재 문자열(attendees)로 관리되고 있습니다.
+                // 백엔드 API 스키마(MeetingMinutesCreate)는 attendee_ids: List[int]를 받습니다.
+                // 이 부분은 별도의 상태 관리가 필요하지만, 현재 요청은 manualInput에 관한 것이므로
+                // 우선 빈 배열로 두거나, 기존 로직을 유지합니다. (여기서는 빈 배열로 가정)
+                // 만약 '그 외 참석자' 문자열을 저장하는 다른 필드가 있다면 그것을 사용해야 합니다.
+                // -> 백엔드 라우터를 보니 attendee_ids를 받지 않고, 대신 스키마에 attendee_ids가 있습니다.
+                // -> 프론트엔드 코드의 meetingData에 attendee_ids를 추가해야 합니다.
+                // -> 지금 attendees 상태는 문자열이므로, ID 배열을 관리하는 상태가 필요합니다.
+                // -> 이 요청의 범위를 벗어나므로, 우선 빈 배열로 둡니다.
+                attendee_ids: [], // TODO: 실제 참석자 ID 배열 관리 필요
 
                 // (가정) TODO: LLM 결과물(llmResultsToSave)도 API 스펙에 따라 추가해야 할 수 있습니다.
                 // llm_results: llmResults.filter(r => r.save && r.content),
@@ -811,13 +954,13 @@ const MeetingMinutes: React.FC = () => {
             let meetingId: number;
 
             if (saveMode === 'create') {
-                // ✅ 신규 생성
+                // 신규 생성
                 const created = await meetingMinuteService.createMeeting(meetingData);
                 meetingId = created.meeting_id;
                 setCurrentMeetingId(meetingId);
                 setSaveMode('update');
             } else {
-                // ✅ 업데이트
+                // 업데이트
                 if (!currentMeetingId) {
                     throw new Error("meeting_id가 없습니다");
                 }
@@ -833,7 +976,7 @@ const MeetingMinutes: React.FC = () => {
                             null,  // projectId는 null (회의록 파일이므로)
                             file,
                             2,  // meeting_minutes 타입
-                            meetingId  // ✅ meeting_id 전달
+                            meetingId  // meeting_id 전달
                         )
                     );
 
@@ -1578,7 +1721,8 @@ const MeetingMinutes: React.FC = () => {
                         </div>
                         {/*<div style={{flexDirection: 'column', gap: '15px'}}>*/}
                         {/*<button className="btn-secondary" onClick={handleGenerate} style={{fontSize: '2.5rem'}}>LLM 회의록 생성</button>*/}
-                        <button className="btn-secondary" onClick={handleGenerate} style={{margin: '2rem'}}>STT( Speech To Text ) 변환</button>
+                        {/*<button className="btn-secondary" onClick={handleGenerate} style={{margin: '2rem'}}>STT( Speech To Text ) 변환</button>*/}
+                        <button className="btn-secondary" onClick={handleGenerateSTT} style={{margin: '2rem'}}>STT( Speech To Text ) 변환</button>
                     </div>
                 )}
 
@@ -1735,7 +1879,7 @@ const MeetingMinutes: React.FC = () => {
                                 }}>
                                     <h4>1. LLM 선택</h4>
                                     <label className="meeting-minutes-label">
-                                        <input className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="claude" checked={llmEngine === 'claude'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                        <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="claude" checked={llmEngine === 'claude'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
                                         Claude
                                     </label>
                                     <label className="meeting-minutes-label">
@@ -1771,7 +1915,8 @@ const MeetingMinutes: React.FC = () => {
                                     </label>
                                 </div>
                             </div>
-                            <button className="btn-secondary" onClick={handleGenerate} style={{margin: '2rem'}}>LLM 회의록 생성</button>
+                            {/*<button className="btn-secondary" onClick={handleGenerate} style={{margin: '2rem'}}>LLM 회의록 생성</button>*/}
+                            <button className="btn-secondary" onClick={handleGenerateLLM} style={{margin: '2rem'}}>LLM 회의록 생성</button>
                         </div>
 
                         <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>

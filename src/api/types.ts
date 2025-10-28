@@ -190,7 +190,7 @@ export interface PTChecklist {
     updated_at?: string;
 }
 
-// ✅ [추가] 회의록 데이터 타입
+// 회의록 데이터 타입
 export interface MeetingMinute {
     meeting_id: number;
     meeting_title: string;
@@ -207,7 +207,9 @@ export interface MeetingMinute {
     created_at: string;
     created_by: number;
 
+    basic_minutes?: string; // 회의록 원본 텍스트
+
     // (상세 정보 로드 시 추가될 수 있는 필드)
     // stt_originals?: any[];
-    has_llm_documents?: boolean; // ✅ [수정] LLM 문서 존재 여부 (백엔드에서 계산)
+    has_llm_documents?: boolean; // LLM 문서 존재 여부 (백엔드에서 계산)
 }
