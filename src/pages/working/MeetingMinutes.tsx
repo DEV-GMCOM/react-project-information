@@ -725,6 +725,11 @@ const MeetingMinutes: React.FC = () => {
     // };
     // ✅ 3. STT 변환 전용 함수 (신규)
     const handleGenerateSTT = async () => {
+
+        console.log("LLM 회의록 생성 시작");
+        console.log("선택된 STT 엔진:", sttEngine);
+        console.log("생성할 문서 타입:", llmDocTypes);
+
         // --- 파라미터 유효성 검증 ---
         if (selectedFiles.length === 0) {
             alert("STT 변환을 위한 음성 파일을 먼저 업로드해주세요.");
@@ -765,6 +770,13 @@ const MeetingMinutes: React.FC = () => {
     // ✅ 4. LLM 생성 전용 함수 (신규)
     const handleGenerateLLM = async () => {
 
+        console.log("LLM 회의록 생성 시작");
+        console.log("생성할 문서 타입:", llmDocTypes);
+        if (isGenerating) {
+            console.log("LLM 생성 중이라, 중복 요청 방지");
+            return;
+        } // 이중 클릭 방지
+
         // --- 파라미터 유효성 검증 및 조립 ---
 
         // 1. source_text 조립
@@ -777,8 +789,8 @@ const MeetingMinutes: React.FC = () => {
             }
         }
 
-        if (!source_text || source_text.trim().length < 10) {
-            alert("LLM 생성을 위한 원본 텍스트가 부족합니다.\n(문서 직접 입력 또는 STT 변환/선택 필요)");
+        if (!source_text || source_text.trim().length < 50) {
+            alert("LLM 생성을 위한 원본 텍스트 정보가 없거나 너무 짧습니다.\n(문서 직접 입력 또는 STT 변환/선택 필요)");
             return;
         }
 
@@ -1916,7 +1928,15 @@ const MeetingMinutes: React.FC = () => {
                                 </div>
                             </div>
                             {/*<button className="btn-secondary" onClick={handleGenerate} style={{margin: '2rem'}}>LLM 회의록 생성</button>*/}
-                            <button className="btn-secondary" onClick={handleGenerateLLM} style={{margin: '2rem'}}>LLM 회의록 생성</button>
+                            <button
+                                className="btn-secondary"
+                                // className="btn-disabled"
+                                onClick={handleGenerateLLM}
+                                style={{margin: '2rem'}}
+                                disabled={isGenerating}
+                            >
+                                LLM 회의록 생성
+                            </button>
                         </div>
 
                         <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
