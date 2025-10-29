@@ -728,7 +728,7 @@ const MeetingMinutes: React.FC = () => {
 
         console.log("LLM 회의록 생성 시작");
         console.log("선택된 STT 엔진:", sttEngine);
-        console.log("생성할 문서 타입:", llmDocTypes);
+        // console.log("생성할 문서 타입:", llmDocTypes);
 
         // --- 파라미터 유효성 검증 ---
         if (selectedFiles.length === 0) {
@@ -1695,6 +1695,10 @@ const MeetingMinutes: React.FC = () => {
                                     Whisper
                                 </label>
                                 <label className="meeting-minutes-label">
+                                    <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="vosk" checked={sttEngine === 'vosk'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                    Vosk STT
+                                </label>
+                                <label className="meeting-minutes-label">
                                     <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="clova" checked={sttEngine === 'clova'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
                                     Clova Speech
                                 </label>
@@ -1710,26 +1714,22 @@ const MeetingMinutes: React.FC = () => {
                                     <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="azure" checked={sttEngine === 'azure'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
                                     Azure Speech
                                 </label>
-                                <label className="meeting-minutes-label">
-                                    <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="vosk" checked={sttEngine === 'vosk'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                    Vosk STT
-                                </label>
                             </div>
-                            <div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>
-                                <h4>2. 생성할 문서 타입</h4>
-                                <label className="meeting-minutes-label">
-                                    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="summary" checked={llmDocTypes.summary} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                    내용(안건) 정리
-                                </label>
-                                <label className="meeting-minutes-label">
-                                    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="concept" checked={llmDocTypes.concept} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                    컨셉 문서
-                                </label>
-                                <label className="meeting-minutes-label">
-                                    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="draft" checked={llmDocTypes.draft} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                    Draft 기획서
-                                </label>
-                            </div>
+                            {/*<div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>*/}
+                            {/*    <h4>2. 생성할 문서 타입</h4>*/}
+                            {/*    <label className="meeting-minutes-label">*/}
+                            {/*        <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="summary" checked={llmDocTypes.summary} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
+                            {/*        내용(안건) 정리*/}
+                            {/*    </label>*/}
+                            {/*    <label className="meeting-minutes-label">*/}
+                            {/*        <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="concept" checked={llmDocTypes.concept} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
+                            {/*        컨셉 문서*/}
+                            {/*    </label>*/}
+                            {/*    <label className="meeting-minutes-label">*/}
+                            {/*        <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="draft" checked={llmDocTypes.draft} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
+                            {/*        Draft 기획서*/}
+                            {/*    </label>*/}
+                            {/*</div>*/}
                         </div>
                         {/*<div style={{flexDirection: 'column', gap: '15px'}}>*/}
                         {/*<button className="btn-secondary" onClick={handleGenerate} style={{fontSize: '2.5rem'}}>LLM 회의록 생성</button>*/}
@@ -1806,40 +1806,40 @@ const MeetingMinutes: React.FC = () => {
                             </div>
                         )}
 
-                        {generationPhase === 2 && (
-                            <div>
-                                <div style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '15px',
-                                    marginBottom: '10px'
-                                }}>
-                                    <div className="spinner" style={{
-                                        width: '30px',
-                                        height: '30px',
-                                        border: '4px solid #f3f3f3',
-                                        borderTop: '4px solid #1890ff',
-                                        borderRadius: '50%',
-                                        animation: 'spin 1s linear infinite'
-                                    }}></div>
-                                    <h4 style={{margin: 0, fontSize: '16px', color: '#333'}}>
-                                        🤖 Phase 2: LLM 문서 생성 중
-                                    </h4>
-                                </div>
-                                <div style={{
-                                    marginTop: '8px',
-                                    fontSize: '12px',
-                                    color: '#666',
-                                    marginLeft: '45px'
-                                }}>
-                                    AI가 회의록을 분석하여
-                                    {llmDocTypes.summary && ' 안건 정리'}
-                                    {llmDocTypes.concept && (llmDocTypes.summary ? ', 컨셉 문서' : ' 컨셉 문서')}
-                                    {llmDocTypes.draft && ((llmDocTypes.summary || llmDocTypes.concept) ? ', Draft 기획서' : ' Draft 기획서')}
-                                    를 생성하고 있습니다...
-                                </div>
-                            </div>
-                        )}
+                        {/*{generationPhase === 2 && (*/}
+                        {/*    <div>*/}
+                        {/*        <div style={{*/}
+                        {/*            display: 'flex',*/}
+                        {/*            alignItems: 'center',*/}
+                        {/*            gap: '15px',*/}
+                        {/*            marginBottom: '10px'*/}
+                        {/*        }}>*/}
+                        {/*            <div className="spinner" style={{*/}
+                        {/*                width: '30px',*/}
+                        {/*                height: '30px',*/}
+                        {/*                border: '4px solid #f3f3f3',*/}
+                        {/*                borderTop: '4px solid #1890ff',*/}
+                        {/*                borderRadius: '50%',*/}
+                        {/*                animation: 'spin 1s linear infinite'*/}
+                        {/*            }}></div>*/}
+                        {/*            <h4 style={{margin: 0, fontSize: '16px', color: '#333'}}>*/}
+                        {/*                🤖 Phase 2: LLM 문서 생성 중*/}
+                        {/*            </h4>*/}
+                        {/*        </div>*/}
+                        {/*        <div style={{*/}
+                        {/*            marginTop: '8px',*/}
+                        {/*            fontSize: '12px',*/}
+                        {/*            color: '#666',*/}
+                        {/*            marginLeft: '45px'*/}
+                        {/*        }}>*/}
+                        {/*            AI가 회의록을 분석하여*/}
+                        {/*            {llmDocTypes.summary && ' 안건 정리'}*/}
+                        {/*            {llmDocTypes.concept && (llmDocTypes.summary ? ', 컨셉 문서' : ' 컨셉 문서')}*/}
+                        {/*            {llmDocTypes.draft && ((llmDocTypes.summary || llmDocTypes.concept) ? ', Draft 기획서' : ' Draft 기획서')}*/}
+                        {/*            를 생성하고 있습니다...*/}
+                        {/*        </div>*/}
+                        {/*    </div>*/}
+                        {/*)}*/}
                     </div>
                 )}
 
@@ -1944,6 +1944,52 @@ const MeetingMinutes: React.FC = () => {
                                 ⬇
                             </div>
                         </div>
+
+                        {/* ✅ 프로그레스 바 추가 */}
+                        {isGenerating && (
+                            <div className="generation-progress" style={{
+                                padding: '20px',
+                                backgroundColor: '#f8f9fa',
+                                borderRadius: '8px',
+                                margin: '20px 0',
+                                border: '1px solid #e0e0e0'
+                            }}>
+                                {generationPhase === 2 && (
+                                    <div>
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '15px',
+                                            marginBottom: '10px'
+                                        }}>
+                                            <div className="spinner" style={{
+                                                width: '30px',
+                                                height: '30px',
+                                                border: '4px solid #f3f3f3',
+                                                borderTop: '4px solid #1890ff',
+                                                borderRadius: '50%',
+                                                animation: 'spin 1s linear infinite'
+                                            }}></div>
+                                            <h4 style={{margin: 0, fontSize: '16px', color: '#333'}}>
+                                                🤖 Phase 2: LLM 문서 생성 중
+                                            </h4>
+                                        </div>
+                                        <div style={{
+                                            marginTop: '8px',
+                                            fontSize: '12px',
+                                            color: '#666',
+                                            marginLeft: '45px'
+                                        }}>
+                                            AI가 회의록을 분석하여
+                                            {llmDocTypes.summary && ' 안건 정리'}
+                                            {llmDocTypes.concept && (llmDocTypes.summary ? ', 컨셉 문서' : ' 컨셉 문서')}
+                                            {llmDocTypes.draft && ((llmDocTypes.summary || llmDocTypes.concept) ? ', Draft 기획서' : ' Draft 기획서')}
+                                            를 생성하고 있습니다...
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         <div className="meeting-minutes-section">
                             <h3 className="section-header-meetingminutes">■ 생성된 Draft 기획서, 컨셉문서, 주요 안건 정리</h3>
