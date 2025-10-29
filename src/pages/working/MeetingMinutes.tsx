@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect,useCallback, ChangeEvent } from 'react';
 
+
 // [추가] API 서비스 및 타입 import
 import { projectService } from '../../api/services/projectService';
 import { employeeService } from '../../api/services/employeeService';
@@ -12,13 +13,15 @@ import { meetingMinuteService } from '../../api/services/meetingMinuteService'; 
 
 // [추가] 에러 핸들러 (프로젝트에 이미 있다면 경로 수정)
 import { handleApiError } from '../../api/utils/errorUtils';
-// 1. 새로 만든 서비스와 타입 import
+// ✅ 1. Import 추가 (파일 최상단 import 섹션에)
 import {
     generationService,
+    STTProgressMessage,
     STTEngine,
     LLMEngine,
     DocType
 } from '../../api/services/generationService';
+// import { generationService, STTProgressMessage } from '../../api/services/generationService';
 
 
 
@@ -475,10 +478,14 @@ const MeetingMinutes: React.FC = () => {
     const [meetingDateTime, setMeetingDateTime] = useState<string>('');
     const [meetingPlace, setMeetingPlace] = useState<string>('');
 
-    // 기존 state들 아래에 추가
     const [isGenerating, setIsGenerating] = useState<boolean>(false);
     const [generationPhase, setGenerationPhase] = useState<number>(0); // 0: 대기, 1: STT, 2: LLM
     const [sttProgress, setSttProgress] = useState<number>(0); // STT 진행률 (0-100)
+    // ✅ 추가
+    const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
+    const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
+    const [sttStatusMessage, setSttStatusMessage] = useState<string>('');
+
 
     // 드래그 앤 드롭 핸들러
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -723,13 +730,54 @@ const MeetingMinutes: React.FC = () => {
     //         setSttProgress(0);
     //     }
     // };
-    // ✅ 3. STT 변환 전용 함수 (신규)
-    const handleGenerateSTT = async () => {
 
+    // // ✅ 3. STT 변환 전용 함수 (신규)
+    // const handleGenerateSTT = async () => {
+    //
+    //     console.log("LLM 회의록 생성 시작");
+    //     console.log("선택된 STT 엔진:", sttEngine);
+    //     // console.log("생성할 문서 타입:", llmDocTypes);
+    //
+    //     // --- 파라미터 유효성 검증 ---
+    //     if (selectedFiles.length === 0) {
+    //         alert("STT 변환을 위한 음성 파일을 먼저 업로드해주세요.");
+    //         return;
+    //     }
+    //
+    //     setIsGenerating(true);
+    //     setGenerationPhase(1); // STT 진행 중 UI 표시
+    //     setSttProgress(0); // 프로그레스 바 초기화
+    //
+    //     try {
+    //         const fileToConvert = selectedFiles[0];
+    //         const engineToUse = sttEngine as STTEngine;
+    //
+    //         // --- API 호출 ---
+    //         const result = await generationService.generateSTT(engineToUse, fileToConvert);
+    //
+    //         // --- 결과 반영 ---
+    //         // 백엔드에서 받은 텍스트로 sttResults 상태 업데이트
+    //         setSttResults(prev => ({
+    //             ...prev,
+    //             [result.engine]: result.text
+    //         }));
+    //
+    //         // UI 업데이트
+    //         setSttProgress(100);
+    //         alert(`[${result.engine}] STT 변환이 완료되었습니다.`);
+    //
+    //     } catch (error) {
+    //         console.error("STT 변환 중 오류:", error);
+    //         handleApiError(error); // 공통 에러 핸들러 사용
+    //     } finally {
+    //         setIsGenerating(false);
+    //         setGenerationPhase(0);
+    //     }
+    // };
+    // ✅ 3. handleGenerateSTT 함수 전체 교체 (기존 함수 찾아서 교체)
+    const handleGenerateSTT = async () => {
         console.log("LLM 회의록 생성 시작");
         console.log("선택된 STT 엔진:", sttEngine);
-        // console.log("생성할 문서 타입:", llmDocTypes);
-
         // --- 파라미터 유효성 검증 ---
         if (selectedFiles.length === 0) {
             alert("STT 변환을 위한 음성 파일을 먼저 업로드해주세요.");
@@ -737,35 +785,118 @@ const MeetingMinutes: React.FC = () => {
         }
 
         setIsGenerating(true);
-        setGenerationPhase(1); // STT 진행 중 UI 표시
-        setSttProgress(0); // 프로그레스 바 초기화
+        setGenerationPhase(1);
+        setSttProgress(0);
+        setSttStatusMessage('작업 생성 중...');
 
         try {
             const fileToConvert = selectedFiles[0];
-            const engineToUse = sttEngine as STTEngine;
+            const engineToUse = sttEngine as any; // STTEngine 타입
 
-            // --- API 호출 ---
-            const result = await generationService.generateSTT(engineToUse, fileToConvert);
+            // ✅ 1. 비동기 작업 생성
+            const createResponse = await generationService.createSTTTask(
+                engineToUse,
+                fileToConvert,
+                {
+                    model_size: 'medium', // 설정 가능하도록 state로 관리 가능
+                    language: 'ko'
+                }
+            );
 
-            // --- 결과 반영 ---
-            // 백엔드에서 받은 텍스트로 sttResults 상태 업데이트
-            setSttResults(prev => ({
-                ...prev,
-                [result.engine]: result.text
-            }));
+            const taskId = createResponse.task_id;
+            setCurrentTaskId(taskId);
+            setSttStatusMessage('WebSocket 연결 중...');
 
-            // UI 업데이트
-            setSttProgress(100);
-            alert(`[${result.engine}] STT 변환이 완료되었습니다.`);
+            // ✅ 2. WebSocket 연결
+            const ws = generationService.connectSTTProgress(
+                taskId,
+                (data: STTProgressMessage) => {
+                    console.log('📊 진행률 수신:', data);
+
+                    // 진행률 업데이트
+                    setSttProgress(data.progress);
+                    setSttStatusMessage(data.message);
+
+                    // 상태별 처리
+                    if (data.status === 'completed' && data.result_text) {
+                        // ✅ STT 결과 저장
+                        setSttResults(prev => ({
+                            ...prev,
+                            [engineToUse]: data.result_text!
+                        }));
+
+                        alert(`[${engineToUse}] STT 변환이 완료되었습니다.`);
+
+                        // 상태 초기화
+                        setIsGenerating(false);
+                        setGenerationPhase(0);
+                        setCurrentTaskId(null);
+                    } else if (data.status === 'failed') {
+                        alert(`STT 변환 실패: ${data.error || '알 수 없는 오류'}`);
+                        setIsGenerating(false);
+                        setGenerationPhase(0);
+                        setCurrentTaskId(null);
+                    } else if (data.status === 'aborted') {
+                        alert('STT 변환이 중단되었습니다.');
+                        setIsGenerating(false);
+                        setGenerationPhase(0);
+                        setCurrentTaskId(null);
+                    }
+                },
+                (error) => {
+                    console.error('WebSocket 에러:', error);
+                    alert('WebSocket 연결 실패. 네트워크를 확인해주세요.');
+                    setIsGenerating(false);
+                    setGenerationPhase(0);
+                    setCurrentTaskId(null);
+                }
+            );
+
+            setWsConnection(ws);
 
         } catch (error) {
-            console.error("STT 변환 중 오류:", error);
-            handleApiError(error); // 공통 에러 핸들러 사용
-        } finally {
+            console.error("STT 작업 생성 중 오류:", error);
+            alert(`STT 작업 생성 실패: ${error}`);
             setIsGenerating(false);
             setGenerationPhase(0);
         }
     };
+
+    // ✅ 4. Abort 핸들러 추가 (신규 함수)
+    const handleAbortSTT = async () => {
+        if (!currentTaskId) {
+            return;
+        }
+
+        const confirmed = confirm('STT 변환을 중단하시겠습니까?');
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            // WebSocket으로 abort 명령 전송
+            if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
+                wsConnection.send(JSON.stringify({ command: 'abort' }));
+            }
+
+            // HTTP로도 abort 요청
+            await generationService.abortSTTTask(currentTaskId);
+
+            alert('STT 변환 중단 요청이 전송되었습니다.');
+        } catch (error) {
+            console.error('Abort 요청 실패:', error);
+        }
+    };
+
+    // ✅ 5. Cleanup 추가 (컴포넌트 언마운트 시 WebSocket 정리)
+    useEffect(() => {
+        return () => {
+            // 컴포넌트 언마운트 시 WebSocket 연결 종료
+            if (wsConnection) {
+                wsConnection.close();
+            }
+        };
+    }, [wsConnection]);
 
     // ✅ 4. LLM 생성 전용 함수 (신규)
     const handleGenerateLLM = async () => {
@@ -1755,54 +1886,31 @@ const MeetingMinutes: React.FC = () => {
                         border: '1px solid #e0e0e0'
                     }}>
                         {generationPhase === 1 && (
-                            <div>
-                                <div style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    marginBottom: '10px'
-                                }}>
-                                    <h4 style={{margin: 0, fontSize: '16px', color: '#333'}}>
-                                        🎤 Phase 1: STT 음성 변환 중
-                                    </h4>
-                                    <span style={{fontSize: '14px', fontWeight: 'bold', color: '#1890ff'}}>
-                                        {sttProgress}%
-                                    </span>
+                            //
+                            <div className="generation-progress">
+                                <div className="progress-header">
+                                    <h4>🎙️ STT 변환 진행 중...</h4>
+                                    {/* ✅ Abort 버튼 추가 */}
+                                    <button
+                                        type="button"
+                                        onClick={handleAbortSTT}
+                                        className="abort-button"
+                                        disabled={!currentTaskId}
+                                    >
+                                        ⏹️ 중단
+                                    </button>
                                 </div>
-                                <div style={{
-                                    width: '100%',
-                                    height: '30px',
-                                    backgroundColor: '#e0e0e0',
-                                    borderRadius: '15px',
-                                    overflow: 'hidden',
-                                    position: 'relative'
-                                }}>
-                                    <div style={{
-                                        width: `${sttProgress}%`,
-                                        height: '100%',
-                                        backgroundColor: '#1890ff',
-                                        transition: 'width 0.3s ease',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'flex-end',
-                                        paddingRight: '10px',
-                                        color: 'white',
-                                        fontSize: '12px',
-                                        fontWeight: 'bold'
-                                    }}>
-                                        {sttProgress > 5 && `${sttProgress}%`}
+                                <div className="progress-bar-container">
+                                    <div
+                                        className="progress-bar"
+                                        style={{ width: `${sttProgress}%` }}
+                                    >
+                                        {sttProgress.toFixed(0)}%
                                     </div>
                                 </div>
-                                <div style={{
-                                    marginTop: '8px',
-                                    fontSize: '12px',
-                                    color: '#666'
-                                }}>
-                                    {sttEngine === 'clova' && 'Clova Speech'}
-                                    {sttEngine === 'google' && 'Google STT'}
-                                    {sttEngine === 'whisper' && 'Whisper AI'}
-                                    로 음성을 텍스트로 변환하고 있습니다...
-                                </div>
+                                {/* ✅ 상태 메시지 표시 추가 */}
+                                <p className="progress-message">{sttStatusMessage}</p>
+                                <p className="progress-info">엔진: {sttEngine}</p>
                             </div>
                         )}
 
