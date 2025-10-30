@@ -304,7 +304,7 @@ const MeetingMinutes: React.FC = () => {
     const [listLoading, setListLoading] = useState(false);
     const [listError, setListError] = useState<string | null>(null);
 
-    // ✅ [신규] 필터 상태 추가
+    // 필터 상태 추가
     const [filterType, setFilterType] = useState<'all' | 'project' | 'independent'>('all');
 
     // State 추가 (파일 상단 state 섹션에)
@@ -312,41 +312,16 @@ const MeetingMinutes: React.FC = () => {
     const [saveMode, setSaveMode] = useState<SaveMode>('create');
     const [currentMeetingId, setCurrentMeetingId] = useState<number | null>(null);
 
-    // ✅ State 추가 (기존 state들 아래에)
+    // State 추가 (기존 state들 아래에)
     const [uploadedFileIds, setUploadedFileIds] = useState<Map<string, number>>(new Map());
     // Map<파일명, file_id> - 업로드된 파일의 ID 추적
 
 
-    // --- ▼▼▼ 회의록 데이터 로딩 함수 ▼▼▼ ---
-    // ✅ useCallback의 함수 정의에 (tab: 'my' | 'shared') 파라미터 추가
-    // const loadMeetings = useCallback(async (tab: 'my' | 'shared', filter: typeof filterType) => {
-    //     setListLoading(true);
-    //     setListError(null);
-    //     try {
-    //         // ✅ API 호출 시 filter 파라미터 추가 (백엔드와 협의 필요)
-    //         const params = { limit: 50, filter: filter };
-    //         if (tab === 'my') {
-    //             const data = await meetingMinuteService.getMyMeetings(params);
-    //             setMyMeetings(data);
-    //         } else if (tab === 'shared') {
-    //             const data = await meetingMinuteService.getSharedMeetings(params);
-    //             setSharedMeetings(data);
-    //         }
-    //     } catch (error) {
-    //         console.error(`Error loading ${tab} meetings with filter ${filter}:`, error);setListError('회의록 목록을 불러오는 중 오류가 발생했습니다.');
-    //         handleApiError(error); // 에러 처리 유틸리티 사용
-    //     } finally {
-    //         setListLoading(false);
-    //     }
-    //     // ✅ useCallback 의존성 배열은 비워둡니다.
-    //     // loadMeetings 함수 자체가 외부 변수에 의존하지 않으므로,
-    //     // 여기서 tab을 추가하면 activeTab이 바뀔 때마다 함수가 재생성되어 비효율적입니다.
-    // }, []);
     const loadMeetings = useCallback(async (tab: 'my' | 'shared', filter: typeof filterType) => {
         setListLoading(true);
         setListError(null);
         try {
-            // ✅ filter를 백엔드가 이해하는 has_project로 변환
+            // filter를 백엔드가 이해하는 has_project로 변환
             const params: any = { limit: 50 };
 
             if (filter === 'project') {
@@ -380,10 +355,10 @@ const MeetingMinutes: React.FC = () => {
         } else if (activeTab === 'shared') {
             loadMeetings('shared', filterType);
         }
-        // ✅ loadMeetings 함수는 useCallback으로 메모이제이션되었으므로 의존성 배열에 추가
+        // loadMeetings 함수는 useCallback으로 메모이제이션되었으므로 의존성 배열에 추가
     }, [activeTab, filterType, loadMeetings]);
 
-    // ✅ [신규] 필터 변경 핸들러
+    // [신규] 필터 변경 핸들러
     const handleFilterChange = (event: ChangeEvent<HTMLSelectElement>) => {
         setFilterType(event.target.value as 'all' | 'project' | 'independent');
     };
@@ -424,7 +399,7 @@ const MeetingMinutes: React.FC = () => {
         // 백엔드에서 받은 basic_minutes 값을 manualInput 상태에 설정합니다.
         setManualInput(meeting.basic_minutes || '');
 
-        // ✅ 1. 회의록에 연결된 파일 목록 불러오기
+        // 회의록에 연결된 파일 목록 불러오기
         try {
             const files = await fileUploadService.getMeetingFiles(meeting.meeting_id);
             setServerFiles(files);
@@ -434,7 +409,7 @@ const MeetingMinutes: React.FC = () => {
             setServerFiles([]);
         }
 
-        // ✅ 2. 회의록 ID와 모드 설정
+        // 회의록 ID와 모드 설정
         setCurrentMeetingId(meeting.meeting_id);
         setSaveMode('update');
 
@@ -485,7 +460,7 @@ const MeetingMinutes: React.FC = () => {
     const [isGenerating, setIsGenerating] = useState<boolean>(false);
     const [generationPhase, setGenerationPhase] = useState<number>(0); // 0: 대기, 1: STT, 2: LLM
     const [sttProgress, setSttProgress] = useState<number>(0); // STT 진행률 (0-100)
-    // ✅ 추가
+
     const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
     const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
     const [sttStatusMessage, setSttStatusMessage] = useState<string>('');
@@ -520,7 +495,7 @@ const MeetingMinutes: React.FC = () => {
         if (validFiles.length > 0) {
             setSelectedFiles(prev => [...prev, ...validFiles]);
 
-            // ✅ 텍스트 파일 자동 로드 (문서 모드일 때만)
+            // 텍스트 파일 자동 로드 (문서 모드일 때만)
             if (recordingMethod === 'document') {
                 for (const file of validFiles) {
                     const ext = file.name.split('.').pop()?.toLowerCase();
@@ -565,7 +540,7 @@ const MeetingMinutes: React.FC = () => {
         if (validFiles.length > 0) {
             setSelectedFiles(prev => [...prev, ...validFiles]);
 
-            // ✅ 텍스트 파일 자동 로드 (문서 모드일 때만)
+            // 텍스트 파일 자동 로드 (문서 모드일 때만)
             if (recordingMethod === 'document') {
                 for (const file of validFiles) {
                     const ext = file.name.split('.').pop()?.toLowerCase();
@@ -588,8 +563,6 @@ const MeetingMinutes: React.FC = () => {
     const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         handleFiles(e.target.files);
     };
-
-
 
     // 파일 다운로드/삭제 핸들러
     const handleFileDownload = (file: any) => console.log("다운로드:", file);
@@ -683,105 +656,39 @@ const MeetingMinutes: React.FC = () => {
         setLlmDocTypes(prev => ({ ...prev, [name]: checked }));
     };
 
-    // const handleGenerate = async () => {
-    //     console.log("LLM 회의록 생성 시작");
-    //     console.log("선택된 STT 엔진:", sttEngine);
-    //     console.log("생성할 문서 타입:", llmDocTypes);
-    //
-    //     setIsGenerating(true);
-    //
-    //     try {
-    //         // Phase 1: STT 변환 (음성 모드일 때만)
-    //         if (recordingMethod === 'audio') {
-    //             setGenerationPhase(1);
-    //             setSttProgress(0);
-    //
-    //             // TODO: 실제 STT API 호출
-    //             // 예시: 진행률 시뮬레이션
-    //             for (let i = 0; i <= 100; i += 10) {
-    //                 setSttProgress(i);
-    //                 await new Promise(resolve => setTimeout(resolve, 300));
-    //             }
-    //
-    //             // 실제 구현 예시:
-    //             // const sttResult = await sttService.convert(selectedFiles[0], sttEngine, (progress) => {
-    //             //     setSttProgress(progress);
-    //             // });
-    //             // setSttResults(prev => ({...prev, [sttEngine]: sttResult}));
-    //         }
-    //
-    //         // Phase 2: LLM 생성
-    //         setGenerationPhase(2);
-    //
-    //         // TODO: 실제 LLM API 호출
-    //         await new Promise(resolve => setTimeout(resolve, 3000)); // 시뮬레이션
-    //
-    //         // 실제 구현 예시:
-    //         // const llmResult = await llmService.generate({
-    //         //     source: recordingMethod === 'audio' ? sttResults[sttEngine] : manualInput,
-    //         //     docTypes: llmDocTypes
-    //         // });
-    //         // setLlmResults(llmResult);
-    //
-    //         alert("회의록 생성이 완료되었습니다.");
-    //
-    //     } catch (error) {
-    //         console.error("생성 중 오류:", error);
-    //         alert("회의록 생성 중 오류가 발생했습니다.");
-    //     } finally {
-    //         setIsGenerating(false);
-    //         setGenerationPhase(0);
-    //         setSttProgress(0);
-    //     }
-    // };
+    // ✅ 회의록 자동 생성 함수 추가
+    const createMinimalMeeting = async (): Promise<number> => {
+        if (!meetingTitle || !meetingDateTime) {
+            throw new Error("회의록 제목과 일시는 필수입니다.");
+        }
 
-    // // ✅ 3. STT 변환 전용 함수 (신규)
-    // const handleGenerateSTT = async () => {
-    //
-    //     console.log("LLM 회의록 생성 시작");
-    //     console.log("선택된 STT 엔진:", sttEngine);
-    //     // console.log("생성할 문서 타입:", llmDocTypes);
-    //
-    //     // --- 파라미터 유효성 검증 ---
-    //     if (selectedFiles.length === 0) {
-    //         alert("STT 변환을 위한 음성 파일을 먼저 업로드해주세요.");
-    //         return;
-    //     }
-    //
-    //     setIsGenerating(true);
-    //     setGenerationPhase(1); // STT 진행 중 UI 표시
-    //     setSttProgress(0); // 프로그레스 바 초기화
-    //
-    //     try {
-    //         const fileToConvert = selectedFiles[0];
-    //         const engineToUse = sttEngine as STTEngine;
-    //
-    //         // --- API 호출 ---
-    //         const result = await generationService.generateSTT(engineToUse, fileToConvert);
-    //
-    //         // --- 결과 반영 ---
-    //         // 백엔드에서 받은 텍스트로 sttResults 상태 업데이트
-    //         setSttResults(prev => ({
-    //             ...prev,
-    //             [result.engine]: result.text
-    //         }));
-    //
-    //         // UI 업데이트
-    //         setSttProgress(100);
-    //         alert(`[${result.engine}] STT 변환이 완료되었습니다.`);
-    //
-    //     } catch (error) {
-    //         console.error("STT 변환 중 오류:", error);
-    //         handleApiError(error); // 공통 에러 핸들러 사용
-    //     } finally {
-    //         setIsGenerating(false);
-    //         setGenerationPhase(0);
-    //     }
-    // };
-    // ✅ 3. handleGenerateSTT 함수 전체 교체 (기존 함수 찾아서 교체)
+        const minimalData = {
+            meeting_title: meetingTitle,
+            meeting_datetime: new Date(meetingDateTime).toISOString(),
+            meeting_place: meetingPlace || '미정',
+            project_id: selectedProjectId,
+            shared_with_ids: sharedWith.map(emp => emp.id),
+            share_methods: Object.entries(shareMethods)
+                .filter(([, checked]) => checked)
+                .map(([key]) => key),
+            tags: tags.split(',').map(t => t.trim()).filter(t => t),
+            attendee_ids: [],
+            basic_minutes: manualInput || ''
+        };
+
+        const created = await meetingMinuteService.createMeeting(minimalData);
+        setCurrentMeetingId(created.meeting_id);
+        setSaveMode('update');
+
+        return created.meeting_id;
+    };
+
+    // ✅ STT 실행 (자동 회의록 생성 포함)
     const handleGenerateSTT = async () => {
         console.log("STT 변환 시작");
         console.log("선택된 STT 엔진:", sttEngine);
+        console.log("현재 회의록 ID:", currentMeetingId);
+
         // --- 파라미터 유효성 검증 ---
         if (selectedFiles.length === 0) {
             alert("STT 변환을 위한 음성 파일을 먼저 업로드해주세요.");
@@ -791,34 +698,53 @@ const MeetingMinutes: React.FC = () => {
         setIsGenerating(true);
         setGenerationPhase(1);
         setSttProgress(0);
-        setSttStatusMessage('작업 생성 중...');
+        // setSttStatusMessage('작업 생성 중...');
+        setSttStatusMessage('준비 중...');
 
         try {
+            // ✅ 1단계: 회의록 ID 확보
+            let meetingId = currentMeetingId;
+
+            if (!meetingId) {
+                setSttStatusMessage('회의록 생성 중...');
+                meetingId = await createMinimalMeeting();
+                console.log(`✅ 회의록 자동 생성: ID=${meetingId}`);
+            }
+
+            // ✅ 2단계: STT 실행
+            setSttStatusMessage('파일 업로드 중...');
+
             const fileToConvert = selectedFiles[0];
             const engineToUse = sttEngine as any; // STTEngine 타입
 
-            // ✅ 1. 비동기 작업 생성
+            // // meeting_id 확인
+            // const meetingIdToSend = currentMeetingId || undefined;
+            // console.log("전송할 meeting_id:", meetingIdToSend);
+
+            // 비동기 작업 생성
             const createResponse = await generationService.createSTTTask(
                 engineToUse,
                 fileToConvert,
                 {
                     model_size: 'medium', // 설정 가능하도록 state로 관리 가능
                     language: 'ko',
-                    meeting_id: currentMeetingId || undefined  // ✅ 회의록 ID 전달
+                    // meeting_id: currentMeetingId || undefined  // 회의록 ID 전달
+                    // meeting_id: meetingIdToSend  // undefined 또는 숫자
+                    meeting_id: meetingId  // ✅ 항상 존재
                 }
             );
 
             const taskId = createResponse.task_id;
-            const fileId = createResponse.file_id;  // ✅ 파일 ID 받음
+            const fileId = createResponse.file_id;  // 파일 ID 받음
 
             setCurrentTaskId(taskId);
-            // ✅ 파일 ID 저장 (나중에 STT 결과 조회용)
+            // 파일 ID 저장 (나중에 STT 결과 조회용)
             setUploadedFileIds(prev => new Map(prev).set(fileToConvert.name, fileId));
 
             console.log(`✅ 파일 업로드 완료: file_id=${fileId}`);
             setSttStatusMessage('WebSocket 연결 중...');
 
-            // ✅ 2. WebSocket 연결
+            // ✅ 3단계: WebSocket 진행률 수신
             const ws = generationService.connectSTTProgress(
                 taskId,
                 async (data: STTProgressMessage) => {
@@ -873,9 +799,14 @@ const MeetingMinutes: React.FC = () => {
 
             setWsConnection(ws);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("STT 작업 생성 중 오류:", error);
-            alert(`STT 작업 생성 실패: ${error}`);
+            // ✅ 사용자 친화적 에러 메시지
+            if (error.message.includes("필수")) {
+                alert(error.message);
+            } else {
+                alert(`STT 작업 생성 실패: ${error.message || error}`);
+            }
             setIsGenerating(false);
             setGenerationPhase(0);
         }
@@ -1025,10 +956,10 @@ const MeetingMinutes: React.FC = () => {
             return;
         }
 
-        if (!meetingPlace || !meetingPlace.trim()) {
-            alert("회의장소를 입력해주세요.");
-            return;
-        }
+        // if (!meetingPlace || !meetingPlace.trim()) {
+        //     alert("회의장소를 입력해주세요.");
+        //     return;
+        // }
 
         if (llmOutput && !selectedSttSource) {
             alert("LLM 생성을 위한 소스 텍스트를 선택해주세요.");

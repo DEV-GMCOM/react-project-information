@@ -71,7 +71,7 @@ export const generationService = {
         options?: {
             model_size?: 'tiny' | 'base' | 'small' | 'medium' | 'large';
             language?: string;
-            meeting_id?: number;  // ✅ 추가
+            meeting_id?: number;
         }
     ): Promise<STTCreateResponse> {
         const formData = new FormData();
@@ -84,15 +84,45 @@ export const generationService = {
         if (options?.language) {
             formData.append('language', options.language);
         }
-        if (options?.meeting_id) {
+        // meeting_id가 null이나 undefined일 때는 전송하지 않음
+        if (options?.meeting_id !== null && options?.meeting_id !== undefined) {
             formData.append('meeting_id', options.meeting_id.toString());
         }
 
-        const response = await apiClient.post<STTCreateResponse>(
-            '/generation/stt/create',
-            formData
-        );
-        return response.data;
+        // 디버깅 로그
+        console.log('📤 STT 요청 전송:');
+        console.log('  - engine:', engine);
+        console.log('  - file:', file.name, file.size, 'bytes');
+        console.log('  - model_size:', options?.model_size);
+        console.log('  - language:', options?.language);
+        console.log('  - meeting_id:', options?.meeting_id);
+        // FormData 내용 확인
+        console.log('📦 FormData 내용:');
+
+        try {
+            const response = await apiClient.post<STTCreateResponse>(
+                '/generation/stt/create',
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'  // ✅ 명시적 헤더
+                    }
+                }
+            );
+            return response.data;
+        } catch (error: any) {
+            // 상세 에러 로그
+            console.error('❌ STT 작업 생성 실패:', error);
+            console.error('응답 데이터:', error.response?.data);
+            console.error('응답 상태:', error.response?.status);
+
+            // 422 에러 상세 정보 출력
+            if (error.response?.status === 422) {
+                console.error('❌ 422 Validation Error Details:', JSON.stringify(error.response.data, null, 2));
+            }
+
+            throw error;
+        }
     },
 
     /**
