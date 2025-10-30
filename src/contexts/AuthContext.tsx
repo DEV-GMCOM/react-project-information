@@ -212,7 +212,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 login_id: loginId,
                 password: password
             });
-            setUser(response.data); // ★★★ 서버 응답 전체를 user 객체로 설정
+            setUser(response.data);
+
+            // ✅ 공지 플래그 설정 (추가 부분)
+            const today = new Date().toDateString();
+            const hiddenUntil = localStorage.getItem('notice_hidden_until');
+
+            if (hiddenUntil !== today) {
+                localStorage.setItem('show_notice_on_login', 'true');
+            }
+
+            console.log('✅ 로그인 성공:', response.data);
         } catch (error: any) {
             // 에러 처리는 기존과 동일하게 유지
             if (error.response && error.response.status === 412) {

@@ -417,6 +417,51 @@
     color: #007bff; /* 마우스 오버 시 색상 변경 */
 }
 
+/* 공지 버튼 스타일 */
+.notice-btn {
+    background-color: #1890ff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.notice-btn:hover {
+    background-color: #0070d9;
+}
+
+/* src/styles/Layout.css에 추가 */
+
+/* 도움말 버튼 스타일 */
+.help-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.help-btn:hover {
+    background: linear-gradient(135deg, #5568d3 0%, #63408b 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.help-btn:active {
+    transform: translateY(0);
+}
 
 /* 반응형: 모바일에서 관리자 메뉴 구분 유지 */
 @media (max-width: 768px) {

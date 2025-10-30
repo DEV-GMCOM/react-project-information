@@ -5,6 +5,7 @@ import ProjectBasicInfoForm from "../../components/common/ProjectBasicInfoForm.t
 import { ExtendedProjectData } from '../../types/project';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api/utils/apiClient';
+import { useHelp } from '../../contexts/HelpContext';
 
 interface PTPostmortemData {
     // 프로젝트 기본 정보 (Profile/Kickoff 토글에서 사용)
@@ -159,6 +160,149 @@ const PTPostmortemForm: React.FC = () => {
 
     const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001';
 
+    const { setHelpContent } = useHelp();
+
+// useEffect로 도움말 컨텐츠 등록
+    useEffect(() => {
+        setHelpContent({
+            pageName: 'PT 결과 분석',
+            content: (
+                <>
+                    <div className="help-section">
+                        <h3>📋 PT 결과 분석 작성 가이드</h3>
+                        <p>
+                            PT 결과 분석은 프레젠테이션 종료 후 결과를 분석하고
+                            향후 개선 방향을 도출하기 위한 문서입니다.
+                        </p>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>🔍 프로젝트 선택 및 정보 확인</h3>
+                        <ul>
+                            <li><strong>프로젝트 검색:</strong> PT를 수행한 프로젝트를 검색하여 선택합니다.</li>
+                            <li><strong>연관 정보 토글:</strong> 프로젝트 프로파일, 착수보고 정보를 토글로 확인할 수 있습니다.</li>
+                            <li><strong>기존 데이터 로드:</strong> 이전에 작성한 PT 결과 분석이 있으면 자동으로 로드됩니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>📝 PT 결과 분석 작성 항목</h3>
+
+                        <p><strong>1. PT 내용 Review:</strong></p>
+                        <ul>
+                            <li>발표 당일 진행 상황 요약</li>
+                            <li>발표 내용의 충실도 및 완성도</li>
+                            <li>예상 질문 대비 실제 질문 비교</li>
+                            <li>발표 시간 준수 여부</li>
+                            <li>발표자 퍼포먼스 평가</li>
+                        </ul>
+
+                        <p><strong>2. PT 결과:</strong></p>
+                        <ul>
+                            <li><strong>수주 성공:</strong> 계약 체결 확정</li>
+                            <li><strong>수주 실패:</strong> 다른 업체 선정</li>
+                            <li><strong>보류/협상:</strong> 추가 협의 필요</li>
+                            <li>선정 점수 및 순위 (알 수 있는 경우)</li>
+                        </ul>
+
+                        <p><strong>3. 수주/실패 사유 분석:</strong></p>
+                        <ul>
+                            <li><strong>수주 시:</strong> 승인 요인 분석
+                                <ul>
+                                    <li>가격 경쟁력</li>
+                                    <li>제안 내용의 우수성</li>
+                                    <li>수행 실적 및 신뢰도</li>
+                                    <li>발표 완성도</li>
+                                </ul>
+                            </li>
+                            <li><strong>실패 시:</strong> 패인 분석
+                                <ul>
+                                    <li>가격 경쟁력 부족</li>
+                                    <li>제안 내용 미흡</li>
+                                    <li>실적 부족</li>
+                                    <li>발표 완성도 부족</li>
+                                    <li>경쟁사 대비 약점</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <p><strong>4. 방향성/컨셉 평가:</strong></p>
+                        <ul>
+                            <li>제안한 컨셉의 적절성</li>
+                            <li>클라이언트 니즈 부합도</li>
+                            <li>차별화 포인트 명확성</li>
+                            <li>개선 필요 사항</li>
+                        </ul>
+
+                        <p><strong>5. 프로그램 평가:</strong></p>
+                        <ul>
+                            <li>제안 프로그램의 실현 가능성</li>
+                            <li>기술 스택의 적절성</li>
+                            <li>일정 계획의 합리성</li>
+                            <li>개선 방향</li>
+                        </ul>
+
+                        <p><strong>6. 운영 계획 평가:</strong></p>
+                        <ul>
+                            <li>프로젝트 관리 방법론</li>
+                            <li>조직 구성 및 인력 배치</li>
+                            <li>커뮤니케이션 체계</li>
+                            <li>개선 필요 사항</li>
+                        </ul>
+
+                        <p><strong>7. 견적 평가:</strong></p>
+                        <ul>
+                            <li>견적 수준의 적절성</li>
+                            <li>경쟁사 대비 가격 경쟁력</li>
+                            <li>품질 대비 가격 균형</li>
+                            <li>향후 견적 전략</li>
+                        </ul>
+
+                        <p><strong>8. 담당 PM 의견:</strong></p>
+                        <ul>
+                            <li>전체적인 PT 수행 소감</li>
+                            <li>팀원 협업 평가</li>
+                            <li>향후 개선 제안</li>
+                            <li>레슨 런드(Lessons Learned)</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>📊 향후 활용 방안</h3>
+                        <ul>
+                            <li><strong>성공 사례:</strong> 유사 PT 준비 시 성공 요인 벤치마킹</li>
+                            <li><strong>실패 사례:</strong> 동일한 실수 반복 방지</li>
+                            <li><strong>데이터 축적:</strong> PT 성공률 향상을 위한 통계 자료</li>
+                            <li><strong>교육 자료:</strong> 신입 직원 PT 교육용 사례</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-tip">
+                        <strong>💡 TIP:</strong>
+                        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                            <li>PT 종료 후 최대한 빨리(1주일 이내) 작성하여 기억이 생생할 때 정리하세요.</li>
+                            <li>실패 사례도 솔직하게 기록하는 것이 조직의 학습에 도움이 됩니다.</li>
+                            <li>팀원들과 함께 회고 미팅을 진행한 후 작성하면 더 풍부한 내용이 됩니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-warning">
+                        <strong>⚠️ 주의사항:</strong>
+                        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                            <li>실패 원인 분석 시 특정 개인을 비난하기보다는 프로세스 개선에 초점을 맞추세요.</li>
+                            <li>클라이언트 피드백이 있다면 반드시 포함하여 작성하세요.</li>
+                            <li>경쟁사 정보는 공개 가능한 범위 내에서만 기록하세요.</li>
+                        </ul>
+                    </div>
+                </>
+            )
+        });
+
+        return () => {
+            setHelpContent(null);
+        };
+    }, [setHelpContent]);
+
     // PT Postmortem 데이터 로드
     const loadPTPostmortemData = async (projectId: number) => {
         if (!projectId) return;
@@ -179,9 +323,11 @@ const PTPostmortemForm: React.FC = () => {
                     reason: data.reason || '',
                     directionConcept: data.direction_concept || '',
                     program: data.program || '',
-                    operation: data.produce || '',  // DB의 produce를 operation으로 매핑
+
+                    operation: data.operation || '',
+                    managerOpinion: data.manager_opinion || '',
+
                     quotation: data.quotation || '',
-                    managerOpinion: data.pt_manager_opinion || '',
                     writerName: data.writer_name || '',
                     writerDepartment: data.writer_department || ''
                 }));

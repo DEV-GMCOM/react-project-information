@@ -3,6 +3,9 @@ import React, {useEffect, useState} from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import '../../styles/Layout.css';
 import { useAuth } from '../../contexts/AuthContext';
+import NoticeModal from '../NoticeModal';
+import HelpModal from '../HelpModal';
+import { HelpProvider, useHelp } from '../../contexts/HelpContext';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -26,7 +29,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout } = useAuth();
+    // Layout 컴포넌트 내부에 상태 추가
+    const [showNoticeModal, setShowNoticeModal] = useState(false);
+    const [showHelpModal, setShowHelpModal] = useState(false);
+    const [currentHelpContent, setCurrentHelpContent] = useState<{ pageName: string; content: React.ReactNode } | null>(null);
 
+    const handleShowHelp = () => {
+        setShowHelpModal(true);
+    };
     const headerTitle = import.meta.env.VITE_APP_TITLE || 'GMCOM Information System';
 
     // ▼▼▼ [추가] 이 useEffect 블록 하나만 추가하면 됩니다. ▼▼▼
@@ -43,6 +53,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             setExpandedMenus(prev => [...prev, activeParentMenu.path]);
         }
     }, [location.pathname]); // URL 경로가 변경될 때마다 이 로직이 실행됩니다.
+
+    // Layout 컴포넌트 내부에 useEffect 추가
+    useEffect(() => {
+        // 로그인 직후 공지 자동 표시
+        const shouldShowNotice = localStorage.getItem('show_notice_on_login');
+        if (shouldShowNotice === 'true') {
+            setShowNoticeModal(true);
+            localStorage.removeItem('show_notice_on_login');
+        }
+    }, []);
 
     // 기본 메뉴 항목들
     const mainMenuItems: MenuItem[] = [
@@ -342,12 +362,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             {/*</span>*/}
                             {/* user-info 영역에 onClick 핸들러와 스타일링을 위한 className 추가 */}
                             <div className="user-info user-info-clickable" onClick={handleUserInfoClick}>
-    <span>
-        {user?.emp_name}
-        {user?.position && ` (${user.position})`}
-        {user?.team && ` - ${user.team}`}
-    </span>
+                                <span>
+                                    {user?.emp_name}
+                                    {user?.position && ` (${user.position})`}
+                                    {user?.team && ` - ${user.team}`}
+                                </span>
                             </div>
+                            {/* ✅ 공지 버튼 추가 */}
+                            <button
+                                className="notice-btn"
+                                onClick={() => setShowNoticeModal(true)}
+                                title="공지사항"
+                            >
+                                📢 공지
+                            </button>
+
+                            {/* ✅ 도움말 버튼 */}
+                            <button
+                                className="help-btn"
+                                onClick={handleShowHelp}
+                                title="도움말"
+                            >
+                                ❓ 도움말
+                            </button>
+
                             <button
                                 className="logout-btn"
                                 onClick={handleLogout}
@@ -403,12 +441,39 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </nav>
                 </aside>
 
+                {/*<main className="content">*/}
+                {/*    {children}*/}
+                {/*</main>*/}
                 <main className="content">
-                    {children}
+                    <HelpProvider onShowHelp={handleShowHelp}>
+                        <HelpContentSetter setContent={setCurrentHelpContent} />
+                        {children}
+                    </HelpProvider>
                 </main>
             </div>
+            <HelpModal
+                isOpen={showHelpModal}
+                onClose={() => setShowHelpModal(false)}
+                pageName={currentHelpContent?.pageName || '도움말'}
+                content={currentHelpContent?.content || <p>도움말 내용이 없습니다.</p>}
+            />
+            <NoticeModal
+                isOpen={showNoticeModal}
+                onClose={() => setShowNoticeModal(false)}
+            />
         </div>
+
     );
+};
+
+const HelpContentSetter: React.FC<{ setContent: (content: any) => void }> = ({ setContent }) => {
+    const { helpContent } = useHelp();
+
+    React.useEffect(() => {
+        setContent(helpContent);
+    }, [helpContent, setContent]);
+
+    return null;
 };
 
 export default Layout;

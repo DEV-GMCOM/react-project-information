@@ -1,11 +1,13 @@
 // src/pages/project/ProjectKickoff.tsx - 완전 정리된 최종 버전
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ProjectBasicInfoForm from '../../components/common/ProjectBasicInfoForm';
 import { ExtendedProjectData } from '../../types/project';
 import { handleApiError } from '../../api/utils/errorUtils';
 import apiClient from '../../api/utils/apiClient';
 import { projectKickoffService } from '../../api/services/projectKickoffService';
 import { fileUploadService, FileAttachmentInfo } from '../../api/services/fileUploadService';
+import { useHelp } from '../../contexts/HelpContext';
+
 import '../../styles/ProjectKickoff.css';
 
 import { SmartFileUpload } from '../../components/project/SmartFileUpload';
@@ -92,6 +94,122 @@ const ProjectKickoffForm: React.FC = () => {
         proceedDecision: ''
     });
 
+    const { setHelpContent } = useHelp();
+
+// useEffect로 도움말 컨텐츠 등록
+    useEffect(() => {
+        setHelpContent({
+            pageName: '프로젝트 착수보고',
+            content: (
+                <>
+                    <div className="help-section">
+                        <h3>📋 프로젝트 착수보고 작성 가이드</h3>
+                        <p>
+                            프로젝트 착수보고는 프로젝트 시작 전 준비 상황과
+                            수행 계획을 종합적으로 정리하는 문서입니다.
+                        </p>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>🔍 프로젝트 선택</h3>
+                        <ul>
+                            <li><strong>프로젝트 검색:</strong> 프로젝트명을 입력하고 검색하여 대상 프로젝트를 선택합니다.</li>
+                            <li><strong>기본 정보 로드:</strong> 프로젝트를 선택하면 프로젝트 정보에서 기본 데이터가 자동으로 로드됩니다.</li>
+                            <li><strong>연동 정보:</strong> 프로젝트 프로파일, PT 체크리스트 등의 정보를 토글로 확인할 수 있습니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>📝 착수보고 작성 항목</h3>
+
+                        <p><strong>1. 담당부서 및 발표자:</strong></p>
+                        <ul>
+                            <li><strong>담당부서:</strong> 프로젝트를 수행하는 주관 부서명</li>
+                            <li><strong>PT 발표자:</strong> PT 발표를 담당할 인력 (직원 검색 가능)</li>
+                        </ul>
+
+                        <p><strong>2. 투입 인력 및 역할:</strong></p>
+                        <ul>
+                            <li><strong>인력 추가:</strong> '+ 인력 추가' 버튼으로 참여 인력을 등록합니다.</li>
+                            <li><strong>역할 지정:</strong> PM, 디자이너, 개발자, 기획자 등의 역할을 설정합니다.</li>
+                            <li><strong>투입 기간:</strong> 각 인력의 투입 시작일과 종료일을 입력합니다.</li>
+                            <li><strong>투입율:</strong> 해당 프로젝트에 투입되는 시간 비율(%)을 입력합니다.</li>
+                        </ul>
+
+                        <p><strong>3. 협업 체계:</strong></p>
+                        <ul>
+                            <li>내부 팀 간 협업 구조</li>
+                            <li>외부 파트너사와의 협력 방안</li>
+                            <li>커뮤니케이션 채널 및 보고 체계</li>
+                        </ul>
+
+                        <p><strong>4. 소요 예산 계획:</strong></p>
+                        <ul>
+                            <li><strong>인건비:</strong> 투입 인력별 예상 비용</li>
+                            <li><strong>외주비:</strong> 외부 용역 및 파트너사 비용</li>
+                            <li><strong>기타 경비:</strong> 장비, 소프트웨어 라이선스 등</li>
+                            <li><strong>예비비:</strong> 예상치 못한 비용 대비</li>
+                        </ul>
+
+                        <p><strong>5. 진행 일정:</strong></p>
+                        <ul>
+                            <li>주요 마일스톤별 일정</li>
+                            <li>단계별 산출물 및 납품 일정</li>
+                            <li>중간 보고 및 검수 일정</li>
+                        </ul>
+
+                        <p><strong>6. 리스크 요인:</strong></p>
+                        <ul>
+                            <li>예상되는 기술적 리스크</li>
+                            <li>일정 지연 가능 요인</li>
+                            <li>리소스 부족 우려 사항</li>
+                            <li>각 리스크별 대응 방안</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>📎 첨부파일</h3>
+                        <ul>
+                            <li><strong>제안서:</strong> 클라이언트에게 제출한 최종 제안서</li>
+                            <li><strong>계약서:</strong> 체결된 계약서 사본</li>
+                            <li><strong>WBS:</strong> Work Breakdown Structure 문서</li>
+                            <li><strong>조직도:</strong> 프로젝트 조직 구성도</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>🔄 다음 보고 예정일</h3>
+                        <p>
+                            프로젝트 진행 중 다음 중간 보고 예정일을 설정합니다.
+                            통상 2주~1개월 단위로 진행 상황을 보고합니다.
+                        </p>
+                    </div>
+
+                    <div className="help-tip">
+                        <strong>💡 TIP:</strong>
+                        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                            <li>착수보고는 프로젝트 시작 전 최소 1주일 전에 작성하는 것을 권장합니다.</li>
+                            <li>인력 투입 계획은 여유있게 수립하되, 실제 투입 시 조정 가능합니다.</li>
+                            <li>리스크는 구체적으로 작성하고, 각 리스크별 대응 방안을 명확히 합니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-warning">
+                        <strong>⚠️ 주의사항:</strong>
+                        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                            <li>투입 인력의 합산 투입율이 프로젝트 규모와 맞는지 확인하세요.</li>
+                            <li>예산 계획은 실제 계약 금액 범위 내에서 수립해야 합니다.</li>
+                            <li>리스크 요인은 팀원들과 충분히 논의 후 작성하세요.</li>
+                        </ul>
+                    </div>
+                </>
+            )
+        });
+
+        return () => {
+            setHelpContent(null);
+        };
+    }, [setHelpContent]);
 
     // 파일을 로컬 상태에만 추가 (업로드는 하지 않음)
     const addFilesToLocal = (files: FileList) => {

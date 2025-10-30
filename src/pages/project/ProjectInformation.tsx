@@ -3,6 +3,8 @@ import { handleApiError } from '../../api/utils/errorUtils';
 import apiClient from '../../api/utils/apiClient';
 import '../../styles/ProjectInformation.css';
 import { useAuth } from '../../contexts/AuthContext'; // ◀◀◀ 1. AuthContext를 사용하기 위해 import 합니다.
+import { useHelp } from '../../contexts/HelpContext';
+
 
 // === 기존 인터페이스들 그대로 유지 ===
 /** 직원의 간단한 정보를 나타냅니다. (작성자, 수정자 등) */
@@ -246,6 +248,137 @@ const ProjectInformationForm: React.FC = () => {
     const [contactSearchTerm, setContactSearchTerm] = useState('');
     const [contactCurrentPage, setContactCurrentPage] = useState(1);
     const [contactTotalPages, setContactTotalPages] = useState(1);
+
+    // 컴포넌트 내부
+    const { setHelpContent } = useHelp();
+
+// useEffect로 마운트 시 도움말 컨텐츠 등록
+    useEffect(() => {
+        setHelpContent({
+            pageName: '프로젝트 프로파일',
+            content: (
+                <>
+                    <div className="help-section">
+                        <h3>📋 프로젝트 프로파일 작성 가이드</h3>
+                        <p>
+                            프로젝트 프로파일은 프로젝트의 기본 정보, 참여 인력,
+                            일정, 예산 등을 종합적으로 관리하는 페이지입니다.
+                        </p>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>🔍 프로젝트 검색 및 선택</h3>
+                        <ul>
+                            <li><strong>프로젝트 검색:</strong> 프로젝트명 입력 필드에서 검색어를 입력하고 🔍 버튼을 클릭합니다.</li>
+                            <li><strong>검색 결과:</strong> 진행 중/완료/전체 필터를 통해 원하는 프로젝트를 찾을 수 있습니다.</li>
+                            <li><strong>신규 프로젝트:</strong> 검색 결과가 없으면 신규 프로젝트로 등록할 수 있습니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>📝 기본 정보 작성</h3>
+                        <p><strong>필수 항목:</strong></p>
+                        <ul>
+                            <li><strong>프로젝트명:</strong> 프로젝트의 공식 명칭</li>
+                            <li><strong>클라이언트:</strong> 발주 기업명 (검색 기능 이용)</li>
+                            <li><strong>프로젝트 타입:</strong> 웹/앱/SI/컨설팅 등</li>
+                            <li><strong>시작일/종료일:</strong> 프로젝트 수행 기간</li>
+                            <li><strong>PM:</strong> 프로젝트 매니저 (직원 검색)</li>
+                        </ul>
+
+                        <p><strong>선택 항목:</strong></p>
+                        <ul>
+                            <li>프로젝트 설명 및 목표</li>
+                            <li>기술 스택 및 개발 환경</li>
+                            <li>주요 산출물 목록</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>👥 참여 인력 관리</h3>
+                        <ul>
+                            <li><strong>인력 추가:</strong> '+ 인력 추가' 버튼을 클릭하여 참여자를 검색하고 추가합니다.</li>
+                            <li><strong>역할 지정:</strong> 각 참여자의 역할(개발자, 디자이너, QA 등)을 지정합니다.</li>
+                            <li><strong>투입 기간:</strong> 해당 인력의 프로젝트 참여 시작/종료일을 설정합니다.</li>
+                            <li><strong>투입율:</strong> 전체 업무 시간 대비 프로젝트 투입 비율(%)을 입력합니다.</li>
+                            <li><strong>삭제:</strong> 우측 🗑️ 버튼으로 인력을 제거할 수 있습니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>💰 예산 정보</h3>
+                        <ul>
+                            <li><strong>계약금액:</strong> 클라이언트와의 총 계약 금액</li>
+                            <li><strong>예상원가:</strong> 프로젝트 수행에 필요한 예상 비용</li>
+                            <li><strong>예상이익:</strong> 계약금액 - 예상원가 (자동 계산)</li>
+                            <li><strong>이익률:</strong> (예상이익 / 계약금액) × 100 (자동 계산)</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>📅 마일스톤 관리</h3>
+                        <ul>
+                            <li><strong>마일스톤 추가:</strong> 프로젝트의 주요 단계별 일정을 등록합니다.</li>
+                            <li><strong>진행률 업데이트:</strong> 각 마일스톤의 완료율을 실시간으로 업데이트합니다.</li>
+                            <li><strong>상태 관리:</strong> 예정/진행중/완료/지연 등의 상태를 관리합니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>📎 첨부파일 관리</h3>
+                        <ul>
+                            <li><strong>파일 업로드:</strong> 드래그 앤 드롭 또는 클릭하여 파일을 업로드합니다.</li>
+                            <li><strong>문서 종류:</strong> 제안서, 계약서, 설계서, 산출물 등</li>
+                            <li><strong>버전 관리:</strong> 동일 문서의 여러 버전을 관리할 수 있습니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>🔗 연관 정보</h3>
+                        <ul>
+                            <li><strong>착수보고서:</strong> 프로젝트 킥오프 정보 링크</li>
+                            <li><strong>회의록:</strong> 프로젝트 관련 회의 기록 링크</li>
+                            <li><strong>이슈 트래킹:</strong> 프로젝트 진행 중 발생한 이슈 관리</li>
+                            <li><strong>결과분석:</strong> 프로젝트 종료 후 포스트모템 링크</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-tip">
+                        <strong>💡 TIP:</strong>
+                        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                            <li>프로젝트 진행 중에는 주기적으로 진행률과 예산 집행 현황을 업데이트하세요.</li>
+                            <li>인력 투입율은 합계가 100%를 초과할 수 있습니다 (여러 프로젝트 동시 진행 시).</li>
+                            <li>마일스톤은 최소 3개 이상 설정하는 것을 권장합니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-warning">
+                        <strong>⚠️ 주의사항:</strong>
+                        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                            <li>프로젝트 상태를 '완료'로 변경하면 일부 정보는 수정이 제한됩니다.</li>
+                            <li>계약 금액 정보는 재무 권한이 있는 사용자만 조회/수정 가능합니다.</li>
+                            <li>PM 변경 시 기존 PM에게 자동으로 알림이 발송됩니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>🔐 권한 안내</h3>
+                        <ul>
+                            <li><strong>PM:</strong> 전체 프로젝트 정보 수정 가능</li>
+                            <li><strong>참여 인력:</strong> 자신의 투입 정보 및 일부 진행 정보 수정 가능</li>
+                            <li><strong>관리자:</strong> 모든 프로젝트 조회 및 수정 가능</li>
+                            <li><strong>재무 권한자:</strong> 예산 정보 조회/수정 가능</li>
+                        </ul>
+                    </div>
+                </>
+            )
+        });
+
+        // 컴포넌트 언마운트 시 정리
+        return () => {
+            setHelpContent(null);
+        };
+    }, [setHelpContent]);
 
     // // 1. useEffect를 사용하여 contactSearchTerm 변경 시 디바운싱 적용
     // useEffect(() => {

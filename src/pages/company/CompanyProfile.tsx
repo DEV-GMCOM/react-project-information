@@ -4,6 +4,8 @@ import clsx from 'clsx';
 import apiClient from '../../api/utils/apiClient';
 import { handleApiError } from '../../api/utils/errorUtils';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useHelp } from '../../contexts/HelpContext';
+
 import '../../styles/CompanyProfile.css';
 
 // --- 타입 정의 (생략 없음) ---
@@ -243,6 +245,70 @@ const CompanyProfileForm: React.FC = () => {
     const [showSimilarCompaniesModal, setShowSimilarCompaniesModal] = useState(false);
     const [similarCompanies, setSimilarCompanies] = useState<CompanyData[]>([]);
 
+    const { setHelpContent } = useHelp();
+
+    // useEffect로 마운트 시 도움말 컨텐츠 등록
+    useEffect(() => {
+        setHelpContent({
+            pageName: '광고주 기업 프로파일',
+            content: (
+                <>
+                    <div className="help-section">
+                        <h3>📋 광고주 기업 프로파일 작성 가이드</h3>
+                        <p>
+                            광고주 기업 프로파일은 클라이언트 기업에 대한 기본 정보와
+                            담당자 정보를 체계적으로 관리하기 위한 페이지입니다.
+                        </p>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>🔍 회사 검색 방법</h3>
+                        <ul>
+                            <li><strong>회사명 입력 후 검색:</strong> 회사명 입력 필드에 검색어를 입력하고 엔터키를 누르거나 🔍 버튼을 클릭합니다.</li>
+                            <li><strong>검색 결과 선택:</strong> 검색 결과 모달에서 원하는 회사를 선택하면 자동으로 정보가 로드됩니다.</li>
+                            <li><strong>신규 회사:</strong> 검색 결과가 없으면 신규 회사로 작성할 수 있습니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>👤 담당자 정보 관리</h3>
+                        <ul>
+                            <li><strong>담당자 선택:</strong> 회사를 선택하면 등록된 담당자 목록이 표시됩니다.</li>
+                            <li><strong>주담당자:</strong> <code>주</code> 뱃지가 표시된 담당자가 주담당자입니다.</li>
+                            <li><strong>신규 담당자:</strong> '신규 담당자 작성' 버튼을 클릭하여 새 담당자를 추가할 수 있습니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>📝 작성 항목 설명</h3>
+                        <p><strong>클라이언트 기업 정보:</strong></p>
+                        <ul>
+                            <li>회사명, 대표자, 사업자등록번호 등 기본 정보</li>
+                            <li>회사 개요: 사업 분야, 특징 등</li>
+                            <li>은행 정보: 거래 은행 및 계좌번호</li>
+                        </ul>
+
+                        <p><strong>담당자 상세 정보:</strong></p>
+                        <ul>
+                            <li>소속/부서, 직책, 연락처, 이메일</li>
+                            <li>담당 업무 및 업무 스타일</li>
+                            <li>개별 특화정보 및 조직정보</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-tip">
+                        <strong>💡 TIP:</strong> 저장 버튼은 우측 상단에 있으며,
+                        작성 중인 내용은 자동 저장되지 않으므로 주기적으로 저장하세요.
+                    </div>
+                </>
+            )
+        });
+
+        // 컴포넌트 언마운트 시 정리
+        return () => {
+            setHelpContent(null);
+        };
+    }, [setHelpContent]);
 
     useEffect(() => {
         const companyDataChanged = JSON.stringify(formData) !== JSON.stringify(originalFormData);

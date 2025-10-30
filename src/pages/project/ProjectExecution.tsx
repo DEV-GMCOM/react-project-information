@@ -5,6 +5,7 @@ import { ExtendedProjectData, IProject } from '../../types/project';
 import { fileUploadService } from '../../api/services/fileUploadService';  // ✅ 추가
 
 import ProjectBasicInfoForm from '../../components/common/ProjectBasicInfoForm';
+import { useHelp } from '../../contexts/HelpContext';
 import '../../styles/FormPage.css';
 import '../../styles/ProjectExecution.css';
 
@@ -136,6 +137,205 @@ const ProjectExecution: React.FC = () => {
     const [showProfileTables, setShowProfileTables] = useState(false);
     const [showKickoff, setShowKickoff] = useState(false);
     const [showPTPostmortem, setShowPTPostmortem] = useState(false);
+
+    const { setHelpContent } = useHelp();
+
+    useEffect(() => {
+        setHelpContent({
+            pageName: '프로젝트 실행',
+            content: (
+                <>
+                    <div className="help-section">
+                        <h3>📋 프로젝트 실행 관리 가이드</h3>
+                        <p>
+                            프로젝트 실행 단계에서 진행 상황을 추적하고
+                            이슈를 관리하며 실시간으로 프로젝트 현황을 파악하는 문서입니다.
+                        </p>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>🔍 프로젝트 선택 및 정보 확인</h3>
+                        <ul>
+                            <li><strong>프로젝트 검색:</strong> 실행 중인 프로젝트를 검색하여 선택합니다.</li>
+                            <li><strong>연관 정보 토글:</strong> 프로젝트 프로파일, 착수보고 정보를 확인할 수 있습니다.</li>
+                            <li><strong>진행 상황 로드:</strong> 이전에 작성한 실행 현황이 자동으로 로드됩니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>📝 프로젝트 실행 관리 항목</h3>
+
+                        <p><strong>1. 전체 진행률:</strong></p>
+                        <ul>
+                            <li>프로젝트 전체 진행률(%) 입력</li>
+                            <li>계획 대비 실제 진행률 비교</li>
+                            <li>예정 일정 대비 지연/앞당김 여부</li>
+                            <li>진행률 산정 기준 (작업 완료 기준, 투입 시간 기준 등)</li>
+                        </ul>
+
+                        <p><strong>2. 단계별 진행 현황:</strong></p>
+                        <ul>
+                            <li><strong>분석/설계:</strong> 요구사항 분석, 시스템 설계 진행 상태</li>
+                            <li><strong>개발:</strong> 프론트엔드, 백엔드 개발 진척도</li>
+                            <li><strong>테스트:</strong> 단위/통합/시스템 테스트 진행 상황</li>
+                            <li><strong>배포:</strong> 스테이징/프로덕션 배포 준비 상태</li>
+                            <li>각 단계별 완료 예정일 및 실제 완료일</li>
+                        </ul>
+
+                        <p><strong>3. 작업(Task) 관리:</strong></p>
+                        <ul>
+                            <li><strong>작업 추가:</strong> '+ 작업 추가' 버튼으로 세부 작업 등록</li>
+                            <li><strong>작업 정보:</strong>
+                                <ul>
+                                    <li>Task ID (자동 부여 또는 수동 입력)</li>
+                                    <li>작업명 및 상세 설명</li>
+                                    <li>담당자 지정 (직원 검색 가능)</li>
+                                    <li>우선순위 (High, Medium, Low)</li>
+                                </ul>
+                            </li>
+                            <li><strong>일정 관리:</strong>
+                                <ul>
+                                    <li>시작일, 예정 완료일</li>
+                                    <li>실제 완료일 (완료 시 입력)</li>
+                                    <li>소요 예상 시간 (M/D)</li>
+                                </ul>
+                            </li>
+                            <li><strong>상태 관리:</strong>
+                                <ul>
+                                    <li>대기(Pending)</li>
+                                    <li>진행중(In Progress)</li>
+                                    <li>완료(Done)</li>
+                                    <li>지연(Delayed)</li>
+                                    <li>보류(On Hold)</li>
+                                </ul>
+                            </li>
+                            <li><strong>진행률:</strong> 작업별 진행률(%) 입력</li>
+                        </ul>
+
+                        <p><strong>4. 이슈 관리:</strong></p>
+                        <ul>
+                            <li><strong>이슈 등록:</strong> 발생한 이슈를 즉시 기록</li>
+                            <li><strong>이슈 정보:</strong>
+                                <ul>
+                                    <li>이슈 ID 및 제목</li>
+                                    <li>발생일 및 발견자</li>
+                                    <li>이슈 분류 (기술, 일정, 리소스, 요구사항 등)</li>
+                                    <li>심각도 (Critical, High, Medium, Low)</li>
+                                </ul>
+                            </li>
+                            <li><strong>이슈 내용:</strong>
+                                <ul>
+                                    <li>상세 설명</li>
+                                    <li>발생 원인 분석</li>
+                                    <li>영향 범위</li>
+                                </ul>
+                            </li>
+                            <li><strong>대응 계획:</strong>
+                                <ul>
+                                    <li>해결 방안</li>
+                                    <li>담당자 지정</li>
+                                    <li>목표 해결일</li>
+                                    <li>현재 상태 (Open, In Progress, Resolved, Closed)</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <p><strong>5. 리스크 모니터링:</strong></p>
+                        <ul>
+                            <li>착수보고에서 식별한 리스크의 실제 발생 여부</li>
+                            <li>신규 리스크 발견 시 즉시 등록</li>
+                            <li>리스크별 대응 조치 실행 상태</li>
+                            <li>리스크 영향도 및 발생 확률 재평가</li>
+                        </ul>
+
+                        <p><strong>6. 마일스톤 현황:</strong></p>
+                        <ul>
+                            <li>주요 마일스톤별 달성 여부</li>
+                            <li>계획 대비 실제 달성일 비교</li>
+                            <li>지연 시 원인 및 만회 계획</li>
+                            <li>다음 마일스톤까지의 계획</li>
+                        </ul>
+
+                        <p><strong>7. 투입 인력 현황:</strong></p>
+                        <ul>
+                            <li>계획 대비 실제 투입 인력</li>
+                            <li>인력별 투입율 변경 사항</li>
+                            <li>추가 투입 또는 철수 인력</li>
+                            <li>인력 변동 사유</li>
+                        </ul>
+
+                        <p><strong>8. 예산 집행 현황:</strong></p>
+                        <ul>
+                            <li>총 예산 대비 집행액</li>
+                            <li>항목별 예산 집행 내역 (인건비, 외주비, 경비 등)</li>
+                            <li>예산 초과/절감 항목 및 사유</li>
+                            <li>향후 예상 지출</li>
+                        </ul>
+
+                        <p><strong>9. 산출물 현황:</strong></p>
+                        <ul>
+                            <li>완료된 산출물 목록</li>
+                            <li>진행 중인 산출물</li>
+                            <li>검수 대기 중인 산출물</li>
+                            <li>검수 완료 및 승인 상태</li>
+                        </ul>
+
+                        <p><strong>10. 주간/월간 활동 요약:</strong></p>
+                        <ul>
+                            <li>해당 기간 동안 완료한 주요 작업</li>
+                            <li>다음 기간 계획</li>
+                            <li>특이 사항 및 주요 의사결정</li>
+                            <li>클라이언트 피드백 및 요청 사항</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>📊 보고 및 모니터링</h3>
+                        <ul>
+                            <li><strong>정기 보고:</strong> 주간 또는 월간 단위로 진행 상황 업데이트</li>
+                            <li><strong>실시간 대시보드:</strong> 주요 지표를 한눈에 파악</li>
+                            <li><strong>알림 설정:</strong> 지연 작업, 긴급 이슈 발생 시 알림</li>
+                            <li><strong>히스토리 관리:</strong> 모든 변경 이력을 자동 기록</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>📎 첨부파일</h3>
+                        <ul>
+                            <li><strong>진행 보고서:</strong> 주간/월간 진행 보고서</li>
+                            <li><strong>회의록:</strong> 주요 회의 결과 문서</li>
+                            <li><strong>이슈 상세:</strong> 복잡한 이슈의 분석 자료</li>
+                            <li><strong>산출물:</strong> 단계별 산출물 파일</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-tip">
+                        <strong>💡 TIP:</strong>
+                        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                            <li>작업 상태는 최소 주 1회 이상 업데이트하여 정확한 진척도를 유지하세요.</li>
+                            <li>이슈는 발생 즉시 등록하고, 해결 과정을 상세히 기록하세요.</li>
+                            <li>진행률 산정 기준을 명확히 하여 일관성을 유지하세요.</li>
+                            <li>중요한 의사결정이나 변경 사항은 반드시 기록으로 남기세요.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-warning">
+                        <strong>⚠️ 주의사항:</strong>
+                        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                            <li>지연 발생 시 즉시 보고하고 만회 계획을 수립하세요.</li>
+                            <li>이슈 해결 완료 후에도 재발 방지 대책을 기록하세요.</li>
+                            <li>예산 초과 우려 시 조기에 경보하고 대응 방안을 마련하세요.</li>
+                            <li>클라이언트 요청 사항은 범위 변경 여부를 명확히 확인하세요.</li>
+                        </ul>
+                    </div>
+                </>
+            )
+        });
+
+        return () => {
+            setHelpContent(null);
+        };
+    }, [setHelpContent]);
 
     // ▼▼▼ [추가] onProjectIdSelected에 연결할 핸들러를 정의합니다. ▼▼▼
     const handleProjectIdSelected = (projectId: number) => {

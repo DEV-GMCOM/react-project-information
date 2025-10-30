@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import '../../styles/PTChecklist.css';
 import { apiService } from '../../api';
 import type { Project } from '../../api/types';
@@ -7,6 +7,8 @@ import apiClient from '../../api/utils/apiClient';  // 이 줄 추가
 
 // import {ptChecklistService} from "@/api/services/ptChecklistService.ts";
 import {ptChecklistService} from "../../api/services/ptChecklistService.ts";
+import { useHelp } from '../../contexts/HelpContext';
+
 
 // ... (기존 PTChecklistData 인터페이스는 그대로 유지) ...
 
@@ -121,6 +123,168 @@ const PTChecklistForm: React.FC = () => {
 
     const [searchQuery, setSearchQuery] = useState('');  // 검색용 독립 상태 추가
 
+    // 컴포넌트 내부
+    const { setHelpContent } = useHelp();
+
+// useEffect로 도움말 컨텐츠 등록
+    useEffect(() => {
+        setHelpContent({
+            pageName: 'PT 준비 체크리스트',
+            content: (
+                <>
+                    <div className="help-section">
+                        <h3>📋 PT 준비 체크리스트 작성 가이드</h3>
+                        <p>
+                            PT(Presentation) 준비 체크리스트는 발표 전
+                            준비 상태를 점검하고 보완할 사항을 정리하는 문서입니다.
+                        </p>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>🔍 프로젝트 선택 및 정보 확인</h3>
+                        <ul>
+                            <li><strong>프로젝트 검색:</strong> PT 대상 프로젝트를 검색하여 선택합니다.</li>
+                            <li><strong>착수보고 정보:</strong> 프로젝트 착수보고에서 담당부서와 발표자 정보를 자동으로 가져옵니다.</li>
+                            <li><strong>기존 체크리스트:</strong> 이전에 작성한 체크리스트가 있으면 자동으로 로드됩니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>✅ 체크리스트 평가 항목</h3>
+
+                        <p><strong>1. 사업 이해도 (전문성):</strong></p>
+                        <ul>
+                            <li>클라이언트 사업 영역 및 니즈 파악 정도</li>
+                            <li>관련 분야 전문 지식 및 경험</li>
+                            <li>산업 트렌드 이해도</li>
+                        </ul>
+
+                        <p><strong>2. 컨셉/전략 (창의성):</strong></p>
+                        <ul>
+                            <li>제안 컨셉의 참신성과 차별성</li>
+                            <li>전략적 접근 방식의 적절성</li>
+                            <li>크리에이티브 요소의 완성도</li>
+                        </ul>
+
+                        <p><strong>3. 사업 실현 가능성 (실행력):</strong></p>
+                        <ul>
+                            <li>제안 내용의 실현 가능성</li>
+                            <li>기술적 구현 가능성</li>
+                            <li>일정 내 완수 가능성</li>
+                        </ul>
+
+                        <p><strong>4. 제안서 완성도:</strong></p>
+                        <ul>
+                            <li>제안서 구성 및 논리성</li>
+                            <li>시각 자료의 품질</li>
+                            <li>오탈자 및 형식 완성도</li>
+                        </ul>
+
+                        <p><strong>5. 안전 관리 계획:</strong></p>
+                        <ul>
+                            <li>행사장 안전 관리 방안</li>
+                            <li>비상 상황 대응 계획</li>
+                            <li>보험 및 안전 인력 배치</li>
+                        </ul>
+
+                        <p><strong>6. 행사 세부 기획:</strong></p>
+                        <ul>
+                            <li>행사 진행 시나리오</li>
+                            <li>참여자 동선 및 경험 설계</li>
+                            <li>세부 타임테이블</li>
+                        </ul>
+
+                        <p><strong>7. 조직 구성 및 인력:</strong></p>
+                        <ul>
+                            <li>프로젝트 조직 구성의 적절성</li>
+                            <li>투입 인력의 전문성</li>
+                            <li>역할 분담의 명확성</li>
+                        </ul>
+
+                        <p><strong>8. 수행 실적:</strong></p>
+                        <ul>
+                            <li>유사 프로젝트 수행 경험</li>
+                            <li>레퍼런스 품질 및 관련성</li>
+                            <li>고객 만족도 및 성과</li>
+                        </ul>
+
+                        <p><strong>9. 견적의 적정성:</strong></p>
+                        <ul>
+                            <li>예산 대비 품질 균형</li>
+                            <li>세부 비용 구성의 합리성</li>
+                            <li>가격 경쟁력</li>
+                        </ul>
+
+                        <p><strong>10. 제안 추가 사항:</strong></p>
+                        <ul>
+                            <li>부가 서비스 제안</li>
+                            <li>차별화 포인트</li>
+                            <li>클라이언트 편의 제공 사항</li>
+                        </ul>
+
+                        <p><strong>11. 발표의 설득력:</strong></p>
+                        <ul>
+                            <li>발표 스토리라인</li>
+                            <li>핵심 메시지 전달력</li>
+                            <li>발표 자료 완성도</li>
+                        </ul>
+
+                        <p><strong>12. 전략적 수행 능력:</strong></p>
+                        <ul>
+                            <li>프로젝트 관리 방법론</li>
+                            <li>리스크 관리 체계</li>
+                            <li>품질 관리 프로세스</li>
+                        </ul>
+
+                        <p><strong>13. Q&A 대비:</strong></p>
+                        <ul>
+                            <li>예상 질문 목록 작성</li>
+                            <li>답변 준비 상태</li>
+                            <li>기술 질문 대응 인력 배치</li>
+                        </ul>
+
+                        <p><strong>14. 발표자 자세/태도:</strong></p>
+                        <ul>
+                            <li>복장 및 외모 단정함</li>
+                            <li>발표 연습 횟수</li>
+                            <li>자신감 및 전문성</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>📝 체크 및 의견 작성 방법</h3>
+                        <ul>
+                            <li><strong>체크박스:</strong> 해당 항목이 충분히 준비되었으면 체크합니다.</li>
+                            <li><strong>의견란:</strong> 보완이 필요한 사항이나 특이사항을 구체적으로 기록합니다.</li>
+                            <li><strong>미체크 항목:</strong> 체크되지 않은 항목은 PT 전까지 반드시 보완해야 합니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-tip">
+                        <strong>💡 TIP:</strong>
+                        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                            <li>PT 최소 3일 전에 체크리스트를 작성하여 보완 시간을 확보하세요.</li>
+                            <li>팀원들과 함께 체크리스트를 검토하면 놓치는 항목을 줄일 수 있습니다.</li>
+                            <li>미체크 항목은 우선순위를 정하여 중요한 것부터 보완하세요.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-warning">
+                        <strong>⚠️ 주의사항:</strong>
+                        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                            <li>모든 항목을 체크하는 것이 목표가 아니라, 실제 준비 상태를 정직하게 평가하세요.</li>
+                            <li>의견란에는 구체적인 보완 방안을 함께 작성하세요.</li>
+                            <li>PT 당일 체크리스트를 재확인하여 누락 사항이 없는지 점검하세요.</li>
+                        </ul>
+                    </div>
+                </>
+            )
+        });
+
+        return () => {
+            setHelpContent(null);
+        };
+    }, [setHelpContent]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;

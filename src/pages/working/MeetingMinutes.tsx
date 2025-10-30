@@ -23,7 +23,7 @@ import {
 } from '../../api/services/generationService';
 // import { generationService, STTProgressMessage } from '../../api/services/generationService';
 
-
+import { useHelp } from '../../contexts/HelpContext';
 
 
 
@@ -316,6 +316,214 @@ const MeetingMinutes: React.FC = () => {
     const [uploadedFileIds, setUploadedFileIds] = useState<Map<string, number>>(new Map());
     // Map<파일명, file_id> - 업로드된 파일의 ID 추적
 
+    const { setHelpContent } = useHelp();
+
+    useEffect(() => {
+        setHelpContent({
+            pageName: '회의록',
+            content: (
+                <>
+                    <div className="help-section">
+                        <h3>📋 회의록 작성 가이드</h3>
+                        <p>
+                            프로젝트 진행 중 발생하는 각종 회의 내용을 체계적으로 기록하고
+                            결정 사항 및 액션 아이템을 관리하기 위한 문서입니다.
+                        </p>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>🔍 프로젝트 선택 및 회의 정보</h3>
+                        <ul>
+                            <li><strong>프로젝트 검색:</strong> 회의가 진행된 프로젝트를 검색하여 선택합니다.</li>
+                            <li><strong>회의 목록:</strong> 해당 프로젝트의 이전 회의록 목록을 확인할 수 있습니다.</li>
+                            <li><strong>신규 작성:</strong> 새로운 회의록을 작성하거나 기존 회의록을 수정합니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>📝 회의록 작성 항목</h3>
+
+                        <p><strong>1. 회의 기본 정보:</strong></p>
+                        <ul>
+                            <li><strong>회의 제목:</strong> 회의 목적을 명확히 나타내는 제목</li>
+                            <li><strong>회의 유형:</strong>
+                                <ul>
+                                    <li>킥오프 미팅 (Kick-off Meeting)</li>
+                                    <li>정기 진행 회의 (Status Meeting)</li>
+                                    <li>기술 검토 회의 (Technical Review)</li>
+                                    <li>설계 리뷰 (Design Review)</li>
+                                    <li>이슈 해결 회의 (Issue Resolution)</li>
+                                    <li>클라이언트 미팅 (Client Meeting)</li>
+                                    <li>회고 회의 (Retrospective)</li>
+                                    <li>기타</li>
+                                </ul>
+                            </li>
+                            <li><strong>회의 일시:</strong> 날짜 및 시간 (시작~종료)</li>
+                            <li><strong>회의 장소:</strong> 물리적 장소 또는 온라인 회의 URL</li>
+                        </ul>
+
+                        <p><strong>2. 참석자 정보:</strong></p>
+                        <ul>
+                            <li><strong>참석자:</strong> 회의 참석 인원 (직원 검색 가능)
+                                <ul>
+                                    <li>이름, 소속, 역할</li>
+                                    <li>내부/외부 구분</li>
+                                </ul>
+                            </li>
+                            <li><strong>불참자:</strong> 참석 예정이었으나 불참한 인원</li>
+                            <li><strong>작성자:</strong> 회의록 작성 담당자</li>
+                            <li><strong>배포 대상:</strong> 회의록을 공유할 인원 목록</li>
+                        </ul>
+
+                        <p><strong>3. 회의 목적 및 안건:</strong></p>
+                        <ul>
+                            <li><strong>회의 목적:</strong> 이 회의를 개최한 배경 및 목적</li>
+                            <li><strong>안건 목록:</strong> 논의할 주제들
+                                <ul>
+                                    <li>안건 번호</li>
+                                    <li>안건 제목</li>
+                                    <li>제안자</li>
+                                    <li>우선순위</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <p><strong>4. 회의 내용:</strong></p>
+                        <ul>
+                            <li><strong>안건별 논의 내용:</strong>
+                                <ul>
+                                    <li>제기된 의견들</li>
+                                    <li>찬반 의견</li>
+                                    <li>논쟁점</li>
+                                    <li>합의 사항</li>
+                                </ul>
+                            </li>
+                            <li><strong>주요 발언:</strong> 중요한 발언이나 의견 기록</li>
+                            <li><strong>제시된 대안:</strong> 논의 과정에서 나온 여러 옵션들</li>
+                            <li><strong>기술적 논의:</strong> 기술 관련 상세 내용 (필요시)</li>
+                        </ul>
+
+                        <p><strong>5. 결정 사항 (Decisions Made):</strong></p>
+                        <ul>
+                            <li><strong>결정 내용:</strong> 회의를 통해 확정된 사항들
+                                <ul>
+                                    <li>결정 번호</li>
+                                    <li>결정 사항 요약</li>
+                                    <li>결정 근거</li>
+                                    <li>반대 의견 (있는 경우)</li>
+                                </ul>
+                            </li>
+                            <li><strong>승인 사항:</strong> 최종 승인이 필요한 항목</li>
+                            <li><strong>보류 사항:</strong> 추가 검토가 필요한 사항</li>
+                        </ul>
+
+                        <p><strong>6. 액션 아이템 (Action Items):</strong></p>
+                        <ul>
+                            <li><strong>항목 추가:</strong> '+ 액션 아이템 추가' 버튼으로 등록</li>
+                            <li><strong>액션 정보:</strong>
+                                <ul>
+                                    <li>액션 ID (자동 부여)</li>
+                                    <li>할 일 내용 (구체적으로 작성)</li>
+                                    <li>담당자 (반드시 지정)</li>
+                                    <li>협조자 (필요 시)</li>
+                                    <li>기한 (명확한 날짜)</li>
+                                    <li>우선순위 (High, Medium, Low)</li>
+                                    <li>상태 (Not Started, In Progress, Done)</li>
+                                </ul>
+                            </li>
+                            <li><strong>진행 상황:</strong> 액션 아이템별 진행률 및 완료 여부</li>
+                        </ul>
+
+                        <p><strong>7. 이슈 및 리스크:</strong></p>
+                        <ul>
+                            <li><strong>논의된 이슈:</strong> 회의에서 다룬 현재 이슈</li>
+                            <li><strong>신규 이슈:</strong> 회의 중 새로 발견된 문제</li>
+                            <li><strong>리스크 식별:</strong> 향후 발생 가능한 리스크</li>
+                            <li>각 이슈/리스크별 대응 방안</li>
+                        </ul>
+
+                        <p><strong>8. 질의응답 (Q&A):</strong></p>
+                        <ul>
+                            <li>제기된 질문과 답변</li>
+                            <li>미해결 질문 및 추후 답변 계획</li>
+                            <li>클라이언트 질의 사항 (클라이언트 미팅인 경우)</li>
+                        </ul>
+
+                        <p><strong>9. 다음 회의:</strong></p>
+                        <ul>
+                            <li><strong>차기 회의 일정:</strong> 다음 회의 예정일</li>
+                            <li><strong>준비 사항:</strong> 다음 회의까지 준비할 자료나 검토 사항</li>
+                            <li><strong>안건 예고:</strong> 다음 회의에서 다룰 주제</li>
+                        </ul>
+
+                        <p><strong>10. 기타 사항:</strong></p>
+                        <ul>
+                            <li>특기 사항</li>
+                            <li>공지 사항</li>
+                            <li>참고 자료</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>📎 첨부파일</h3>
+                        <ul>
+                            <li><strong>회의 자료:</strong> 발표 자료, 보고서 등</li>
+                            <li><strong>관련 문서:</strong> 논의에 사용된 참고 문서</li>
+                            <li><strong>화이트보드:</strong> 다이어그램, 스케치 이미지</li>
+                            <li><strong>녹취록:</strong> 회의 녹음 파일 (필요시)</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>🔄 회의록 관리</h3>
+                        <ul>
+                            <li><strong>즉시 작성:</strong> 회의 직후 또는 당일 내 작성</li>
+                            <li><strong>검토 및 승인:</strong> 주요 회의는 참석자 검토 후 확정</li>
+                            <li><strong>배포:</strong> 관련자에게 이메일 또는 시스템으로 공유</li>
+                            <li><strong>이력 관리:</strong> 수정 이력을 자동으로 기록</li>
+                            <li><strong>액션 추적:</strong> 액션 아이템 완료 여부를 지속 모니터링</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-section">
+                        <h3>📊 회의록 활용</h3>
+                        <ul>
+                            <li><strong>의사결정 기록:</strong> 프로젝트 주요 결정의 근거 자료</li>
+                            <li><strong>책임 명확화:</strong> 액션 아이템을 통한 업무 할당</li>
+                            <li><strong>진행 추적:</strong> 프로젝트 진행 과정 파악</li>
+                            <li><strong>분쟁 예방:</strong> 합의 사항의 증빙 자료</li>
+                            <li><strong>인수인계:</strong> 프로젝트 히스토리 파악</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-tip">
+                        <strong>💡 TIP:</strong>
+                        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                            <li>회의 중 실시간으로 작성하거나, 회의 직후 즉시 작성하세요.</li>
+                            <li>결정 사항과 액션 아이템은 명확하고 구체적으로 작성하세요.</li>
+                            <li>담당자와 기한은 반드시 명시하여 책임을 명확히 하세요.</li>
+                            <li>중요한 회의는 참석자들의 검토를 받아 정확성을 높이세요.</li>
+                            <li>회의 템플릿을 활용하면 일관성 있는 회의록 작성이 가능합니다.</li>
+                        </ul>
+                    </div>
+
+                    <div className="help-warning">
+                        <strong>⚠️ 주의사항:</strong>
+                        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                            <li>개인 의견과 합의된 결정을 명확히 구분하여 작성하세요.</li>
+                            <li>민감한 내용이나 기밀 사항은 배포 범위를 제한하세요.</li>
+                            <li>액션 아이템은 실행 가능한 수준으로 구체적으로 작성하세요.</li>
+                            <li>회의록은 법적 증빙 자료가 될 수 있으므로 정확하게 작성하세요.</li>
+                        </ul>
+                    </div>
+                </>
+            )
+        });
+
+        return () => {
+            setHelpContent(null);
+        };
+    }, [setHelpContent]);
 
     const loadMeetings = useCallback(async (tab: 'my' | 'shared', filter: typeof filterType) => {
         setListLoading(true);
@@ -464,6 +672,10 @@ const MeetingMinutes: React.FC = () => {
     const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
     const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
     const [sttStatusMessage, setSttStatusMessage] = useState<string>('');
+
+    const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<number | null>(null);
+    const [conversionDuration, setConversionDuration] = useState<number | null>(null);
+    const [wsStartTime, setWsStartTime] = useState<number | null>(null);
 
 
     // 드래그 앤 드롭 핸들러
@@ -743,8 +955,60 @@ const MeetingMinutes: React.FC = () => {
 
             console.log(`✅ 파일 업로드 완료: file_id=${fileId}`);
             setSttStatusMessage('WebSocket 연결 중...');
+            setWsStartTime(Date.now());
 
             // ✅ 3단계: WebSocket 진행률 수신
+            // const ws = generationService.connectSTTProgress(
+            //     taskId,
+            //     async (data: STTProgressMessage) => {
+            //         console.log('📊 진행률 수신:', data);
+            //
+            //         // 진행률 업데이트
+            //         setSttProgress(data.progress);
+            //         setSttStatusMessage(data.message);
+            //
+            //         // 상태별 처리
+            //         if (data.status === 'completed' && data.result_text) {
+            //             // ✅ STT 결과 저장
+            //             setSttResults(prev => ({
+            //                 ...prev,
+            //                 [engineToUse]: data.result_text!
+            //             }));
+            //
+            //             alert(`[${engineToUse}] STT 변환이 완료되었습니다.`);
+            //
+            //             // ✅ (선택) DB에서 최신 결과 다시 가져오기
+            //             try {
+            //                 const sttResult = await generationService.getSTTResult(fileId);
+            //                 console.log('✅ DB 저장 확인:', sttResult);
+            //             } catch (error) {
+            //                 console.error('STT 결과 조회 실패:', error);
+            //             }
+            //
+            //             // 상태 초기화
+            //             setIsGenerating(false);
+            //             setGenerationPhase(0);
+            //             setCurrentTaskId(null);
+            //         } else if (data.status === 'failed') {
+            //             alert(`STT 변환 실패: ${data.error || '알 수 없는 오류'}`);
+            //             setIsGenerating(false);
+            //             setGenerationPhase(0);
+            //             setCurrentTaskId(null);
+            //         } else if (data.status === 'aborted') {
+            //             alert('STT 변환이 중단되었습니다.');
+            //             setIsGenerating(false);
+            //             setGenerationPhase(0);
+            //             setCurrentTaskId(null);
+            //         }
+            //     },
+            //     (error) => {
+            //         console.error('WebSocket 에러:', error);
+            //         alert('WebSocket 연결 실패. 네트워크를 확인해주세요.');
+            //         setIsGenerating(false);
+            //         setGenerationPhase(0);
+            //         setCurrentTaskId(null);
+            //     }
+            // );
             const ws = generationService.connectSTTProgress(
                 taskId,
                 async (data: STTProgressMessage) => {
@@ -752,19 +1016,46 @@ const MeetingMinutes: React.FC = () => {
 
                     // 진행률 업데이트
                     setSttProgress(data.progress);
-                    setSttStatusMessage(data.message);
+                    setSttStatusMessage(data.message || '');
 
-                    // 상태별 처리
-                    if (data.status === 'completed' && data.result_text) {
-                        // ✅ STT 결과 저장
-                        setSttResults(prev => ({
-                            ...prev,
-                            [engineToUse]: data.result_text!
-                        }));
+                    // ✅ 남은 시간 계산
+                    if (data.progress > 0 && data.progress < 100 && wsStartTime) {
+                        const elapsed = Date.now() - wsStartTime;
+                        const estimatedTotal = (elapsed / data.progress) * 100;
+                        const remaining = Math.max(0, estimatedTotal - elapsed);
+                        setEstimatedTimeRemaining(Math.ceil(remaining / 1000));
+                    }
 
-                        alert(`[${engineToUse}] STT 변환이 완료되었습니다.`);
+                    // ✅ 완료 처리
+                    if (data.status === 'completed') {
+                        console.log('✅ STT 변환 완료');
+                        setSttProgress(100);
+                        setSttStatusMessage('변환 완료!');
+                        setIsGenerating(false); // ✅ 중단 버튼 숨김
+                        setEstimatedTimeRemaining(null);
 
-                        // ✅ (선택) DB에서 최신 결과 다시 가져오기
+                        if (data.result_text) {
+                            setSttResults(prev => ({
+                                ...prev,
+                                [sttEngine]: data.result_text!
+                            }));
+                            setSelectedSttSource(sttEngine);
+                        }
+
+                        // ✅ 변환 시간 저장
+                        if (data.metadata?.conversion_duration) {
+                            setConversionDuration(data.metadata.conversion_duration);
+                        }
+
+                        // ✅ WebSocket 명시적 종료
+                        if (wsConnection) {
+                            wsConnection.close();
+                            setWsConnection(null);
+                        }
+
+                        alert(`[${sttEngine}] STT 변환이 완료되었습니다.`);
+
+                        // DB 결과 확인 (기존 코드)
                         try {
                             const sttResult = await generationService.getSTTResult(fileId);
                             console.log('✅ DB 저장 확인:', sttResult);
@@ -772,20 +1063,40 @@ const MeetingMinutes: React.FC = () => {
                             console.error('STT 결과 조회 실패:', error);
                         }
 
-                        // 상태 초기화
-                        setIsGenerating(false);
                         setGenerationPhase(0);
                         setCurrentTaskId(null);
-                    } else if (data.status === 'failed') {
+                    }
+                    // ✅ 실패 처리
+                    else if (data.status === 'failed') {
+                        console.log(`❌ 작업 실패:`, data.error);
+                        setIsGenerating(false);
+                        setEstimatedTimeRemaining(null);
+                        setSttStatusMessage('변환 실패');
+                        setGenerationPhase(0);
+                        setCurrentTaskId(null);
+
+                        if (wsConnection) {
+                            wsConnection.close();
+                            setWsConnection(null);
+                        }
+
                         alert(`STT 변환 실패: ${data.error || '알 수 없는 오류'}`);
+                    }
+                    // ✅ 중단 처리
+                    else if (data.status === 'aborted') {
+                        console.log('⏹️ 작업 중단됨');
                         setIsGenerating(false);
+                        setEstimatedTimeRemaining(null);
+                        setSttStatusMessage('작업이 중단되었습니다');
                         setGenerationPhase(0);
                         setCurrentTaskId(null);
-                    } else if (data.status === 'aborted') {
+
+                        if (wsConnection) {
+                            wsConnection.close();
+                            setWsConnection(null);
+                        }
+
                         alert('STT 변환이 중단되었습니다.');
-                        setIsGenerating(false);
-                        setGenerationPhase(0);
-                        setCurrentTaskId(null);
                     }
                 },
                 (error) => {
@@ -794,6 +1105,7 @@ const MeetingMinutes: React.FC = () => {
                     setIsGenerating(false);
                     setGenerationPhase(0);
                     setCurrentTaskId(null);
+                    setEstimatedTimeRemaining(null);
                 }
             );
 
@@ -1699,20 +2011,6 @@ const MeetingMinutes: React.FC = () => {
                 </div>
                 {/* --- ▲▲▲ 파일 업로드 UI 종료 ▲▲▲ --- */}
 
-                {/*5. 직접 입력 inputbox 추가 (파일 업로드 섹션 바로 다음, line 700 근처)*/}
-                {/*{recordingMethod === 'document' && (*/}
-                {/*    <div className="meeting-minutes-section">*/}
-                {/*        <h3 className="section-header-meetingminutes">■ 회의록 직접 입력</h3>*/}
-                {/*        <textarea*/}
-                {/*            className="meeting-minutes-textarea"*/}
-                {/*            rows={15}*/}
-                {/*            value={manualInput}*/}
-                {/*            onChange={(e) => setManualInput(e.target.value)}*/}
-                {/*            placeholder="회의록 내용을 직접 입력하세요..."*/}
-                {/*            style={{width: '100%', padding: '15px'}}*/}
-                {/*        />*/}
-                {/*    </div>*/}
-                {/*)}*/}
                 {recordingMethod === 'document' && (
                     <div className="meeting-minutes-section">
                         <h3 className="section-header-meetingminutes">
@@ -1861,6 +2159,12 @@ const MeetingMinutes: React.FC = () => {
                                 {/* ✅ 상태 메시지 표시 추가 */}
                                 <p className="progress-message">{sttStatusMessage}</p>
                                 <p className="progress-info">엔진: {sttEngine}</p>
+                                {/* ✅ 남은 시간 표시 */}
+                                {estimatedTimeRemaining !== null && (
+                                    <p className="progress-info" style={{ color: '#1890ff' }}>
+                                        예상 남은 시간: 약 {estimatedTimeRemaining}초
+                                    </p>
+                                )}
                             </div>
                         )}
 
@@ -1924,7 +2228,22 @@ const MeetingMinutes: React.FC = () => {
                                         <input type="radio" name="stt-source" value={key} onChange={(e) => setSelectedSttSource(e.target.value)} style={{marginRight: '8px'}} />
                                         {key.charAt(0).toUpperCase() + key.slice(1)} 결과 (이것을 소스로 사용)
                                     </label>
-                                    <textarea className="meeting-minutes-textarea" rows={10} defaultValue={value} style={{marginTop: '5px'}}/>
+                                    {/*<textarea className="meeting-minutes-textarea" rows={10} defaultValue={value} style={{marginTop: '5px'}}/>*/}
+                                    <div style={{
+                                        border: '1px solid #ddd',
+                                        borderRadius: '8px',
+                                        padding: '15px',
+                                        backgroundColor: '#f9f9f9',
+                                        maxHeight: '300px',
+                                        overflowY: 'auto',
+                                        whiteSpace: 'pre-wrap',
+                                        fontFamily: 'monospace',
+                                        fontSize: '14px',
+                                        lineHeight: '1.6',
+                                        marginTop: '5px'
+                                    }}>
+                                        {value || '변환된 텍스트가 여기에 표시됩니다...'}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -1948,7 +2267,7 @@ const MeetingMinutes: React.FC = () => {
                                     // pointerEvents: recordingMethod === 'audio' ? 'auto' : 'none'
                                 }}>
                                     <h4>1. LLM 선택</h4>
-                                    <label className="meeting-minutes-label">
+                                    <label className="meeting-minutes-label" style={{opacity: 0.3}}>
                                         <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="claude" checked={llmEngine === 'claude'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
                                         Claude
                                     </label>
@@ -1956,8 +2275,8 @@ const MeetingMinutes: React.FC = () => {
                                         <input className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="chatgpt" checked={llmEngine === 'chatgpt'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
                                         ChatGPT
                                     </label>
-                                    <label className="meeting-minutes-label">
-                                        <input className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="gemini" checked={llmEngine === 'gemini'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                    <label className="meeting-minutes-label" style={{opacity: 0.3}}>
+                                        <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="gemini" checked={llmEngine === 'gemini'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
                                         Gemini
                                     </label>
                                     <label className="meeting-minutes-label" style={{opacity: 0.3}}>

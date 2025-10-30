@@ -23,6 +23,10 @@ export interface STTProgressMessage {
     status: 'pending' | 'processing' | 'completed' | 'failed' | 'aborted';
     result_text?: string;
     error?: string;
+    metadata?: {  // ✅ 추가
+        conversion_duration?: number;
+        [key: string]: any;
+    };
 }
 
 // ✅ STT 결과 조회 응답 (신규)
