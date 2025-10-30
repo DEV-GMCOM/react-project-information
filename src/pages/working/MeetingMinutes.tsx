@@ -312,6 +312,10 @@ const MeetingMinutes: React.FC = () => {
     const [saveMode, setSaveMode] = useState<SaveMode>('create');
     const [currentMeetingId, setCurrentMeetingId] = useState<number | null>(null);
 
+    // ✅ State 추가 (기존 state들 아래에)
+    const [uploadedFileIds, setUploadedFileIds] = useState<Map<string, number>>(new Map());
+    // Map<파일명, file_id> - 업로드된 파일의 ID 추적
+
 
     // --- ▼▼▼ 회의록 데이터 로딩 함수 ▼▼▼ ---
     // ✅ useCallback의 함수 정의에 (tab: 'my' | 'shared') 파라미터 추가
@@ -776,7 +780,7 @@ const MeetingMinutes: React.FC = () => {
     // };
     // ✅ 3. handleGenerateSTT 함수 전체 교체 (기존 함수 찾아서 교체)
     const handleGenerateSTT = async () => {
-        console.log("LLM 회의록 생성 시작");
+        console.log("STT 변환 시작");
         console.log("선택된 STT 엔진:", sttEngine);
         // --- 파라미터 유효성 검증 ---
         if (selectedFiles.length === 0) {
@@ -799,18 +803,25 @@ const MeetingMinutes: React.FC = () => {
                 fileToConvert,
                 {
                     model_size: 'medium', // 설정 가능하도록 state로 관리 가능
-                    language: 'ko'
+                    language: 'ko',
+                    meeting_id: currentMeetingId || undefined  // ✅ 회의록 ID 전달
                 }
             );
 
             const taskId = createResponse.task_id;
+            const fileId = createResponse.file_id;  // ✅ 파일 ID 받음
+
             setCurrentTaskId(taskId);
+            // ✅ 파일 ID 저장 (나중에 STT 결과 조회용)
+            setUploadedFileIds(prev => new Map(prev).set(fileToConvert.name, fileId));
+
+            console.log(`✅ 파일 업로드 완료: file_id=${fileId}`);
             setSttStatusMessage('WebSocket 연결 중...');
 
             // ✅ 2. WebSocket 연결
             const ws = generationService.connectSTTProgress(
                 taskId,
-                (data: STTProgressMessage) => {
+                async (data: STTProgressMessage) => {
                     console.log('📊 진행률 수신:', data);
 
                     // 진행률 업데이트
@@ -826,6 +837,14 @@ const MeetingMinutes: React.FC = () => {
                         }));
 
                         alert(`[${engineToUse}] STT 변환이 완료되었습니다.`);
+
+                        // ✅ (선택) DB에서 최신 결과 다시 가져오기
+                        try {
+                            const sttResult = await generationService.getSTTResult(fileId);
+                            console.log('✅ DB 저장 확인:', sttResult);
+                        } catch (error) {
+                            console.error('STT 결과 조회 실패:', error);
+                        }
 
                         // 상태 초기화
                         setIsGenerating(false);

@@ -1,69 +1,3 @@
-// // src/api/services/generationService.ts
-//
-// import apiClient from '../utils/apiClient';
-//
-// // 1. 백엔드와 동일한 타입 정의
-// export type STTEngine = "whisper" | "clova" | "google" | "aws" | "azure" | "vosk";
-// export type LLMEngine = "claude" | "chatgpt" | "gemini" | "perplexity" | "grok";
-// export type DocType = "summary" | "concept" | "draft";
-//
-// // 2. LLM 요청 (Request) 타입
-// export interface LLMRequestPayload {
-//     source_text: string;
-//     engine: LLMEngine;
-//     doc_types: DocType[]; // string[] 배열
-// }
-//
-// // 3. STT 응답 (Response) 타입
-// export interface STTResponse {
-//     engine: STTEngine;
-//     text: string;
-//     processing_time_ms: number;
-// }
-//
-// // 4. LLM 응답 (Response) 타입
-// export interface LLMResult {
-//     doc_type: DocType;
-//     title: string;
-//     content: string;
-// }
-//
-// export interface LLMResponse {
-//     engine: LLMEngine;
-//     results: LLMResult[];
-//     processing_time_ms: number;
-// }
-//
-//
-// // 5. API 서비스 객체
-// export const generationService = {
-//     /**
-//      * STT 변환 요청 (FormData 사용)
-//      */
-//     async generateSTT(engine: STTEngine, file: File): Promise<STTResponse> {
-//         const formData = new FormData();
-//         formData.append('engine', engine);
-//         formData.append('file', file);
-//
-//         // FormData 전송 시 Content-Type 헤더는 axios가 자동으로 설정
-//         const response = await apiClient.post<STTResponse>('/generation/stt', formData, {
-//             headers: {
-//                 'Content-Type': 'multipart/form-data',
-//             },
-//         });
-//         return response.data;
-//     },
-//
-//     /**
-//      * LLM 생성 요청 (JSON 사용)
-//      */
-//     async generateLLM(payload: LLMRequestPayload): Promise<LLMResponse> {
-//         const response = await apiClient.post<LLMResponse>('/generation/llm', payload);
-//         return response.data;
-//     }
-// };
-
-
 // src/api/services/generationService.ts
 
 import apiClient from '../utils/apiClient';
@@ -76,6 +10,7 @@ export type DocType = "summary" | "concept" | "draft";
 // ✅ STT 작업 생성 응답
 export interface STTCreateResponse {
     task_id: string;
+    file_id: number;  // ✅ 추가: 업로드된 파일 ID
     status: 'pending' | 'processing' | 'completed' | 'failed' | 'aborted';
     message: string;
 }
@@ -88,6 +23,17 @@ export interface STTProgressMessage {
     status: 'pending' | 'processing' | 'completed' | 'failed' | 'aborted';
     result_text?: string;
     error?: string;
+}
+
+// ✅ STT 결과 조회 응답 (신규)
+export interface STTResultResponse {
+    stt_original_id: number;
+    file_attachment_id: number;
+    original_text: string;
+    text_size: number;
+    stt_engine_type: string;
+    conversion_duration?: string;
+    created_at: string;
 }
 
 // ✅ STT 상태 조회 응답
@@ -117,7 +63,7 @@ export interface LLMResponse {
 // API 서비스
 export const generationService = {
     /**
-     * STT 작업 생성 (비동기)
+     * STT 작업 생성 (비동기, DB 연동)
      */
     async createSTTTask(
         engine: STTEngine,
@@ -125,6 +71,7 @@ export const generationService = {
         options?: {
             model_size?: 'tiny' | 'base' | 'small' | 'medium' | 'large';
             language?: string;
+            meeting_id?: number;  // ✅ 추가
         }
     ): Promise<STTCreateResponse> {
         const formData = new FormData();
@@ -137,6 +84,9 @@ export const generationService = {
         if (options?.language) {
             formData.append('language', options.language);
         }
+        if (options?.meeting_id) {
+            formData.append('meeting_id', options.meeting_id.toString());
+        }
 
         const response = await apiClient.post<STTCreateResponse>(
             '/generation/stt/create',
@@ -144,6 +94,17 @@ export const generationService = {
         );
         return response.data;
     },
+
+    /**
+     * STT 결과 조회 (신규)
+     */
+    async getSTTResult(fileId: number): Promise<STTResultResponse> {
+        const response = await apiClient.get<STTResultResponse>(
+            `/generation/stt/result/${fileId}`
+        );
+        return response.data;
+    },
+
 
     /**
      * STT 진행률 WebSocket 구독
