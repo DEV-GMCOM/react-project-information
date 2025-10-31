@@ -1417,6 +1417,10 @@ const MeetingMinutes: React.FC = () => {
         }
     };
 
+    const handleNewMeeting = () => {
+        // TODO: 신규 작성 로직 구현
+    };
+
     return (
         <div className="meeting-minutes-container">
             <div className="meeting-minutes-header">
@@ -1439,8 +1443,20 @@ const MeetingMinutes: React.FC = () => {
 
                 {/* --- ▼▼▼ 회의록 리스트 탭 섹션 ▼▼▼ --- */}
                 <div className="meeting-minutes-section">
-                    <h3 className="section-header-meetingminutes">■ 회의록 리스트</h3>
-
+                    <div className="section-header-meetingminutes" style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                    }}>
+                        <h4 style={{ margin: 0 }}>■ 회의록 리스트</h4>
+                        <button
+                            className="btn-new-item"
+                            onClick={handleNewMeeting}
+                            // style={{ marginRight: '0.5rem' }}
+                        >
+                            신규 작성
+                        </button>
+                    </div>
                     {/* 탭 네비게이션 */}
                     <div className="tab-navigation">
                         <button
@@ -1503,7 +1519,6 @@ const MeetingMinutes: React.FC = () => {
                         )}
                     </div>
                 </div>
-                {/* --- ▲▲▲ 회의록 리스트 탭 섹션 종료 ▲▲▲ --- */}
 
                 {/*<div className="meeting-minutes-section">*/}
                 {/*    <h3 className="section-header-meetingminutes">■ 회의록 리스트</h3>*/}

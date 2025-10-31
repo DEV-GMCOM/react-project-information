@@ -1087,7 +1087,32 @@ const CompanyProfileForm: React.FC = () => {
                     <h2 className="profile-subtitle">
                         광고주 Profile
                     </h2>
+                    {/*<div className="profile-writer">*/}
+                    {/*    <div className="writer-form">*/}
+                    {/*        <div>*/}
+                    {/*            최초 생성 : 부서/직책/이름 ( 연월일시 )*/}
+                    {/*        </div>*/}
+                    {/*        <div>*/}
+                    {/*            마지막 수정 : 부서/직책/이름 ( 연월일시 )*/}
+                    {/*        </div>*/}
+
+                    {/*        /!*<div>최종 작성자 : {lastUpdater?.name || '정보 없음'}</div>*!/*/}
+                    {/*        /!*<div>최종 작성자 : {writerInfo ? `${writerInfo.name} (${writerInfo.department || ''})` : '정보 없음'}</div>*!/*/}
+                    {/*    </div>*/}
+                    {/*</div>*/}
                 </div>
+
+                {/*const handleNewMeeting = () => {*/}
+                {/*// TODO: 신규 작성 로직 구현*/}
+                {/*};*/}
+                {/*<div style={{ textAlign: 'right', margin: '2rem 0' }}>*/}
+                {/*    <button*/}
+                {/*        className="btn-new-item"*/}
+                {/*        // onClick={handleNewMeeting}*/}
+                {/*    >*/}
+                {/*        신규 작성*/}
+                {/*    </button>*/}
+                {/*</div>*/}
 
                 <div className="profile-section">
                     <h3 className="section-header">
