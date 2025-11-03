@@ -11,6 +11,10 @@ import { fileUploadService } from '../../api/services/fileUploadService';
 // 회의록 서비스 import
 import { meetingMinuteService } from '../../api/services/meetingMinuteService'; // (가정: 새 서비스 파일 필요)
 
+import MeetingBasicInfoForm from '../../components/meeting/MeetingBasicInfoForm';
+import NewMeetingModal from '../../components/meeting/NewMeetingModal';
+
+
 // [추가] 에러 핸들러 (프로젝트에 이미 있다면 경로 수정)
 import { handleApiError } from '../../api/utils/errorUtils';
 // ✅ 1. Import 추가 (파일 최상단 import 섹션에)
@@ -25,10 +29,6 @@ import {
 
 import { useHelp } from '../../contexts/HelpContext';
 
-
-
-
-
 // [추가] react-datepicker import
 import DatePicker from "react-datepicker";
 import { ko } from 'date-fns/locale'; // 👈 [추가]
@@ -38,11 +38,6 @@ import "react-datepicker/dist/react-datepicker.css";
 import '../../styles/FormPage.css';
 import '../../styles/MeetingMinutes.css';
 import '../../styles/ProjectBasicInfoForm.css'; // 검색 모달 등에 필요한 스타일
-
-
-
-
-
 
 // --- ▼▼▼ 회의록 목록 컴포넌트 (별도 파일 분리 권장) ▼▼▼ ---
 interface MeetingListProps {
@@ -201,22 +196,6 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect }) => {
                 </tr>
             ) : (
                 meetings.map(meeting => (
-                    // <tr key={meeting.meeting_id} onClick={() => onSelect(meeting)} className="meeting-list-item">
-                    //     <td className="meeting-title-cell">
-                    //         {/* 회의명을 클릭 가능하게 */}
-                    //         <span className="meeting-link">{meeting.meeting_title}</span>
-                    //     </td>
-                    //     <td>{new Date(meeting.meeting_datetime).toLocaleString('ko-KR')}</td>
-                    //     <td>{meeting.project_name || '독립 회의'}</td>
-                    //     <td>{meeting.creator_name}</td>
-                    //     <td>{`${meeting.attendees?.length || 0}명`}</td>
-                    //     <td>
-                    //         {meeting.tags?.map(tag => (
-                    //             <span key={tag} className="tag-badge">{tag}</span>
-                    //         ))}
-                    //     </td>
-                    //     {/* <td>{meeting.llm_generated ? 'AI 생성' : '-'}</td> */}
-                    // </tr>
                     <tr key={meeting.meeting_id} onClick={() => onSelect(meeting)} className="meeting-list-item" title="클릭하여 상세 정보 보기">
                         <td className="meeting-title-cell">
                             <span className="meeting-link">{meeting.meeting_title}</span>
@@ -315,6 +294,66 @@ const MeetingMinutes: React.FC = () => {
     // State 추가 (기존 state들 아래에)
     const [uploadedFileIds, setUploadedFileIds] = useState<Map<string, number>>(new Map());
     // Map<파일명, file_id> - 업로드된 파일의 ID 추적
+
+    const [isNewMeetingModalOpen, setIsNewMeetingModalOpen] = useState(false);
+
+    const [selectedMeeting, setSelectedMeeting] = useState<MeetingMinute | null>(null);
+
+
+    const handleNewMeeting = () => {
+        // 상태 초기화
+        setMeetingTitle('');
+        setMeetingDateTime(null);
+        setMeetingPlace('');
+        setProjectName('');
+        setSelectedProjectId(null);
+        setSharedWith([]);
+        setAttendees('');
+        setTags('');
+        setShareMethods({ email: true, jandi: false });
+        setCurrentMeetingId(null);
+        setSaveMode('create');
+
+        // 모달 열기
+        setIsNewMeetingModalOpen(true);
+    };
+
+    const handleSaveNewMeeting = async () => {
+        if (!meetingTitle || !meetingDateTime) {
+            alert("회의록 제목과 일시는 필수입니다.");
+            return;
+        }
+
+        try {
+            const minimalData = {
+                meeting_title: meetingTitle,
+                meeting_datetime: new Date(meetingDateTime).toISOString(),
+                meeting_place: meetingPlace || '미정',
+                project_id: selectedProjectId,
+                shared_with_ids: sharedWith.map(emp => emp.id),
+                share_methods: Object.entries(shareMethods)
+                    .filter(([, checked]) => checked)
+                    .map(([key]) => key),
+                tags: tags.split(',').map(t => t.trim()).filter(t => t),
+                attendee_ids: [],
+                basic_minutes: ''
+            };
+
+            const created = await meetingMinuteService.createMeeting(minimalData);
+            setCurrentMeetingId(created.meeting_id);
+            setSaveMode('update');
+
+            alert("신규 회의록이 생성되었습니다.");
+
+            // 목록 새로고침
+            if (activeTab === 'my' || activeTab === 'shared') {
+                loadMeetings(activeTab, filterType);
+            }
+        } catch (error: any) {
+            console.error('저장 실패:', error);
+            alert(`저장 실패: ${error.message}`);
+        }
+    };
 
     const { setHelpContent } = useHelp();
 
@@ -575,6 +614,8 @@ const MeetingMinutes: React.FC = () => {
     const handleMeetingSelect = useCallback(async (meeting: MeetingMinute) => {
         console.log('선택된 회의록:', meeting);
 
+        setSelectedMeeting(meeting); // 추가
+
         // 기본 정보 섹션의 상태들을 업데이트
         setMeetingTitle(meeting.meeting_title);
 
@@ -582,7 +623,9 @@ const MeetingMinutes: React.FC = () => {
         const localDateTime = meeting.meeting_datetime
             ? new Date(new Date(meeting.meeting_datetime).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
             : '';
-        setMeetingDateTime(localDateTime);
+        // setMeetingDateTime(localDateTime);
+        setMeetingDateTime(meeting.meeting_datetime ? new Date(meeting.meeting_datetime) : null);
+
 
         setMeetingPlace(meeting.meeting_place || '');
         setProjectName(meeting.project_name || '');
@@ -662,7 +705,8 @@ const MeetingMinutes: React.FC = () => {
     // --- ▲▲▲ 상태 관리 종료 ▲▲▲ ---
 
     const [meetingTitle, setMeetingTitle] = useState<string>('');
-    const [meetingDateTime, setMeetingDateTime] = useState<string>('');
+    // const [meetingDateTime, setMeetingDateTime] = useState<string>('');
+    const [meetingDateTime, setMeetingDateTime] = useState<Date | null>(null);
     const [meetingPlace, setMeetingPlace] = useState<string>('');
 
     const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -1417,10 +1461,6 @@ const MeetingMinutes: React.FC = () => {
         }
     };
 
-    const handleNewMeeting = () => {
-        // TODO: 신규 작성 로직 구현
-    };
-
     return (
         <div className="meeting-minutes-container">
             <div className="meeting-minutes-header">
@@ -1520,154 +1560,653 @@ const MeetingMinutes: React.FC = () => {
                     </div>
                 </div>
 
-                {/*<div className="meeting-minutes-section">*/}
-                {/*    <h3 className="section-header-meetingminutes">■ 회의록 리스트</h3>*/}
-                {/*</div>*/}
+                {/* 기본 정보 섹션 - 컴포넌트로 교체 */}
+                {selectedMeeting && (
+                    <div>
+                        <div id="basic-info-section" className="meeting-minutes-section">
+                            <h3 className="section-header-meetingminutes">■ 기본 정보</h3>
+                            <MeetingBasicInfoForm
+                                meetingTitle={meetingTitle}
+                                setMeetingTitle={setMeetingTitle}
+                                meetingDateTime={meetingDateTime}
+                                setMeetingDateTime={setMeetingDateTime}
+                                meetingPlace={meetingPlace}
+                                setMeetingPlace={setMeetingPlace}
+                                projectName={projectName}
+                                onProjectSearch={() => setShowProjectSearchModal(true)}
+                                sharedWith={sharedWith}
+                                onEmployeeSearch={() => setShowEmployeeSearchModal(true)}
+                                onRemoveEmployee={(id) => setSharedWith(prev => prev.filter(emp => emp.id !== id))}
+                                attendees={attendees}
+                                setAttendees={setAttendees}
+                                tags={tags}
+                                setTags={setTags}
+                                shareMethods={shareMethods}
+                                setShareMethods={setShareMethods}
+                            />
+                        </div>
 
-                <div id="basic-info-section" className="meeting-minutes-section">
-                    <h3 className="section-header-meetingminutes">■ 기본 정보</h3>
-                    {/* --- ▼▼▼ [최종 수정] 기본 정보 레이아웃 및 기능 ▼▼▼ --- */}
-                    {/* (데이터는 handleMeetingSelect에 의해 업데이트됨) */}
-                    {/*<div style={{ padding: '15px' }}>*/}
-                    <div style={{ padding: '2.5rem 1.75rem' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            {/* ✅ 회의록 제목 필드 추가 */}
-                            <div className="writer-field">
-                                <label className="writer-field-label">회의록 제목</label>
-                                <input
-                                    type="text"
-                                    className="writer-field-input"
-                                    style={{width: '100%'}}
-                                    value={meetingTitle}
-                                    onChange={(e) => setMeetingTitle(e.target.value)}
-                                    placeholder="회의록 제목을 입력하세요"
-                                />
+                        {selectedMeeting && serverFiles.length > 0 && (
+                            <div className="meeting-minutes-section">
+                                <h3 className="section-header-meetingminutes">■ 파일 리스트</h3>
+                                {serverFiles.length > 0 ? (
+                                    <div style={{padding: '15px'}}>
+                                        <div style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '10px'
+                                        }}>
+                                            {serverFiles.map(file => (
+                                                <div
+                                                    key={`server-${file.id}`}
+                                                    style={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        padding: '12px 16px',
+                                                        border: '1px solid #e0e0e0',
+                                                        borderRadius: '8px',
+                                                        backgroundColor: '#f9f9f9'
+                                                    }}
+                                                >
+                                                    <div style={{flex: 1}}>
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '8px',
+                                                            marginBottom: '4px'
+                                                        }}>
+                                                            <span style={{fontSize: '16px'}}>📄</span>
+                                                            <span style={{fontWeight: '500'}}>{file.original_file_name}</span>
+                                                            <span style={{
+                                                                padding: '2px 8px',
+                                                                backgroundColor: '#e8f5e9',
+                                                                color: '#2e7d32',
+                                                                borderRadius: '4px',
+                                                                fontSize: '12px'
+                                                            }}>
+                                                                저장됨
+                                                            </span>
+                                                        </div>
+                                                        <div style={{
+                                                            fontSize: '13px',
+                                                            color: '#666',
+                                                            display: 'flex',
+                                                            gap: '12px'
+                                                        }}>
+                                                            <span>{formatFileSize(file.file_size)}</span>
+                                                            <span>업로드: {new Date(file.uploaded_at).toLocaleDateString('ko-KR')}</span>
+                                                            {file.uploader_name && <span>by {file.uploader_name}</span>}
+                                                        </div>
+                                                    </div>
+                                                    <div style={{display: 'flex', gap: '8px'}}>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                window.open(file.download_url, '_blank');
+                                                            }}
+                                                            style={{
+                                                                padding: '6px 12px',
+                                                                backgroundColor: '#1890ff',
+                                                                color: 'white',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                cursor: 'pointer',
+                                                                fontSize: '14px'
+                                                            }}
+                                                        >
+                                                            ⬇️ 다운로드
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div style={{
+                                        padding: '30px',
+                                        textAlign: 'center',
+                                        color: '#999',
+                                        fontSize: '14px'
+                                    }}>
+                                        저장된 파일이 없습니다.
+                                    </div>
+                                )}
                             </div>
+                        )}
 
-                            {/* ✅ 회의 일시 및 장소 필드 추가 */}
-                            <div style={{ display: 'flex', gap: '20px' }}>
-                                <div className="writer-field" style={{ flex: 1 }}>
-                                    <label className="writer-field-label">회의 일시</label>
-
-                                    {/*<input*/}
-                                    {/*    type="datetime-local"*/}
-                                    {/*    className="writer-field-input"*/}
-                                    {/*    style={{width: '100%'}}*/}
-                                    {/*    value={meetingDateTime}*/}
-                                    {/*    onChange={(e) => setMeetingDateTime(e.target.value)}*/}
-                                    {/*/>*/}
-                                    {/* --- ▼▼▼ [수정] react-datepicker로 교체 ▼▼▼ --- */}
-                                    <DatePicker
-                                        locale={ko}
-                                        selected={meetingDateTime ? new Date(meetingDateTime) : null}
-                                        onChange={(date: Date | null) => {
-                                            if (date) {
-                                                // date 객체를 'YYYY-MM-DDTHH:mm' 형식의 로컬 시간 문자열로 변환
-                                                // (기존 handleMeetingSelect에서 사용한 로직과 동일하게)
-                                                const localDateTime = new Date(date.getTime() - (date.getTimezoneOffset() * 60000))
-                                                    .toISOString()
-                                                    .slice(0, 16);
-                                                setMeetingDateTime(localDateTime);
-                                            } else {
-                                                setMeetingDateTime('');
-                                            }
-                                        }}
-                                        showTimeSelect  // 시간 선택 옵션 활성화
-                                        dateFormat="yyyy-MM-dd HH:mm" // 사용자에게 보여질 날짜/시간 형식
-                                        className="writer-field-input" // 기존 스타일 적용
-                                        // ✅ [추가] DatePicker 래퍼에 100% 너비를 적용하기 위한 클래스
-                                        wrapperClassName="date-picker-wrapper"
-
-                                        // ❌ [제거] 이 'style' prop이 TS 오류의 원인이었습니다.
-                                        // style={{width: '100%'}}
-                                        placeholderText="회의 일시를 선택하세요"
-                                        autoComplete="off" // 브라우저 자동완성 끄기
-                                    />
-                                    {/* --- ▲▲▲ 수정 종료 ▲▲▲ --- */}
-                                </div>
-                                <div className="writer-field" style={{ flex: 1 }}>
-                                    <label className="writer-field-label">회의 장소</label>
+                        {/*3. '회의록 기록 방법 선택' 섹션 추가*/}
+                        <div className="meeting-minutes-section">
+                            <h3 className="section-header-meetingminutes">■ 회의록 기록 방법 선택</h3>
+                            {/*<div style={{padding: '20px', display: 'flex', gap: '20px', justifyContent: 'center'}}>*/}
+                            <div style={{ padding: '2.5rem 2.75rem', display: 'flex', gap: '20px', justifyContent: 'center' }}>
+                                <label className="recording-method-label" style={{
+                                    border: '2px solid #ddd',
+                                    borderRadius: '12px',
+                                    padding: '30px',
+                                    flex: 1,
+                                    textAlign: 'center',
+                                    cursor: 'pointer',
+                                    backgroundColor: recordingMethod === 'document' ? '#f0f8ff' : 'white',
+                                    borderColor: recordingMethod === 'document' ? '#1890ff' : '#ddd',
+                                    display: 'flex',
+                                    flexDirection: 'row',  // ✅ 가로 배치
+                                    alignItems: 'center',  // ✅ 세로축 기준 가운데 정렬
+                                    justifyContent: 'center',  // ✅ 가로축 기준 가운데 정렬
+                                    gap: '15px'
+                                }}>
                                     <input
-                                        type="text"
-                                        className="writer-field-input"
-                                        style={{width: '100%'}}
-                                        value={meetingPlace}
-                                        onChange={(e) => setMeetingPlace(e.target.value)}
-                                        placeholder="회의 장소를 입력하세요"
+                                        type="radio"
+                                        name="recording-method"
+                                        value="document"
+                                        checked={recordingMethod === 'document'}
+                                        onChange={(e) => setRecordingMethod(e.target.value)}
+                                        style={{
+                                            transform: 'scale(1.8)',
+                                            margin: '0'  // ✅ 기본 마진 제거
+                                        }}
                                     />
-                                </div>
-                            </div>
-                            {/* --- ▼▼▼ [수정] 연관 프로젝트 UI ▼▼▼ --- */}
-                            <div className="writer-field">
-                                <label className="writer-field-label">연관 프로젝트</label>
-                                <div className="project-selection-display" style={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid #ddd', borderRadius: '4px', padding: '5px', minHeight: '38px' }}>
-                                    {projectName ? (
-                                        <span
-                                            className="status-badge company-badge with-reset"
-                                            style={{
-                                                maxWidth: '100%', // 부모 너비를 넘지 않도록 설정
-                                                minWidth: 0,       // flex 아이템이 작아질 수 있도록 허용
-                                            }}
-                                        >
-                                            <span
-                                                className="badge-text"
-                                                title={projectName}
-                                                style={{
-                                                    whiteSpace: 'nowrap',   // 텍스트가 줄바꿈되지 않도록
-                                                    overflow: 'hidden',     // 넘치는 텍스트 숨기기
-                                                    textOverflow: 'ellipsis', // 넘치는 텍스트를 ...으로 표시
-                                                }}
-                                            >
-                                                {projectName}
-                                            </span>
-                                            <span className="badge-reset-icon" onClick={cancelProjectSelection} title="프로젝트 선택 취소">×</span>
-                                        </span>
-                                    ) : (
-                                        <span style={{ color: '#999', fontSize: '14px', paddingLeft: '8px' }}>오른쪽 검색 버튼으로 프로젝트를 선택하세요</span>
-                                    )}
-                                    <button className="search-btn" onClick={openProjectSearchModal} style={{ marginLeft: 'auto' }}>🔍</button>
-                                </div>
-                            </div>
-                            {/* --- ▲▲▲ 수정 종료 ▲▲▲ --- */}
-                            {/*<div className="writer-field" style={{ alignItems: 'flex-start' }}>*/}
-                            {/*    <label className="writer-field-label" style={{ paddingTop: '5px' }}>회의록 공유</label>*/}
-                            <div className="writer-field"> {/* ✅ style 속성 제거 */}
-                                <label className="writer-field-label">회의록 공유</label> {/* ✅ style 속성 제거 */}
-                                <div className="input-with-search" style={{ flexGrow: 1, display: 'flex', flexWrap: 'wrap', gap: '5px', border: '1px solid #ddd', borderRadius: '4px', padding: '5px', minHeight: '38px' }}>
-                                    {sharedWith.map(emp => (
-                                        <span key={emp.id} className="status-badge company-badge with-reset">
-                                            <span className="badge-text">{emp.name}({emp.department})</span>
-                                            <span className="badge-reset-icon" onClick={() => removeSharedEmployee(emp.id)} title={`${emp.name} 삭제`}>×</span>
-                                        </span>
-                                    ))}
-                                    <button className="search-btn" onClick={() => setShowEmployeeSearchModal(true)} style={{ marginLeft: 'auto', alignSelf: 'center' }}>+</button>
-                                </div>
-                            </div>
-                            <div className="writer-field"> {/* ✅ style 속성 제거 */}
-                                <label className="writer-field-label">그 외 참석자</label> {/* ✅ style 속성 제거 */}
-                                <input type="text" className="writer-field-input" style={{width: '100%'}} value={attendees} onChange={(e) => setAttendees(e.target.value)} placeholder="참석자는 기록용도 일 뿐, 회의록 공유는 이뤄지지 않습니다. 쉼표(,)로 구분" />
-                            </div>
-                            <div className="writer-field" style={{ alignItems: 'center' }}>
-                                <label className="writer-field-label">전달 방법</label>
-                                <label className="meeting-minutes-label share-method-label">
-                                    <input type="checkbox" className="meeting-minutes-checkbox checkbox-large" name="email" checked={shareMethods.email} onChange={handleShareMethodChange} />
-                                    <span>이메일</span>
+                                    <div style={{fontSize: '18px', fontWeight: 'bold'}}>
+                                        문서 파일 또는 직접 입력
+                                    </div>
                                 </label>
-                                <label className="meeting-minutes-label share-method-label">
-                                    <input type="checkbox" className="meeting-minutes-checkbox checkbox-large" name="jandi" checked={shareMethods.jandi} onChange={handleShareMethodChange} />
-                                    <span>잔디</span>
+
+                                <label className="recording-method-label" style={{
+                                    border: '2px solid #ddd',
+                                    borderRadius: '12px',
+                                    padding: '30px',
+                                    flex: 1,
+                                    textAlign: 'center',
+                                    cursor: 'pointer',
+                                    backgroundColor: recordingMethod === 'audio' ? '#f0f8ff' : 'white',
+                                    borderColor: recordingMethod === 'audio' ? '#1890ff' : '#ddd',
+                                    display: 'flex',
+                                    flexDirection: 'row',  // ✅ 가로 배치
+                                    alignItems: 'center',  // ✅ 세로축 기준 가운데 정렬
+                                    justifyContent: 'center',  // ✅ 가로축 기준 가운데 정렬
+                                    gap: '15px'
+                                }}>
+                                    <input
+                                        type="radio"
+                                        name="recording-method"
+                                        value="audio"
+                                        checked={recordingMethod === 'audio'}
+                                        onChange={(e) => setRecordingMethod(e.target.value)}
+                                        style={{
+                                            transform: 'scale(1.8)',
+                                            margin: '0'  // ✅ 기본 마진 제거
+                                        }}
+                                    />
+                                    <div style={{fontSize: '18px', fontWeight: 'bold'}}>
+                                        음성 녹취록 (녹음파일)
+                                    </div>
                                 </label>
-                            </div>
-                            <div className="writer-field">
-                                <label className="writer-field-label">태그</label>
-                                <input type="text" className="writer-field-input" style={{width: '100%'}} value={tags} onChange={(e) => setTags(e.target.value)} placeholder="쉼표(,)로 구분, 검색 시 활용 (10자 이내)" />
+
+                                <label className="recording-method-label" style={{
+                                    border: '2px solid #ddd',
+                                    borderRadius: '12px',
+                                    padding: '30px',
+                                    flex: 1,
+                                    textAlign: 'center',
+                                    cursor: 'not-allowed',
+                                    backgroundColor: '#f5f5f5',
+                                    borderColor: '#ddd',
+                                    opacity: 0.6,
+                                    display: 'flex',
+                                    flexDirection: 'row',  // ✅ 가로 배치
+                                    alignItems: 'center',  // ✅ 세로축 기준 가운데 정렬
+                                    justifyContent: 'center',  // ✅ 가로축 기준 가운데 정렬
+                                    gap: '15px'
+                                }}>
+                                    <input
+                                        type="radio"
+                                        name="recording-method"
+                                        value="realtime"
+                                        disabled
+                                        style={{
+                                            transform: 'scale(1.8)',
+                                            margin: '0'  // ✅ 기본 마진 제거
+                                        }}
+                                    />
+                                    <div style={{fontSize: '18px', fontWeight: 'bold', color: '#999'}}>
+                                        실시간 생성
+                                    </div>
+                                    <div style={{fontSize: '12px', color: '#999'}}>
+                                        (준비중)
+                                    </div>
+                                </label>
                             </div>
                         </div>
+
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            multiple
+                            accept={allowedExtensions.map(ext => `.${ext}`).join(',')}
+                            onChange={handleFileInputChange}
+                            style={{ display: 'none' }}
+                        />
+
+                        {/* --- ▼▼▼ [보존] 파일 업로드 드래그앤드롭 UI ▼▼▼ --- */}
+                        {/* 파일 업로드 영역 */}
+                        <div className="file-upload-section">
+                            <div
+                                className={`file-drop-zone ${isDragOver ? 'drag-over' : ''}`}
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                onClick={handleFileSelect}
+                            >
+                                {/* ✅ serverFiles와 selectedFiles가 모두 비어있을 때만 메시지 표시 */}
+                                {/*{serverFiles.length === 0 && selectedFiles.length === 0 ? (*/}
+                                {selectedFiles.length === 0 ? (
+                                    <div className="drop-zone-message">
+                                        <div className="drop-zone-icon">📁</div>
+                                        <div className="drop-zone-text">
+                                            <p style={{ fontSize: '1.4rem', marginBottom: '8px' }}>
+                                                📎 클릭하거나 파일을 드래그하여 업로드하세요
+                                            </p>
+                                            <p style={{ fontSize: '2rem', color: '#888' }}>
+                                                지원 형식: {allowedExtensions.join(', ')}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="file-list">
+                                        {/* ✅ 새로 선택된 로컬 파일 목록 */}
+                                        {selectedFiles.map((file, index) => (
+                                            <div key={`local-${index}`} className="file-item">
+                                                <div className="file-info">
+                                                    <div className="file-name">
+                                                        📄 {file.name}
+                                                    </div>
+                                                    <div className="file-details">
+                                                        <span className="file-size">{formatFileSize(file.size)}</span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    className="file-remove-btn"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // 드롭존 클릭 방지
+                                                        handleRemoveSelectedFile(file);
+                                                    }}
+                                                    title="파일 삭제"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        ))}
+
+                                        {/* 파일 추가 버튼 */}
+                                        <div
+                                            className="drop-zone-add-more"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleFileSelect();
+                                            }}
+                                            style={{ display: isFileUploading ? 'none' : 'flex' }}
+                                        >
+                                            <span>+ 더 많은 파일 추가</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {isFileUploading && (
+                                <div className="upload-progress">
+                                    <div className="upload-spinner">⏳</div>
+                                    <span>파일을 업로드하고 있습니다...</span>
+                                </div>
+                            )}
+                        </div>
+                        {/* --- ▲▲▲ 파일 업로드 UI 종료 ▲▲▲ --- */}
+
+                        {recordingMethod === 'document' && (
+                            <div className="meeting-minutes-section">
+                                <h3 className="section-header-meetingminutes">
+                                    ■ 회의록 직접 입력
+                                    {manualInput && selectedFiles.length > 0 && (
+                                        <span style={{fontSize: '14px', color: '#1890ff', marginLeft: '10px'}}>
+                                    (파일에서 로드됨)
+                                </span>
+                                    )}
+                                </h3>
+                                <textarea
+                                    className="meeting-minutes-textarea"
+                                    rows={15}
+                                    value={manualInput}
+                                    onChange={(e) => setManualInput(e.target.value)}
+                                    placeholder="회의록 내용을 직접 입력하거나, txt/md 파일을 드롭존에서 선택하면 자동으로 내용이 로드됩니다..."
+                                    style={{
+                                        margin: '0.5rem',
+                                        width: 'calc(100% - 1rem)',
+                                        padding: '15px',
+                                        fontFamily: 'monospace', // md 파일의 경우 가독성 향상
+                                        whiteSpace: 'pre-wrap', // 줄바꿈 및 공백 유지
+                                        overflowWrap: 'break-word'
+                                    }}
+                                />
+                                <div className="writer-field" style={{ alignItems: 'center', margin: '0 0.5rem' }}>
+                                    <label className="meeting-minutes-label share-method-label">
+                                        <input type="checkbox" className="meeting-minutes-checkbox checkbox-large" name="llm-output" checked={llmOutput} onChange={(e) => setLlmOutput(e.target.checked)}/>
+                                        <span>LLM 문서 생성</span>
+                                    </label>
+                                </div>
+
+                                {manualInput && (
+                                    <div style={{marginTop: '10px', fontSize: '12px', color: '#666'}}>
+                                        💡 마크다운 형식이 유지됩니다. 자유롭게 편집하세요.
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {recordingMethod === 'audio' && (
+                            <div className="generation-panel" style={{flexDirection: 'column', gap: '15px'}}>
+                                <div style={{display: 'flex', width: '100%', gap: '20px'}}>
+                                    <div className="generation-options" style={{
+                                        flex: 1,
+                                        flexDirection: 'column',
+                                        alignItems: 'flex-start',
+                                        border: '1px solid #eee',
+                                        padding: '15px',
+                                        borderRadius: '8px',
+                                        opacity: 0.3,
+                                        pointerEvents: 'none'
+                                    }}>
+                                        <h4>1. STT 엔진 선택</h4>
+                                        <label className="meeting-minutes-label">
+                                            <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="whisper" checked={sttEngine === 'whisper'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                            Whisper
+                                        </label>
+                                        <label className="meeting-minutes-label">
+                                            <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="vosk" checked={sttEngine === 'vosk'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                            Vosk STT
+                                        </label>
+                                        <label className="meeting-minutes-label">
+                                            <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="clova" checked={sttEngine === 'clova'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                            Clova Speech
+                                        </label>
+                                        <label className="meeting-minutes-label">
+                                            <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="google" checked={sttEngine === 'google'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                            Google STT
+                                        </label>
+                                        <label className="meeting-minutes-label">
+                                            <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="aws" checked={sttEngine === 'aws'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                            AWS Transcribe
+                                        </label>
+                                        <label className="meeting-minutes-label">
+                                            <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="azure" checked={sttEngine === 'azure'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                            Azure Speech
+                                        </label>
+                                    </div>
+                                </div>
+                                <button className="btn-secondary" onClick={handleGenerateSTT} style={{margin: '2rem'}}>STT( Speech To Text ) 변환</button>
+                            </div>
+                        )}
+
+                        {/* ✅ 프로그레스 바 추가 */}
+                        {isGenerating && (
+                            <div className="generation-progress" style={{
+                                padding: '20px',
+                                backgroundColor: '#f8f9fa',
+                                borderRadius: '8px',
+                                margin: '20px 0',
+                                border: '1px solid #e0e0e0'
+                            }}>
+                                {generationPhase === 1 && (
+                                    //
+                                    <div className="generation-progress">
+                                        <div className="progress-header">
+                                            <h4>🎙️ STT 변환 진행 중...</h4>
+                                            {/* ✅ Abort 버튼 추가 */}
+                                            <button
+                                                type="button"
+                                                onClick={handleAbortSTT}
+                                                className="abort-button"
+                                                disabled={!currentTaskId}
+                                            >
+                                                ⏹️ 중단
+                                            </button>
+                                        </div>
+                                        <div className="progress-bar-container">
+                                            <div
+                                                className="progress-bar"
+                                                style={{ width: `${sttProgress}%` }}
+                                            >
+                                                {sttProgress.toFixed(0)}%
+                                            </div>
+                                        </div>
+                                        {/* ✅ 상태 메시지 표시 추가 */}
+                                        <p className="progress-message">{sttStatusMessage}</p>
+                                        <p className="progress-info">엔진: {sttEngine}</p>
+                                        {/* ✅ 남은 시간 표시 */}
+                                        {estimatedTimeRemaining !== null && (
+                                            <p className="progress-info" style={{ color: '#1890ff' }}>
+                                                예상 남은 시간: 약 {estimatedTimeRemaining}초
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {recordingMethod === 'audio' && (
+                            <div className="meeting-minutes-section">
+                                {/* ✅ 아래 방향 화살표 추가 */}
+                                <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
+                                    <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>
+                                        ⬇
+                                    </div>
+                                </div>
+                                <h3 className="section-header-meetingminutes">■ 음성에서 추출한 텍스트 (Source)</h3>
+                                <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
+                                    {Object.entries(sttResults).map(([key, value]) => (
+                                        <div key={key}>
+                                            <label className="meeting-minutes-label">
+                                                <input type="radio" name="stt-source" value={key} onChange={(e) => setSelectedSttSource(e.target.value)} style={{marginRight: '8px'}} />
+                                                {key.charAt(0).toUpperCase() + key.slice(1)} 결과 (이것을 소스로 사용)
+                                            </label>
+                                            {/*<textarea className="meeting-minutes-textarea" rows={10} defaultValue={value} style={{marginTop: '5px'}}/>*/}
+                                            <div style={{
+                                                border: '1px solid #ddd',
+                                                borderRadius: '8px',
+                                                padding: '15px',
+                                                backgroundColor: '#f9f9f9',
+                                                maxHeight: '300px',
+                                                overflowY: 'auto',
+                                                whiteSpace: 'pre-wrap',
+                                                fontFamily: 'monospace',
+                                                fontSize: '14px',
+                                                lineHeight: '1.6',
+                                                marginTop: '5px'
+                                            }}>
+                                                {value || '변환된 텍스트가 여기에 표시됩니다...'}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/*{ recordingMethod === 'document' && llmOutput && (*/}
+                        { ( llmOutput || (recordingMethod === 'audio') ) && (
+                            <div>
+                                <div className="generation-panel" style={{flexDirection: 'column', gap: '15px'}}>
+                                    <div style={{display: 'flex', width: '100%', gap: '20px'}}>
+                                        {/*<div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>*/}
+                                        <div className="generation-options" style={{
+                                            flex: 1,
+                                            flexDirection: 'column',
+                                            alignItems: 'flex-start',
+                                            border: '1px solid #eee',
+                                            padding: '15px',
+                                            borderRadius: '8px',
+                                            // opacity: recordingMethod === 'audio' ? 1 : 0.3,
+                                            // pointerEvents: recordingMethod === 'audio' ? 'auto' : 'none'
+                                        }}>
+                                            <h4>1. LLM 선택</h4>
+                                            <label className="meeting-minutes-label" style={{opacity: 0.3}}>
+                                                <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="claude" checked={llmEngine === 'claude'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                                Claude
+                                            </label>
+                                            <label className="meeting-minutes-label">
+                                                <input className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="chatgpt" checked={llmEngine === 'chatgpt'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                                ChatGPT
+                                            </label>
+                                            <label className="meeting-minutes-label" style={{opacity: 0.3}}>
+                                                <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="gemini" checked={llmEngine === 'gemini'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                                Gemini
+                                            </label>
+                                            <label className="meeting-minutes-label" style={{opacity: 0.3}}>
+                                                <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="perplexity" checked={llmEngine === 'perplexity'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                                Perplexity
+                                            </label>
+                                            <label className="meeting-minutes-label" style={{opacity: 0.3}}>
+                                                <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="grok" checked={llmEngine === 'grok'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                                Grok
+                                            </label>
+                                        </div>
+                                        <div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>
+                                            <h4>2. 생성할 문서 타입</h4>
+                                            <label className="meeting-minutes-label">
+                                                <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="summary" checked={llmDocTypes.summary} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                                내용(안건) 정리
+                                            </label>
+                                            <label className="meeting-minutes-label">
+                                                <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="concept" checked={llmDocTypes.concept} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                                컨셉 문서
+                                            </label>
+                                            <label className="meeting-minutes-label">
+                                                <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="draft" checked={llmDocTypes.draft} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                                Draft 기획서
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {/*<button className="btn-secondary" onClick={handleGenerate} style={{margin: '2rem'}}>LLM 회의록 생성</button>*/}
+                                    <button
+                                        className="btn-secondary"
+                                        // className="btn-disabled"
+                                        onClick={handleGenerateLLM}
+                                        style={{margin: '2rem'}}
+                                        disabled={isGenerating}
+                                    >
+                                        LLM 회의록 생성
+                                    </button>
+                                </div>
+
+                                <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
+                                    <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>
+                                        ⬇
+                                    </div>
+                                </div>
+
+                                {/* ✅ 프로그레스 바 추가 */}
+                                {isGenerating && (
+                                    <div className="generation-progress" style={{
+                                        padding: '20px',
+                                        backgroundColor: '#f8f9fa',
+                                        borderRadius: '8px',
+                                        margin: '20px 0',
+                                        border: '1px solid #e0e0e0'
+                                    }}>
+                                        {generationPhase === 2 && (
+                                            <div>
+                                                <div style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '15px',
+                                                    marginBottom: '10px'
+                                                }}>
+                                                    <div className="spinner" style={{
+                                                        width: '30px',
+                                                        height: '30px',
+                                                        border: '4px solid #f3f3f3',
+                                                        borderTop: '4px solid #1890ff',
+                                                        borderRadius: '50%',
+                                                        animation: 'spin 1s linear infinite'
+                                                    }}></div>
+                                                    <h4 style={{margin: 0, fontSize: '16px', color: '#333'}}>
+                                                        🤖 Phase 2: LLM 문서 생성 중
+                                                    </h4>
+                                                </div>
+                                                <div style={{
+                                                    marginTop: '8px',
+                                                    fontSize: '12px',
+                                                    color: '#666',
+                                                    marginLeft: '45px'
+                                                }}>
+                                                    AI가 회의록을 분석하여
+                                                    {llmDocTypes.summary && ' 안건 정리'}
+                                                    {llmDocTypes.concept && (llmDocTypes.summary ? ', 컨셉 문서' : ' 컨셉 문서')}
+                                                    {llmDocTypes.draft && ((llmDocTypes.summary || llmDocTypes.concept) ? ', Draft 기획서' : ' Draft 기획서')}
+                                                    를 생성하고 있습니다...
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="meeting-minutes-section">
+                                    <h3 className="section-header-meetingminutes">■ 생성된 Draft 기획서, 컨셉문서, 주요 안건 정리</h3>
+                                    <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
+                                        {llmResults.map(result => (
+                                            llmDocTypes[result.id as keyof typeof llmDocTypes] && (
+                                                <div key={result.id}>
+
+                                                    <label className="meeting-minutes-label llm-result-label">
+                                                        <input
+                                                            // className="meeting-minutes-checkbox" /* ✅ checkbox-large 클래스 제거 */
+                                                            className="meeting-minutes-checkbox checkbox-large" /* ✅ checkbox-large 클래스 제거 */
+                                                            type="checkbox"
+                                                            checked={result.save}
+                                                            onChange={() => handleLlmResultSaveChange(result.id)}
+                                                            // /* ✅ style 속성 제거 */
+                                                        />
+                                                        <span>{result.title} (서버에 저장)</span>
+                                                    </label>
+                                                    <textarea className="meeting-minutes-textarea" rows={20} value={result.content} readOnly style={{marginTop: '5px'}} />
+                                                </div>
+                                            )
+                                        ))}
+                                    </div>
+                                </div>
+
+                            </div>
+                        )}
+
+                        {/* --- ▼▼▼ [수정] 최종 저장 버튼 (요청사항 11) ▼▼▼ --- */}
+                        <div className="meeting-minutes-actions" style={{justifyContent: 'center'}}>
+                            <button className="btn-primary" onClick={handleSave}>서버 저장&nbsp;&nbsp;&nbsp;&&nbsp;&nbsp;&nbsp;공유자에게 전송</button>
+                        </div>
+                        {/* --- ▲▲▲ 최종 저장 버튼 종료 ▲▲▲ --- */}
+
                     </div>
-                    {/* --- ▲▲▲ 기본 정보 레이아웃 종료 ▲▲▲ --- */}
-                </div>
-                {/*{showEmployeeModal && <EmployeeSearchModal onClose={() => setShowEmployeeModal(false)} />}*/}
-                {/* --- ▲▲▲ 기본 정보 섹션 종료 ▲▲▲ --- */}
+                )}
+
+                {/* 신규 작성 모달 */}
+                <NewMeetingModal
+                    isOpen={isNewMeetingModalOpen}
+                    onClose={() => setIsNewMeetingModalOpen(false)}
+                    onSave={handleSaveNewMeeting}
+                    meetingTitle={meetingTitle}
+                    setMeetingTitle={setMeetingTitle}
+                    meetingDateTime={meetingDateTime}
+                    setMeetingDateTime={setMeetingDateTime}
+                    meetingPlace={meetingPlace}
+                    setMeetingPlace={setMeetingPlace}
+                    projectName={projectName}
+                    onProjectSearch={() => setShowProjectSearchModal(true)}
+                    sharedWith={sharedWith}
+                    onEmployeeSearch={() => setShowEmployeeSearchModal(true)}
+                    onRemoveEmployee={(id) => setSharedWith(prev => prev.filter(emp => emp.id !== id))}
+                    attendees={attendees}
+                    setAttendees={setAttendees}
+                    tags={tags}
+                    setTags={setTags}
+                    shareMethods={shareMethods}
+                    setShareMethods={setShareMethods}
+                />
 
                 {/* --- ▼▼▼ [추가] 프로젝트 검색 모달 ▼▼▼ --- */}
                 {showProjectSearchModal && (
@@ -1725,7 +2264,6 @@ const MeetingMinutes: React.FC = () => {
                         </div>
                     </div>
                 )}
-                {/* --- ▲▲▲ 프로젝트 검색 모달 종료 ▲▲▲ --- */}
 
                 {/* --- ▼▼▼ [수정] 직원 검색 모달 호출 ▼▼▼ --- */}
                 {showEmployeeSearchModal && (
@@ -1735,688 +2273,6 @@ const MeetingMinutes: React.FC = () => {
                         initialSelected={sharedWith}
                     />
                 )}
-                {/* --- ▲▲▲ 직원 검색 모달 종료 ▲▲▲ --- */}
-
-                {/* ✅ 아래 방향 화살표 추가 */}
-                <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
-                    {/*<div style={{fontSize: '6rem', color: '#1890ff', lineHeight: '1'}}>*/}
-                    <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>
-
-                        ⬇
-                    </div>
-                </div>
-
-                {/*3. '회의록 기록 방법 선택' 섹션 추가*/}
-                <div className="meeting-minutes-section">
-                    <h3 className="section-header-meetingminutes">■ 회의록 기록 방법 선택</h3>
-                    {/*<div style={{padding: '20px', display: 'flex', gap: '20px', justifyContent: 'center'}}>*/}
-                    <div style={{ padding: '2.5rem 2.75rem', display: 'flex', gap: '20px', justifyContent: 'center' }}>
-                        <label className="recording-method-label" style={{
-                            border: '2px solid #ddd',
-                            borderRadius: '12px',
-                            padding: '30px',
-                            flex: 1,
-                            textAlign: 'center',
-                            cursor: 'pointer',
-                            backgroundColor: recordingMethod === 'document' ? '#f0f8ff' : 'white',
-                            borderColor: recordingMethod === 'document' ? '#1890ff' : '#ddd',
-                            display: 'flex',
-                            flexDirection: 'row',  // ✅ 가로 배치
-                            alignItems: 'center',  // ✅ 세로축 기준 가운데 정렬
-                            justifyContent: 'center',  // ✅ 가로축 기준 가운데 정렬
-                            gap: '15px'
-                        }}>
-                            <input
-                                type="radio"
-                                name="recording-method"
-                                value="document"
-                                checked={recordingMethod === 'document'}
-                                onChange={(e) => setRecordingMethod(e.target.value)}
-                                style={{
-                                    transform: 'scale(1.8)',
-                                    margin: '0'  // ✅ 기본 마진 제거
-                                }}
-                            />
-                            <div style={{fontSize: '18px', fontWeight: 'bold'}}>
-                                문서 파일 또는 직접 입력
-                            </div>
-                        </label>
-
-                        <label className="recording-method-label" style={{
-                            border: '2px solid #ddd',
-                            borderRadius: '12px',
-                            padding: '30px',
-                            flex: 1,
-                            textAlign: 'center',
-                            cursor: 'pointer',
-                            backgroundColor: recordingMethod === 'audio' ? '#f0f8ff' : 'white',
-                            borderColor: recordingMethod === 'audio' ? '#1890ff' : '#ddd',
-                            display: 'flex',
-                            flexDirection: 'row',  // ✅ 가로 배치
-                            alignItems: 'center',  // ✅ 세로축 기준 가운데 정렬
-                            justifyContent: 'center',  // ✅ 가로축 기준 가운데 정렬
-                            gap: '15px'
-                        }}>
-                            <input
-                                type="radio"
-                                name="recording-method"
-                                value="audio"
-                                checked={recordingMethod === 'audio'}
-                                onChange={(e) => setRecordingMethod(e.target.value)}
-                                style={{
-                                    transform: 'scale(1.8)',
-                                    margin: '0'  // ✅ 기본 마진 제거
-                                }}
-                            />
-                            <div style={{fontSize: '18px', fontWeight: 'bold'}}>
-                                음성 녹취록 (녹음파일)
-                            </div>
-                        </label>
-
-                        <label className="recording-method-label" style={{
-                            border: '2px solid #ddd',
-                            borderRadius: '12px',
-                            padding: '30px',
-                            flex: 1,
-                            textAlign: 'center',
-                            cursor: 'not-allowed',
-                            backgroundColor: '#f5f5f5',
-                            borderColor: '#ddd',
-                            opacity: 0.6,
-                            display: 'flex',
-                            flexDirection: 'row',  // ✅ 가로 배치
-                            alignItems: 'center',  // ✅ 세로축 기준 가운데 정렬
-                            justifyContent: 'center',  // ✅ 가로축 기준 가운데 정렬
-                            gap: '15px'
-                        }}>
-                            <input
-                                type="radio"
-                                name="recording-method"
-                                value="realtime"
-                                disabled
-                                style={{
-                                    transform: 'scale(1.8)',
-                                    margin: '0'  // ✅ 기본 마진 제거
-                                }}
-                            />
-                            <div style={{fontSize: '18px', fontWeight: 'bold', color: '#999'}}>
-                                실시간 생성
-                            </div>
-                            <div style={{fontSize: '12px', color: '#999'}}>
-                                (준비중)
-                            </div>
-                        </label>
-                    </div>
-                </div>
-
-                {/* ✅ 아래 방향 화살표 추가 */}
-                <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
-                    <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>
-                        ⬇
-                    </div>
-                </div>
-
-                <div className="meeting-minutes-section">
-                    <h3 className="section-header-meetingminutes">■ 파일 리스트</h3>
-                    {serverFiles.length > 0 ? (
-                        <div style={{padding: '15px'}}>
-                            <div style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '10px'
-                            }}>
-                                {serverFiles.map(file => (
-                                    <div
-                                        key={`server-${file.id}`}
-                                        style={{
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            padding: '12px 16px',
-                                            border: '1px solid #e0e0e0',
-                                            borderRadius: '8px',
-                                            backgroundColor: '#f9f9f9'
-                                        }}
-                                    >
-                                        <div style={{flex: 1}}>
-                                            <div style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px',
-                                                marginBottom: '4px'
-                                            }}>
-                                                <span style={{fontSize: '16px'}}>📄</span>
-                                                <span style={{fontWeight: '500'}}>{file.original_file_name}</span>
-                                                <span style={{
-                                                    padding: '2px 8px',
-                                                    backgroundColor: '#e8f5e9',
-                                                    color: '#2e7d32',
-                                                    borderRadius: '4px',
-                                                    fontSize: '12px'
-                                                }}>
-                                    저장됨
-                                </span>
-                                            </div>
-                                            <div style={{
-                                                fontSize: '13px',
-                                                color: '#666',
-                                                display: 'flex',
-                                                gap: '12px'
-                                            }}>
-                                                <span>{formatFileSize(file.file_size)}</span>
-                                                <span>업로드: {new Date(file.uploaded_at).toLocaleDateString('ko-KR')}</span>
-                                                {file.uploader_name && <span>by {file.uploader_name}</span>}
-                                            </div>
-                                        </div>
-                                        <div style={{display: 'flex', gap: '8px'}}>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    window.open(file.download_url, '_blank');
-                                                }}
-                                                style={{
-                                                    padding: '6px 12px',
-                                                    backgroundColor: '#1890ff',
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer',
-                                                    fontSize: '14px'
-                                                }}
-                                            >
-                                                ⬇️ 다운로드
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                        <div style={{
-                            padding: '30px',
-                            textAlign: 'center',
-                            color: '#999',
-                            fontSize: '14px'
-                        }}>
-                            저장된 파일이 없습니다.
-                        </div>
-                    )}
-                </div>
-
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept={allowedExtensions.map(ext => `.${ext}`).join(',')}
-                    onChange={handleFileInputChange}
-                    style={{ display: 'none' }}
-                />
-
-                {/* --- ▼▼▼ [보존] 파일 업로드 드래그앤드롭 UI ▼▼▼ --- */}
-                {/* 파일 업로드 영역 */}
-                <div className="file-upload-section">
-                    <div
-                        className={`file-drop-zone ${isDragOver ? 'drag-over' : ''}`}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        onClick={handleFileSelect}
-                    >
-                        {/* ✅ serverFiles와 selectedFiles가 모두 비어있을 때만 메시지 표시 */}
-                        {/*{serverFiles.length === 0 && selectedFiles.length === 0 ? (*/}
-                        {selectedFiles.length === 0 ? (
-                            <div className="drop-zone-message">
-                                <div className="drop-zone-icon">📁</div>
-                                <div className="drop-zone-text">
-                                    <p style={{ fontSize: '1.4rem', marginBottom: '8px' }}>
-                                        📎 클릭하거나 파일을 드래그하여 업로드하세요
-                                    </p>
-                                    <p style={{ fontSize: '2rem', color: '#888' }}>
-                                        지원 형식: {allowedExtensions.join(', ')}
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="file-list">
-                                {/* ✅ 새로 선택된 로컬 파일 목록 */}
-                                {selectedFiles.map((file, index) => (
-                                    <div key={`local-${index}`} className="file-item">
-                                        <div className="file-info">
-                                            <div className="file-name">
-                                                📄 {file.name}
-                                            </div>
-                                            <div className="file-details">
-                                                <span className="file-size">{formatFileSize(file.size)}</span>
-                                            </div>
-                                        </div>
-                                        <button
-                                            className="file-remove-btn"
-                                            onClick={(e) => {
-                                                e.stopPropagation(); // 드롭존 클릭 방지
-                                                handleRemoveSelectedFile(file);
-                                            }}
-                                            title="파일 삭제"
-                                        >
-                                            🗑️
-                                        </button>
-                                    </div>
-                                ))}
-
-                                {/* 파일 추가 버튼 */}
-                                <div
-                                    className="drop-zone-add-more"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleFileSelect();
-                                    }}
-                                    style={{ display: isFileUploading ? 'none' : 'flex' }}
-                                >
-                                    <span>+ 더 많은 파일 추가</span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {isFileUploading && (
-                        <div className="upload-progress">
-                            <div className="upload-spinner">⏳</div>
-                            <span>파일을 업로드하고 있습니다...</span>
-                        </div>
-                    )}
-                </div>
-                {/* --- ▲▲▲ 파일 업로드 UI 종료 ▲▲▲ --- */}
-
-                {recordingMethod === 'document' && (
-                    <div className="meeting-minutes-section">
-                        <h3 className="section-header-meetingminutes">
-                            ■ 회의록 직접 입력
-                            {manualInput && selectedFiles.length > 0 && (
-                                <span style={{fontSize: '14px', color: '#1890ff', marginLeft: '10px'}}>
-                                    (파일에서 로드됨)
-                                </span>
-                            )}
-                        </h3>
-                        <textarea
-                            className="meeting-minutes-textarea"
-                            rows={15}
-                            value={manualInput}
-                            onChange={(e) => setManualInput(e.target.value)}
-                            placeholder="회의록 내용을 직접 입력하거나, txt/md 파일을 드롭존에서 선택하면 자동으로 내용이 로드됩니다..."
-                            style={{
-                                margin: '0.5rem',
-                                // width: '100%',
-                                width: 'calc(100% - 1rem)',
-                                padding: '15px',
-                                fontFamily: 'monospace', // md 파일의 경우 가독성 향상
-                                whiteSpace: 'pre-wrap', // 줄바꿈 및 공백 유지
-                                overflowWrap: 'break-word'
-                            }}
-                        />
-                        <div className="writer-field" style={{ alignItems: 'center', margin: '0 0.5rem' }}>
-                            <label className="meeting-minutes-label share-method-label">
-                                <input type="checkbox" className="meeting-minutes-checkbox checkbox-large" name="llm-output" checked={llmOutput} onChange={(e) => setLlmOutput(e.target.checked)}/>
-                                <span>LLM 문서 생성</span>
-                            </label>
-                        </div>
-
-                        {manualInput && (
-                            <div style={{marginTop: '10px', fontSize: '12px', color: '#666'}}>
-                                💡 마크다운 형식이 유지됩니다. 자유롭게 편집하세요.
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {recordingMethod === 'audio' && (
-                    <div className="generation-panel" style={{flexDirection: 'column', gap: '15px'}}>
-                        <div style={{display: 'flex', width: '100%', gap: '20px'}}>
-                            {/*<div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>*/}
-                            <div className="generation-options" style={{
-                                flex: 1,
-                                flexDirection: 'column',
-                                alignItems: 'flex-start',
-                                border: '1px solid #eee',
-                                padding: '15px',
-                                borderRadius: '8px',
-                                // opacity: recordingMethod === 'audio' ? 1 : 0.3,
-                                // pointerEvents: recordingMethod === 'audio' ? 'auto' : 'none'
-                                opacity: 0.3,
-                                pointerEvents: 'none'
-                            }}>
-                                <h4>1. STT 엔진 선택</h4>
-                                <label className="meeting-minutes-label">
-                                    <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="whisper" checked={sttEngine === 'whisper'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                    Whisper
-                                </label>
-                                <label className="meeting-minutes-label">
-                                    <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="vosk" checked={sttEngine === 'vosk'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                    Vosk STT
-                                </label>
-                                <label className="meeting-minutes-label">
-                                    <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="clova" checked={sttEngine === 'clova'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                    Clova Speech
-                                </label>
-                                <label className="meeting-minutes-label">
-                                    <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="google" checked={sttEngine === 'google'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                    Google STT
-                                </label>
-                                <label className="meeting-minutes-label">
-                                    <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="aws" checked={sttEngine === 'aws'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                    AWS Transcribe
-                                </label>
-                                <label className="meeting-minutes-label">
-                                    <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="azure" checked={sttEngine === 'azure'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                    Azure Speech
-                                </label>
-                            </div>
-                            {/*<div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>*/}
-                            {/*    <h4>2. 생성할 문서 타입</h4>*/}
-                            {/*    <label className="meeting-minutes-label">*/}
-                            {/*        <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="summary" checked={llmDocTypes.summary} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
-                            {/*        내용(안건) 정리*/}
-                            {/*    </label>*/}
-                            {/*    <label className="meeting-minutes-label">*/}
-                            {/*        <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="concept" checked={llmDocTypes.concept} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
-                            {/*        컨셉 문서*/}
-                            {/*    </label>*/}
-                            {/*    <label className="meeting-minutes-label">*/}
-                            {/*        <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="draft" checked={llmDocTypes.draft} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
-                            {/*        Draft 기획서*/}
-                            {/*    </label>*/}
-                            {/*</div>*/}
-                        </div>
-                        {/*<div style={{flexDirection: 'column', gap: '15px'}}>*/}
-                        {/*<button className="btn-secondary" onClick={handleGenerate} style={{fontSize: '2.5rem'}}>LLM 회의록 생성</button>*/}
-                        {/*<button className="btn-secondary" onClick={handleGenerate} style={{margin: '2rem'}}>STT( Speech To Text ) 변환</button>*/}
-                        <button className="btn-secondary" onClick={handleGenerateSTT} style={{margin: '2rem'}}>STT( Speech To Text ) 변환</button>
-                    </div>
-                )}
-
-
-                {/*<div className="generation-panel" style={{flexDirection: 'column', gap: '15px', backgroundColor: 'white'}}>*/}
-                {/*    /!*<div style={{flexDirection: 'column', gap: '15px'}}>*!/*/}
-                {/*    /!*<button className="btn-secondary" onClick={handleGenerate} style={{fontSize: '2.5rem'}}>LLM 회의록 생성</button>*!/*/}
-                {/*    <button className="btn-secondary" onClick={handleGenerate}>STT( Speech To Text ) 변환</button>*/}
-                {/*</div>*/}
-
-                {/* ✅ 프로그레스 바 추가 */}
-                {isGenerating && (
-                    <div className="generation-progress" style={{
-                        padding: '20px',
-                        backgroundColor: '#f8f9fa',
-                        borderRadius: '8px',
-                        margin: '20px 0',
-                        border: '1px solid #e0e0e0'
-                    }}>
-                        {generationPhase === 1 && (
-                            //
-                            <div className="generation-progress">
-                                <div className="progress-header">
-                                    <h4>🎙️ STT 변환 진행 중...</h4>
-                                    {/* ✅ Abort 버튼 추가 */}
-                                    <button
-                                        type="button"
-                                        onClick={handleAbortSTT}
-                                        className="abort-button"
-                                        disabled={!currentTaskId}
-                                    >
-                                        ⏹️ 중단
-                                    </button>
-                                </div>
-                                <div className="progress-bar-container">
-                                    <div
-                                        className="progress-bar"
-                                        style={{ width: `${sttProgress}%` }}
-                                    >
-                                        {sttProgress.toFixed(0)}%
-                                    </div>
-                                </div>
-                                {/* ✅ 상태 메시지 표시 추가 */}
-                                <p className="progress-message">{sttStatusMessage}</p>
-                                <p className="progress-info">엔진: {sttEngine}</p>
-                                {/* ✅ 남은 시간 표시 */}
-                                {estimatedTimeRemaining !== null && (
-                                    <p className="progress-info" style={{ color: '#1890ff' }}>
-                                        예상 남은 시간: 약 {estimatedTimeRemaining}초
-                                    </p>
-                                )}
-                            </div>
-                        )}
-
-                        {/*{generationPhase === 2 && (*/}
-                        {/*    <div>*/}
-                        {/*        <div style={{*/}
-                        {/*            display: 'flex',*/}
-                        {/*            alignItems: 'center',*/}
-                        {/*            gap: '15px',*/}
-                        {/*            marginBottom: '10px'*/}
-                        {/*        }}>*/}
-                        {/*            <div className="spinner" style={{*/}
-                        {/*                width: '30px',*/}
-                        {/*                height: '30px',*/}
-                        {/*                border: '4px solid #f3f3f3',*/}
-                        {/*                borderTop: '4px solid #1890ff',*/}
-                        {/*                borderRadius: '50%',*/}
-                        {/*                animation: 'spin 1s linear infinite'*/}
-                        {/*            }}></div>*/}
-                        {/*            <h4 style={{margin: 0, fontSize: '16px', color: '#333'}}>*/}
-                        {/*                🤖 Phase 2: LLM 문서 생성 중*/}
-                        {/*            </h4>*/}
-                        {/*        </div>*/}
-                        {/*        <div style={{*/}
-                        {/*            marginTop: '8px',*/}
-                        {/*            fontSize: '12px',*/}
-                        {/*            color: '#666',*/}
-                        {/*            marginLeft: '45px'*/}
-                        {/*        }}>*/}
-                        {/*            AI가 회의록을 분석하여*/}
-                        {/*            {llmDocTypes.summary && ' 안건 정리'}*/}
-                        {/*            {llmDocTypes.concept && (llmDocTypes.summary ? ', 컨셉 문서' : ' 컨셉 문서')}*/}
-                        {/*            {llmDocTypes.draft && ((llmDocTypes.summary || llmDocTypes.concept) ? ', Draft 기획서' : ' Draft 기획서')}*/}
-                        {/*            를 생성하고 있습니다...*/}
-                        {/*        </div>*/}
-                        {/*    </div>*/}
-                        {/*)}*/}
-                    </div>
-                )}
-
-                {/*/!* ✅ 아래 방향 화살표 추가 *!/*/}
-                {/*<div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>*/}
-                {/*    <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>*/}
-                {/*        ⬇*/}
-                {/*    </div>*/}
-                {/*</div>*/}
-
-                {recordingMethod === 'audio' && (
-                    <div className="meeting-minutes-section">
-                        {/* ✅ 아래 방향 화살표 추가 */}
-                        <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
-                            <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>
-                                ⬇
-                            </div>
-                        </div>
-                        <h3 className="section-header-meetingminutes">■ 음성에서 추출한 텍스트 (Source)</h3>
-                        <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
-                            {Object.entries(sttResults).map(([key, value]) => (
-                                <div key={key}>
-                                    <label className="meeting-minutes-label">
-                                        <input type="radio" name="stt-source" value={key} onChange={(e) => setSelectedSttSource(e.target.value)} style={{marginRight: '8px'}} />
-                                        {key.charAt(0).toUpperCase() + key.slice(1)} 결과 (이것을 소스로 사용)
-                                    </label>
-                                    {/*<textarea className="meeting-minutes-textarea" rows={10} defaultValue={value} style={{marginTop: '5px'}}/>*/}
-                                    <div style={{
-                                        border: '1px solid #ddd',
-                                        borderRadius: '8px',
-                                        padding: '15px',
-                                        backgroundColor: '#f9f9f9',
-                                        maxHeight: '300px',
-                                        overflowY: 'auto',
-                                        whiteSpace: 'pre-wrap',
-                                        fontFamily: 'monospace',
-                                        fontSize: '14px',
-                                        lineHeight: '1.6',
-                                        marginTop: '5px'
-                                    }}>
-                                        {value || '변환된 텍스트가 여기에 표시됩니다...'}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/*{ recordingMethod === 'document' && llmOutput && (*/}
-                { ( llmOutput || (recordingMethod === 'audio') ) && (
-                    <div>
-                        <div className="generation-panel" style={{flexDirection: 'column', gap: '15px'}}>
-                            <div style={{display: 'flex', width: '100%', gap: '20px'}}>
-                                {/*<div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>*/}
-                                <div className="generation-options" style={{
-                                    flex: 1,
-                                    flexDirection: 'column',
-                                    alignItems: 'flex-start',
-                                    border: '1px solid #eee',
-                                    padding: '15px',
-                                    borderRadius: '8px',
-                                    // opacity: recordingMethod === 'audio' ? 1 : 0.3,
-                                    // pointerEvents: recordingMethod === 'audio' ? 'auto' : 'none'
-                                }}>
-                                    <h4>1. LLM 선택</h4>
-                                    <label className="meeting-minutes-label" style={{opacity: 0.3}}>
-                                        <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="claude" checked={llmEngine === 'claude'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                        Claude
-                                    </label>
-                                    <label className="meeting-minutes-label">
-                                        <input className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="chatgpt" checked={llmEngine === 'chatgpt'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                        ChatGPT
-                                    </label>
-                                    <label className="meeting-minutes-label" style={{opacity: 0.3}}>
-                                        <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="gemini" checked={llmEngine === 'gemini'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                        Gemini
-                                    </label>
-                                    <label className="meeting-minutes-label" style={{opacity: 0.3}}>
-                                        <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="perplexity" checked={llmEngine === 'perplexity'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                        Perplexity
-                                    </label>
-                                    <label className="meeting-minutes-label" style={{opacity: 0.3}}>
-                                        <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="grok" checked={llmEngine === 'grok'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                        Grok
-                                    </label>
-                                </div>
-                                <div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>
-                                    <h4>2. 생성할 문서 타입</h4>
-                                    <label className="meeting-minutes-label">
-                                        <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="summary" checked={llmDocTypes.summary} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                        내용(안건) 정리
-                                    </label>
-                                    <label className="meeting-minutes-label">
-                                        <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="concept" checked={llmDocTypes.concept} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                        컨셉 문서
-                                    </label>
-                                    <label className="meeting-minutes-label">
-                                        <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="draft" checked={llmDocTypes.draft} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                        Draft 기획서
-                                    </label>
-                                </div>
-                            </div>
-                            {/*<button className="btn-secondary" onClick={handleGenerate} style={{margin: '2rem'}}>LLM 회의록 생성</button>*/}
-                            <button
-                                className="btn-secondary"
-                                // className="btn-disabled"
-                                onClick={handleGenerateLLM}
-                                style={{margin: '2rem'}}
-                                disabled={isGenerating}
-                            >
-                                LLM 회의록 생성
-                            </button>
-                        </div>
-
-                        <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
-                            <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>
-                                ⬇
-                            </div>
-                        </div>
-
-                        {/* ✅ 프로그레스 바 추가 */}
-                        {isGenerating && (
-                            <div className="generation-progress" style={{
-                                padding: '20px',
-                                backgroundColor: '#f8f9fa',
-                                borderRadius: '8px',
-                                margin: '20px 0',
-                                border: '1px solid #e0e0e0'
-                            }}>
-                                {generationPhase === 2 && (
-                                    <div>
-                                        <div style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '15px',
-                                            marginBottom: '10px'
-                                        }}>
-                                            <div className="spinner" style={{
-                                                width: '30px',
-                                                height: '30px',
-                                                border: '4px solid #f3f3f3',
-                                                borderTop: '4px solid #1890ff',
-                                                borderRadius: '50%',
-                                                animation: 'spin 1s linear infinite'
-                                            }}></div>
-                                            <h4 style={{margin: 0, fontSize: '16px', color: '#333'}}>
-                                                🤖 Phase 2: LLM 문서 생성 중
-                                            </h4>
-                                        </div>
-                                        <div style={{
-                                            marginTop: '8px',
-                                            fontSize: '12px',
-                                            color: '#666',
-                                            marginLeft: '45px'
-                                        }}>
-                                            AI가 회의록을 분석하여
-                                            {llmDocTypes.summary && ' 안건 정리'}
-                                            {llmDocTypes.concept && (llmDocTypes.summary ? ', 컨셉 문서' : ' 컨셉 문서')}
-                                            {llmDocTypes.draft && ((llmDocTypes.summary || llmDocTypes.concept) ? ', Draft 기획서' : ' Draft 기획서')}
-                                            를 생성하고 있습니다...
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        <div className="meeting-minutes-section">
-                            <h3 className="section-header-meetingminutes">■ 생성된 Draft 기획서, 컨셉문서, 주요 안건 정리</h3>
-                            <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
-                                {llmResults.map(result => (
-                                    llmDocTypes[result.id as keyof typeof llmDocTypes] && (
-                                        <div key={result.id}>
-
-                                            <label className="meeting-minutes-label llm-result-label">
-                                                <input
-                                                    // className="meeting-minutes-checkbox" /* ✅ checkbox-large 클래스 제거 */
-                                                    className="meeting-minutes-checkbox checkbox-large" /* ✅ checkbox-large 클래스 제거 */
-                                                    type="checkbox"
-                                                    checked={result.save}
-                                                    onChange={() => handleLlmResultSaveChange(result.id)}
-                                                    // /* ✅ style 속성 제거 */
-                                                />
-                                                <span>{result.title} (서버에 저장)</span>
-                                            </label>
-                                            <textarea className="meeting-minutes-textarea" rows={20} value={result.content} readOnly style={{marginTop: '5px'}} />
-                                        </div>
-                                    )
-                                ))}
-                            </div>
-                        </div>
-
-                    </div>
-                )}
-
-                {/* --- ▼▼▼ [수정] 최종 저장 버튼 (요청사항 11) ▼▼▼ --- */}
-                <div className="meeting-minutes-actions" style={{justifyContent: 'center'}}>
-                    <button className="btn-primary" onClick={handleSave}>서버 저장&nbsp;&nbsp;&nbsp;&&nbsp;&nbsp;&nbsp;공유자에게 전송</button>
-                </div>
-                {/* --- ▲▲▲ 최종 저장 버튼 종료 ▲▲▲ --- */}
-
             </div>
         </div>
     );
