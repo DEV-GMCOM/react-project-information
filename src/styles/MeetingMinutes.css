@@ -946,5 +946,14 @@
 /*    background-color: #00ee00;*/
 /*}*/
 
+/* 비활성화된 저장 버튼 스타일 */
+.meeting-minutes-actions .btn-primary:disabled {
+    background-color: #6c757d !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}
 
+.meeting-minutes-actions .btn-primary:disabled:hover {
+    background-color: #6c757d !important;
+}
 

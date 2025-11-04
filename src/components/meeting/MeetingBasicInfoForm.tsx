@@ -4,6 +4,8 @@ import DatePicker from "react-datepicker";
 import { ko } from 'date-fns/locale';
 import { Employee } from '../../api/types';
 
+
+
 interface MeetingBasicInfoFormProps {
     meetingTitle: string;
     setMeetingTitle: (value: string) => void;
@@ -96,7 +98,8 @@ const MeetingBasicInfoForm: React.FC<MeetingBasicInfoFormProps> = ({
                 {/* 프로젝트 검색 */}
                 <div className="writer-field">
                     <label className="writer-field-label">프로젝트</label>
-                    <div className="input-with-search">
+                    {/*<div className="input-with-search">*/}
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%' }}>
                         <input
                             type="text"
                             className="writer-field-input"
@@ -118,7 +121,8 @@ const MeetingBasicInfoForm: React.FC<MeetingBasicInfoFormProps> = ({
                 {/* 회의록 공유 */}
                 <div className="writer-field">
                     <label className="writer-field-label">회의록 공유</label>
-                    <div className="input-with-search">
+                    {/*<div className="input-with-search">*/}
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%' }}>
                         <input
                             type="text"
                             className="writer-field-input"

@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect,useCallback, ChangeEvent } from 'react';
+import React, { useState, useRef, useEffect,useCallback, useMemo, ChangeEvent } from 'react';
 
 
 // [추가] API 서비스 및 타입 import
@@ -221,6 +221,24 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect }) => {
 
 const MeetingMinutes: React.FC = () => {
 
+    // 원본 데이터 저장 (회의록 로드 시점의 데이터)
+    const [originalData, setOriginalData] = useState<{
+        meetingTitle: string;
+        meetingDateTime: Date | null;
+        meetingPlace: string;
+        projectId: number | null;
+        sharedWithIds: number[];
+        tags: string;
+        shareMethods: { email: boolean; jandi: boolean };
+        attendees: string;
+        manualInput: string;
+        sttResults: Record<string, string>;
+        llmResults: Array<{ id: string; title: string; content: string; save: boolean }>;
+    } | null>(null);
+
+    // 변경 여부 추적
+    const [hasChanges, setHasChanges] = useState(false);
+
     // 1. 파일 입력(input) DOM에 접근하기 위한 ref
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -241,13 +259,21 @@ const MeetingMinutes: React.FC = () => {
 
     // --- ▼▼▼ 기능 추가에 따른 상태 관리 ▼▼▼ ---
     const [sttEngine, setSttEngine] = useState<string>('whisper');
+    // const [sttResults, setSttResults] = useState({
+    //     whisper: "Whisper AI를 통해 변환된 텍스트 예시입니다... 이 텍스트는 30라인 이상의 길이를 가질 수 있으며, 스크롤을 통해 전체 내용을 확인할 수 있습니다.",
+    //     clova: "Clova Speech를 통해 변환된 텍스트 예시입니다...",
+    //     google: "Google STT를 통해 변환된 텍스트 예시입니다...",
+    //     aws: "AWS STT를 통해 변환된 텍스트 예시입니다...",
+    //     azure: "Azure STT를 통해 변환된 텍스트 예시입니다...",
+    //     vosk: "Vosk STT를 통해 변환된 텍스트 예시입니다...",
+    // });
     const [sttResults, setSttResults] = useState({
-        whisper: "Whisper AI를 통해 변환된 텍스트 예시입니다... 이 텍스트는 30라인 이상의 길이를 가질 수 있으며, 스크롤을 통해 전체 내용을 확인할 수 있습니다.",
-        clova: "Clova Speech를 통해 변환된 텍스트 예시입니다...",
-        google: "Google STT를 통해 변환된 텍스트 예시입니다...",
-        aws: "AWS STT를 통해 변환된 텍스트 예시입니다...",
-        azure: "Azure STT를 통해 변환된 텍스트 예시입니다...",
-        vosk: "Vosk STT를 통해 변환된 텍스트 예시입니다...",
+        whisper: "",  // 👈 빈 문자열로 변경
+        clova: "",
+        google: "",
+        aws: "",
+        azure: "",
+        vosk: "",
     });
     const [selectedSttSource, setSelectedSttSource] = useState<string>('');
 
@@ -270,6 +296,29 @@ const MeetingMinutes: React.FC = () => {
         email: true,
         jandi: false,
     });
+    // ✅ [추가] 둘 중 하나는 반드시 선택되도록 강제하는 커스텀 상태 설정 함수
+    const customSetShareMethods: React.Dispatch<React.SetStateAction<{ email: boolean; jandi: boolean; }>> = (valueOrFn) => {
+
+        // React의 set함수는 (새로운 값) 또는 (이전값 => 새로운 값) 형태의 함수를 받을 수 있습니다.
+        // 두 경우 모두 처리합니다.
+        setShareMethods(prev => {
+            // 1. 자식 컴포넌트가 의도한 '다음 상태'를 계산합니다.
+            const nextState = typeof valueOrFn === 'function'
+                ? valueOrFn(prev)  // (prev) => newState 형태
+                : valueOrFn;        // newState 형태
+
+            // 2. '다음 상태'를 검증합니다.
+            // 만약 '다음 상태'에서 email과 jandi가 모두 false라면,
+            if (!nextState.email && !nextState.jandi) {
+                // 3. 상태 업데이트를 거부하고 '이전 상태'를 반환합니다.
+                return prev;
+            }
+
+            // 4. 유효한 변경이라면 '다음 상태'를 반환하여 업데이트를 승인합니다.
+            return nextState;
+        });
+    };
+
     const [shareMethod, setShareMethod] = useState<'email' | 'jandi'>('email');
     const [attendees, setAttendees] = useState<string>('');
     const [tags, setTags] = useState<string>('');
@@ -321,7 +370,8 @@ const MeetingMinutes: React.FC = () => {
     const handleSaveNewMeeting = async () => {
         if (!meetingTitle || !meetingDateTime) {
             alert("회의록 제목과 일시는 필수입니다.");
-            return;
+            // return;
+            throw new Error("필수값 누락"); // ✅ throw로 변경
         }
 
         try {
@@ -352,6 +402,7 @@ const MeetingMinutes: React.FC = () => {
         } catch (error: any) {
             console.error('저장 실패:', error);
             alert(`저장 실패: ${error.message}`);
+            throw error; // ✅ 에러를 다시 throw
         }
     };
 
@@ -611,66 +662,210 @@ const MeetingMinutes: React.FC = () => {
     };
 
     // --- ▼▼▼ 회의록 선택 핸들러 ▼▼▼ ---
+    // const handleMeetingSelect = useCallback(async (meeting: MeetingMinute) => {
+    //     console.log('선택된 회의록:', meeting);
+    //
+    //     setSelectedMeeting(meeting);
+    //
+    //     // 기본 정보 로드
+    //     setMeetingTitle(meeting.meeting_title);
+    //     setMeetingDateTime(meeting.meeting_datetime ? new Date(meeting.meeting_datetime) : null);
+    //     setMeetingPlace(meeting.meeting_place || '');
+    //     setProjectName(meeting.project_name || '');
+    //     setSelectedProjectId(meeting.project_id || null);
+    //     setSharedWith(meeting.shared_with || []);
+    //     setAttendees(meeting.attendees_display || '');
+    //     setTags(meeting.tags?.join(', ') || '');
+    //     setShareMethods({
+    //         email: meeting.share_methods?.includes('email') ?? true,
+    //         jandi: meeting.share_methods?.includes('jandi') ?? false
+    //     });
+    //
+    //     // basic_minutes 로드
+    //     setManualInput(meeting.basic_minutes || '');
+    //
+    //     try {
+    //         // ✅ 상세 정보 조회 (STT/LLM 포함)
+    //         const details = await meetingMinuteService.getMeetingDetails(meeting.meeting_id);
+    //
+    //         console.log('상세 정보:', details);
+    //
+    //         // ✅ 파일 목록 설정
+    //         if (details.file_attachments) {
+    //             setServerFiles(details.file_attachments);
+    //         }
+    //
+    //         // ✅ STT 결과 처리
+    //         if (details.stt_originals && details.stt_originals.length > 0) {
+    //             const sttData: Record<string, string> = {};
+    //             details.stt_originals.forEach((stt: any) => {
+    //                 sttData[stt.stt_engine_type] = stt.original_text;
+    //             });
+    //
+    //             // 기존 sttResults와 병합
+    //             setSttResults(prev => ({ ...prev, ...sttData }));
+    //
+    //             // 가장 최근 STT 결과를 기본 선택
+    //             setSelectedSttSource(details.stt_originals[0].stt_engine_type);
+    //
+    //             console.log('STT 결과 로드 완료:', Object.keys(sttData));
+    //         }
+    //
+    //         // ✅ LLM 결과 처리
+    //         if (details.llm_documents && details.llm_documents.length > 0) {
+    //             setLlmResults(prev =>
+    //                 prev.map(result => {
+    //                     const llmDoc = details.llm_documents?.find(
+    //                         (doc: any) => doc.document_type === result.id
+    //                     );
+    //                     return llmDoc
+    //                         ? { ...result, content: llmDoc.document_content || '', save: true }
+    //                         : result;
+    //                 })
+    //             );
+    //
+    //             console.log('LLM 결과 로드 완료');
+    //         }
+    //
+    //     } catch (error) {
+    //         console.error('상세 정보 로드 실패:', error);
+    //         alert('상세 정보를 불러오는 중 오류가 발생했습니다.');
+    //     }
+    //
+    //     setCurrentMeetingId(meeting.meeting_id);
+    //     setSaveMode('update');
+    //
+    //     console.log(`회의록 ${meeting.meeting_id} 로드 완료`);
+    //
+    //
+    // }, []); // 의존성 배열 비움 (다른 상태 변경 시 재생성 방지)
+    // // --- ▲▲▲ 회의록 선택 핸들러 종료 ▲▲▲ ---
     const handleMeetingSelect = useCallback(async (meeting: MeetingMinute) => {
         console.log('선택된 회의록:', meeting);
 
-        setSelectedMeeting(meeting); // 추가
+        setSelectedMeeting(meeting);
 
-        // 기본 정보 섹션의 상태들을 업데이트
+        // 기본 정보 로드
         setMeetingTitle(meeting.meeting_title);
-
-        // setMeetingDateTime(meeting.meeting_datetime ? new Date(meeting.meeting_datetime).toISOString().slice(0, 16) : ''); // datetime-local 형식
-        const localDateTime = meeting.meeting_datetime
-            ? new Date(new Date(meeting.meeting_datetime).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
-            : '';
-        // setMeetingDateTime(localDateTime);
         setMeetingDateTime(meeting.meeting_datetime ? new Date(meeting.meeting_datetime) : null);
-
-
         setMeetingPlace(meeting.meeting_place || '');
         setProjectName(meeting.project_name || '');
         setSelectedProjectId(meeting.project_id || null);
-
-        setSharedWith(meeting.shared_with || []); // '회의록 공유'는 Employee 객체 배열 (API 응답이 그렇다고 가정)
-        setAttendees(meeting.attendees_display || ''); // attendees가 문자열 배열일 경우 // '그 외 참석자'는 문자열이라고 가정 (attendees_display 사용)
+        setSharedWith(meeting.shared_with || []);
+        setAttendees(meeting.attendees_display || '');
         setTags(meeting.tags?.join(', ') || '');
-
         setShareMethods({
             email: meeting.share_methods?.includes('email') ?? true,
             jandi: meeting.share_methods?.includes('jandi') ?? false
         });
 
-        // TODO:
-        // 1. 이 회의록에 연결된 파일 목록(serverFiles) 불러오기
-        // 2. 이 회의록의 STT/LLM 결과(sttResults, llmResults) 불러오기
-        //    (예: const details = await meetingMinuteService.getMeetingDetails(meeting.meeting_id);)
-        // 3. (선택) 스크롤을 '기본 정보' 섹션으로 이동
-        // window.scrollTo(0, document.getElementById('basic-info-section')?.offsetTop || 0);
-
-        // 백엔드에서 받은 basic_minutes 값을 manualInput 상태에 설정합니다.
+        // basic_minutes 로드
         setManualInput(meeting.basic_minutes || '');
 
-        // 회의록에 연결된 파일 목록 불러오기
         try {
-            const files = await fileUploadService.getMeetingFiles(meeting.meeting_id);
-            setServerFiles(files);
-            console.log(`회의록 ${meeting.meeting_id}의 파일 목록:`, files);
+            // 상세 정보 조회 (STT/LLM 포함)
+            const details = await meetingMinuteService.getMeetingDetails(meeting.meeting_id);
+
+            console.log('상세 정보:', details);
+
+            // 파일 목록 설정
+            if (details.file_attachments) {
+                setServerFiles(details.file_attachments);
+            }
+
+            // STT 결과 처리
+            // const loadedSttResults: Record<string, string> = {
+            //     whisper: "",
+            //     clova: "",
+            //     google: "",
+            //     aws: "",
+            //     azure: "",
+            //     vosk: ""
+            // };
+            // STT 결과 처리
+            const loadedSttResults: {
+                whisper: string;
+                clova: string;
+                google: string;
+                aws: string;
+                azure: string;
+                vosk: string;
+            } = {
+                whisper: "",
+                clova: "",
+                google: "",
+                aws: "",
+                azure: "",
+                vosk: ""
+            };
+            if (details.stt_originals && details.stt_originals.length > 0) {
+                details.stt_originals.forEach((stt: any) => {
+                    // loadedSttResults[stt.stt_engine_type] = stt.original_text
+                    // ✅ 타입 단언 추가
+                    const engineType = stt.stt_engine_type as keyof typeof loadedSttResults;
+                    if (engineType in loadedSttResults) {
+                        loadedSttResults[engineType] = stt.original_text;
+                    }
+                });
+
+                setSttResults(loadedSttResults);
+                setSelectedSttSource(details.stt_originals[0].stt_engine_type);
+
+                // console.log('STT 결과 로드 완료:', Object.keys(loadedSttResults).filter(k => loadedSttResults[k]));
+                console.log('STT 결과 로드 완료:', Object.keys(loadedSttResults).filter(k => {
+                    const key = k as keyof typeof loadedSttResults;
+                    return loadedSttResults[key];
+                }));
+            } else {
+                setSttResults(loadedSttResults);
+            }
+
+            // LLM 결과 처리
+            const loadedLlmResults = llmResults.map(result => {
+                const llmDoc = details.llm_documents?.find(
+                    (doc: any) => doc.document_type === result.id
+                );
+                return llmDoc
+                    ? { ...result, content: llmDoc.document_content || '', save: true }
+                    : result;
+            });
+
+            setLlmResults(loadedLlmResults);
+            console.log('LLM 결과 로드 완료');
+
+            // ✅ 원본 데이터 저장 (변경 감지용)
+            setOriginalData({
+                meetingTitle: meeting.meeting_title,
+                meetingDateTime: meeting.meeting_datetime ? new Date(meeting.meeting_datetime) : null,
+                meetingPlace: meeting.meeting_place || '',
+                projectId: meeting.project_id || null,
+                sharedWithIds: (meeting.shared_with || []).map(emp => emp.id),
+                tags: meeting.tags?.join(', ') || '',
+                shareMethods: {
+                    email: meeting.share_methods?.includes('email') ?? true,
+                    jandi: meeting.share_methods?.includes('jandi') ?? false
+                },
+                attendees: meeting.attendees_display || '',
+                manualInput: meeting.basic_minutes || '',
+                sttResults: { ...loadedSttResults },
+                llmResults: JSON.parse(JSON.stringify(loadedLlmResults)) // deep copy
+            });
+
+            // 변경 없음으로 초기화
+            setHasChanges(false);
+
         } catch (error) {
-            console.error('파일 목록 조회 실패:', error);
-            setServerFiles([]);
+            console.error('상세 정보 로드 실패:', error);
+            alert('상세 정보를 불러오는 중 오류가 발생했습니다.');
         }
 
-        // 회의록 ID와 모드 설정
         setCurrentMeetingId(meeting.meeting_id);
         setSaveMode('update');
 
-        // TODO: STT/LLM 결과 불러오기 (향후 구현)
-        // const details = await meetingMinuteService.getMeetingDetails(meeting.meeting_id);
-        // setLlmResults(...);
-        alert(`[${meeting.meeting_title}] 회의록 정보를 '기본 정보' 섹션에 로드했습니다.`);
+        console.log(`회의록 ${meeting.meeting_id} 로드 완료`);
 
-    }, []); // 의존성 배열 비움 (다른 상태 변경 시 재생성 방지)
-    // --- ▲▲▲ 회의록 선택 핸들러 종료 ▲▲▲ ---
+    }, [llmResults]);
+
 
     // 텍스트 파일 내용 읽기 함수
     const readTextFile = (file: File): Promise<string> => {
@@ -1291,7 +1486,7 @@ const MeetingMinutes: React.FC = () => {
     const handleShareMethodChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, checked } = e.target as { name: keyof typeof shareMethods; checked: boolean };
 
-        // 마지막 남은 하나를 끄려고 할 때, 변경을 막음
+        // ✅ [추가] 마지막 남은 하나를 끄려고 할 때, 변경을 막음
         if (!checked && ( (name === 'email' && !shareMethods.jandi) || (name === 'jandi' && !shareMethods.email) )) {
             return; // 아무것도 하지 않음
         }
@@ -1317,8 +1512,12 @@ const MeetingMinutes: React.FC = () => {
         //     return;
         // }
 
-        if (llmOutput && !selectedSttSource) {
-            alert("LLM 생성을 위한 소스 텍스트를 선택해주세요.");
+        // if (llmOutput && !selectedSttSource) {
+        //     alert("LLM 생성을 위한 소스 텍스트를 선택해주세요.");
+        //     return;
+        // }
+        if (recordingMethod === 'audio' && !selectedSttSource) {
+            alert("LLM 생성을 위한 STT 결과(Source)를 선택해주세요.");
             return;
         }
 
@@ -1442,8 +1641,29 @@ const MeetingMinutes: React.FC = () => {
 
             alert("회의록이 성공적으로 저장되었습니다.");
 
-            // 현재 활성화된 탭('my' 또는 'shared')의 목록을
-            // 현재 필터 기준으로 다시 불러옵니다.
+            // // 현재 활성화된 탭('my' 또는 'shared')의 목록을
+            // // 현재 필터 기준으로 다시 불러옵니다.
+            // if (activeTab === 'my' || activeTab === 'shared') {
+            //     loadMeetings(activeTab, filterType);
+            // }
+            // ✅ 저장 성공 후 원본 데이터 업데이트
+            setOriginalData({
+                meetingTitle,
+                meetingDateTime,
+                meetingPlace,
+                projectId: selectedProjectId,
+                sharedWithIds: sharedWith.map(emp => emp.id),
+                tags,
+                shareMethods: { ...shareMethods },
+                attendees,
+                manualInput,
+                sttResults: { ...sttResults },
+                llmResults: JSON.parse(JSON.stringify(llmResults))
+            });
+
+            setHasChanges(false);
+
+            // 목록 새로고침
             if (activeTab === 'my' || activeTab === 'shared') {
                 loadMeetings(activeTab, filterType);
             }
@@ -1460,6 +1680,91 @@ const MeetingMinutes: React.FC = () => {
             setIsFileUploading(false);
         }
     };
+
+    // 데이터 변경 감지
+    useEffect(() => {
+        if (!originalData || !currentMeetingId) {
+            setHasChanges(false);
+            return;
+        }
+
+        // 각 필드 비교
+        const titleChanged = meetingTitle !== originalData.meetingTitle;
+        const dateChanged = meetingDateTime?.getTime() !== originalData.meetingDateTime?.getTime();
+        const placeChanged = meetingPlace !== originalData.meetingPlace;
+        const projectChanged = selectedProjectId !== originalData.projectId;
+        const tagsChanged = tags !== originalData.tags;
+        const attendeesChanged = attendees !== originalData.attendees;
+        const manualInputChanged = manualInput !== originalData.manualInput;
+
+        // sharedWith 비교
+        const currentSharedIds = sharedWith.map(emp => emp.id).sort();
+        const originalSharedIds = [...originalData.sharedWithIds].sort();
+        const sharedWithChanged = JSON.stringify(currentSharedIds) !== JSON.stringify(originalSharedIds);
+
+        // shareMethods 비교
+        const shareMethodsChanged =
+            shareMethods.email !== originalData.shareMethods.email ||
+            shareMethods.jandi !== originalData.shareMethods.jandi;
+
+        // STT 결과 비교
+        const sttChanged = JSON.stringify(sttResults) !== JSON.stringify(originalData.sttResults);
+
+        // LLM 결과 비교
+        const llmChanged = JSON.stringify(llmResults) !== JSON.stringify(originalData.llmResults);
+
+        const changed =
+            titleChanged ||
+            dateChanged ||
+            placeChanged ||
+            projectChanged ||
+            tagsChanged ||
+            attendeesChanged ||
+            manualInputChanged ||
+            sharedWithChanged ||
+            shareMethodsChanged ||
+            sttChanged ||
+            llmChanged;
+
+        setHasChanges(changed);
+
+    }, [
+        meetingTitle,
+        meetingDateTime,
+        meetingPlace,
+        selectedProjectId,
+        sharedWith,
+        tags,
+        attendees,
+        manualInput,
+        shareMethods,
+        sttResults,
+        llmResults,
+        originalData,
+        currentMeetingId
+    ]);
+
+    // ✅ [추가] 음성 파일 존재 여부 확인 로직
+    const hasAudioFiles = useMemo(() => {
+        // 1. 새로 선택된 파일 (selectedFiles: File[]) 검사
+        const hasNewAudioFiles = selectedFiles.some(file => {
+            const ext = file.name.split('.').pop()?.toLowerCase();
+            return ext && audioExtensions.includes(ext);
+        });
+
+        if (hasNewAudioFiles) return true;
+
+        // 2. 서버에 이미 저장된 파일 (serverFiles: any[]) 검사
+        //    (file.original_file_name 사용)
+        const hasServerAudioFiles = serverFiles.some(file => {
+            if (!file.original_file_name) return false;
+            const ext = file.original_file_name.split('.').pop()?.toLowerCase();
+            return ext && audioExtensions.includes(ext);
+        });
+
+        return hasServerAudioFiles;
+
+    }, [selectedFiles, serverFiles, audioExtensions]); // audioExtensions는 recordingMethod 변경 시 재계산되므로 의존성 추가
 
     return (
         <div className="meeting-minutes-container">
@@ -1582,7 +1887,8 @@ const MeetingMinutes: React.FC = () => {
                                 tags={tags}
                                 setTags={setTags}
                                 shareMethods={shareMethods}
-                                setShareMethods={setShareMethods}
+                                // setShareMethods={setShareMethods}
+                                setShareMethods={customSetShareMethods}
                             />
                         </div>
 
@@ -1901,7 +2207,8 @@ const MeetingMinutes: React.FC = () => {
                             </div>
                         )}
 
-                        {recordingMethod === 'audio' && (
+                        {/*{recordingMethod === 'audio' && (*/}
+                        {recordingMethod === 'audio' && hasAudioFiles && (
                             <div className="generation-panel" style={{flexDirection: 'column', gap: '15px'}}>
                                 <div style={{display: 'flex', width: '100%', gap: '20px'}}>
                                     <div className="generation-options" style={{
@@ -1911,32 +2218,32 @@ const MeetingMinutes: React.FC = () => {
                                         border: '1px solid #eee',
                                         padding: '15px',
                                         borderRadius: '8px',
-                                        opacity: 0.3,
-                                        pointerEvents: 'none'
+                                        // opacity: 0.3,
+                                        // pointerEvents: 'none'
                                     }}>
                                         <h4>1. STT 엔진 선택</h4>
                                         <label className="meeting-minutes-label">
                                             <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="whisper" checked={sttEngine === 'whisper'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
                                             Whisper
                                         </label>
-                                        <label className="meeting-minutes-label">
-                                            <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="vosk" checked={sttEngine === 'vosk'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                        <label className="meeting-minutes-label" style={{opacity: '0.3'}}>
+                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="vosk" checked={sttEngine === 'vosk'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
                                             Vosk STT
                                         </label>
-                                        <label className="meeting-minutes-label">
-                                            <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="clova" checked={sttEngine === 'clova'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                        <label className="meeting-minutes-label" style={{opacity: '0.3'}}>
+                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="clova" checked={sttEngine === 'clova'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
                                             Clova Speech
                                         </label>
-                                        <label className="meeting-minutes-label">
-                                            <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="google" checked={sttEngine === 'google'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                        <label className="meeting-minutes-label" style={{opacity: '0.3'}}>
+                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="google" checked={sttEngine === 'google'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
                                             Google STT
                                         </label>
-                                        <label className="meeting-minutes-label">
-                                            <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="aws" checked={sttEngine === 'aws'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                        <label className="meeting-minutes-label" style={{opacity: '0.3'}}>
+                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="aws" checked={sttEngine === 'aws'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
                                             AWS Transcribe
                                         </label>
-                                        <label className="meeting-minutes-label">
-                                            <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="azure" checked={sttEngine === 'azure'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                        <label className="meeting-minutes-label" style={{opacity: '0.3'}}>
+                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="azure" checked={sttEngine === 'azure'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
                                             Azure Speech
                                         </label>
                                     </div>
@@ -1991,47 +2298,62 @@ const MeetingMinutes: React.FC = () => {
                             </div>
                         )}
 
-                        {recordingMethod === 'audio' && (
-                            <div className="meeting-minutes-section">
-                                {/* ✅ 아래 방향 화살표 추가 */}
-                                <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
-                                    <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>
-                                        ⬇
-                                    </div>
-                                </div>
-                                <h3 className="section-header-meetingminutes">■ 음성에서 추출한 텍스트 (Source)</h3>
-                                <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
-                                    {Object.entries(sttResults).map(([key, value]) => (
-                                        <div key={key}>
-                                            <label className="meeting-minutes-label">
-                                                <input type="radio" name="stt-source" value={key} onChange={(e) => setSelectedSttSource(e.target.value)} style={{marginRight: '8px'}} />
-                                                {key.charAt(0).toUpperCase() + key.slice(1)} 결과 (이것을 소스로 사용)
-                                            </label>
-                                            {/*<textarea className="meeting-minutes-textarea" rows={10} defaultValue={value} style={{marginTop: '5px'}}/>*/}
-                                            <div style={{
-                                                border: '1px solid #ddd',
-                                                borderRadius: '8px',
-                                                padding: '15px',
-                                                backgroundColor: '#f9f9f9',
-                                                maxHeight: '300px',
-                                                overflowY: 'auto',
-                                                whiteSpace: 'pre-wrap',
-                                                fontFamily: 'monospace',
-                                                fontSize: '14px',
-                                                lineHeight: '1.6',
-                                                marginTop: '5px'
-                                            }}>
-                                                {value || '변환된 텍스트가 여기에 표시됩니다...'}
-                                            </div>
+                        {/* 음성에서 추출한 텍스트 섹션 - STT 결과가 실제로 있을 때만 전체 섹션 표시 */}
+                        {recordingMethod === 'audio' &&
+                            Object.values(sttResults).some(text => text && text.trim().length > 0) && (
+                                <>
+                                    {/* ✅ 아래 방향 화살표 */}
+                                    <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
+                                        <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>
+                                            ⬇
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                                    </div>
+
+                                    <div className="meeting-minutes-section">
+                                        <h3 className="section-header-meetingminutes">■ 음성에서 추출한 텍스트 (Source)</h3>
+                                        <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
+                                            {Object.entries(sttResults).map(([key, value]) => (
+                                                value && value.trim().length > 0 && (
+                                                    <div key={key}>
+                                                        <label className="meeting-minutes-label">
+                                                            <input
+                                                                type="radio"
+                                                                name="stt-source"
+                                                                value={key}
+                                                                checked={selectedSttSource === key}
+                                                                onChange={(e) => setSelectedSttSource(e.target.value)}
+                                                                style={{marginRight: '8px'}}
+                                                            />
+                                                            {key.charAt(0).toUpperCase() + key.slice(1)} 결과 (이것을 소스로 사용)
+                                                        </label>
+                                                        <div style={{
+                                                            border: '1px solid #ddd',
+                                                            borderRadius: '8px',
+                                                            padding: '15px',
+                                                            backgroundColor: '#f9f9f9',
+                                                            maxHeight: '300px',
+                                                            overflowY: 'auto',
+                                                            marginTop: '5px',
+                                                            whiteSpace: 'pre-wrap',
+                                                            wordBreak: 'break-word',
+                                                            fontSize: '14px',
+                                                            lineHeight: '1.6'
+                                                        }}>
+                                                            {value}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
 
                         {/*{ recordingMethod === 'document' && llmOutput && (*/}
-                        { ( llmOutput || (recordingMethod === 'audio') ) && (
-                            <div>
+                        {/*{ ( llmOutput || (recordingMethod === 'audio') ) && (*/}
+                        { ((recordingMethod === 'document' && manualInput && manualInput.trim().length > 0)
+                            || (recordingMethod === 'audio' && sttResults && Object.values(sttResults).some(text => text && text.trim().length > 0))) && (
+                                <div>
                                 <div className="generation-panel" style={{flexDirection: 'column', gap: '15px'}}>
                                     <div style={{display: 'flex', width: '100%', gap: '20px'}}>
                                         {/*<div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>*/}
@@ -2095,11 +2417,11 @@ const MeetingMinutes: React.FC = () => {
                                     </button>
                                 </div>
 
-                                <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
-                                    <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>
-                                        ⬇
-                                    </div>
-                                </div>
+                                {/*<div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>*/}
+                                {/*    <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>*/}
+                                {/*        ⬇*/}
+                                {/*    </div>*/}
+                                {/*</div>*/}
 
                                 {/* ✅ 프로그레스 바 추가 */}
                                 {isGenerating && (
@@ -2147,39 +2469,63 @@ const MeetingMinutes: React.FC = () => {
                                     </div>
                                 )}
 
-                                <div className="meeting-minutes-section">
-                                    <h3 className="section-header-meetingminutes">■ 생성된 Draft 기획서, 컨셉문서, 주요 안건 정리</h3>
-                                    <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
-                                        {llmResults.map(result => (
-                                            llmDocTypes[result.id as keyof typeof llmDocTypes] && (
-                                                <div key={result.id}>
+                                {/* 생성된 결과 섹션 - LLM 결과가 실제로 있을 때만 표시 */}
+                                {recordingMethod === 'document' &&
+                                    manualInput &&
+                                    manualInput.trim().length > 0 &&
+                                    llmResults.some(result =>
+                                        llmDocTypes[result.id as keyof typeof llmDocTypes] &&
+                                        result.content &&
+                                        result.content.trim().length > 0
+                                    ) && (
+                                        <div className="meeting-minutes-section">
+                                            <h3 className="section-header-meetingminutes">■ 생성된 Draft 기획서, 컨셉문서, 주요 안건 정리</h3>
+                                            <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
+                                                {llmResults.map(result => (
+                                                    llmDocTypes[result.id as keyof typeof llmDocTypes] && (
+                                                        <div key={result.id}>
 
-                                                    <label className="meeting-minutes-label llm-result-label">
-                                                        <input
-                                                            // className="meeting-minutes-checkbox" /* ✅ checkbox-large 클래스 제거 */
-                                                            className="meeting-minutes-checkbox checkbox-large" /* ✅ checkbox-large 클래스 제거 */
-                                                            type="checkbox"
-                                                            checked={result.save}
-                                                            onChange={() => handleLlmResultSaveChange(result.id)}
-                                                            // /* ✅ style 속성 제거 */
-                                                        />
-                                                        <span>{result.title} (서버에 저장)</span>
-                                                    </label>
-                                                    <textarea className="meeting-minutes-textarea" rows={20} value={result.content} readOnly style={{marginTop: '5px'}} />
-                                                </div>
-                                            )
-                                        ))}
-                                    </div>
-                                </div>
+                                                            <label className="meeting-minutes-label llm-result-label">
+                                                                <input
+                                                                    // className="meeting-minutes-checkbox" /* ✅ checkbox-large 클래스 제거 */
+                                                                    className="meeting-minutes-checkbox checkbox-large" /* ✅ checkbox-large 클래스 제거 */
+                                                                    type="checkbox"
+                                                                    checked={result.save}
+                                                                    onChange={() => handleLlmResultSaveChange(result.id)}
+                                                                    // /* ✅ style 속성 제거 */
+                                                                />
+                                                                <span>{result.title} (서버에 저장)</span>
+                                                            </label>
+                                                            <textarea className="meeting-minutes-textarea" rows={20} value={result.content} readOnly style={{marginTop: '5px'}} />
+                                                        </div>
+                                                    )
+                                                ))}
+                                            </div>
+                                        </div>
+                                )}
 
                             </div>
                         )}
 
-                        {/* --- ▼▼▼ [수정] 최종 저장 버튼 (요청사항 11) ▼▼▼ --- */}
-                        <div className="meeting-minutes-actions" style={{justifyContent: 'center'}}>
-                            <button className="btn-primary" onClick={handleSave}>서버 저장&nbsp;&nbsp;&nbsp;&&nbsp;&nbsp;&nbsp;공유자에게 전송</button>
-                        </div>
-                        {/* --- ▲▲▲ 최종 저장 버튼 종료 ▲▲▲ --- */}
+                        {/*<div className="meeting-minutes-actions" style={{justifyContent: 'center'}}>*/}
+                        {/*    <button className="btn-primary" onClick={handleSave}>서버 저장&nbsp;&nbsp;&nbsp;&&nbsp;&nbsp;&nbsp;공유자에게 전송</button>*/}
+                        {/*</div>*/}
+                        {/* 최종 저장 버튼 - 회의록 선택했을 때만 표시 */}
+                        {selectedMeeting && (
+                            <div className="meeting-minutes-actions" style={{justifyContent: 'center'}}>
+                                <button
+                                    className="btn-primary"
+                                    onClick={handleSave}
+                                    disabled={!hasChanges || isFileUploading}
+                                    style={{
+                                        opacity: (!hasChanges || isFileUploading) ? 0.5 : 1,
+                                        cursor: (!hasChanges || isFileUploading) ? 'not-allowed' : 'pointer'
+                                    }}
+                                >
+                                    서버 저장&nbsp;&nbsp;&nbsp;&&nbsp;&nbsp;&nbsp;공유자에게 전송
+                                </button>
+                            </div>
+                        )}
 
                     </div>
                 )}

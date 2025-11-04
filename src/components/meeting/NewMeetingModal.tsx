@@ -37,8 +37,13 @@ const NewMeetingModal: React.FC<NewMeetingModalProps> = ({
     if (!isOpen) return null;
 
     const handleSave = async () => {
-        await onSave();
-        onClose();
+        try {
+            await onSave();
+            onClose();
+        } catch (error) {
+            // alert은 onSave 내부에서 처리하므로 여기서는 아무것도 안 함
+            console.error('저장 실패:', error);
+        }
     };
 
     return (

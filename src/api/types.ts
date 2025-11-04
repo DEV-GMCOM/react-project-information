@@ -194,22 +194,47 @@ export interface PTChecklist {
 export interface MeetingMinute {
     meeting_id: number;
     meeting_title: string;
-    meeting_datetime: string; // ISO 8601 형식의 날짜 문자열 (예: "2025-10-23T14:30:00")
+    meeting_datetime: string;
     meeting_place: string | null;
     project_id: number | null;
-    project_name?: string;     // 백엔드에서 JOIN으로 제공
-    creator_name?: string;     // 백엔드에서 JOIN으로 제공
-    attendees_display: string; // "홍길동 외 2명" 또는 "홍길동, 이순신"
-    shared_with: Employee[];   // '기본 정보'의 공유자와 동일한 Employee 객체 배열
+    project_name?: string;
+    creator_name?: string;
+    attendees_display: string;
+    shared_with: Employee[];
     tags: string[];
     share_methods: ('email' | 'jandi')[];
     is_active: boolean;
     created_at: string;
     created_by: number;
+    basic_minutes?: string;
+    has_llm_documents?: boolean;
 
-    basic_minutes?: string; // 회의록 원본 텍스트
-
-    // (상세 정보 로드 시 추가될 수 있는 필드)
-    // stt_originals?: any[];
-    has_llm_documents?: boolean; // LLM 문서 존재 여부 (백엔드에서 계산)
+    // ✅ 상세 정보 추가
+    stt_originals?: STTOriginal[];
+    llm_documents?: LLMDocument[];
+    file_attachments?: any[];
 }
+
+
+// ✅ STT 결과 타입
+export interface STTOriginal {
+    stt_original_id: number;
+    file_attachment_id: number;
+    original_text: string;
+    stt_engine_type: string; // 'whisper', 'clova', 'google', etc.
+    conversion_duration?: string;
+    created_at: string;
+}
+
+// ✅ LLM 문서 타입
+export interface LLMDocument {
+    llm_document_id: number;
+    document_type: string; // 'summary', 'concept', 'draft'
+    document_title: string;
+    document_content: string;
+    created_at: string;
+}
+
+
+
+
