@@ -235,6 +235,27 @@ export interface LLMDocument {
     created_at: string;
 }
 
+// LLM 생성 요청 타입
+export interface LLMGenerateRequest {
+    source_text: string;
+    engine: 'claude' | 'chatgpt' | 'gemini' | 'perplexity' | 'grok';
+    doc_types: ('summary' | 'concept' | 'draft')[];
+    meeting_id: number;  // ✅ 추가
+    stt_original_id?: number;  // ✅ 추가
+}
 
+// LLM 응답 타입
+export interface LLMDocumentResult {
+    llm_document_id: number;  // ✅ 추가
+    doc_type: 'summary' | 'concept' | 'draft';
+    title: string;
+    content: string;
+}
+
+export interface LLMGenerateResponse {
+    engine: string;
+    results: LLMDocumentResult[];
+    processing_time_ms: number;
+}
 
 

@@ -51,6 +51,15 @@ interface EmployeeSearchModalProps {
     initialSelected: Employee[];
 }
 
+// 파일 상단의 상태 정의 부분
+interface LLMResultUI {
+    id: string;
+    label: string;
+    content: string;
+    save: boolean;
+    llm_document_id?: number;  // ✅ 추가
+}
+
 
 // 직원 검색 모달을 위한 간단한 컴포넌트
 // 실제 구현에서는 별도의 파일로 분리하는 것이 좋습니다.
@@ -366,6 +375,8 @@ const MeetingMinutes: React.FC = () => {
         // 모달 열기
         setIsNewMeetingModalOpen(true);
     };
+
+
 
     const handleSaveNewMeeting = async () => {
         if (!meetingTitle || !meetingDateTime) {
@@ -1411,6 +1422,19 @@ const MeetingMinutes: React.FC = () => {
 
         // --- 파라미터 유효성 검증 및 조립 ---
 
+        // 0. meeting_id 확인 (없으면 먼저 회의록 생성)
+        let meetingId = currentMeetingId;
+        if (!meetingId) {
+            console.log("회의록 ID가 없어서 먼저 생성합니다");
+            try {
+                meetingId = await createMinimalMeeting();
+            } catch (error) {
+                console.error("회의록 생성 실패:", error);
+                alert("회의록을 먼저 생성해야 합니다");
+                return;
+            }
+        }
+
         // 1. source_text 조립
         let source_text: string | null = null;
         if (recordingMethod === 'document') {
@@ -1439,12 +1463,25 @@ const MeetingMinutes: React.FC = () => {
             return;
         }
 
+        // 4. stt_original_id 조립 (음성에서 생성한 경우)
+        let stt_original_id: number | undefined = undefined;
+        if (recordingMethod === 'audio' && selectedSttSource) {
+            // STT 원본 ID를 가져오는 로직 (필요시 state 추가)
+            // stt_original_id = sttOriginalIds[selectedSttSource];
+        }
+
         // --- API 호출 ---
         setIsGenerating(true);
         setGenerationPhase(2); // LLM 진행 중 UI 표시
 
         try {
-            const payload = { source_text, engine, doc_types };
+            const payload = {
+                source_text,
+                engine,
+                doc_types,
+                meeting_id: meetingId,  // ✅ 추가
+                stt_original_id         // ✅ 추가 (선택)
+            };
 
             const response = await generationService.generateLLM(payload);
 
@@ -1459,7 +1496,11 @@ const MeetingMinutes: React.FC = () => {
 
                     if (backendResult) {
                         // 일치하는 결과가 있으면 content 업데이트
-                        return { ...uiResult, content: backendResult.content };
+                        return {
+                            ...uiResult,
+                            content: backendResult.content,
+                            llm_document_id: backendResult.llm_document_id  // ✅ 추가
+                        };
                     }
                     // 일치하는 결과가 없으면 (e.g. 프론트에만 있고 요청 안 보냄) 기존 상태 유지
                     return uiResult;
@@ -1639,6 +1680,20 @@ const MeetingMinutes: React.FC = () => {
                 }
             }
 
+            // ✅ 공유자 전송 (이미 DB에 저장되어 있으므로)
+            if (shareMethodArray.length > 0) {
+                try {
+                    await generationService.shareMeeting({
+                        meeting_id: meetingId,
+                        share_methods: shareMethodArray
+                    });
+                    console.log("공유자 전송 완료");
+                } catch (shareError) {
+                    console.error("공유자 전송 실패:", shareError);
+                    // 실패해도 계속 진행 (저장은 이미 완료됨)
+                }
+            }
+
             alert("회의록이 성공적으로 저장되었습니다.");
 
             // // 현재 활성화된 탭('my' 또는 'shared')의 목록을
@@ -1670,7 +1725,7 @@ const MeetingMinutes: React.FC = () => {
 
         } catch (error: any) {
             console.error('저장 실패:', error);
-
+            handleApiError(error);
             if (error.response?.status === 409) {
                 alert("회의록 정보가 유효하지 않습니다. 새로고침 후 다시 시도해주세요.");
             } else {
@@ -2470,38 +2525,43 @@ const MeetingMinutes: React.FC = () => {
                                 )}
 
                                 {/* 생성된 결과 섹션 - LLM 결과가 실제로 있을 때만 표시 */}
-                                {recordingMethod === 'document' &&
-                                    manualInput &&
-                                    manualInput.trim().length > 0 &&
-                                    llmResults.some(result =>
-                                        llmDocTypes[result.id as keyof typeof llmDocTypes] &&
-                                        result.content &&
-                                        result.content.trim().length > 0
-                                    ) && (
-                                        <div className="meeting-minutes-section">
-                                            <h3 className="section-header-meetingminutes">■ 생성된 Draft 기획서, 컨셉문서, 주요 안건 정리</h3>
-                                            <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
-                                                {llmResults.map(result => (
-                                                    llmDocTypes[result.id as keyof typeof llmDocTypes] && (
-                                                        <div key={result.id}>
+                                {/*{recordingMethod === 'document' &&*/}
+                                {/*    manualInput &&*/}
+                                {/*    manualInput.trim().length > 0 &&*/}
+                                {/*    llmResults.some(result =>*/}
+                                {/*        llmDocTypes[result.id as keyof typeof llmDocTypes] &&*/}
+                                {/*        result.content &&*/}
+                                {/*        result.content.trim().length > 0*/}
+                                {/*    ) && (*/}
+                                {llmResults.some(result =>
+                                    llmDocTypes[result.id as keyof typeof llmDocTypes] &&
+                                    result.content &&
+                                    result.content.trim().length > 0
+                                ) && (
+                                    <div className="meeting-minutes-section">
+                                        <h3 className="section-header-meetingminutes">■ 생성된 Draft 기획서, 컨셉문서, 주요 안건 정리</h3>
+                                        <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
+                                            {llmResults.map(result => (
+                                                llmDocTypes[result.id as keyof typeof llmDocTypes] && (
+                                                    <div key={result.id}>
 
-                                                            <label className="meeting-minutes-label llm-result-label">
-                                                                <input
-                                                                    // className="meeting-minutes-checkbox" /* ✅ checkbox-large 클래스 제거 */
-                                                                    className="meeting-minutes-checkbox checkbox-large" /* ✅ checkbox-large 클래스 제거 */
-                                                                    type="checkbox"
-                                                                    checked={result.save}
-                                                                    onChange={() => handleLlmResultSaveChange(result.id)}
-                                                                    // /* ✅ style 속성 제거 */
-                                                                />
-                                                                <span>{result.title} (서버에 저장)</span>
-                                                            </label>
-                                                            <textarea className="meeting-minutes-textarea" rows={20} value={result.content} readOnly style={{marginTop: '5px'}} />
-                                                        </div>
-                                                    )
-                                                ))}
-                                            </div>
+                                                        <label className="meeting-minutes-label llm-result-label">
+                                                            <input
+                                                                // className="meeting-minutes-checkbox" /* ✅ checkbox-large 클래스 제거 */
+                                                                className="meeting-minutes-checkbox checkbox-large" /* ✅ checkbox-large 클래스 제거 */
+                                                                type="checkbox"
+                                                                checked={result.save}
+                                                                onChange={() => handleLlmResultSaveChange(result.id)}
+                                                                // /* ✅ style 속성 제거 */
+                                                            />
+                                                            <span>{result.title} (서버에 저장)</span>
+                                                        </label>
+                                                        <textarea className="meeting-minutes-textarea" rows={20} value={result.content} readOnly style={{marginTop: '5px'}} />
+                                                    </div>
+                                                )
+                                            ))}
                                         </div>
+                                    </div>
                                 )}
 
                             </div>

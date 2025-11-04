@@ -7,15 +7,14 @@ export type STTEngine = "whisper" | "clova" | "google" | "aws" | "azure" | "vosk
 export type LLMEngine = "claude" | "chatgpt" | "gemini" | "perplexity" | "grok";
 export type DocType = "summary" | "concept" | "draft";
 
-// ✅ STT 작업 생성 응답
+// ✅ STT 관련 인터페이스들 (기존 유지)
 export interface STTCreateResponse {
     task_id: string;
-    file_id: number;  // ✅ 추가: 업로드된 파일 ID
+    file_id: number;
     status: 'pending' | 'processing' | 'completed' | 'failed' | 'aborted';
     message: string;
 }
 
-// ✅ STT 진행률 메시지
 export interface STTProgressMessage {
     task_id: string;
     progress: number;
@@ -23,13 +22,12 @@ export interface STTProgressMessage {
     status: 'pending' | 'processing' | 'completed' | 'failed' | 'aborted';
     result_text?: string;
     error?: string;
-    metadata?: {  // ✅ 추가
+    metadata?: {
         conversion_duration?: number;
         [key: string]: any;
     };
 }
 
-// ✅ STT 결과 조회 응답 (신규)
 export interface STTResultResponse {
     stt_original_id: number;
     file_attachment_id: number;
@@ -40,22 +38,24 @@ export interface STTResultResponse {
     created_at: string;
 }
 
-// ✅ STT 상태 조회 응답
 export interface STTStatusResponse extends STTProgressMessage {
     metadata: Record<string, any>;
 }
 
-// LLM 요청/응답 (기존 유지)
+// ✅ LLM 관련 인터페이스 (수정)
 export interface LLMRequestPayload {
     source_text: string;
     engine: LLMEngine;
     doc_types: DocType[];
+    meeting_id: number;  // ✅ 필수로 추가
+    stt_original_id?: number;  // ✅ 선택 추가
 }
 
 export interface LLMResult {
     doc_type: DocType;
     title: string;
     content: string;
+    llm_document_id?: number;  // ✅ 추가 (DB 저장 후 반환)
 }
 
 export interface LLMResponse {
@@ -64,10 +64,23 @@ export interface LLMResponse {
     processing_time_ms: number;
 }
 
+// ✅ 공유 요청 인터페이스 (신규)
+export interface ShareMeetingRequest {
+    meeting_id: number;
+    share_methods: string[];
+}
+
+export interface ShareMeetingResponse {
+    message: string;
+    meeting_id: number;
+    share_methods: string[];
+    shared_count: number;
+}
+
 // API 서비스
 export const generationService = {
     /**
-     * STT 작업 생성 (비동기, DB 연동)
+     * STT 작업 생성 (기존 유지)
      */
     async createSTTTask(
         engine: STTEngine,
@@ -88,20 +101,16 @@ export const generationService = {
         if (options?.language) {
             formData.append('language', options.language);
         }
-        // meeting_id가 null이나 undefined일 때는 전송하지 않음
         if (options?.meeting_id !== null && options?.meeting_id !== undefined) {
             formData.append('meeting_id', options.meeting_id.toString());
         }
 
-        // 디버깅 로그
         console.log('📤 STT 요청 전송:');
         console.log('  - engine:', engine);
         console.log('  - file:', file.name, file.size, 'bytes');
         console.log('  - model_size:', options?.model_size);
         console.log('  - language:', options?.language);
         console.log('  - meeting_id:', options?.meeting_id);
-        // FormData 내용 확인
-        console.log('📦 FormData 내용:');
 
         try {
             const response = await apiClient.post<STTCreateResponse>(
@@ -109,18 +118,16 @@ export const generationService = {
                 formData,
                 {
                     headers: {
-                        'Content-Type': 'multipart/form-data'  // ✅ 명시적 헤더
+                        'Content-Type': 'multipart/form-data'
                     }
                 }
             );
             return response.data;
         } catch (error: any) {
-            // 상세 에러 로그
             console.error('❌ STT 작업 생성 실패:', error);
             console.error('응답 데이터:', error.response?.data);
             console.error('응답 상태:', error.response?.status);
 
-            // 422 에러 상세 정보 출력
             if (error.response?.status === 422) {
                 console.error('❌ 422 Validation Error Details:', JSON.stringify(error.response.data, null, 2));
             }
@@ -130,7 +137,7 @@ export const generationService = {
     },
 
     /**
-     * STT 결과 조회 (신규)
+     * STT 결과 조회
      */
     async getSTTResult(fileId: number): Promise<STTResultResponse> {
         const response = await apiClient.get<STTResultResponse>(
@@ -138,7 +145,6 @@ export const generationService = {
         );
         return response.data;
     },
-
 
     /**
      * STT 진행률 WebSocket 구독
@@ -148,7 +154,6 @@ export const generationService = {
         onProgress: (data: STTProgressMessage) => void,
         onError?: (error: Error) => void
     ): WebSocket {
-        // ✅ WebSocket URL 구성 (환경에 따라 조정)
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.hostname;
         const port = import.meta.env.DEV ? '8001' : window.location.port;
@@ -167,7 +172,6 @@ export const generationService = {
             console.log('📊 진행률 수신:', data);
             onProgress(data);
 
-            // 완료 시 자동 종료
             if (['completed', 'failed', 'aborted'].includes(data.status)) {
                 console.log('🏁 작업 종료:', data.status);
                 ws.close();
@@ -187,14 +191,14 @@ export const generationService = {
     },
 
     /**
-     * STT 작업 중단 (명시적)
+     * STT 작업 중단
      */
     async abortSTTTask(taskId: string): Promise<void> {
         await apiClient.post(`/generation/stt/abort/${taskId}`);
     },
 
     /**
-     * STT 작업 상태 조회 (Polling 용)
+     * STT 작업 상태 조회
      */
     async getSTTStatus(taskId: string): Promise<STTStatusResponse> {
         const response = await apiClient.get<STTStatusResponse>(
@@ -204,10 +208,21 @@ export const generationService = {
     },
 
     /**
-     * LLM 생성 요청 (기존 유지)
+     * LLM 생성 요청 (수정됨 - meeting_id 필수)
      */
     async generateLLM(payload: LLMRequestPayload): Promise<LLMResponse> {
         const response = await apiClient.post<LLMResponse>('/generation/llm', payload);
+        return response.data;
+    },
+
+    /**
+     * 회의록 공유 요청 (신규 추가)
+     */
+    async shareMeeting(request: ShareMeetingRequest): Promise<ShareMeetingResponse> {
+        const response = await apiClient.post<ShareMeetingResponse>(
+            '/generation/meeting/share',
+            request
+        );
         return response.data;
     }
 };
