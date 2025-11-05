@@ -1,12 +1,64 @@
-/tmp
-/out-tsc
+#.git
+#
+#/tmp
+#/out-tsc
+#
+#/node_modules
+#npm-debug.log*
+#yarn-debug.log*
+#yarn-error.log*
+#/.pnp
+#.pnp.js
+#
+#.vscode/*
+#src/version.json
 
+
+# Node/Vite/TS build & cache
 /node_modules
+/dist
+/.vite
+node_modules/.vite
+*.tsbuildinfo
+/out-tsc
+/tmp
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-/.pnp
-.pnp.js
+pnpm-debug.log*
 
+# PnP (미사용 시)
+.pnp/
+.pnp.js
+.pnp.cjs
+.pnp.loader.mjs
+.pnpm-store/
+
+# Env files (실제 값은 커밋 금지, 예시만 추적)
+.env
+.env.*
+!.env.example
+
+# Editors/IDE
 .vscode/*
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test outputs
+coverage/
+.junit/
+test-results/
+
+# ESLint cache
+.eslintcache
+
+# 기존 내용 정리
+# .git             <- 저장소 유지 위해 제거
+# /out-tsc         <- 상단에 유지
+# src/version.json <- 필요 시 커밋 제외 유지
 src/version.json
