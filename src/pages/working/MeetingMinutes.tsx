@@ -441,6 +441,7 @@ const MeetingMinutes: React.FC = () => {
                         </ul>
                     </div>
 
+
                     <div className="help-section">
                         <h3>📝 회의록 작성 항목</h3>
 
