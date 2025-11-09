@@ -292,12 +292,26 @@ const MeetingMinutes: React.FC = () => {
         summary: true,
         concept: false,
         draft: false,
+        todolist: false,
+        mindmap_tree: false,
+        mindmap_graph: false,
+        cal_gant: false,
+        role: false,
+        glossary: false,
+        biz_overview: false,
     });
 
     const [llmResults, setLlmResults] = useState([
         { id: 'summary', title: '주요 안건 정리', content: '', save: true },
         { id: 'concept', title: '컨셉 문서', content: '', save: false },
         { id: 'draft', title: 'Draft 기획서', content: '', save: false },
+        { id: 'todolist', title: 'To Do 리스트', content: '', save: false },
+        { id: 'mindmap_tree', title: 'MindMap 트리', content: '', save: false },
+        { id: 'mindmap_graph', title: 'MindMap 그래프', content: '', save: false },
+        { id: 'cal_gant', title: '캘린더_간트차트', content: '', save: false },
+        { id: 'role', title: 'Role & Responsibility', content: '', save: false },
+        { id: 'glossary', title: '용어/약어', content: '', save: false },
+        { id: 'biz_overview', title: '배경지식/트랜드', content: '', save: false },
     ]);
 
     const [showEmployeeModal, setShowEmployeeModal] = useState(false);
@@ -2458,6 +2472,41 @@ const MeetingMinutes: React.FC = () => {
                                                 <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="draft" checked={llmDocTypes.draft} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
                                                 Draft 기획서
                                             </label>
+                                            <label className="meeting-minutes-label">
+                                                <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="todolist" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                                To Do 리스트
+                                            </label>
+                                            {/*{ id: 'mindmap_tree', title: 'MindMap 트리', content: '', save: false },*/}
+                                            {/*{ id: 'mindmap_graph', title: 'MindMap 그래프', content: '', save: false },*/}
+                                            {/*{ id: 'cal_gant', title: '캘린더_간트차트', content: '', save: false },*/}
+                                            {/*{ id: 'role', title: 'Role & Responsibility', content: '', save: false },*/}
+                                            {/*{ id: 'glossary', title: '용어/약어', content: '', save: false },*/}
+                                            {/*{ id: 'biz_overview', title: '배경지식/트랜드', content: '', save: false },*/}
+
+                                            {/*<label className="meeting-minutes-label">*/}
+                                            {/*    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="mindmap_tree" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
+                                            {/*    MindMap 트리*/}
+                                            {/*</label>*/}
+                                            {/*<label className="meeting-minutes-label">*/}
+                                            {/*    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="mindmap_graph" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
+                                            {/*    MindMap 그래프*/}
+                                            {/*</label>*/}
+                                            {/*<label className="meeting-minutes-label">*/}
+                                            {/*    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="cal_gant" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
+                                            {/*    캘린더_간트차트*/}
+                                            {/*</label>*/}
+                                            {/*<label className="meeting-minutes-label">*/}
+                                            {/*    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="role" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
+                                            {/*    Role & Responsibility*/}
+                                            {/*</label>*/}
+                                            {/*<label className="meeting-minutes-label">*/}
+                                            {/*    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="glossary" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
+                                            {/*    용어/약어*/}
+                                            {/*</label>*/}
+                                            {/*<label className="meeting-minutes-label">*/}
+                                            {/*    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="biz_overview" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
+                                            {/*    배경지식/트랜드*/}
+                                            {/*</label>*/}
                                         </div>
                                     </div>
                                     {/*<button className="btn-secondary" onClick={handleGenerate} style={{margin: '2rem'}}>LLM 회의록 생성</button>*/}
@@ -2517,6 +2566,13 @@ const MeetingMinutes: React.FC = () => {
                                                     {llmDocTypes.summary && ' 안건 정리'}
                                                     {llmDocTypes.concept && (llmDocTypes.summary ? ', 컨셉 문서' : ' 컨셉 문서')}
                                                     {llmDocTypes.draft && ((llmDocTypes.summary || llmDocTypes.concept) ? ', Draft 기획서' : ' Draft 기획서')}
+                                                    {llmDocTypes.todolist && ((llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', To Do 리스트' : ' To Do 리스트')}
+                                                    {llmDocTypes.mindmap_tree && ((llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', MindMap 트리' : ' MindMap 트리')}
+                                                    {llmDocTypes.mindmap_graph && ((llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', MindMap 그래프' : ' MindMap 그래프')}
+                                                    {llmDocTypes.cal_gant && ((llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 캘린더_간트차트' : ' 캘린더_간트차트')}
+                                                    {llmDocTypes.role && ((llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', Role & Responsibility' : ' Role & Responsibility')}
+                                                    {llmDocTypes.glossary && ((llmDocTypes.role && llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 용어/약어' : ' 용어/약어')}
+                                                    {llmDocTypes.biz_overview && ((llmDocTypes.glossary && llmDocTypes.role && llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 배경지식/트랜드' : ' 배경지식/트랜드')}
                                                     를 생성하고 있습니다...
                                                 </div>
                                             </div>
