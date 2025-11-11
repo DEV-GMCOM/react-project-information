@@ -27,12 +27,11 @@ export default defineConfig(({ mode }) => {
             ],
             // 2. 개발 프록시 설정을 .env.development 경로에 맞게 수정합니다.
             proxy: {
-                // 개발 시 프론트엔드가 요청하는 '/api/information' 경로를 잡아서
-                '/api/information': {
-                    target: 'http://127.0.0.1:8001', // 로컬 FastAPI 서버
+                // 개발 시 프론트엔드가 요청하는 '/api' 경로를 잡아서
+                '/api': {
+                    target: 'http://127.0.0.1:8002', // 로컬 FastAPI 서버
                     changeOrigin: true,
-                    // 백엔드가 알아듣는 '/api'로 경로를 변환해줍니다.
-                    rewrite: (path) => path.replace(/^\/api\/information/, '/api'),
+                    rewrite: (path) => path, // 경로 그대로 전달
                 }
             }
         },

@@ -1,4 +1,4 @@
-import versionInfo from '../version.json';
+import versionInfo from '../version.json' assert { type: 'json' };
 
 export interface VersionInfo {
     hash: string;
