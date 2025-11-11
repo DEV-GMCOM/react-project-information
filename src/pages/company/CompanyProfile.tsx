@@ -1074,7 +1074,7 @@ const CompanyProfileForm: React.FC = () => {
             <div className="profile-header">
                 <div className="profile-title-section">
                     <h1 className="profile-title">
-                        광고주 Profile 양식
+                        광고주 Profile 양식 1
                     </h1>
                 </div>
                 <div className="profile-logo">

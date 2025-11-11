@@ -24,12 +24,15 @@ interface ExcelMetadata {
     [key: string]: any; // 추가 필드
 }
 
-// 🔍 비교 결과 타입 (백엔드 응답과 일치 - LLM 기반)
+// 🔍 비교 결과 타입 (백엔드 응답과 일치 - 이름 기반 + LLM 기반)
 interface ComparisonResult {
     cloudFile: CloudFile;
-    matched: boolean; // LLM이 판단한 매칭 여부
+    matched: boolean; // 이름 기반 매칭 여부
     matchedMetadata: ExcelMetadata | null;
-    explanation: string; // LLM의 매칭 설명
+    explanation: string; // 이름 기반 매칭 설명
+    llmMatched?: boolean; // LLM 기반 매칭 여부
+    llmBestMatch?: ExcelMetadata | null; // LLM이 찾은 최적 매칭
+    llmExplanation?: string; // LLM 매칭 설명
 }
 
 // ☁️ 고정 클라우드 URL
@@ -81,7 +84,11 @@ const FileManagementSystem: React.FC = () => {
                     matchedMetadata: matchedMetadata || null,
                     explanation: matchedMetadata
                         ? 'Exact name match - matched by file name'
-                        : 'No matching metadata found in Excel file'
+                        : 'No matching metadata found in Excel file',
+                    // LLM 비교 결과 (초기값 - 실제 LLM 호출은 별도 버튼으로 수행)
+                    llmMatched: false,
+                    llmBestMatch: null,
+                    llmExplanation: 'LLM comparison not yet performed'
                 };
             });
 
@@ -302,8 +309,11 @@ const FileManagementSystem: React.FC = () => {
                                         <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>
                                             엑셀 메타데이터
                                         </th>
-                                        <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left', width: '300px' }}>
-                                            내용 요약
+                                        <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left', width: '250px' }}>
+                                            이름 기반 매칭
+                                        </th>
+                                        <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left', width: '250px' }}>
+                                            🤖 LLM 기반 매칭
                                         </th>
                                     </tr>
                                 </thead>
@@ -373,8 +383,36 @@ const FileManagementSystem: React.FC = () => {
                                                                 fontWeight: result.matched ? 'bold' : 'normal',
                                                                 color: result.matched ? '#2E7D32' : '#C62828'
                                                             }}>
-                                                                🤖 {result.explanation}
+                                                                📝 {result.explanation}
                                                             </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '12px', border: '1px solid #ddd' }}>
+                                                    <div style={{ fontSize: '0.85em', whiteSpace: 'pre-line', lineHeight: '1.6' }}>
+                                                        <div style={{
+                                                            padding: '10px',
+                                                            backgroundColor: result.llmMatched ? '#E8F5E9' : '#FFF3E0',
+                                                            borderRadius: '4px',
+                                                            border: '1px solid #e0e0e0'
+                                                        }}>
+                                                            <div style={{
+                                                                fontWeight: result.llmMatched ? 'bold' : 'normal',
+                                                                color: result.llmMatched ? '#2E7D32' : '#F57C00'
+                                                            }}>
+                                                                🤖 {result.llmExplanation || 'LLM comparison not yet performed'}
+                                                            </div>
+                                                            {result.llmBestMatch && (
+                                                                <div style={{
+                                                                    marginTop: '8px',
+                                                                    paddingTop: '8px',
+                                                                    borderTop: '1px solid #ddd',
+                                                                    fontSize: '0.9em',
+                                                                    color: '#666'
+                                                                }}>
+                                                                    <strong>Best Match:</strong> {result.llmBestMatch.fileName}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </td>
