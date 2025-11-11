@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect,useCallback, useMemo, ChangeEvent } from 'react';
+import Cookies from 'js-cookie'; // ✅ 쿠키 라이브러리 추가 필요
 
 
 // [추가] API 서비스 및 타입 import
@@ -258,13 +259,15 @@ const MeetingMinutes: React.FC = () => {
     const [isDragOver, setIsDragOver] = useState<boolean>(false);
 
     // state 추가
-    const [recordingMethod, setRecordingMethod] = useState<string>('document'); // 'document' | 'audio' | 'realtime'
+    const [recordingMethod, setRecordingMethod] = useState<'document'|'audio'>('document');
+    // const [recordingMethod, setRecordingMethod] = useState<string>('document'); // 'document' | 'audio' | 'realtime'
     const [manualInput, setManualInput] = useState<string>(''); // 직접 입력용
 
     // 파일 확장자 목록을 동적으로 변경
     const documentExtensions = ['text', 'txt', 'md'];
     const audioExtensions = ['mp3', 'wav', 'm4a', 'ogg', 'flac', 'aac'];
-    const allowedExtensions = recordingMethod === 'document' ? documentExtensions : audioExtensions;
+    // const allowedExtensions = recordingMethod === 'document' ? documentExtensions : audioExtensions;
+    const allowedExtensions = [...documentExtensions, ...audioExtensions];
 
     // --- ▼▼▼ 기능 추가에 따른 상태 관리 ▼▼▼ ---
     const [sttEngine, setSttEngine] = useState<string>('whisper');
@@ -368,9 +371,34 @@ const MeetingMinutes: React.FC = () => {
     // Map<파일명, file_id> - 업로드된 파일의 ID 추적
 
     const [isNewMeetingModalOpen, setIsNewMeetingModalOpen] = useState(false);
-
     const [selectedMeeting, setSelectedMeeting] = useState<MeetingMinute | null>(null);
 
+    // ✅ STT 설정 모달 상태
+    const [showSttSettingsModal, setShowSttSettingsModal] = useState(false);
+    const [sttModelSize, setSttModelSize] = useState<'tiny' | 'base' | 'small' | 'medium' | 'large'>('medium');
+    const [sttLanguage, setSttLanguage] = useState<'ko' | 'en' | 'auto'>('ko');
+
+    // ✅ 컴포넌트 마운트 시 쿠키에서 설정 로드
+    useEffect(() => {
+        const savedEngine = Cookies.get('stt_engine');
+        const savedModelSize = Cookies.get('stt_model_size');
+        const savedLanguage = Cookies.get('stt_language');
+
+        if (savedEngine) setSttEngine(savedEngine);
+        if (savedModelSize) setSttModelSize(savedModelSize as any);
+        if (savedLanguage) setSttLanguage(savedLanguage as any);
+    }, []);
+
+    // ✅ 설정 저장 핸들러
+    const handleSaveSettings = () => {
+        // 쿠키에 무기한 저장 (expires 생략하면 세션 쿠키가 되므로 명시)
+        Cookies.set('stt_engine', sttEngine, { expires: 36500 }); // 100년
+        Cookies.set('stt_model_size', sttModelSize, { expires: 36500 });
+        Cookies.set('stt_language', sttLanguage, { expires: 36500 });
+
+        alert('설정이 저장되었습니다.');
+        setShowSttSettingsModal(false);
+    };
 
     const handleNewMeeting = () => {
         // 상태 초기화
@@ -953,49 +981,96 @@ const MeetingMinutes: React.FC = () => {
         setIsDragOver(false);
     };
 
+    // ==================== 수정: handleFiles 함수 - 파일 개수 제한 추가 ====================
+    // ==================== 수정: handleFiles 함수 - serverFiles 포함 ====================
     const handleFiles = async (files: FileList | null) => {
         if (!files || files.length === 0) return;
 
         const fileArray = Array.from(files);
         const validFiles: File[] = [];
 
+        // ✅ 현재 선택된 파일 + 서버 파일 모두 체크
+        const currentTextFiles = [
+            // selectedFiles에서 텍스트 파일
+            ...selectedFiles.filter(f => {
+                const ext = f.name.split('.').pop()?.toLowerCase();
+                return ext && documentExtensions.includes(ext);
+            }),
+            // serverFiles에서 텍스트 파일
+            ...serverFiles.filter(f => {
+                const ext = f.original_file_name?.split('.').pop()?.toLowerCase();
+                return ext && documentExtensions.includes(ext);
+            })
+        ];
+
+        const currentAudioFiles = [
+            // selectedFiles에서 음성 파일
+            ...selectedFiles.filter(f => {
+                const ext = f.name.split('.').pop()?.toLowerCase();
+                return ext && audioExtensions.includes(ext);
+            }),
+            // serverFiles에서 음성 파일
+            ...serverFiles.filter(f => {
+                const ext = f.original_file_name?.split('.').pop()?.toLowerCase();
+                return ext && audioExtensions.includes(ext);
+            })
+        ];
+
+        // 새로 추가하려는 파일 분류
+        let newTextFileCount = 0;
+        let newAudioFileCount = 0;
+
         for (const file of fileArray) {
             const ext = file.name.split('.').pop()?.toLowerCase();
+
             if (!ext || !allowedExtensions.includes(ext)) {
                 alert(`허용되지 않는 파일 형식입니다: ${file.name}\n지원 형식: ${allowedExtensions.join(', ')}`);
                 continue;
             }
+
+            // 파일 타입별 개수 체크
+            if (documentExtensions.includes(ext)) {
+                if (currentTextFiles.length + newTextFileCount >= 1) {
+                    alert(`텍스트 파일은 최대 1개까지만 업로드할 수 있습니다.\n현재: ${currentTextFiles.length}개 선택됨`);
+                    continue;
+                }
+                newTextFileCount++;
+            } else if (audioExtensions.includes(ext)) {
+                if (currentAudioFiles.length + newAudioFileCount >= 1) {
+                    alert(`음성 파일은 최대 1개까지만 업로드할 수 있습니다.\n현재: ${currentAudioFiles.length}개 선택됨`);
+                    continue;
+                }
+                newAudioFileCount++;
+            }
+
             validFiles.push(file);
         }
 
         if (validFiles.length > 0) {
             setSelectedFiles(prev => [...prev, ...validFiles]);
 
-            // 텍스트 파일 자동 로드 (문서 모드일 때만)
-            if (recordingMethod === 'document') {
-                for (const file of validFiles) {
-                    const ext = file.name.split('.').pop()?.toLowerCase();
-                    if (ext && ['txt', 'text', 'md'].includes(ext)) {
-                        try {
-                            const content = await readTextFile(file);
-                            setManualInput(content);
-                            // 여러 파일 중 첫 번째 텍스트 파일만 로드
-                            break;
-                        } catch (error) {
-                            console.error('파일 읽기 오류:', error);
-                            alert(`파일을 읽는 중 오류가 발생했습니다: ${file.name}`);
-                        }
+            // 텍스트 파일 자동 로드
+            for (const file of validFiles) {
+                const ext = file.name.split('.').pop()?.toLowerCase();
+                if (ext && ['txt', 'text', 'md'].includes(ext)) {
+                    try {
+                        const content = await readTextFile(file);
+                        setManualInput(content);
+                        break;
+                    } catch (error) {
+                        console.error('파일 읽기 오류:', error);
+                        alert(`파일을 읽는 중 오류가 발생했습니다: ${file.name}`);
                     }
                 }
             }
         }
 
-        // input 초기화
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
     };
 
+// ==================== 수정: handleDrop 함수 - serverFiles 포함 ====================
     const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
@@ -1004,32 +1079,73 @@ const MeetingMinutes: React.FC = () => {
         const droppedFiles = Array.from(e.dataTransfer.files);
         const validFiles: File[] = [];
 
+        // ✅ 현재 선택된 파일 + 서버 파일 모두 체크
+        const currentTextFiles = [
+            ...selectedFiles.filter(f => {
+                const ext = f.name.split('.').pop()?.toLowerCase();
+                return ext && documentExtensions.includes(ext);
+            }),
+            ...serverFiles.filter(f => {
+                const ext = f.original_file_name?.split('.').pop()?.toLowerCase();
+                return ext && documentExtensions.includes(ext);
+            })
+        ];
+
+        const currentAudioFiles = [
+            ...selectedFiles.filter(f => {
+                const ext = f.name.split('.').pop()?.toLowerCase();
+                return ext && audioExtensions.includes(ext);
+            }),
+            ...serverFiles.filter(f => {
+                const ext = f.original_file_name?.split('.').pop()?.toLowerCase();
+                return ext && audioExtensions.includes(ext);
+            })
+        ];
+
+        // 새로 추가하려는 파일 분류
+        let newTextFileCount = 0;
+        let newAudioFileCount = 0;
+
         for (const file of droppedFiles) {
             const ext = file.name.split('.').pop()?.toLowerCase();
+
             if (!ext || !allowedExtensions.includes(ext)) {
                 alert(`허용되지 않는 파일 형식입니다: ${file.name}\n지원 형식: ${allowedExtensions.join(', ')}`);
                 continue;
             }
+
+            // 파일 타입별 개수 체크
+            if (documentExtensions.includes(ext)) {
+                if (currentTextFiles.length + newTextFileCount >= 1) {
+                    alert(`텍스트 파일은 최대 1개까지만 업로드할 수 있습니다.\n현재: ${currentTextFiles.length}개 선택됨`);
+                    continue;
+                }
+                newTextFileCount++;
+            } else if (audioExtensions.includes(ext)) {
+                if (currentAudioFiles.length + newAudioFileCount >= 1) {
+                    alert(`음성 파일은 최대 1개까지만 업로드할 수 있습니다.\n현재: ${currentAudioFiles.length}개 선택됨`);
+                    continue;
+                }
+                newAudioFileCount++;
+            }
+
             validFiles.push(file);
         }
 
         if (validFiles.length > 0) {
             setSelectedFiles(prev => [...prev, ...validFiles]);
 
-            // 텍스트 파일 자동 로드 (문서 모드일 때만)
-            if (recordingMethod === 'document') {
-                for (const file of validFiles) {
-                    const ext = file.name.split('.').pop()?.toLowerCase();
-                    if (ext && ['txt', 'text', 'md'].includes(ext)) {
-                        try {
-                            const content = await readTextFile(file);
-                            setManualInput(content);
-                            // 여러 파일 중 첫 번째 텍스트 파일만 로드
-                            break;
-                        } catch (error) {
-                            console.error('파일 읽기 오류:', error);
-                            alert(`파일을 읽는 중 오류가 발생했습니다: ${file.name}`);
-                        }
+            // 텍스트 파일 자동 로드
+            for (const file of validFiles) {
+                const ext = file.name.split('.').pop()?.toLowerCase();
+                if (ext && ['txt', 'text', 'md'].includes(ext)) {
+                    try {
+                        const content = await readTextFile(file);
+                        setManualInput(content);
+                        break;
+                    } catch (error) {
+                        console.error('파일 읽기 오류:', error);
+                        alert(`파일을 읽는 중 오류가 발생했습니다: ${file.name}`);
                     }
                 }
             }
@@ -1835,6 +1951,14 @@ const MeetingMinutes: React.FC = () => {
 
     }, [selectedFiles, serverFiles, audioExtensions]); // audioExtensions는 recordingMethod 변경 시 재계산되므로 의존성 추가
 
+    // 음성 파일 존재 시 라디오 기본 선택 로직
+    useEffect(() => {
+        // manualInput 이 비어 있고, 음성 파일이 1개 이상이면 기본 선택을 'audio'로
+        if ((!manualInput || manualInput.trim().length === 0) && hasAudioFiles) {
+            setRecordingMethod('audio');
+        }
+    }, [manualInput, hasAudioFiles]);
+
     return (
         <div className="meeting-minutes-container">
             <div className="meeting-minutes-header">
@@ -2050,109 +2174,6 @@ const MeetingMinutes: React.FC = () => {
                             </div>
                         )}
 
-                        {/*3. '회의록 기록 방법 선택' 섹션 추가*/}
-                        <div className="meeting-minutes-section">
-                            <h3 className="section-header-meetingminutes">■ 회의록 기록 방법 선택</h3>
-                            {/*<div style={{padding: '20px', display: 'flex', gap: '20px', justifyContent: 'center'}}>*/}
-                            <div style={{ padding: '2.5rem 2.75rem', display: 'flex', gap: '20px', justifyContent: 'center' }}>
-                                <label className="recording-method-label" style={{
-                                    border: '2px solid #ddd',
-                                    borderRadius: '12px',
-                                    padding: '30px',
-                                    flex: 1,
-                                    textAlign: 'center',
-                                    cursor: 'pointer',
-                                    backgroundColor: recordingMethod === 'document' ? '#f0f8ff' : 'white',
-                                    borderColor: recordingMethod === 'document' ? '#1890ff' : '#ddd',
-                                    display: 'flex',
-                                    flexDirection: 'row',  // ✅ 가로 배치
-                                    alignItems: 'center',  // ✅ 세로축 기준 가운데 정렬
-                                    justifyContent: 'center',  // ✅ 가로축 기준 가운데 정렬
-                                    gap: '15px'
-                                }}>
-                                    <input
-                                        type="radio"
-                                        name="recording-method"
-                                        value="document"
-                                        checked={recordingMethod === 'document'}
-                                        onChange={(e) => setRecordingMethod(e.target.value)}
-                                        style={{
-                                            transform: 'scale(1.8)',
-                                            margin: '0'  // ✅ 기본 마진 제거
-                                        }}
-                                    />
-                                    <div style={{fontSize: '18px', fontWeight: 'bold'}}>
-                                        문서 파일 또는 직접 입력
-                                    </div>
-                                </label>
-
-                                <label className="recording-method-label" style={{
-                                    border: '2px solid #ddd',
-                                    borderRadius: '12px',
-                                    padding: '30px',
-                                    flex: 1,
-                                    textAlign: 'center',
-                                    cursor: 'pointer',
-                                    backgroundColor: recordingMethod === 'audio' ? '#f0f8ff' : 'white',
-                                    borderColor: recordingMethod === 'audio' ? '#1890ff' : '#ddd',
-                                    display: 'flex',
-                                    flexDirection: 'row',  // ✅ 가로 배치
-                                    alignItems: 'center',  // ✅ 세로축 기준 가운데 정렬
-                                    justifyContent: 'center',  // ✅ 가로축 기준 가운데 정렬
-                                    gap: '15px'
-                                }}>
-                                    <input
-                                        type="radio"
-                                        name="recording-method"
-                                        value="audio"
-                                        checked={recordingMethod === 'audio'}
-                                        onChange={(e) => setRecordingMethod(e.target.value)}
-                                        style={{
-                                            transform: 'scale(1.8)',
-                                            margin: '0'  // ✅ 기본 마진 제거
-                                        }}
-                                    />
-                                    <div style={{fontSize: '18px', fontWeight: 'bold'}}>
-                                        음성 녹취록 (녹음파일)
-                                    </div>
-                                </label>
-
-                                <label className="recording-method-label" style={{
-                                    border: '2px solid #ddd',
-                                    borderRadius: '12px',
-                                    padding: '30px',
-                                    flex: 1,
-                                    textAlign: 'center',
-                                    cursor: 'not-allowed',
-                                    backgroundColor: '#f5f5f5',
-                                    borderColor: '#ddd',
-                                    opacity: 0.6,
-                                    display: 'flex',
-                                    flexDirection: 'row',  // ✅ 가로 배치
-                                    alignItems: 'center',  // ✅ 세로축 기준 가운데 정렬
-                                    justifyContent: 'center',  // ✅ 가로축 기준 가운데 정렬
-                                    gap: '15px'
-                                }}>
-                                    <input
-                                        type="radio"
-                                        name="recording-method"
-                                        value="realtime"
-                                        disabled
-                                        style={{
-                                            transform: 'scale(1.8)',
-                                            margin: '0'  // ✅ 기본 마진 제거
-                                        }}
-                                    />
-                                    <div style={{fontSize: '18px', fontWeight: 'bold', color: '#999'}}>
-                                        실시간 생성
-                                    </div>
-                                    <div style={{fontSize: '12px', color: '#999'}}>
-                                        (준비중)
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -2236,88 +2257,293 @@ const MeetingMinutes: React.FC = () => {
                         </div>
                         {/* --- ▲▲▲ 파일 업로드 UI 종료 ▲▲▲ --- */}
 
-                        {recordingMethod === 'document' && (
+                        {/* 회의록 원문 섹션 - 좌우 분할 (단순화: 항상 2패널, full-width 제거) */}
+                        {selectedMeeting && (
                             <div className="meeting-minutes-section">
-                                <h3 className="section-header-meetingminutes">
-                                    ■ 회의록 직접 입력
-                                    {manualInput && selectedFiles.length > 0 && (
-                                        <span style={{fontSize: '14px', color: '#1890ff', marginLeft: '10px'}}>
-                                    (파일에서 로드됨)
-                                </span>
-                                    )}
-                                </h3>
-                                <textarea
-                                    className="meeting-minutes-textarea"
-                                    rows={15}
-                                    value={manualInput}
-                                    onChange={(e) => setManualInput(e.target.value)}
-                                    placeholder="회의록 내용을 직접 입력하거나, txt/md 파일을 드롭존에서 선택하면 자동으로 내용이 로드됩니다..."
-                                    style={{
-                                        margin: '0.5rem',
-                                        width: 'calc(100% - 1rem)',
-                                        padding: '15px',
-                                        fontFamily: 'monospace', // md 파일의 경우 가독성 향상
-                                        whiteSpace: 'pre-wrap', // 줄바꿈 및 공백 유지
-                                        overflowWrap: 'break-word'
-                                    }}
-                                />
-                                <div className="writer-field" style={{ alignItems: 'center', margin: '0 0.5rem' }}>
-                                    <label className="meeting-minutes-label share-method-label">
-                                        <input type="checkbox" className="meeting-minutes-checkbox checkbox-large" name="llm-output" checked={llmOutput} onChange={(e) => setLlmOutput(e.target.checked)}/>
-                                        <span>LLM 문서 생성</span>
-                                    </label>
-                                </div>
-
-                                {manualInput && (
-                                    <div style={{marginTop: '10px', fontSize: '12px', color: '#666'}}>
-                                        💡 마크다운 형식이 유지됩니다. 자유롭게 편집하세요.
+                                <h3 className="section-header-meetingminutes">■ 회의록 원문</h3>
+                                <div className="meeting-source-container">
+                                    {/* 좌측: 직접 입력 (선택 시만 강조) */}
+                                    <div
+                                        className={`meeting-source-panel ${recordingMethod === 'document' ? 'is-selected' : ''}`}
+                                    >
+                                        <div className="meeting-source-header">
+                                            <div className="recording-method-top">
+                                                <input
+                                                    type="radio"
+                                                    name={`recording-method-${currentMeetingId ?? 'new'}`}
+                                                    checked={recordingMethod === 'document'}
+                                                    onChange={() => setRecordingMethod('document')}
+                                                    disabled={!manualInput || manualInput.trim().length === 0}
+                                                    aria-disabled={!manualInput || manualInput.trim().length === 0}
+                                                    className={`recording-method-radio ${(!manualInput || manualInput.trim().length === 0) ? 'is-disabled' : ''}`}
+                                                />
+                                            </div>
+                                            <h4>📝 직접 입력 / 문서 업로드</h4>
+                                        </div>
+                                        <textarea
+                                            className="meeting-minutes-textarea meeting-source-textarea"
+                                            rows={15}
+                                            value={manualInput}
+                                            onChange={(e) => setManualInput(e.target.value)}
+                                            placeholder={`선택된 내용이 없습니다.\n직접입력 \n또는 파일(text, txt, md)을 업로드 하세요.`}
+                                        />
+                                        {manualInput && (
+                                            <div className="meeting-source-hint">
+                                                💡 마크다운 형식이 유지됩니다. 자유롭게 편집하세요.
+                                            </div>
+                                        )}
                                     </div>
-                                )}
+
+                                    {/* 우측: STT 결과 (선택 시만 강조) */}
+                                    <div
+                                        className={`meeting-source-panel ${recordingMethod === 'audio' ? 'is-selected' : ''}`}
+                                    >
+                                        <div className="meeting-source-header">
+                                            <div className="recording-method-top">
+                                                <input
+                                                    type="radio"
+                                                    name={`recording-method-${currentMeetingId ?? 'new'}`}
+                                                    checked={recordingMethod === 'audio'}
+                                                    onChange={() => setRecordingMethod('audio')}
+                                                    // 음성 라디오: 음성 파일이 1개라도 있으면 활성화
+                                                    disabled={!hasAudioFiles}
+                                                    aria-disabled={!hasAudioFiles}
+                                                    className={`recording-method-radio ${(!hasAudioFiles) ? 'is-disabled' : ''}`}
+                                                />
+                                            </div>
+                                            {/*<h4>🎙️ 음성에서 추출한 텍스트 (Source)</h4>*/}
+                                            {/* ✅ 헤더 수정: h4 좌측, 버튼 우측 */}
+                                            <div style={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                width: '100%',
+                                                marginTop: '8px'
+                                            }}>
+                                                <h4 style={{ margin: 0 }}>🎙️ 음성에서 추출한 텍스트 (Source)</h4>
+                                                {hasAudioFiles && (
+                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                        <button
+                                                            onClick={handleGenerateSTT}
+                                                            disabled={isGenerating}
+                                                            style={{
+                                                                padding: '6px 12px',
+                                                                fontSize: '13px',
+                                                                backgroundColor: '#007bff',
+                                                                color: 'white',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                cursor: isGenerating ? 'not-allowed' : 'pointer',
+                                                                opacity: isGenerating ? 0.6 : 1
+                                                            }}
+                                                        >
+                                                            텍스트 추출
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setShowSttSettingsModal(true)}
+                                                            style={{
+                                                                padding: '6px 12px',
+                                                                fontSize: '13px',
+                                                                backgroundColor: '#6c757d',
+                                                                color: 'white',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            설정
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {Object.values(sttResults).some(text => text && text.trim().length > 0) ? (
+                                            <div className="meeting-stt-results">
+                                                {Object.entries(sttResults).map(([key, value]) => (
+                                                    value && value.trim().length > 0 && (
+                                                        <div key={key}>
+                                                            <div className="meeting-stt-content">{value}</div>
+                                                            <label className="meeting-minutes-label meeting-stt-item-label">
+                                                                <input
+                                                                    type="radio"
+                                                                    name="stt-source"
+                                                                    value={key}
+                                                                    checked={selectedSttSource === key}
+                                                                    onChange={(e) => setSelectedSttSource(e.target.value)}
+                                                                />
+                                                                {key.charAt(0).toUpperCase() + key.slice(1)} 결과 선택
+                                                            </label>
+                                                        </div>
+                                                    )
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="meeting-stt-empty">
+                                                음성 파일을 업로드하고 STT 변환을 실행하면<br/>
+                                                변환된 텍스트가 여기에 표시됩니다.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         )}
 
-                        {/*{recordingMethod === 'audio' && (*/}
-                        {recordingMethod === 'audio' && hasAudioFiles && (
-                            <div className="generation-panel" style={{flexDirection: 'column', gap: '15px'}}>
-                                <div style={{display: 'flex', width: '100%', gap: '20px'}}>
-                                    <div className="generation-options" style={{
-                                        flex: 1,
-                                        flexDirection: 'column',
-                                        alignItems: 'flex-start',
-                                        border: '1px solid #eee',
-                                        padding: '15px',
-                                        borderRadius: '8px',
-                                        // opacity: 0.3,
-                                        // pointerEvents: 'none'
-                                    }}>
-                                        <h4>1. STT 엔진 선택</h4>
-                                        <label className="meeting-minutes-label">
-                                            <input className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="whisper" checked={sttEngine === 'whisper'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                            Whisper
-                                        </label>
-                                        <label className="meeting-minutes-label" style={{opacity: '0.3'}}>
-                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="vosk" checked={sttEngine === 'vosk'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                            Vosk STT
-                                        </label>
-                                        <label className="meeting-minutes-label" style={{opacity: '0.3'}}>
-                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="clova" checked={sttEngine === 'clova'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                            Clova Speech
-                                        </label>
-                                        <label className="meeting-minutes-label" style={{opacity: '0.3'}}>
-                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="google" checked={sttEngine === 'google'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                            Google STT
-                                        </label>
-                                        <label className="meeting-minutes-label" style={{opacity: '0.3'}}>
-                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="aws" checked={sttEngine === 'aws'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                            AWS Transcribe
-                                        </label>
-                                        <label className="meeting-minutes-label" style={{opacity: '0.3'}}>
-                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="stt-engine" value="azure" checked={sttEngine === 'azure'} onChange={(e) => setSttEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                            Azure Speech
-                                        </label>
+                        {/* ✅ STT 설정 모달 */}
+                        {showSttSettingsModal && (
+                            <div className="modal-overlay" onClick={() => setShowSttSettingsModal(false)}>
+                                <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                                    <div className="modal-header">
+                                        <h3>STT 변환 설정</h3>
+                                        <button className="modal-close-btn" onClick={() => setShowSttSettingsModal(false)}>×</button>
+                                    </div>
+                                    <div className="modal-body" style={{ padding: '24px' }}>
+                                        {/* STT 엔진 선택 */}
+                                        <div style={{ marginBottom: '24px' }}>
+                                            <h4 style={{ marginBottom: '12px', fontSize: '15px' }}>STT 엔진</h4>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                                    <input
+                                                        type="radio"
+                                                        name="modal-stt-engine"
+                                                        value="whisper"
+                                                        checked={sttEngine === 'whisper'}
+                                                        onChange={(e) => setSttEngine(e.target.value)}
+                                                    />
+                                                    <span>Whisper (권장)</span>
+                                                </label>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed', opacity: 0.5 }}>
+                                                    <input
+                                                        disabled
+                                                        type="radio"
+                                                        name="modal-stt-engine"
+                                                        value="vosk"
+                                                        checked={sttEngine === 'vosk'}
+                                                        onChange={(e) => setSttEngine(e.target.value)}
+                                                    />
+                                                    <span>Vosk STT (준비중)</span>
+                                                </label>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed', opacity: 0.5 }}>
+                                                    <input
+                                                        disabled
+                                                        type="radio"
+                                                        name="modal-stt-engine"
+                                                        value="google"
+                                                        checked={sttEngine === 'google'}
+                                                        onChange={(e) => setSttEngine(e.target.value)}
+                                                    />
+                                                    <span>Google STT (준비중)</span>
+                                                </label>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed', opacity: 0.5 }}>
+                                                    <input
+                                                        disabled
+                                                        type="radio"
+                                                        name="modal-stt-engine"
+                                                        value="clova"
+                                                        checked={sttEngine === 'clova'}
+                                                        onChange={(e) => setSttEngine(e.target.value)}
+                                                    />
+                                                    <span>Clova Speech (준비중)</span>
+                                                </label>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed', opacity: 0.5 }}>
+                                                    <input
+                                                        disabled
+                                                        type="radio"
+                                                        name="modal-stt-engine"
+                                                        value="aws"
+                                                        checked={sttEngine === 'aws'}
+                                                        onChange={(e) => setSttEngine(e.target.value)}
+                                                    />
+                                                    <span>AWS Transcribe (준비중)</span>
+                                                </label>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed', opacity: 0.5 }}>
+                                                    <input
+                                                        disabled
+                                                        type="radio"
+                                                        name="modal-stt-engine"
+                                                        value="azure"
+                                                        checked={sttEngine === 'azure'}
+                                                        onChange={(e) => setSttEngine(e.target.value)}
+                                                    />
+                                                    <span>Azure Speech (준비중)</span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        {/* 변환 품질 (모델 크기) */}
+                                        <div style={{ marginBottom: '24px' }}>
+                                            <h4 style={{ marginBottom: '12px', fontSize: '15px' }}>변환 품질</h4>
+                                            <select
+                                                value={sttModelSize}
+                                                onChange={(e) => setSttModelSize(e.target.value as any)}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '8px 12px',
+                                                    fontSize: '14px',
+                                                    border: '1px solid #ddd',
+                                                    borderRadius: '4px'
+                                                }}
+                                            >
+                                                <option value="tiny">Tiny (매우 빠름, 낮은 정확도)</option>
+                                                <option value="base">Base (빠름, 보통 정확도)</option>
+                                                <option value="small">Small (보통, 좋은 정확도)</option>
+                                                <option value="medium">Medium (느림, 높은 정확도) - 권장</option>
+                                                <option value="large">Large (매우 느림, 최고 정확도)</option>
+                                            </select>
+                                        </div>
+
+                                        {/* 언어 선택 */}
+                                        <div style={{ marginBottom: '24px' }}>
+                                            <h4 style={{ marginBottom: '12px', fontSize: '15px' }}>언어</h4>
+                                            <select
+                                                value={sttLanguage}
+                                                onChange={(e) => setSttLanguage(e.target.value as any)}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '8px 12px',
+                                                    fontSize: '14px',
+                                                    border: '1px solid #ddd',
+                                                    borderRadius: '4px'
+                                                }}
+                                            >
+                                                <option value="ko">한국어</option>
+                                                <option value="en">영어</option>
+                                                <option value="auto">자동 감지</option>
+                                            </select>
+                                        </div>
+
+                                        {/* 버튼 */}
+                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                            <button
+                                                onClick={() => setShowSttSettingsModal(false)}
+                                                style={{
+                                                    padding: '8px 16px',
+                                                    fontSize: '14px',
+                                                    backgroundColor: '#6c757d',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                취소
+                                            </button>
+                                            <button
+                                                onClick={handleSaveSettings}
+                                                style={{
+                                                    padding: '8px 16px',
+                                                    fontSize: '14px',
+                                                    backgroundColor: '#007bff',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                저장
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                                <button className="btn-secondary" onClick={handleGenerateSTT} style={{margin: '2rem'}}>STT( Speech To Text ) 변환</button>
                             </div>
                         )}
 
@@ -2366,57 +2592,6 @@ const MeetingMinutes: React.FC = () => {
                                 )}
                             </div>
                         )}
-
-                        {/* 음성에서 추출한 텍스트 섹션 - STT 결과가 실제로 있을 때만 전체 섹션 표시 */}
-                        {recordingMethod === 'audio' &&
-                            Object.values(sttResults).some(text => text && text.trim().length > 0) && (
-                                <>
-                                    {/* ✅ 아래 방향 화살표 */}
-                                    <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>
-                                        <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>
-                                            ⬇
-                                        </div>
-                                    </div>
-
-                                    <div className="meeting-minutes-section">
-                                        <h3 className="section-header-meetingminutes">■ 음성에서 추출한 텍스트 (Source)</h3>
-                                        <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
-                                            {Object.entries(sttResults).map(([key, value]) => (
-                                                value && value.trim().length > 0 && (
-                                                    <div key={key}>
-                                                        <label className="meeting-minutes-label">
-                                                            <input
-                                                                type="radio"
-                                                                name="stt-source"
-                                                                value={key}
-                                                                checked={selectedSttSource === key}
-                                                                onChange={(e) => setSelectedSttSource(e.target.value)}
-                                                                style={{marginRight: '8px'}}
-                                                            />
-                                                            {key.charAt(0).toUpperCase() + key.slice(1)} 결과 (이것을 소스로 사용)
-                                                        </label>
-                                                        <div style={{
-                                                            border: '1px solid #ddd',
-                                                            borderRadius: '8px',
-                                                            padding: '15px',
-                                                            backgroundColor: '#f9f9f9',
-                                                            maxHeight: '300px',
-                                                            overflowY: 'auto',
-                                                            marginTop: '5px',
-                                                            whiteSpace: 'pre-wrap',
-                                                            wordBreak: 'break-word',
-                                                            fontSize: '14px',
-                                                            lineHeight: '1.6'
-                                                        }}>
-                                                            {value}
-                                                        </div>
-                                                    </div>
-                                                )
-                                            ))}
-                                        </div>
-                                    </div>
-                                </>
-                            )}
 
                         {/*{ recordingMethod === 'document' && llmOutput && (*/}
                         {/*{ ( llmOutput || (recordingMethod === 'audio') ) && (*/}

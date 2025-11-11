@@ -368,7 +368,9 @@
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 .meeting-minutes-textarea::placeholder {
-    color: #999;
+    /*color: #999;*/
+    /*color: #111;*/
+    color: #90392b;
     font-style: italic;
 }
 .meeting-minutes-textarea:-webkit-autofill,
@@ -957,3 +959,224 @@
     background-color: #6c757d !important;
 }
 
+/* MeetingMinutes.css 하단에 추가 */
+
+/* --- 회의록 원문 섹션 --- */
+.meeting-source-container {
+    display: flex;
+    gap: 20px;
+    padding: 15px;
+}
+
+.meeting-source-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.meeting-source-panel.full-width {
+    width: 100%;
+}
+
+.meeting-source-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.meeting-source-header input[type="radio"] {
+    transform: scale(1.5);
+    cursor: pointer;
+}
+
+.meeting-source-header h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/*.meeting-source-textarea {*/
+/*    width: 100%;*/
+/*    padding: 15px;*/
+/*    font-family: monospace;*/
+/*    white-space: pre-wrap;*/
+/*    overflow-wrap: break-word;*/
+/*    border: 1px solid #ddd;*/
+/*    border-radius: 8px;*/
+/*}*/
+
+/* placeholder만 세로 중앙처럼 보이게: 값이 비어있을 때만 패딩으로 보정 */
+.meeting-source-textarea {
+    height: 305px;                 /* 고정 높이 */
+    text-align: center;            /* 가로 중앙 (placeholder용) */
+}
+
+/* 빈 상태(placeholder 보임)에서만 상단 패딩으로 세로 중앙 흉내 */
+.meeting-source-textarea:placeholder-shown {
+    padding-top: 18%;              /* 프로젝트 폰트/라인높이에 맞춰 14~22% 사이로 조정 */
+    text-align: center;
+    white-space: pre-line;
+    font-size: 1.2rem;
+    color: #90392b;
+    opacity: 1;
+    font-style: italic;
+}
+
+/* 값이 입력되면 정상 입력 레이아웃로 복귀 */
+.meeting-source-textarea:not(:placeholder-shown) {
+    text-align: left;
+    padding-top: 8px;              /* 평소 입력 시 패딩 */
+}
+
+/* placeholder 텍스트 스타일 (가로 중앙, 줄바꿈 유지, 색/크기/이탤릭) */
+.meeting-source-textarea::placeholder,
+.meeting-source-textarea::-webkit-input-placeholder,
+.meeting-source-textarea:-ms-input-placeholder,
+.meeting-source-textarea::-ms-input-placeholder {
+    text-align: center;
+    white-space: pre-line;
+    font-size: 1.2rem;
+    color: #90392b;
+    opacity: 1;
+    font-style: italic;
+}
+/* 포커스 시에도 placeholder 색 유지(원하면) */
+.meeting-source-textarea:focus::placeholder {
+    color: #6b778c;
+    opacity: 1;
+}
+
+.meeting-source-hint {
+    font-size: 12px;
+    color: #667;
+}
+
+.meeting-stt-results {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/*.meeting-stt-item-label {*/
+/*    margin-bottom: 5px;*/
+/*}*/
+/* STT 결과 라벨 여백 조정 */
+.meeting-stt-item-label {
+    display: inline-flex;        /* 레이블 자체를 인라인 블록처럼 */
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;            /* 위쪽 마진 */
+    margin-bottom: 6px;          /* 아래쪽 마진 */
+}
+/* 라벨을 블록으로 내려 간격을 더 주고 싶다면 */
+.meeting-stt-item-label.block {
+    display: flex;
+    width: 100%;
+    margin-top: 12px;
+    margin-bottom: 8px;
+}
+
+.meeting-stt-content {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+
+    /* 높이: textarea와 동일한 시각적 높이로 고정 */
+    min-height: 21ch;            /* 폰트 기준 최소 높이(안전망) */
+    height: 305px;               /* rows=15 기준 대략 값(프로젝트 폰트/라인높이에 맞게 조정) */
+    max-height: 360px;           /* 스크롤 고정 */
+    overflow-y: auto;
+
+    /* 기존보다 어두운 배경 */
+    background-color: #e8e8e8;   /* #f9f9f9 보다 한 단계 어둡게 */
+
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* 빈 STT 안내 블록 높이 고정 */
+.meeting-stt-empty {
+    border: 1px dashed #ddd;
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    /*color: #999;*/
+    font-size: 1.2rem;   /* 폰트 키우기 */
+    font-style: italic;
+    color: #90392b;
+    background-color: #fafafa;
+    height: 305px;        /* 고정 높이 */
+    min-height: 305px;    /* 안전망 */
+    max-height: 305px;    /* 스크롤/변형 방지 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* MeetingMinutes.css에 추가 */
+
+/* 회의록 원문 섹션의 라디오 버튼 */
+.meeting-source-panel > input[type="radio"] {
+    transform: scale(2.5);
+    cursor: pointer;
+    margin: 2rem 12px 2rem 0; /* 상 우 하 좌 */
+}
+
+/* ... existing code ... */
+
+.meeting-source-header {
+    display: flex;
+    flex-direction: column; /* 라디오 위, 제목 아래 */
+    align-items: stretch;
+    gap: 0; /* 내부 간격은 각 요소에 개별 부여 */
+}
+
+.recording-method-top {
+    display: flex;
+    justify-content: center; /* 가운데 정렬 */
+    align-items: center;
+    padding: 10px 0 8px; /* 라디오 주변 여백 */
+}
+
+/* h4와 라디오가 붙지 않도록 제목에 위쪽 마진 추가 */
+.meeting-source-title {
+    margin: 8px 0 0 0; /* 위에 8px 간격 */
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* 큰 라디오 버튼 */
+.meeting-minutes-radio.radio-xl {
+    width: 32px;
+    height: 32px;
+    border-width: 3px;
+}
+.meeting-minutes-radio.radio-xl:checked::after {
+    width: 16px;
+    height: 16px;
+}
+
+/* 헤더 안 라디오 크기 통일(브라우저 기본 라디오 대응) */
+.recording-method-top input[type="radio"] {
+    transform: scale(2.5); /* 기본 라디오 사용 시 크기 키우기 */
+}
+
+/* 라디오 주변 여백(옵션) */
+.recording-method-top {
+    padding: 2rem 0 2rem;
+}
+
+/* 헤더 밖 직계 라디오 확장 규칙은 사용 안 함(충돌 방지) */
+.meeting-source-panel > input[type="radio"] {
+    display: none;
+}
+
+/* 기존 헤더 수평 정렬 규칙 무력화 */
+.meeting-source-header h4 {
+    margin: 8px 0 0 0; /* 제목은 위 여백 포함 */
+}
+
+/* ... existing code ... */
