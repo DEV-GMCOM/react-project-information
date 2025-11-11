@@ -24,101 +24,16 @@ interface ExcelMetadata {
     [key: string]: any; // 추가 필드
 }
 
-// 🔍 비교 결과 타입
+// 🔍 비교 결과 타입 (백엔드 응답과 일치 - LLM 기반)
 interface ComparisonResult {
     cloudFile: CloudFile;
-    excelData: ExcelMetadata | null;
-    status: 'found' | 'not_found';
+    matched: boolean; // LLM이 판단한 매칭 여부
+    matchedMetadata: ExcelMetadata | null;
+    explanation: string; // LLM의 매칭 설명
 }
 
 // ☁️ 고정 클라우드 URL
 const CLOUD_URL = 'https://drive.google.com/drive/folders/1a2b3c4d5e6f7g8h9i0j';
-
-// 📁 데모 클라우드 파일 목록
-const DEMO_CLOUD_FILES: CloudFile[] = [
-    {
-        name: '제안서_최종.pdf',
-        size: 2048000,
-        url: 'https://drive.google.com/file/d/abc123',
-        title: '스마트시티 솔루션 제안서',
-        content: '본 제안서는 ABC 시티의 스마트시티 구축을 위한 통합 플랫폼 솔루션을 제안합니다. 주요 내용으로는 IoT 센서 네트워크 구축, 빅데이터 분석 시스템, AI 기반 교통관제 시스템, 시민 참여형 앱 개발 등이 포함됩니다. 총 사업비는 50억원이며, 구축 기간은 12개월입니다.'
-    },
-    {
-        name: '계약서_드래프트.docx',
-        size: 1024000,
-        url: 'https://drive.google.com/file/d/def456',
-        title: '2024년 시스템 유지보수 계약서',
-        content: '갑(발주처)과 을(수행사) 간의 시스템 유지보수 계약서입니다. 계약기간은 2024년 1월 1일부터 12월 31일까지이며, 월 정기점검 1회, 장애대응 24/7 지원, SLA 99.9% 보장을 포함합니다. 계약금액은 연 2억원입니다.'
-    },
-    {
-        name: '디자인_시안.psd',
-        size: 5120000,
-        url: 'https://drive.google.com/file/d/ghi789',
-        title: '모바일 앱 UI/UX 디자인 시안',
-        content: '고객 관리 모바일 앱의 전체 화면 디자인 시안입니다. 메인 대시보드, 고객 목록, 상세정보, 통계 차트, 설정 화면 등 총 25개 화면으로 구성되어 있습니다. Material Design 가이드를 따르며, 다크모드도 지원합니다.'
-    },
-    {
-        name: '회의록_20231115.hwp',
-        size: 512000,
-        url: 'https://drive.google.com/file/d/jkl012',
-        title: '11월 정기 프로젝트 회의록',
-        content: '일시: 2023년 11월 15일 14:00-16:00, 참석자: 김철수(PM), 이영희(개발팀장), 박민수(디자이너), 최지영(기획자). 주요 안건: 프로젝트 진행상황 점검, 2차 개발 일정 협의, 고객 피드백 반영 계획. 결정사항: 베타 테스트 12월 1일 시작, UI 수정사항 11월 말까지 완료.'
-    },
-    {
-        name: '프로젝트_계획서.xlsx',
-        size: 768000,
-        url: 'https://drive.google.com/file/d/mno345',
-        title: '2024년 프로젝트 마스터 플랜',
-        content: '2024년 진행 예정인 전체 프로젝트 목록과 일정, 예산, 인력 배정 계획입니다. 총 12개 프로젝트, 예산 150억원, 참여 인원 80명. 주요 프로젝트로는 AI 챗봇 구축, 블록체인 기반 인증 시스템, 클라우드 마이그레이션 등이 있습니다.'
-    },
-    {
-        name: '참고자료.zip',
-        size: 10240000,
-        url: 'https://drive.google.com/file/d/pqr678',
-        title: '프로젝트 참고자료 모음',
-        content: '프로젝트 수행에 필요한 각종 참고자료를 압축한 파일입니다. 포함 내용: 시장조사 보고서 5건, 경쟁사 분석 자료, 기술 스펙 문서, API 문서, 샘플 코드, 디자인 에셋 등 총 150개 파일이 포함되어 있습니다.'
-    },
-];
-
-// 📊 데모 엑셀 메타데이터
-const DEMO_EXCEL_METADATA: ExcelMetadata[] = [
-    {
-        fileName: '제안서_최종.pdf',
-        fileSize: '2 MB',
-        uploadDate: '2024-01-15',
-        category: '제안문서',
-        description: '고객사 제안서 최종본',
-        uploader: '김철수',
-        status: '승인완료'
-    },
-    {
-        fileName: '계약서_드래프트.docx',
-        fileSize: '1 MB',
-        uploadDate: '2024-01-20',
-        category: '계약서',
-        description: '계약서 초안',
-        uploader: '이영희',
-        status: '검토중'
-    },
-    {
-        fileName: '회의록_20231115.hwp',
-        fileSize: '500 KB',
-        uploadDate: '2023-11-15',
-        category: '회의록',
-        description: '11월 정기회의 회의록',
-        uploader: '박민수',
-        status: '완료'
-    },
-    {
-        fileName: '프로젝트_계획서.xlsx',
-        fileSize: '750 KB',
-        uploadDate: '2024-02-01',
-        category: '기획문서',
-        description: '2024년 프로젝트 마스터 플랜',
-        uploader: '최지영',
-        status: '승인완료'
-    },
-];
 
 const FileManagementSystem: React.FC = () => {
     // ✅ 상태 관리
@@ -127,6 +42,7 @@ const FileManagementSystem: React.FC = () => {
     const [comparisonResults, setComparisonResults] = useState<ComparisonResult[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const [selectedEngine, setSelectedEngine] = useState<string>('chatgpt'); // LLM 엔진 선택
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // 📥 페이지 로드 시 자동으로 데이터 로드 및 비교
@@ -134,32 +50,49 @@ const FileManagementSystem: React.FC = () => {
         loadDemoData();
     }, []);
 
-    // 🔗 데모 데이터 로드 및 자동 비교
-    const loadDemoData = () => {
+    // 🔗 데모 데이터 로드 및 자동 비교 (백엔드 API 호출)
+    const loadDemoData = async () => {
         setLoading(true);
-        setTimeout(() => {
-            setCloudFiles(DEMO_CLOUD_FILES);
-            setExcelMetadata(DEMO_EXCEL_METADATA);
+        setError(null);
 
-            // 자동으로 비교 실행
-            const results: ComparisonResult[] = DEMO_CLOUD_FILES.map(cloudFile => {
-                const excelDataItem = DEMO_EXCEL_METADATA.find(
-                    meta => meta.fileName?.toLowerCase() === cloudFile.name.toLowerCase()
+        try {
+            console.log('🔄 데모 데이터 로드 시작...');
+
+            // 데모 데이터 가져오기
+            const demoResponse = await apiClient.get('/fms/demo-data');
+            console.log('✅ 데모 데이터 응답:', demoResponse.data);
+
+            const { cloudFiles: demoCloudFiles, excelMetadata: demoExcelMetadata } = demoResponse.data;
+            setCloudFiles(demoCloudFiles);
+            setExcelMetadata(demoExcelMetadata);
+
+            console.log(`📁 클라우드 파일 ${demoCloudFiles.length}개 로드됨`);
+            console.log(`📊 엑셀 메타데이터 ${demoExcelMetadata.length}개 로드됨`);
+
+            // 클라이언트 측에서 간단한 name-based 비교 수행
+            const results: ComparisonResult[] = demoCloudFiles.map((cloudFile: CloudFile) => {
+                const matchedMetadata = demoExcelMetadata.find(
+                    (meta: ExcelMetadata) => meta.fileName?.toLowerCase() === cloudFile.name.toLowerCase()
                 );
 
                 return {
                     cloudFile,
-                    excelData: excelDataItem || null,
-                    status: excelDataItem ? 'found' : 'not_found'
+                    matched: !!matchedMetadata,
+                    matchedMetadata: matchedMetadata || null,
+                    explanation: matchedMetadata
+                        ? 'Exact name match - matched by file name'
+                        : 'No matching metadata found in Excel file'
                 };
             });
 
             setComparisonResults(results);
+            console.log(`✅ 비교 완료: 매칭=${results.filter(r => r.matched).length}, 미매칭=${results.filter(r => !r.matched).length}`);
+        } catch (err: any) {
+            console.error('❌ API 호출 실패:', err);
+            setError(err.response?.data?.detail || '백엔드 서버와 통신에 실패했습니다.');
+        } finally {
             setLoading(false);
-            console.log('☁️ 클라우드 파일 로드 완료:', DEMO_CLOUD_FILES);
-            console.log('📊 엑셀 메타데이터 로드 완료:', DEMO_EXCEL_METADATA);
-            console.log('🔍 비교 결과:', results);
-        }, 500);
+        }
     };
 
     // 🔗 클라우드 파일 다시 불러오기
@@ -167,35 +100,58 @@ const FileManagementSystem: React.FC = () => {
         loadDemoData();
     };
 
-    // 📥 엑셀 파일 업로드 및 파싱
-    const handleExcelUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    // 📥 엑셀 파일 업로드 및 LLM 비교
+    const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = e.target?.result;
-                const workbook = XLSX.read(data, { type: 'binary' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet) as ExcelMetadata[];
+        setLoading(true);
+        setError(null);
 
-                console.log('📊 엑셀 데이터 파싱 완료:', jsonData);
-                setExcelMetadata(jsonData);
-                setError(null);
+        try {
+            console.log(`🔄 엑셀 파일 업로드 및 LLM(${selectedEngine}) 비교 시작...`);
 
-                // 자동으로 비교 실행
-                compareFilesAuto(jsonData);
-            } catch (err) {
-                console.error('❌ 엑셀 파일 파싱 실패:', err);
-                setError('엑셀 파일을 읽는데 실패했습니다.');
-            }
-        };
-        reader.readAsBinaryString(file);
+            // 백엔드 API 호출: POST /api/fms/compare-with-llm (엑셀 파일 포함)
+            const formData = new FormData();
+            formData.append('cloud_url', CLOUD_URL);
+            formData.append('use_demo', 'false');
+            formData.append('engine', selectedEngine);
+            formData.append('excel_file', file);
+
+            const response = await apiClient.post('/fms/compare-with-llm', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            console.log('✅ LLM 비교 응답 (엑셀 업로드):', response.data);
+
+            // 응답 데이터 처리
+            const { results, matchedCount, notFoundCount, totalMetadataRecords } = response.data;
+
+            // 클라우드 파일 목록 추출
+            const cloudFileList = results.map((r: ComparisonResult) => r.cloudFile);
+            setCloudFiles(cloudFileList);
+
+            // 매칭된 메타데이터 추출
+            const metadataList = results
+                .map((r: ComparisonResult) => r.matchedMetadata)
+                .filter((m: ExcelMetadata | null) => m !== null) as ExcelMetadata[];
+            setExcelMetadata(metadataList);
+
+            // 비교 결과 설정
+            setComparisonResults(results);
+
+            console.log(`✅ 비교 완료: 클라우드=${cloudFileList.length}, 메타데이터=${metadataList.length}, 매칭=${matchedCount}`);
+        } catch (err: any) {
+            console.error('❌ API 호출 실패:', err);
+            setError(err.response?.data?.detail || '엑셀 파일 업로드에 실패했습니다.');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // 🔍 클라우드 파일과 엑셀 메타데이터 비교 (자동)
+    // 🔍 클라우드 파일과 엑셀 메타데이터 비교 (더 이상 사용하지 않음 - 백엔드에서 처리)
     const compareFilesAuto = (excelData: ExcelMetadata[]) => {
         if (cloudFiles.length === 0) {
             setError('클라우드 파일을 불러오는 중입니다...');
@@ -353,23 +309,12 @@ const FileManagementSystem: React.FC = () => {
                                 </thead>
                                 <tbody>
                                     {comparisonResults.map((result, index) => {
-                                        // 내용 요약 생성
-                                        const cloudSummary = result.cloudFile.content
-                                            ? result.cloudFile.content.substring(0, 100) + (result.cloudFile.content.length > 100 ? '...' : '')
-                                            : '내용 없음';
-
-                                        const excelSummary = result.excelData?.description || '설명 없음';
-
-                                        const combinedSummary = result.excelData
-                                            ? `클라우드: ${cloudSummary}\n\n엑셀 메타: ${excelSummary}`
-                                            : `클라우드만 존재: ${cloudSummary}`;
-
                                         return (
                                             <tr key={index} style={{
-                                                backgroundColor: result.status === 'found' ? '#e8f5e9' : '#ffebee'
+                                                backgroundColor: result.matched ? '#e8f5e9' : '#ffebee'
                                             }}>
                                                 <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>
-                                                    {result.status === 'found' ? (
+                                                    {result.matched ? (
                                                         <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>✅</span>
                                                     ) : (
                                                         <span style={{ color: '#f44336', fontWeight: 'bold' }}>❌</span>
@@ -404,9 +349,9 @@ const FileManagementSystem: React.FC = () => {
                                                     )}
                                                 </td>
                                                 <td style={{ padding: '12px', border: '1px solid #ddd' }}>
-                                                    {result.excelData ? (
+                                                    {result.matchedMetadata ? (
                                                         <div style={{ fontSize: '0.85em' }}>
-                                                            {Object.entries(result.excelData).map(([key, value]) => (
+                                                            {Object.entries(result.matchedMetadata).map(([key, value]) => (
                                                                 <div key={key} style={{ marginBottom: '4px' }}>
                                                                     <strong>{key}:</strong> {String(value)}
                                                                 </div>
@@ -424,7 +369,12 @@ const FileManagementSystem: React.FC = () => {
                                                             borderRadius: '4px',
                                                             border: '1px solid #e0e0e0'
                                                         }}>
-                                                            {combinedSummary}
+                                                            <div style={{
+                                                                fontWeight: result.matched ? 'bold' : 'normal',
+                                                                color: result.matched ? '#2E7D32' : '#C62828'
+                                                            }}>
+                                                                🤖 {result.explanation}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -435,15 +385,18 @@ const FileManagementSystem: React.FC = () => {
                             </table>
 
                             <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-                                <h4 style={{ margin: '0 0 10px 0' }}>📊 요약</h4>
+                                <h4 style={{ margin: '0 0 10px 0' }}>📊 LLM 비교 요약</h4>
                                 <p>
                                     전체 클라우드 파일: <strong>{comparisonResults.length}개</strong> |
-                                    메타데이터 발견: <strong style={{ color: '#4CAF50' }}>
-                                        {comparisonResults.filter(r => r.status === 'found').length}개
+                                    매칭: <strong style={{ color: '#4CAF50' }}>
+                                        {comparisonResults.filter(r => r.matched).length}개
                                     </strong> |
-                                    메타데이터 미발견: <strong style={{ color: '#f44336' }}>
-                                        {comparisonResults.filter(r => r.status === 'not_found').length}개
+                                    미매칭: <strong style={{ color: '#f44336' }}>
+                                        {comparisonResults.filter(r => !r.matched).length}개
                                     </strong>
+                                </p>
+                                <p style={{ marginTop: '10px', color: '#666', fontSize: '0.9em' }}>
+                                    🤖 LLM 엔진: <strong>{selectedEngine}</strong>
                                 </p>
                             </div>
                         </div>
@@ -467,6 +420,12 @@ const FileManagementSystem: React.FC = () => {
                                         <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>
                                             파일 크기
                                         </th>
+                                        <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>
+                                            제목
+                                        </th>
+                                        <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>
+                                            내용
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -477,6 +436,73 @@ const FileManagementSystem: React.FC = () => {
                                             </td>
                                             <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>
                                                 {file.size ? formatFileSize(file.size) : '-'}
+                                            </td>
+                                            <td style={{ padding: '12px', border: '1px solid #ddd' }}>
+                                                {file.title || '-'}
+                                            </td>
+                                            <td style={{ padding: '12px', border: '1px solid #ddd', fontSize: '0.85em', maxWidth: '400px' }}>
+                                                {file.content || '-'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* 엑셀 메타데이터 목록 표시 */}
+                {excelMetadata.length > 0 && comparisonResults.length === 0 && (
+                    <div className="file-management-system-section">
+                        <h3 className="section-header">■ 엑셀 메타데이터 목록</h3>
+                        <div style={{ padding: '20px' }}>
+                            <table style={{
+                                width: '100%',
+                                borderCollapse: 'collapse'
+                            }}>
+                                <thead>
+                                    <tr style={{ backgroundColor: '#f5f5f5' }}>
+                                        <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>
+                                            파일명
+                                        </th>
+                                        <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                            파일 크기
+                                        </th>
+                                        <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                            업로드 날짜
+                                        </th>
+                                        <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                            카테고리
+                                        </th>
+                                        <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>
+                                            설명
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {excelMetadata.map((metadata, index) => (
+                                        <tr key={index}>
+                                            <td style={{ padding: '12px', border: '1px solid #ddd' }}>
+                                                📊 {metadata.fileName}
+                                            </td>
+                                            <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                                {metadata.fileSize || '-'}
+                                            </td>
+                                            <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                                {metadata.uploadDate || '-'}
+                                            </td>
+                                            <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                                <span style={{
+                                                    padding: '4px 8px',
+                                                    backgroundColor: '#e3f2fd',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.9em'
+                                                }}>
+                                                    {metadata.category || '-'}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '12px', border: '1px solid #ddd', fontSize: '0.85em' }}>
+                                                {metadata.description || '-'}
                                             </td>
                                         </tr>
                                     ))}
