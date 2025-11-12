@@ -174,7 +174,10 @@ const FileManagementSystem: React.FC = () => {
             return {
                 cloudFile,
                 excelData: excelDataItem || null,
-                status: excelDataItem ? 'found' : 'not_found'
+                status: excelDataItem ? 'found' : 'not_found',
+                matched: !!excelDataItem,
+                matchedMetadata: excelDataItem || null,
+                explanation: excelDataItem ? '파일명 일치' : '일치하는 엑셀 데이터 없음'
             };
         });
 
