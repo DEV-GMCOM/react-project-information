@@ -1,6 +1,6 @@
 // src/api/services/projectService.ts
 import { apiClient } from '../utils/apiClient';
-import { Project } from '../types';
+import { Project, Paginated } from '../types';
 
 export class ProjectService {
     async getProjects(params?: {
@@ -9,7 +9,7 @@ export class ProjectService {
         search?: string;
         status?: string;
         company_id?: number;
-    }): Promise<Project[]> {
+    }): Promise<Paginated<Project>> {
         // 기존: '/project/' ❌
         // 수정: '/projects/' ✅
         const response = await apiClient.get('/projects/', { params });

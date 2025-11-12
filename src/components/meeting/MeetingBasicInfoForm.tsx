@@ -106,6 +106,7 @@ const MeetingBasicInfoForm: React.FC<MeetingBasicInfoFormProps> = ({
                             value={projectName}
                             readOnly
                             placeholder="프로젝트를 검색하세요"
+                            tabIndex={-1}
                         />
                         <button
                             type="button"

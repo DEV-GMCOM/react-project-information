@@ -8,6 +8,7 @@ import { projectService } from '../../api/services/projectService';
 import { employeeService } from '../../api/services/employeeService';
 import { Project, Employee, MeetingMinute } from '../../api/types';
 import { fileUploadService } from '../../api/services/fileUploadService';
+import apiClient from '../../api/utils/apiClient';
 
 // 회의록 서비스 import
 import { meetingMinuteService } from '../../api/services/meetingMinuteService'; // (가정: 새 서비스 파일 필요)
@@ -44,6 +45,8 @@ import '../../styles/ProjectBasicInfoForm.css'; // 검색 모달 등에 필요�
 interface MeetingListProps {
     meetings: MeetingMinute[];
     onSelect: (meeting: MeetingMinute) => void;
+    onDelete?: (meeting: MeetingMinute) => void;  // ✅ 삭제 핸들러 추가
+    showDelete?: boolean;  // ✅ 삭제 버튼 표시 여부
 }
 // --- ▼▼▼ [수정] 직원 검색 모달 ▼▼▼ ---
 interface EmployeeSearchModalProps {
@@ -169,7 +172,70 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
 };
 // --- ▲▲▲ 직원 검색 모달 종료 ▲▲▲ ---
 
-const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect }) => {
+// const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect }) => {
+//     // 날짜 포맷 함수 (필요시)
+//     const formatDateTime = (isoString: string) => {
+//         try {
+//             return new Date(isoString).toLocaleString('ko-KR', {
+//                 year: 'numeric',
+//                 month: '2-digit',
+//                 day: '2-digit',
+//                 hour: '2-digit',
+//                 minute: '2-digit',
+//                 hour12: false
+//             });
+//         } catch (e) {
+//             return isoString;
+//         }
+//     };
+//
+//     return (
+//         <table className="meeting-list-table">
+//             <thead>
+//             <tr>
+//                 <th>회의명</th>
+//                 <th>회의일시</th>
+//                 <th>연계프로젝트</th>
+//                 <th>작성자</th>
+//                 <th>참석자</th>
+//                 <th>태그</th>
+//                 <th>상태</th>
+//             </tr>
+//             </thead>
+//             <tbody>
+//             {meetings.length === 0 ? (
+//                 <tr>
+//                     <td colSpan={7} className="no-results">회의록이 없습니다.</td>
+//                 </tr>
+//             ) : (
+//                 meetings.map(meeting => (
+//                     <tr key={meeting.meeting_id} onClick={() => onSelect(meeting)} className="meeting-list-item" title="클릭하여 상세 정보 보기">
+//                         <td className="meeting-title-cell">
+//                             <span className="meeting-link">{meeting.meeting_title}</span>
+//                         </td>
+//                         <td>{formatDateTime(meeting.meeting_datetime)}</td>
+//                         <td title={meeting.project_name}>{meeting.project_name || 'N/A'}</td>
+//                         <td>{meeting.creator_name || 'N/A'}</td>
+//                         <td title={meeting.attendees_display}>{meeting.attendees_display}</td>
+//                         <td>
+//                             {meeting.tags?.map(tag => (
+//                                 <span key={tag} className="tag-badge" title={tag}>{tag}</span>
+//                             ))}
+//                         </td>
+//                         <td>{meeting.has_llm_documents ? '✔️ AI 생성' : '-'}</td>
+//                     </tr>
+//                 ))
+//             )}
+//             </tbody>
+//         </table>
+//     );
+// };
+const MeetingList: React.FC<MeetingListProps> = ({
+                                                     meetings,
+                                                     onSelect,
+                                                     onDelete,
+                                                     showDelete = false
+                                                 }) => {
     // 날짜 포맷 함수 (필요시)
     const formatDateTime = (isoString: string) => {
         try {
@@ -206,20 +272,59 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect }) => {
                 </tr>
             ) : (
                 meetings.map(meeting => (
-                    <tr key={meeting.meeting_id} onClick={() => onSelect(meeting)} className="meeting-list-item" title="클릭하여 상세 정보 보기">
+                    <tr key={meeting.meeting_id} className="meeting-list-item">
                         <td className="meeting-title-cell">
-                            <span className="meeting-link">{meeting.meeting_title}</span>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '8px'
+                            }}>
+                                <span
+                                    className="meeting-link"
+                                    onClick={() => onSelect(meeting)}
+                                    style={{
+                                        cursor: 'pointer',
+                                        flex: 1
+                                    }}
+                                    title="클릭하여 상세 정보 보기"
+                                >
+                                    {meeting.meeting_title}
+                                </span>
+                                {showDelete && onDelete && (
+                                    <button
+                                        className="btn-delete-small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDelete(meeting);
+                                        }}
+                                        title="삭제"
+                                    >
+                                        🗑️
+                                    </button>
+                                )}
+                            </div>
                         </td>
-                        <td>{formatDateTime(meeting.meeting_datetime)}</td>
-                        <td title={meeting.project_name}>{meeting.project_name || 'N/A'}</td>
-                        <td>{meeting.creator_name || 'N/A'}</td>
-                        <td title={meeting.attendees_display}>{meeting.attendees_display}</td>
-                        <td>
+                        <td onClick={() => onSelect(meeting)} style={{ cursor: 'pointer' }}>
+                            {formatDateTime(meeting.meeting_datetime)}
+                        </td>
+                        <td onClick={() => onSelect(meeting)} style={{ cursor: 'pointer' }} title={meeting.project_name}>
+                            {meeting.project_name || 'N/A'}
+                        </td>
+                        <td onClick={() => onSelect(meeting)} style={{ cursor: 'pointer' }}>
+                            {meeting.creator_name || 'N/A'}
+                        </td>
+                        <td onClick={() => onSelect(meeting)} style={{ cursor: 'pointer' }} title={meeting.attendees_display}>
+                            {meeting.attendees_display}
+                        </td>
+                        <td onClick={() => onSelect(meeting)} style={{ cursor: 'pointer' }}>
                             {meeting.tags?.map(tag => (
                                 <span key={tag} className="tag-badge" title={tag}>{tag}</span>
                             ))}
                         </td>
-                        <td>{meeting.has_llm_documents ? '✔️ AI 생성' : '-'}</td>
+                        <td onClick={() => onSelect(meeting)} style={{ cursor: 'pointer' }}>
+                            {meeting.has_llm_documents ? '✔️ AI 생성' : '-'}
+                        </td>
                     </tr>
                 ))
             )}
@@ -229,7 +334,27 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect }) => {
 };
 // --- ▲▲▲ 회의록 목록 컴포넌트 종료 ▲▲▲ ---
 
+
+
 const MeetingMinutes: React.FC = () => {
+
+    // LLM 문서 타입별 라벨 반환 함수
+    const getLLMDocLabel = (docType: string): string => {
+        const labelMap: Record<string, string> = {
+            summary: '요약',
+            concept: '개념 정리',
+            draft: '초안',
+            todolist: '할 일 목록',
+            mindmap_tree: '마인드맵(트리)',
+            mindmap_graph: '마인드맵(그래프)',
+            cal_gant: '캘린더/간트',
+            role: '역할 정의',
+            glossary: '용어집',
+            biz_overview: '비즈니스 개요'
+        };
+
+        return labelMap[docType] || docType;
+    };
 
     // 원본 데이터 저장 (회의록 로드 시점의 데이터)
     const [originalData, setOriginalData] = useState<{
@@ -251,6 +376,8 @@ const MeetingMinutes: React.FC = () => {
 
     // 1. 파일 입력(input) DOM에 접근하기 위한 ref
     const fileInputRef = useRef<HTMLInputElement>(null);
+    // ✅ [추가] 프로그레스 바 DOM에 접근하기 위한 ref
+    const progressBarRef = useRef<HTMLDivElement>(null);
 
     // 2. 파일 목록, 업로드 상태 등을 관리하는 state
     const [serverFiles, setServerFiles] = useState<any[]>([]);
@@ -423,7 +550,6 @@ const MeetingMinutes: React.FC = () => {
     const handleSaveNewMeeting = async () => {
         if (!meetingTitle || !meetingDateTime) {
             alert("회의록 제목과 일시는 필수입니다.");
-            // return;
             throw new Error("필수값 누락"); // ✅ throw로 변경
         }
 
@@ -448,10 +574,49 @@ const MeetingMinutes: React.FC = () => {
 
             alert("신규 회의록이 생성되었습니다.");
 
+            // ✅ 모달 닫기
+            setIsNewMeetingModalOpen(false);
+
             // 목록 새로고침
             if (activeTab === 'my' || activeTab === 'shared') {
-                loadMeetings(activeTab, filterType);
+                await loadMeetings(activeTab, filterType);
             }
+
+            // ✅ 생성된 회의록을 다시 로드하여 화면에 표시
+            try {
+                const details = await meetingMinuteService.getMeetingDetails(created.meeting_id);
+
+                // MeetingMinute 형태로 변환
+                const newMeeting: MeetingMinute = {
+                    meeting_id: created.meeting_id,
+                    meeting_title: created.meeting_title,
+                    meeting_datetime: created.meeting_datetime,
+                    meeting_place: created.meeting_place || '',
+                    project_id: created.project_id,
+                    project_name: projectName || '',
+                    creator_name: '', // 서버에서 받아온 데이터로 채울 수 있음
+                    attendees_display: '',
+                    tags: tags.split(',').map(t => t.trim()).filter(t => t),
+                    share_methods: Object.entries(shareMethods)
+                        .filter(([, checked]) => checked)
+                        .map(([key]) => key as 'email' | 'jandi'),  // ✅ 타입 단언 추가
+                    shared_with: sharedWith,
+                    has_llm_documents: false,
+                    basic_minutes: '',
+                    // ✅ 누락된 필수 속성 추가
+                    is_active: true,
+                    created_at: new Date().toISOString(),
+                    created_by: 0  // 실제 사용자 ID가 있다면 사용
+                };
+
+                // handleMeetingSelect 호출하여 전체 데이터 로드
+                await handleMeetingSelect(newMeeting);
+
+            } catch (loadError) {
+                console.error('생성된 회의록 로드 실패:', loadError);
+                // 로드 실패해도 기본 정보는 설정되어 있으므로 계속 진행
+            }
+
         } catch (error: any) {
             console.error('저장 실패:', error);
             alert(`저장 실패: ${error.message}`);
@@ -827,15 +992,6 @@ const MeetingMinutes: React.FC = () => {
             }
 
             // STT 결과 처리
-            // const loadedSttResults: Record<string, string> = {
-            //     whisper: "",
-            //     clova: "",
-            //     google: "",
-            //     aws: "",
-            //     azure: "",
-            //     vosk: ""
-            // };
-            // STT 결과 처리
             const loadedSttResults: {
                 whisper: string;
                 clova: string;
@@ -851,10 +1007,9 @@ const MeetingMinutes: React.FC = () => {
                 azure: "",
                 vosk: ""
             };
+
             if (details.stt_originals && details.stt_originals.length > 0) {
                 details.stt_originals.forEach((stt: any) => {
-                    // loadedSttResults[stt.stt_engine_type] = stt.original_text
-                    // ✅ 타입 단언 추가
                     const engineType = stt.stt_engine_type as keyof typeof loadedSttResults;
                     if (engineType in loadedSttResults) {
                         loadedSttResults[engineType] = stt.original_text;
@@ -864,7 +1019,6 @@ const MeetingMinutes: React.FC = () => {
                 setSttResults(loadedSttResults);
                 setSelectedSttSource(details.stt_originals[0].stt_engine_type);
 
-                // console.log('STT 결과 로드 완료:', Object.keys(loadedSttResults).filter(k => loadedSttResults[k]));
                 console.log('STT 결과 로드 완료:', Object.keys(loadedSttResults).filter(k => {
                     const key = k as keyof typeof loadedSttResults;
                     return loadedSttResults[key];
@@ -886,6 +1040,64 @@ const MeetingMinutes: React.FC = () => {
             setLlmResults(loadedLlmResults);
             console.log('LLM 결과 로드 완료');
 
+            // ✅ LLM 설정 복원
+            if (details.llm_documents && details.llm_documents.length > 0) {
+                // LLM 엔진 복원 (any 타입으로 처리)
+                const firstLlmDoc = details.llm_documents[0] as any;
+                if (firstLlmDoc.llm_engine_type) {
+                    setLlmEngine(firstLlmDoc.llm_engine_type as LLMEngine);
+                }
+
+                // 문서 타입 체크박스 복원 (타입 명시)
+                const activeDocTypes = {
+                    summary: false,
+                    concept: false,
+                    draft: false,
+                    todolist: false,
+                    mindmap_tree: false,
+                    mindmap_graph: false,
+                    cal_gant: false,
+                    role: false,
+                    glossary: false,
+                    biz_overview: false
+                };
+
+                details.llm_documents.forEach((doc: any) => {
+                    const docType = doc.doc_type as keyof typeof activeDocTypes;
+                    if (docType in activeDocTypes) {
+                        activeDocTypes[docType] = true;
+                    }
+                });
+
+                setLlmDocTypes(activeDocTypes);
+                console.log('LLM 설정 복원 완료:', { engine: firstLlmDoc.llm_engine_type, docTypes: activeDocTypes });
+            } else {
+                // LLM 문서가 없으면 기본값으로 초기화
+                setLlmEngine('chatgpt');
+                setLlmDocTypes({
+                    summary: false,
+                    concept: false,
+                    draft: false,
+                    todolist: false,
+                    mindmap_tree: false,
+                    mindmap_graph: false,
+                    cal_gant: false,
+                    role: false,
+                    glossary: false,
+                    biz_overview: false
+                });
+            }
+
+            // ✅ STT 설정 복원
+            if (details.stt_originals && details.stt_originals.length > 0) {
+                const firstSttDoc = details.stt_originals[0] as any;
+                if (firstSttDoc.stt_engine_type) {
+                    setSttEngine(firstSttDoc.stt_engine_type as STTEngine);
+                }
+            } else {
+                setSttEngine('whisper');
+            }
+
             // ✅ 원본 데이터 저장 (변경 감지용)
             setOriginalData({
                 meetingTitle: meeting.meeting_title,
@@ -901,7 +1113,7 @@ const MeetingMinutes: React.FC = () => {
                 attendees: meeting.attendees_display || '',
                 manualInput: meeting.basic_minutes || '',
                 sttResults: { ...loadedSttResults },
-                llmResults: JSON.parse(JSON.stringify(loadedLlmResults)) // deep copy
+                llmResults: JSON.parse(JSON.stringify(loadedLlmResults))
             });
 
             // 변경 없음으로 초기화
@@ -918,7 +1130,6 @@ const MeetingMinutes: React.FC = () => {
         console.log(`회의록 ${meeting.meeting_id} 로드 완료`);
 
     }, [llmResults]);
-
 
     // 텍스트 파일 내용 읽기 함수
     const readTextFile = (file: File): Promise<string> => {
@@ -946,7 +1157,13 @@ const MeetingMinutes: React.FC = () => {
     const [showProjectSearchModal, setShowProjectSearchModal] = useState(false);
     const [projectSearchLoading, setProjectSearchLoading] = useState(false);
     const [projectSearchResults, setProjectSearchResults] = useState<Project[]>([]);
+    const [projectSearchError, setProjectSearchError] = useState<string | null>(null);
     const [modalSearchTerm, setModalSearchTerm] = useState('');
+
+    // [추가] 프로젝트 검색 페이지네이션 상태
+    const [projectCurrentPage, setProjectCurrentPage] = useState(1);
+    const [projectTotalPages, setProjectTotalPages] = useState(0);
+    const [projectTotalCount, setProjectTotalCount] = useState(0);
 
     const [showEmployeeSearchModal, setShowEmployeeSearchModal] = useState(false);
     const [sharedWith, setSharedWith] = useState<Employee[]>([]); // Employee 객체 배열로 관리
@@ -969,6 +1186,19 @@ const MeetingMinutes: React.FC = () => {
     const [conversionDuration, setConversionDuration] = useState<number | null>(null);
     const [wsStartTime, setWsStartTime] = useState<number | null>(null);
 
+    // ✅ [추가] STT 작업 시작 시 프로그레스 바로 스크롤하는 효과
+    useEffect(() => {
+        // 1. isGenerating이 true이고 (프로그레스 바가 나타났고)
+        // 2. generationPhase가 1이며 (STT 단계이고)
+        // 3. progressBarRef.current가 존재할 때 (DOM에 마운트되었을 때)
+        if (isGenerating && generationPhase === 1 && progressBarRef.current) {
+            // 해당 요소로 부드럽게 스크롤
+            progressBarRef.current.scrollIntoView({
+                behavior: 'smooth', // 부드러운 스크롤
+                block: 'center'     // 요소를 화면 중앙에 맞춤
+            });
+        }
+    }, [isGenerating, generationPhase]); // isGenerating 또는 generationPhase가 변경될 때마다 실행
 
     // 드래그 앤 드롭 핸들러
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -1158,10 +1388,191 @@ const MeetingMinutes: React.FC = () => {
 
     // 파일 다운로드/삭제 핸들러
     const handleFileDownload = (file: any) => console.log("다운로드:", file);
-    const handleFileDelete = (file: any) => {
-        if (window.confirm(`${file.original_file_name} 파일을 정말 삭제하시겠습니까?`)) {
-            console.log("삭제:", file);
+    // 파일 삭제 핸들러 (서버에 저장된 파일)
+    const handleFileDelete = async (file: any) => {
+        if (!window.confirm(`${file.original_file_name} 파일을 정말 삭제하시겠습니까?`)) {
+            return;
         }
+
+        if (!selectedMeeting?.meeting_id) {
+            alert('회의록 정보가 없습니다');
+            return;
+        }
+
+        try {
+            // API 호출
+            await fileUploadService.deleteMeetingFile(selectedMeeting.meeting_id, file.id);
+
+            // ✅ 1. 서버 파일 목록에서 제거
+            setServerFiles(prev => prev.filter(f => f.id !== file.id));
+
+            // ✅ 2. 서버에서 최신 회의록 상세 정보를 다시 불러와서 STT/LLM 결과 동기화
+            try {
+                const details = await meetingMinuteService.getMeetingDetails(selectedMeeting.meeting_id);
+
+                // STT 결과 동기화
+                if (details.stt_originals && details.stt_originals.length > 0) {
+                    const sttData = {
+                        whisper: "",
+                        clova: "",
+                        google: "",
+                        aws: "",
+                        azure: "",
+                        vosk: "",
+                    };
+
+                    details.stt_originals.forEach((stt: any) => {
+                        if (stt.stt_engine_type in sttData) {
+                            sttData[stt.stt_engine_type as keyof typeof sttData] = stt.original_text;
+                        }
+                    });
+
+                    setSttResults(sttData);
+
+                    // 선택된 STT 소스가 삭제된 경우 초기화
+                    if (selectedSttSource && !sttData[selectedSttSource as keyof typeof sttData]) {
+                        setSelectedSttSource('');
+                    }
+                } else {
+                    // STT 결과가 하나도 없으면 모두 초기화
+                    setSttResults({
+                        whisper: "",
+                        clova: "",
+                        google: "",
+                        aws: "",
+                        azure: "",
+                        vosk: "",
+                    });
+                    setSelectedSttSource('');
+                }
+
+                // LLM 결과 동기화
+                if (details.llm_documents && details.llm_documents.length > 0) {
+                    const llmData = details.llm_documents.map((doc: any) => ({
+                        id: doc.doc_type,
+                        title: getLLMDocLabel(doc.doc_type),
+                        content: doc.document_content,
+                        save: true,
+                        llm_document_id: doc.llm_document_id
+                    }));
+
+                    setLlmResults(llmData);
+                } else {
+                    // LLM 결과가 하나도 없으면 초기화
+                    setLlmResults([]);
+                }
+
+            } catch (syncError) {
+                console.error('회의록 상세 정보 재로드 실패:', syncError);
+                // 동기화 실패 시 안전하게 모두 초기화
+                setSttResults({
+                    whisper: "",
+                    clova: "",
+                    google: "",
+                    aws: "",
+                    azure: "",
+                    vosk: "",
+                });
+                setSelectedSttSource('');
+                setLlmResults([]);
+            }
+
+            alert('파일이 성공적으로 삭제되었습니다');
+
+        } catch (error: any) {
+            console.error('파일 삭제 오류:', error);
+
+            let errorMessage = '파일 삭제 중 오류가 발생했습니다';
+
+            if (error.response) {
+                switch (error.response.status) {
+                    case 403:
+                        errorMessage = '파일 삭제 권한이 없습니다';
+                        break;
+                    case 404:
+                        errorMessage = '파일을 찾을 수 없습니다';
+                        break;
+                    default:
+                        errorMessage = error.response.data?.detail || errorMessage;
+                }
+            }
+
+            alert(errorMessage);
+        }
+    };
+
+    // 회의록 삭제 핸들러
+    const handleDeleteMeeting = async (meeting: MeetingMinute) => {
+        if (!window.confirm(`"${meeting.meeting_title}" 회의록을 정말 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+            return;
+        }
+
+        try {
+            // API 호출
+            await meetingMinuteService.deleteMeeting(meeting.meeting_id);
+
+            // 성공 시 목록 새로고침
+            await loadMeetings(activeTab as 'my' | 'shared', filterType);
+
+            // 현재 선택된 회의록이 삭제된 경우 초기화
+            if (selectedMeeting?.meeting_id === meeting.meeting_id) {
+                setSelectedMeeting(null);
+                resetForm();
+            }
+
+            alert('회의록이 성공적으로 삭제되었습니다');
+        } catch (error: any) {
+            console.error('회의록 삭제 오류:', error);
+
+            let errorMessage = '회의록 삭제 중 오류가 발생했습니다';
+
+            if (error.response) {
+                switch (error.response.status) {
+                    case 403:
+                        errorMessage = '회의록 삭제 권한이 없습니다 (작성자만 가능)';
+                        break;
+                    case 404:
+                        errorMessage = '회의록을 찾을 수 없습니다';
+                        break;
+                    default:
+                        errorMessage = error.response.data?.detail || errorMessage;
+                }
+            }
+
+            alert(errorMessage);
+        }
+    };
+
+// 폼 초기화 함수
+    const resetForm = () => {
+        setMeetingTitle('');
+        setMeetingDateTime(null);
+        setMeetingPlace('');
+        setProjectName('');
+        setSelectedProjectId(null);
+        setSharedWith([]);
+        setAttendees(''); // ✅ 수정: 빈 문자열로
+        setTags(''); // ✅ 수정: 빈 문자열로
+        setShareMethods({ email: false, jandi: false }); // ✅ 수정: slack → jandi
+        setRecordingMethod('audio');
+        setSelectedFiles([]);
+        setServerFiles([]);
+        setManualInput('');
+        setSttEngine('google');
+        setLlmEngine('gemini');
+        setLlmDocTypes({ // ✅ 수정: 실제 프로젝트의 타입에 맞게
+            summary: false,
+            concept: false,
+            draft: false,
+            todolist: false,
+            mindmap_tree: false,
+            mindmap_graph: false,
+            cal_gant: false,
+            role: false,
+            glossary: false,
+            biz_overview: false
+        });
+        setLlmResults([]);
     };
 
     const handleRemoveSelectedFile = (fileToRemove: File) => {
@@ -1201,28 +1612,83 @@ const MeetingMinutes: React.FC = () => {
     };
 
     const openProjectSearchModal = () => {
-        setModalSearchTerm(projectName); // 모달을 열 때 현재 프로젝트명을 모달 검색어 초기값으로 설정
+        setModalSearchTerm(''); // 모달을 열 때 검색어를 초기화
         setShowProjectSearchModal(true);
-        handleProjectSearch(projectName); // 현재 프로젝트명으로 초기 검색 실행
+        // handleProjectSearch(''); // 이 호출은 useEffect로 이동
     };
 
-    const handleProjectSearch = async (term: string) => {
+    const closeProjectSearchModal = () => {
+        setShowProjectSearchModal(false);
+        // 모달 닫을 때 상태 초기화
+        setProjectSearchResults([]);
+        setProjectSearchError(null);
+        setProjectSearchLoading(false);
+        setProjectCurrentPage(1);
+        setProjectTotalPages(0);
+        setProjectTotalCount(0);
+        setModalSearchTerm('');
+    };
+
+    const handleProjectSearch = async (term: string, page: number = 1) => {
         setProjectSearchLoading(true);
+        setProjectSearchError(null); // 검색 시작 시 에러 상태 초기화
         try {
-            const results = await projectService.getProjects({ search: term });
-            setProjectSearchResults(results);
+            const limit = 10;
+            const skip = (page - 1) * limit;
+            const params = {
+                search: term,
+                skip: skip,
+                limit: limit
+            };
+
+            // ProjectBasicInfoForm.tsx와 동일한 방식: 별도 API 호출
+            const listResponse = await apiClient.get('/projects/', { params });
+            const countResponse = await apiClient.get('/projects/count', { params });
+
+            // 방어적 프로그래밍: 응답이 올바른지 확인
+            if (listResponse && listResponse.data && Array.isArray(listResponse.data)) {
+                setProjectSearchResults(listResponse.data);
+
+                const totalCount = countResponse?.data?.total_count || 0;
+                const totalPages = Math.ceil(totalCount / limit);
+
+                setProjectTotalCount(totalCount);
+                setProjectTotalPages(totalPages);
+                setProjectCurrentPage(page);
+                setProjectSearchError(null); // 성공 시 에러 상태 클리어
+            } else {
+                // API 응답이 예상과 다를 경우 기본값으로 설정
+                setProjectSearchResults([]);
+                setProjectTotalCount(0);
+                setProjectTotalPages(0);
+                setProjectCurrentPage(1);
+                setProjectSearchError("서버 응답 형식이 올바르지 않습니다.");
+                console.warn("프로젝트 검색 응답 형식이 예상과 다릅니다:", listResponse);
+            }
         } catch (error) {
             console.error("프로젝트 검색 오류:", error);
-            alert("프로젝트 검색 중 오류가 발생했습니다.");
+            // 에러 발생 시 빈 배열로 초기화하여 undefined 오류 방지
+            setProjectSearchResults([]);
+            setProjectTotalCount(0);
+            setProjectTotalPages(0);
+            setProjectCurrentPage(1);
+            setProjectSearchError("프로젝트 검색 중 오류가 발생했습니다.");
         } finally {
             setProjectSearchLoading(false);
         }
     };
 
+    // [수정] 프로젝트 검색 모달이 열릴 때 첫 페이지의 전체 목록을 검색합니다.
+    useEffect(() => {
+        if (showProjectSearchModal) {
+            handleProjectSearch('', 1);
+        }
+    }, [showProjectSearchModal]);
+
     const selectProject = (project: Project) => {
         setProjectName(project.project_name);
         setSelectedProjectId(project.id);
-        setShowProjectSearchModal(false);
+        closeProjectSearchModal();
     };
 
     // [추가] 프로젝트 선택 취소 핸들러
@@ -1306,7 +1772,23 @@ const MeetingMinutes: React.FC = () => {
             // ✅ 2단계: STT 실행
             setSttStatusMessage('파일 업로드 중...');
 
-            const fileToConvert = selectedFiles[0];
+            // --- ✅ 수정된 코드 ---
+            const audioFile = selectedFiles.find(file => {
+                const ext = file.name.split('.').pop()?.toLowerCase();
+                // (Line 427의 audioExtensions 배열을 사용)
+                return ext && audioExtensions.includes(ext);
+            });
+
+            // 음성 파일이 없는 경우 STT 실행 중단
+            if (!audioFile) {
+                alert("STT 변환을 위한 음성 파일(mp3, m4a, wav 등)을 업로드해주세요.");
+                setIsGenerating(false); // 로딩 중단
+                setGenerationPhase(0); // 단계 초기화
+                return;
+            }
+
+            const fileToConvert = audioFile; // 찾은 음성 파일을 STT 대상으로 지정
+            // const fileToConvert = selectedFiles[0];
             const engineToUse = sttEngine as any; // STTEngine 타입
 
             // // meeting_id 확인
@@ -2038,12 +2520,21 @@ const MeetingMinutes: React.FC = () => {
                             <>
                                 {activeTab === 'my' && (
                                     <div className="tab-pane active">
-                                        <MeetingList meetings={myMeetings} onSelect={handleMeetingSelect} />
+                                        <MeetingList
+                                            meetings={myMeetings}
+                                            onSelect={handleMeetingSelect}
+                                            onDelete={handleDeleteMeeting}
+                                            showDelete={true}
+                                        />
                                     </div>
                                 )}
                                 {activeTab === 'shared' && (
                                     <div className="tab-pane active">
-                                        <MeetingList meetings={sharedMeetings} onSelect={handleMeetingSelect} />
+                                        <MeetingList
+                                            meetings={sharedMeetings}
+                                            onSelect={handleMeetingSelect}
+                                            showDelete={false}
+                                        />
                                     </div>
                                 )}
                                 {activeTab === 'all' && (
@@ -2089,72 +2580,41 @@ const MeetingMinutes: React.FC = () => {
                             <div className="meeting-minutes-section">
                                 <h3 className="section-header-meetingminutes">■ 파일 리스트</h3>
                                 {serverFiles.length > 0 ? (
-                                    <div style={{padding: '15px'}}>
-                                        <div style={{
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: '10px'
-                                        }}>
+                                    <div className="file-list-container">
+                                        <div className="file-list-items">
                                             {serverFiles.map(file => (
-                                                <div
-                                                    key={`server-${file.id}`}
-                                                    style={{
-                                                        display: 'flex',
-                                                        justifyContent: 'space-between',
-                                                        alignItems: 'center',
-                                                        padding: '12px 16px',
-                                                        border: '1px solid #e0e0e0',
-                                                        borderRadius: '8px',
-                                                        backgroundColor: '#f9f9f9'
-                                                    }}
-                                                >
-                                                    <div style={{flex: 1}}>
-                                                        <div style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '8px',
-                                                            marginBottom: '4px'
-                                                        }}>
-                                                            <span style={{fontSize: '16px'}}>📄</span>
-                                                            <span style={{fontWeight: '500'}}>{file.original_file_name}</span>
-                                                            <span style={{
-                                                                padding: '2px 8px',
-                                                                backgroundColor: '#e8f5e9',
-                                                                color: '#2e7d32',
-                                                                borderRadius: '4px',
-                                                                fontSize: '12px'
-                                                            }}>
-                                                                저장됨
-                                                            </span>
+                                                <div key={`server-${file.id}`} className="file-item">
+                                                    <div className="file-item-info">
+                                                        <div className="file-item-header">
+                                                            <span className="file-icon">📄</span>
+                                                            <span className="file-name">{file.original_file_name}</span>
+                                                            <span className="file-status-badge">저장됨</span>
                                                         </div>
-                                                        <div style={{
-                                                            fontSize: '13px',
-                                                            color: '#666',
-                                                            display: 'flex',
-                                                            gap: '12px'
-                                                        }}>
+                                                        <div className="file-item-meta">
                                                             <span>{formatFileSize(file.file_size)}</span>
                                                             <span>업로드: {new Date(file.uploaded_at).toLocaleDateString('ko-KR')}</span>
                                                             {file.uploader_name && <span>by {file.uploader_name}</span>}
                                                         </div>
                                                     </div>
-                                                    <div style={{display: 'flex', gap: '8px'}}>
+                                                    <div className="file-actions">
                                                         <button
+                                                            className="btn-file-download"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 window.open(file.download_url, '_blank');
                                                             }}
-                                                            style={{
-                                                                padding: '6px 12px',
-                                                                backgroundColor: '#1890ff',
-                                                                color: 'white',
-                                                                border: 'none',
-                                                                borderRadius: '4px',
-                                                                cursor: 'pointer',
-                                                                fontSize: '14px'
-                                                            }}
                                                         >
                                                             ⬇️ 다운로드
+                                                        </button>
+                                                        <button
+                                                            className="btn-file-delete"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleFileDelete(file);
+                                                            }}
+                                                            title="삭제"
+                                                        >
+                                                            🗑️ 삭제
                                                         </button>
                                                     </div>
                                                 </div>
@@ -2162,12 +2622,7 @@ const MeetingMinutes: React.FC = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div style={{
-                                        padding: '30px',
-                                        textAlign: 'center',
-                                        color: '#999',
-                                        fontSize: '14px'
-                                    }}>
+                                    <div className="file-list-empty">
                                         저장된 파일이 없습니다.
                                     </div>
                                 )}
@@ -2357,32 +2812,66 @@ const MeetingMinutes: React.FC = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        {Object.values(sttResults).some(text => text && text.trim().length > 0) ? (
-                                            <div className="meeting-stt-results">
-                                                {Object.entries(sttResults).map(([key, value]) => (
-                                                    value && value.trim().length > 0 && (
-                                                        <div key={key}>
-                                                            <div className="meeting-stt-content">{value}</div>
-                                                            <label className="meeting-minutes-label meeting-stt-item-label">
-                                                                <input
-                                                                    type="radio"
-                                                                    name="stt-source"
-                                                                    value={key}
-                                                                    checked={selectedSttSource === key}
-                                                                    onChange={(e) => setSelectedSttSource(e.target.value)}
-                                                                />
-                                                                {key.charAt(0).toUpperCase() + key.slice(1)} 결과 선택
-                                                            </label>
-                                                        </div>
-                                                    )
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="meeting-stt-empty">
-                                                음성 파일을 업로드하고 STT 변환을 실행하면<br/>
-                                                변환된 텍스트가 여기에 표시됩니다.
-                                            </div>
-                                        )}
+                                        {/*{Object.values(sttResults).some(text => text && text.trim().length > 0) ? (*/}
+                                        {/*    <div className="meeting-stt-results">*/}
+                                        {/*        {Object.entries(sttResults).map(([key, value]) => (*/}
+                                        {/*            value && value.trim().length > 0 && (*/}
+                                        {/*                <div key={key}>*/}
+                                        {/*                    <div className="meeting-stt-content">{value}</div>*/}
+                                        {/*                    <label className="meeting-minutes-label meeting-stt-item-label">*/}
+                                        {/*                        <input*/}
+                                        {/*                            type="radio"*/}
+                                        {/*                            name="stt-source"*/}
+                                        {/*                            value={key}*/}
+                                        {/*                            checked={selectedSttSource === key}*/}
+                                        {/*                            onChange={(e) => setSelectedSttSource(e.target.value)}*/}
+                                        {/*                        />*/}
+                                        {/*                        {key.charAt(0).toUpperCase() + key.slice(1)} 결과 선택*/}
+                                        {/*                    </label>*/}
+                                        {/*                </div>*/}
+                                        {/*            )*/}
+                                        {/*        ))}*/}
+                                        {/*    </div>*/}
+                                        {/*) : (*/}
+                                        {/*    <div className="meeting-stt-empty">*/}
+                                        {/*        음성 파일을 업로드하고 STT 변환을 실행하면<br/>*/}
+                                        {/*        변환된 텍스트가 여기에 표시됩니다.*/}
+                                        {/*    </div>*/}
+                                        {/*)}*/}
+                                        <div>
+                                            {hasAudioFiles ? (
+                                                Object.values(sttResults).some(text => text && text.trim().length > 0) ? (
+                                                    <div className="meeting-stt-results">
+                                                        {Object.entries(sttResults).map(([key, value]) => (
+                                                            value && value.trim().length > 0 && (
+                                                                <div key={key}>
+                                                                    <div className="meeting-stt-content">{value}</div>
+                                                                    <label className="meeting-minutes-label meeting-stt-item-label">
+                                                                        <input
+                                                                            type="radio"
+                                                                            name="stt-source"
+                                                                            value={key}
+                                                                            checked={selectedSttSource === key}
+                                                                            onChange={(e) => setSelectedSttSource(e.target.value)}
+                                                                        />
+                                                                        {key.charAt(0).toUpperCase() + key.slice(1)} 결과 선택
+                                                                    </label>
+                                                                </div>
+                                                            )
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="meeting-stt-empty">
+                                                        바로 위의 '텍스트 추출'버튼을 누르시면<br/>
+                                                        추출된 텍스트가 여기에 표시됩니다.
+                                                    </div>
+                                                )
+                                            ) : (
+                                                <div className="meeting-stt-empty">
+                                                    음성 파일을 먼저 업로드해주세요.
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2549,13 +3038,17 @@ const MeetingMinutes: React.FC = () => {
 
                         {/* ✅ 프로그레스 바 추가 */}
                         {isGenerating && (
-                            <div className="generation-progress" style={{
-                                padding: '20px',
-                                backgroundColor: '#f8f9fa',
-                                borderRadius: '8px',
-                                margin: '20px 0',
-                                border: '1px solid #e0e0e0'
-                            }}>
+                            <div
+                                ref={progressBarRef}
+                                className="generation-progress"
+                                style={{
+                                    padding: '20px',
+                                    backgroundColor: '#f8f9fa',
+                                    borderRadius: '8px',
+                                    margin: '20px 0',
+                                    border: '1px solid #e0e0e0'
+                                }}
+                            >
                                 {generationPhase === 1 && (
                                     //
                                     <div className="generation-progress">
@@ -2847,11 +3340,11 @@ const MeetingMinutes: React.FC = () => {
 
                 {/* --- ▼▼▼ [추가] 프로젝트 검색 모달 ▼▼▼ --- */}
                 {showProjectSearchModal && (
-                    <div className="modal-overlay" onClick={() => setShowProjectSearchModal(false)}>
+                    <div className="modal-overlay" onClick={closeProjectSearchModal}>
                         <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                             <div className="modal-header">
                                 <h3>프로젝트 검색</h3>
-                                <button className="modal-close-btn" onClick={() => setShowProjectSearchModal(false)}>×</button>
+                                <button className="modal-close-btn" onClick={closeProjectSearchModal}>×</button>
                             </div>
                             <div className="modal-body">
                                 {/* --- ▼▼▼ [수정] 모달 내 검색창 추가 ▼▼▼ --- */}
@@ -2867,6 +3360,19 @@ const MeetingMinutes: React.FC = () => {
                                     <button className="search-btn" onClick={() => handleProjectSearch(modalSearchTerm)}>🔍</button>
                                 </div>
                                 {/* --- ▲▲▲ 수정 종료 ▲▲▲ --- */}
+                                {/* 에러 메시지 표시 */}
+                                {projectSearchError && (
+                                    <div className="error-message" style={{
+                                        color: '#e74c3c',
+                                        backgroundColor: '#fdf2f2',
+                                        border: '1px solid #e74c3c',
+                                        borderRadius: '4px',
+                                        padding: '10px',
+                                        marginBottom: '10px'
+                                    }}>
+                                        {projectSearchError}
+                                    </div>
+                                )}
                                 {projectSearchLoading ? (
                                     <div className="loading">검색 중...</div>
                                 ) : (
@@ -2879,7 +3385,7 @@ const MeetingMinutes: React.FC = () => {
                                         </tr>
                                         </thead>
                                         <tbody>
-                                        {projectSearchResults.length > 0 ? (
+                                        {projectSearchResults && projectSearchResults.length > 0 ? (
                                             projectSearchResults.map((proj) => (
                                                 <tr key={proj.id}>
                                                     <td>{proj.project_name}</td>
@@ -2891,12 +3397,113 @@ const MeetingMinutes: React.FC = () => {
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan={3} className="no-results">검색 결과가 없습니다.</td>
+                                                <td colSpan={3} className="no-results">
+                                                    {projectSearchResults === null || projectSearchResults === undefined
+                                                        ? "검색 중 오류가 발생했습니다."
+                                                        : "검색 결과가 없습니다."
+                                                    }
+                                                </td>
                                             </tr>
                                         )}
                                         </tbody>
                                     </table>
+
                                 )}
+                                {/* 페이지네이션: 에러가 없고, 로딩 중이 아니며, 페이지가 2개 이상일 때만 표시 */}
+                                {!projectSearchError && !projectSearchLoading && projectTotalPages > 1 && (
+                                    <div className="pagination-container">
+                                        <button
+                                            onClick={() => handleProjectSearch(modalSearchTerm, projectCurrentPage - 1)}
+                                            disabled={projectCurrentPage <= 1 || projectSearchLoading}
+                                            className="pagination-button"
+                                        >
+                                            이전
+                                        </button>
+                                        {/* 페이지 수가 많을 때 제한해서 표시 */}
+                                        {(() => {
+                                            const maxPagesToShow = 5;
+                                            const currentPage = projectCurrentPage || 1;
+                                            const totalPages = projectTotalPages || 0;
+
+                                            if (totalPages <= maxPagesToShow) {
+                                                // 페이지 수가 적을 때는 모든 페이지 표시
+                                                return Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                                    <button
+                                                        key={page}
+                                                        onClick={() => handleProjectSearch(modalSearchTerm, page)}
+                                                        disabled={currentPage === page || projectSearchLoading}
+                                                        className={`pagination-button ${currentPage === page ? 'active' : ''}`}
+                                                    >
+                                                        {page}
+                                                    </button>
+                                                ));
+                                            } else {
+                                                // 페이지 수가 많을 때는 현재 페이지 주변만 표시
+                                                const startPage = Math.max(1, currentPage - 2);
+                                                const endPage = Math.min(totalPages, currentPage + 2);
+                                                const pages = [];
+
+                                                // 첫 페이지가 범위에 포함되지 않으면 추가
+                                                if (startPage > 1) {
+                                                    pages.push(
+                                                        <button
+                                                            key={1}
+                                                            onClick={() => handleProjectSearch(modalSearchTerm, 1)}
+                                                            disabled={projectSearchLoading}
+                                                            className="pagination-button"
+                                                        >
+                                                            1
+                                                        </button>
+                                                    );
+                                                    if (startPage > 2) {
+                                                        pages.push(<span key="ellipsis1" className="pagination-ellipsis">...</span>);
+                                                    }
+                                                }
+
+                                                // 현재 페이지 주변 페이지들
+                                                for (let page = startPage; page <= endPage; page++) {
+                                                    pages.push(
+                                                        <button
+                                                            key={page}
+                                                            onClick={() => handleProjectSearch(modalSearchTerm, page)}
+                                                            disabled={currentPage === page || projectSearchLoading}
+                                                            className={`pagination-button ${currentPage === page ? 'active' : ''}`}
+                                                        >
+                                                            {page}
+                                                        </button>
+                                                    );
+                                                }
+
+                                                // 마지막 페이지가 범위에 포함되지 않으면 추가
+                                                if (endPage < totalPages) {
+                                                    if (endPage < totalPages - 1) {
+                                                        pages.push(<span key="ellipsis2" className="pagination-ellipsis">...</span>);
+                                                    }
+                                                    pages.push(
+                                                        <button
+                                                            key={totalPages}
+                                                            onClick={() => handleProjectSearch(modalSearchTerm, totalPages)}
+                                                            disabled={projectSearchLoading}
+                                                            className="pagination-button"
+                                                        >
+                                                            {totalPages}
+                                                        </button>
+                                                    );
+                                                }
+
+                                                return pages;
+                                            }
+                                        })()}
+                                        <button
+                                            onClick={() => handleProjectSearch(modalSearchTerm, projectCurrentPage + 1)}
+                                            disabled={projectCurrentPage >= projectTotalPages || projectSearchLoading}
+                                            className="pagination-button"
+                                        >
+                                            다음
+                                        </button>
+                                    </div>
+                                )}
+
                             </div>
                         </div>
                     </div>
