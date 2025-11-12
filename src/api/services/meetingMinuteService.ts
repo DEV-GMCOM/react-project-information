@@ -76,9 +76,17 @@ const meetingMinuteService = {
     /**
      * 회의록 삭제
      */
+    // async deleteMeeting(meetingId: number): Promise<void> {
+    //     // ✅ 추가
+    //     await apiClient.delete(`/meeting-minutes/${meetingId}`);
+    // },
     async deleteMeeting(meetingId: number): Promise<void> {
-        // ✅ 추가
-        await apiClient.delete(`/meeting-minutes/${meetingId}`);
+        try {
+            await apiClient.delete(`/meeting-minutes/${meetingId}`);
+        } catch (error) {
+            console.error('회의록 삭제 실패:', error);
+            throw error;
+        }
     },
 
     /**

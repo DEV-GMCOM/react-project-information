@@ -1,4 +1,14 @@
-// src/api/types.ts (그대로 유지)
+// src/api/types.ts
+
+// [추가] 페이지네이션을 위한 제네릭 타입
+export interface Paginated<T> {
+    items: T[];
+    total: number;
+    page: number;
+    size: number;
+    pages: number;
+}
+
 export interface Company {
     id: number;
     company_name: string;

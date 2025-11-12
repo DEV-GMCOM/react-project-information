@@ -650,9 +650,23 @@ export class FileUploadService {
     /**
      * 회의록 파일 목록 조회
      */
-    async getMeetingFiles(meetingId: number): Promise<FileAttachmentInfo[]> {
-        const response = await apiClient.get(`/meetings/${meetingId}/files`);
-        return response.data;
+    // async getMeetingFiles(meetingId: number): Promise<FileAttachmentInfo[]> {
+    //     const response = await apiClient.get(`/meetings/${meetingId}/files`);
+    //     return response.data;
+    // }
+    async getMeetingFiles(meetingId: number, attachmentTypeId?: number): Promise<UploadedFileInfo[]> {
+        try {
+            const params: any = {};
+            if (attachmentTypeId !== undefined) {
+                params.attachment_type_id = attachmentTypeId;
+            }
+
+            const response = await apiClient.get(`/meetings/${meetingId}/files`, { params });
+            return response.data;
+        } catch (error) {
+            console.error('회의록 파일 목록 조회 실패:', error);
+            throw error;
+        }
     }
 
     /**
@@ -682,6 +696,19 @@ export class FileUploadService {
     async deleteFileGeneric(fileId: number): Promise<void> {
         await apiClient.delete(`/files/${fileId}`);
     }
+
+    /**
+     * 회의록 파일 삭제
+     */
+    async deleteMeetingFile(meetingId: number, fileId: number): Promise<void> {
+        try {
+            await apiClient.delete(`/meetings/${meetingId}/files/${fileId}`);
+        } catch (error) {
+            console.error('회의록 파일 삭제 실패:', error);
+            throw error;
+        }
+    }
+
 }
 
 export const fileUploadService = new FileUploadService();
