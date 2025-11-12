@@ -25,7 +25,8 @@ const ProjectList: React.FC = () => {
                 status: selectedStatus || undefined,
                 limit: 100
             });
-            setProjects(data);
+            // 백엔드가 실제로는 Project[] 배열을 반환하므로 직접 사용
+            setProjects(data as unknown as Project[]);
         } catch (err: any) {
             const errorMessage = handleApiError(error);
             setError(`프로젝트 목록을 불러오는데 실패했습니다: ${errorMessage}`);

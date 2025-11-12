@@ -341,7 +341,8 @@ const PTChecklistForm: React.FC = () => {
                 skip: (page - 1) * 10,
                 limit: 10,
             });
-            setSearchResults(projects);
+            // 백엔드가 실제로는 Project[] 배열을 반환하므로 직접 사용
+            setSearchResults(projects as unknown as Project[]);
         } catch (error) {
             console.error("Project search error:", error);
             alert("프로젝트 검색 중 오류가 발생했습니다.");
