@@ -412,20 +412,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         {/* 구분선 */}
                         <div className="nav-divider"></div>
 
-                        {/* 관리자 메뉴 섹션 */}
-                        <div className="nav-section nav-section-admin">
-                            {sidebarOpen && (
-                                <div className="section-header">
-                                    <div className="section-title">개발 중인 항목</div>
-                                </div>
-                            )}
-                            <ul className="nav-list">
-                                {devMenuItems.map(renderMenuItem)}
-                            </ul>
-                        </div>
+                        {/*/!* 관리자 메뉴 섹션 *!/*/}
+                        {/*<div className="nav-section nav-section-admin">*/}
+                        {/*    {sidebarOpen && (*/}
+                        {/*        <div className="section-header">*/}
+                        {/*            <div className="section-title">개발 중인 항목</div>*/}
+                        {/*        </div>*/}
+                        {/*    )}*/}
+                        {/*    <ul className="nav-list">*/}
+                        {/*        {devMenuItems.map(renderMenuItem)}*/}
+                        {/*    </ul>*/}
+                        {/*</div>*/}
 
-                        {/* 구분선 */}
-                        <div className="nav-divider"></div>
+                        {/*/!* 구분선 *!/*/}
+                        {/*<div className="nav-divider"></div>*/}
 
                         {/*/!* 관리자 메뉴 섹션 *!/*/}
                         {/*<div className="nav-section nav-section-admin">*/}
