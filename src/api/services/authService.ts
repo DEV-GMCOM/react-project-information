@@ -60,6 +60,11 @@ export class AuthService {
         return response.data;
     }
 
+    async resetPassword(data: { login_id: string; birth_date: string; new_password: string }): Promise<{ message: string }> {
+        const response = await apiClient.post('/auth/reset-password', data);
+        return response.data;
+    }
+
     // 👇 추가된 메소드: 비밀번호 변경 API를 호출하는 함수
     async changePassword(data: { current_password: string; new_password: string }): Promise<{ message: string }> {
         const response = await apiClient.put('/auth/change-password', data); // RESTful하게 PUT 메소드 사용 권장
