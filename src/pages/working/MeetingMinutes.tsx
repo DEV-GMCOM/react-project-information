@@ -377,7 +377,9 @@ const MeetingMinutes: React.FC = () => {
     // 1. 파일 입력(input) DOM에 접근하기 위한 ref
     const fileInputRef = useRef<HTMLInputElement>(null);
     // ✅ [추가] 프로그레스 바 DOM에 접근하기 위한 ref
-    const progressBarRef = useRef<HTMLDivElement>(null);
+    const sttProgressRef = useRef<HTMLDivElement>(null);
+    const llmProgressRef = useRef<HTMLDivElement>(null);
+    const completionHandledRef = useRef<boolean>(false); // ✅ STT 완료 처리 잠금용 Ref
 
     // 2. 파일 목록, 업로드 상태 등을 관리하는 state
     const [serverFiles, setServerFiles] = useState<any[]>([]);
@@ -423,9 +425,9 @@ const MeetingMinutes: React.FC = () => {
         concept: false,
         draft: false,
         todolist: false,
-        mindmap_tree: false,
-        mindmap_graph: false,
-        cal_gant: false,
+        // mindmap_tree: false,
+        // mindmap_graph: false,
+        // cal_gant: false,
         role: false,
         glossary: false,
         biz_overview: false,
@@ -436,9 +438,9 @@ const MeetingMinutes: React.FC = () => {
         { id: 'concept', title: '컨셉 문서', content: '', save: false },
         { id: 'draft', title: 'Draft 기획서', content: '', save: false },
         { id: 'todolist', title: 'To Do 리스트', content: '', save: false },
-        { id: 'mindmap_tree', title: 'MindMap 트리', content: '', save: false },
-        { id: 'mindmap_graph', title: 'MindMap 그래프', content: '', save: false },
-        { id: 'cal_gant', title: '캘린더_간트차트', content: '', save: false },
+        // { id: 'mindmap_tree', title: 'MindMap 트리', content: '', save: false },
+        // { id: 'mindmap_graph', title: 'MindMap 그래프', content: '', save: false },
+        // { id: 'cal_gant', title: '캘린더_간트차트', content: '', save: false },
         { id: 'role', title: 'Role & Responsibility', content: '', save: false },
         { id: 'glossary', title: '용어/약어', content: '', save: false },
         { id: 'biz_overview', title: '배경지식/트랜드', content: '', save: false },
@@ -502,6 +504,7 @@ const MeetingMinutes: React.FC = () => {
 
     // ✅ STT 설정 모달 상태
     const [showSttSettingsModal, setShowSttSettingsModal] = useState(false);
+    const [showLlmSettingsModal, setShowLlmSettingsModal] = useState(false); // 👈 [추가]
     const [sttModelSize, setSttModelSize] = useState<'tiny' | 'base' | 'small' | 'medium' | 'large'>('medium');
     const [sttLanguage, setSttLanguage] = useState<'ko' | 'en' | 'auto'>('ko');
 
@@ -961,6 +964,23 @@ const MeetingMinutes: React.FC = () => {
     const handleMeetingSelect = useCallback(async (meeting: MeetingMinute) => {
         console.log('선택된 회의록:', meeting);
 
+        // [추가] 다른 회의록을 선택했으므로, 로컬에서 선택한 파일 목록을 초기화합니다.
+        setSelectedFiles([]);
+        setSttCompleted(false); // ✅ STT 완료 상태 초기화
+
+        // [추가] STT 관련 상태 초기화
+        setIsGenerating(false);
+        setGenerationPhase(0);
+        setSttProgress(0);
+        setSttStatusMessage('');
+        setCurrentTaskId(null);
+        setEstimatedTimeRemaining(null);
+        setConversionDuration(null);
+        if (wsConnection) { // 기존 WebSocket 연결이 있다면 종료
+            wsConnection.close();
+            setWsConnection(null);
+        }
+
         setSelectedMeeting(meeting);
 
         // 기본 정보 로드
@@ -977,14 +997,13 @@ const MeetingMinutes: React.FC = () => {
             jandi: meeting.share_methods?.includes('jandi') ?? false
         });
 
-        // basic_minutes 로드
-        setManualInput(meeting.basic_minutes || '');
-
         try {
             // 상세 정보 조회 (STT/LLM 포함)
             const details = await meetingMinuteService.getMeetingDetails(meeting.meeting_id);
-
             console.log('상세 정보:', details);
+
+            // [수정] 상세 정보에서 basic_minutes를 가져와 상태 업데이트
+            setManualInput(details.basic_minutes || '');
 
             // 파일 목록 설정
             if (details.file_attachments) {
@@ -992,101 +1011,55 @@ const MeetingMinutes: React.FC = () => {
             }
 
             // STT 결과 처리
-            const loadedSttResults: {
-                whisper: string;
-                clova: string;
-                google: string;
-                aws: string;
-                azure: string;
-                vosk: string;
-            } = {
-                whisper: "",
-                clova: "",
-                google: "",
-                aws: "",
-                azure: "",
-                vosk: ""
-            };
-
+            const loadedSttResults = { whisper: "", clova: "", google: "", aws: "", azure: "", vosk: "" };
             if (details.stt_originals && details.stt_originals.length > 0) {
                 details.stt_originals.forEach((stt: any) => {
-                    const engineType = stt.stt_engine_type as keyof typeof loadedSttResults;
-                    if (engineType in loadedSttResults) {
-                        loadedSttResults[engineType] = stt.original_text;
+                    if (stt.stt_engine_type in loadedSttResults) {
+                        loadedSttResults[stt.stt_engine_type as keyof typeof loadedSttResults] = stt.original_text;
                     }
                 });
-
-                setSttResults(loadedSttResults);
                 setSelectedSttSource(details.stt_originals[0].stt_engine_type);
-
-                console.log('STT 결과 로드 완료:', Object.keys(loadedSttResults).filter(k => {
-                    const key = k as keyof typeof loadedSttResults;
-                    return loadedSttResults[key];
-                }));
-            } else {
-                setSttResults(loadedSttResults);
             }
+            setSttResults(loadedSttResults);
 
-            // LLM 결과 처리
-            const loadedLlmResults = llmResults.map(result => {
-                const llmDoc = details.llm_documents?.find(
-                    (doc: any) => doc.document_type === result.id
-                );
-                return llmDoc
-                    ? { ...result, content: llmDoc.document_content || '', save: true }
-                    : result;
+            // [수정] LLM 결과 처리 로직
+            const newLlmResults = [
+                { id: 'summary', title: '주요 안건 정리', content: '', save: false },
+                { id: 'concept', title: '컨셉 문서', content: '', save: false },
+                { id: 'draft', title: 'Draft 기획서', content: '', save: false },
+                { id: 'todolist', title: 'To Do 리스트', content: '', save: false },
+                { id: 'mindmap_tree', title: 'MindMap 트리', content: '', save: false },
+                { id: 'mindmap_graph', title: 'MindMap 그래프', content: '', save: false },
+                { id: 'cal_gant', title: '캘린더_간트차트', content: '', save: false },
+                { id: 'role', title: 'Role & Responsibility', content: '', save: false },
+                { id: 'glossary', title: '용어/약어', content: '', save: false },
+                { id: 'biz_overview', title: '배경지식/트랜드', content: '', save: false },
+            ].map(uiTemplate => {
+                const savedDoc = details.llm_documents?.find(doc => doc.document_type === uiTemplate.id);
+                return {
+                    ...uiTemplate,
+                    content: savedDoc ? savedDoc.document_content : '',
+                    llm_document_id: savedDoc ? savedDoc.llm_document_id : undefined,
+                };
             });
-
-            setLlmResults(loadedLlmResults);
+            setLlmResults(newLlmResults);
             console.log('LLM 결과 로드 완료');
 
-            // ✅ LLM 설정 복원
-            if (details.llm_documents && details.llm_documents.length > 0) {
-                // LLM 엔진 복원 (any 타입으로 처리)
-                const firstLlmDoc = details.llm_documents[0] as any;
-                if (firstLlmDoc.llm_engine_type) {
-                    setLlmEngine(firstLlmDoc.llm_engine_type as LLMEngine);
-                }
-
-                // 문서 타입 체크박스 복원 (타입 명시)
-                const activeDocTypes = {
-                    summary: false,
-                    concept: false,
-                    draft: false,
-                    todolist: false,
-                    mindmap_tree: false,
-                    mindmap_graph: false,
-                    cal_gant: false,
-                    role: false,
-                    glossary: false,
-                    biz_overview: false
-                };
-
-                details.llm_documents.forEach((doc: any) => {
-                    const docType = doc.doc_type as keyof typeof activeDocTypes;
-                    if (docType in activeDocTypes) {
-                        activeDocTypes[docType] = true;
-                    }
-                });
-
-                setLlmDocTypes(activeDocTypes);
-                console.log('LLM 설정 복원 완료:', { engine: firstLlmDoc.llm_engine_type, docTypes: activeDocTypes });
-            } else {
-                // LLM 문서가 없으면 기본값으로 초기화
-                setLlmEngine('chatgpt');
-                setLlmDocTypes({
-                    summary: false,
-                    concept: false,
-                    draft: false,
-                    todolist: false,
-                    mindmap_tree: false,
-                    mindmap_graph: false,
-                    cal_gant: false,
-                    role: false,
-                    glossary: false,
-                    biz_overview: false
-                });
-            }
+            // [수정] LLM 설정 복원 로직 제거 -> 항상 초기화
+            setLlmEngine('chatgpt');
+            setLlmDocTypes({
+                summary: true, // 기본으로 '내용 정리'는 체크
+                concept: false,
+                draft: false,
+                todolist: false,
+                // mindmap_tree: false,
+                // mindmap_graph: false,
+                // cal_gant: false,
+                role: false,
+                glossary: false,
+                biz_overview: false
+            });
+            console.log('LLM 설정 초기화 완료');
 
             // ✅ STT 설정 복원
             if (details.stt_originals && details.stt_originals.length > 0) {
@@ -1111,9 +1084,9 @@ const MeetingMinutes: React.FC = () => {
                     jandi: meeting.share_methods?.includes('jandi') ?? false
                 },
                 attendees: meeting.attendees_display || '',
-                manualInput: meeting.basic_minutes || '',
+                manualInput: details.basic_minutes || '',
                 sttResults: { ...loadedSttResults },
-                llmResults: JSON.parse(JSON.stringify(loadedLlmResults))
+                llmResults: JSON.parse(JSON.stringify(newLlmResults))
             });
 
             // 변경 없음으로 초기화
@@ -1129,7 +1102,7 @@ const MeetingMinutes: React.FC = () => {
 
         console.log(`회의록 ${meeting.meeting_id} 로드 완료`);
 
-    }, [llmResults]);
+    }, []); // 종속성 배열을 비워서 항상 최신 상태를 참조하도록 함
 
     // 텍스트 파일 내용 읽기 함수
     const readTextFile = (file: File): Promise<string> => {
@@ -1185,20 +1158,37 @@ const MeetingMinutes: React.FC = () => {
     const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<number | null>(null);
     const [conversionDuration, setConversionDuration] = useState<number | null>(null);
     const [wsStartTime, setWsStartTime] = useState<number | null>(null);
+    const [sttCompleted, setSttCompleted] = useState<boolean>(false); // ✅ STT 완료 상태 추가
 
     // ✅ [추가] STT 작업 시작 시 프로그레스 바로 스크롤하는 효과
     useEffect(() => {
-        // 1. isGenerating이 true이고 (프로그레스 바가 나타났고)
-        // 2. generationPhase가 1이며 (STT 단계이고)
-        // 3. progressBarRef.current가 존재할 때 (DOM에 마운트되었을 때)
-        if (isGenerating && generationPhase === 1 && progressBarRef.current) {
-            // 해당 요소로 부드럽게 스크롤
-            progressBarRef.current.scrollIntoView({
-                behavior: 'smooth', // 부드러운 스크롤
-                block: 'center'     // 요소를 화면 중앙에 맞춤
+        if (isGenerating && generationPhase === 1 && sttProgressRef.current) {
+            sttProgressRef.current.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
             });
         }
-    }, [isGenerating, generationPhase]); // isGenerating 또는 generationPhase가 변경될 때마다 실행
+    }, [isGenerating, generationPhase]);
+
+    // [추가] LLM 생성 시작 시 프로그레스 바로 스크롤
+    useEffect(() => {
+        if (isGenerating && generationPhase === 2 && llmProgressRef.current) {
+            llmProgressRef.current.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+    }, [isGenerating, generationPhase]);
+
+    // [추가] LLM 생성 시작 시 프로그레스 바로 스크롤
+    useEffect(() => {
+        if (isGenerating && generationPhase === 2 && llmProgressRef.current) {
+            llmProgressRef.current.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+    }, [isGenerating, generationPhase]);
 
     // 드래그 앤 드롭 핸들러
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -1277,6 +1267,7 @@ const MeetingMinutes: React.FC = () => {
         }
 
         if (validFiles.length > 0) {
+            setSttCompleted(false); // ✅ 새 파일 추가 시 STT 완료 상태 초기화
             setSelectedFiles(prev => [...prev, ...validFiles]);
 
             // 텍스트 파일 자동 로드
@@ -1363,6 +1354,7 @@ const MeetingMinutes: React.FC = () => {
         }
 
         if (validFiles.length > 0) {
+            setSttCompleted(false); // ✅ 새 파일 추가 시 STT 완료 상태 초기화
             setSelectedFiles(prev => [...prev, ...validFiles]);
 
             // 텍스트 파일 자동 로드
@@ -1565,9 +1557,9 @@ const MeetingMinutes: React.FC = () => {
             concept: false,
             draft: false,
             todolist: false,
-            mindmap_tree: false,
-            mindmap_graph: false,
-            cal_gant: false,
+            // mindmap_tree: false,
+            // mindmap_graph: false,
+            // cal_gant: false,
             role: false,
             glossary: false,
             biz_overview: false
@@ -1743,6 +1735,9 @@ const MeetingMinutes: React.FC = () => {
 
     // ✅ STT 실행 (자동 회의록 생성 포함)
     const handleGenerateSTT = async () => {
+        completionHandledRef.current = false; // ✅ 완료 처리 잠금 해제
+        setSttCompleted(false); // ✅ STT 완료 상태 초기화
+
         console.log("STT 변환 시작");
         console.log("선택된 STT 엔진:", sttEngine);
         console.log("현재 회의록 ID:", currentMeetingId);
@@ -1800,11 +1795,9 @@ const MeetingMinutes: React.FC = () => {
                 engineToUse,
                 fileToConvert,
                 {
-                    model_size: 'medium', // 설정 가능하도록 state로 관리 가능
-                    language: 'ko',
-                    // meeting_id: currentMeetingId || undefined  // 회의록 ID 전달
-                    // meeting_id: meetingIdToSend  // undefined 또는 숫자
-                    meeting_id: meetingId  // ✅ 항상 존재
+                    model_size: sttModelSize, // 설정된 모델 크기 사용
+                    language: sttLanguage,   // 설정된 언어 사용
+                    meeting_id: meetingId
                 }
             );
 
@@ -1876,89 +1869,62 @@ const MeetingMinutes: React.FC = () => {
                 async (data: STTProgressMessage) => {
                     console.log('📊 진행률 수신:', data);
 
-                    // 진행률 업데이트
-                    setSttProgress(data.progress);
-                    setSttStatusMessage(data.message || '');
+                    // --- 상태별 처리 ---
+                    switch (data.status) {
+                        case 'completed':
+                            if (completionHandledRef.current) return;
+                            completionHandledRef.current = true;
 
-                    // ✅ 남은 시간 계산
-                    if (data.progress > 0 && data.progress < 100 && wsStartTime) {
-                        const elapsed = Date.now() - wsStartTime;
-                        const estimatedTotal = (elapsed / data.progress) * 100;
-                        const remaining = Math.max(0, estimatedTotal - elapsed);
-                        setEstimatedTimeRemaining(Math.ceil(remaining / 1000));
-                    }
+                            console.log('✅ STT 변환 완료 (WebSocket)');
+                            setSttProgress(100);
+                            setSttStatusMessage('변환 완료!');
 
-                    // ✅ 완료 처리
-                    if (data.status === 'completed') {
-                        console.log('✅ STT 변환 완료');
-                        setSttProgress(100);
-                        setSttStatusMessage('변환 완료!');
-                        setIsGenerating(false); // ✅ 중단 버튼 숨김
-                        setEstimatedTimeRemaining(null);
+                            if (data.result_text) {
+                                setSttResults(prev => ({ ...prev, [sttEngine]: data.result_text }));
+                                setSelectedSttSource(sttEngine);
+                                alert(`[${sttEngine}] STT 변환이 완료되었습니다.`);
+                            } else {
+                                console.error("STT 완료 메시지에 결과 텍스트가 없습니다.");
+                                alert("STT 결과를 수신했지만 텍스트가 비어있습니다.");
+                            }
 
-                        if (data.result_text) {
-                            setSttResults(prev => ({
-                                ...prev,
-                                [sttEngine]: data.result_text!
-                            }));
-                            setSelectedSttSource(sttEngine);
-                        }
+                            // 최종 UI 상태 업데이트
+                            setIsGenerating(false);
+                            setSttCompleted(true);
+                            setCurrentTaskId(null);
+                            setEstimatedTimeRemaining(null);
+                            break;
 
-                        // ✅ 변환 시간 저장
-                        if (data.metadata?.conversion_duration) {
-                            setConversionDuration(data.metadata.conversion_duration);
-                        }
+                        case 'failed':
+                        case 'aborted':
+                            if (completionHandledRef.current) return;
+                            completionHandledRef.current = true;
 
-                        // ✅ WebSocket 명시적 종료
-                        if (wsConnection) {
-                            wsConnection.close();
-                            setWsConnection(null);
-                        }
+                            console.log(`⏹️ 작업 실패 또는 중단: ${data.status}`);
+                            setIsGenerating(false);
+                            setSttCompleted(false);
+                            setEstimatedTimeRemaining(null);
+                            setSttStatusMessage(data.status === 'failed' ? '변환 실패' : '작업이 중단되었습니다');
+                            setGenerationPhase(0);
+                            setCurrentTaskId(null);
 
-                        alert(`[${sttEngine}] STT 변환이 완료되었습니다.`);
+                            alert(data.status === 'failed' ? `STT 변환 실패: ${data.error || '알 수 없는 오류'}` : 'STT 변환이 중단되었습니다.');
+                            break;
 
-                        // DB 결과 확인 (기존 코드)
-                        try {
-                            const sttResult = await generationService.getSTTResult(fileId);
-                            console.log('✅ DB 저장 확인:', sttResult);
-                        } catch (error) {
-                            console.error('STT 결과 조회 실패:', error);
-                        }
+                        case 'processing':
+                        case 'pending':
+                            // 진행 중일 때만 프로그레스 바 및 메시지 업데이트
+                            setSttProgress(data.progress);
+                            setSttStatusMessage(data.message || '');
 
-                        setGenerationPhase(0);
-                        setCurrentTaskId(null);
-                    }
-                    // ✅ 실패 처리
-                    else if (data.status === 'failed') {
-                        console.log(`❌ 작업 실패:`, data.error);
-                        setIsGenerating(false);
-                        setEstimatedTimeRemaining(null);
-                        setSttStatusMessage('변환 실패');
-                        setGenerationPhase(0);
-                        setCurrentTaskId(null);
-
-                        if (wsConnection) {
-                            wsConnection.close();
-                            setWsConnection(null);
-                        }
-
-                        alert(`STT 변환 실패: ${data.error || '알 수 없는 오류'}`);
-                    }
-                    // ✅ 중단 처리
-                    else if (data.status === 'aborted') {
-                        console.log('⏹️ 작업 중단됨');
-                        setIsGenerating(false);
-                        setEstimatedTimeRemaining(null);
-                        setSttStatusMessage('작업이 중단되었습니다');
-                        setGenerationPhase(0);
-                        setCurrentTaskId(null);
-
-                        if (wsConnection) {
-                            wsConnection.close();
-                            setWsConnection(null);
-                        }
-
-                        alert('STT 변환이 중단되었습니다.');
+                            // 남은 시간 계산
+                            if (data.progress > 0 && data.progress < 100 && wsStartTime) {
+                                const elapsed = Date.now() - wsStartTime;
+                                const estimatedTotal = (elapsed / data.progress) * 100;
+                                const remaining = Math.max(0, estimatedTotal - elapsed);
+                                setEstimatedTimeRemaining(Math.ceil(remaining / 1000));
+                            }
+                            break;
                     }
                 },
                 (error) => {
@@ -2066,9 +2032,8 @@ const MeetingMinutes: React.FC = () => {
         const engine = llmEngine as LLMEngine;
 
         // 3. doc_types 조립 (❌ 핵심 수정 ❌)
-        // { summary: true, concept: false } -> ["summary"]
-        const doc_types = Object.keys(llmDocTypes)
-            .filter(key => llmDocTypes[key as DocType]) as DocType[];
+        // 사용자가 선택하지 않으므로, 모든 정의된 문서 타입을 생성하도록 요청
+        const doc_types = Object.keys(llmDocTypes) as DocType[];
 
         if (doc_types.length === 0) {
             alert("생성할 문서 타입을 1개 이상 선택해주세요.");
@@ -2083,6 +2048,7 @@ const MeetingMinutes: React.FC = () => {
         }
 
         // --- API 호출 ---
+        setShowLlmSettingsModal(false); // 👈 [추가] 유효성 검사 통과 후 모달 닫기
         setIsGenerating(true);
         setGenerationPhase(2); // LLM 진행 중 UI 표시
 
@@ -2095,31 +2061,40 @@ const MeetingMinutes: React.FC = () => {
                 stt_original_id         // ✅ 추가 (선택)
             };
 
-            const response = await generationService.generateLLM(payload);
+            // 1. LLM 생성 요청
+            await generationService.generateLLM(payload);
 
-            // --- 결과 반영 ---
-            // 백엔드에서 받은 results 배열을 프론트엔드 llmResults 상태에 맞게 매핑
-            setLlmResults(prev =>
-                prev.map(uiResult => {
-                    // 백엔드 결과에서 일치하는 doc_type 찾기
-                    const backendResult = response.results.find(
-                        res => res.doc_type === uiResult.id
-                    );
+            alert(`[${engine}] LLM 문서 생성이 완료되었습니다. 최신 정보를 다시 불러옵니다.`);
 
-                    if (backendResult) {
-                        // 일치하는 결과가 있으면 content 업데이트
-                        return {
-                            ...uiResult,
-                            content: backendResult.content,
-                            llm_document_id: backendResult.llm_document_id  // ✅ 추가
-                        };
-                    }
-                    // 일치하는 결과가 없으면 (e.g. 프론트에만 있고 요청 안 보냄) 기존 상태 유지
-                    return uiResult;
-                })
-            );
+            // 2. 데이터 일관성을 위해 전체 상세 정보 다시 로드
+            const details = await meetingMinuteService.getMeetingDetails(meetingId);
 
-            alert(`[${response.engine}] LLM 문서 생성이 완료되었습니다.`);
+            // 3. handleMeetingSelect와 동일한 로직으로 llmResults 상태 업데이트
+            const newLlmResults = [
+                { id: 'summary', title: '주요 안건 정리', content: '', save: false },
+                { id: 'concept', title: '컨셉 문서', content: '', save: false },
+                { id: 'draft', title: 'Draft 기획서', content: '', save: false },
+                { id: 'todolist', title: 'To Do 리스트', content: '', save: false },
+                { id: 'mindmap_tree', title: 'MindMap 트리', content: '', save: false },
+                { id: 'mindmap_graph', title: 'MindMap 그래프', content: '', save: false },
+                { id: 'cal_gant', title: '캘린더_간트차트', content: '', save: false },
+                { id: 'role', title: 'Role & Responsibility', content: '', save: false },
+                { id: 'glossary', title: '용어/약어', content: '', save: false },
+                { id: 'biz_overview', title: '배경지식/트랜드', content: '', save: false },
+            ].map(uiTemplate => {
+                const savedDoc = details.llm_documents?.find(doc => doc.document_type === uiTemplate.id);
+                return {
+                    ...uiTemplate,
+                    content: savedDoc ? savedDoc.document_content : '',
+                    llm_document_id: savedDoc ? savedDoc.llm_document_id : undefined,
+                };
+            });
+            setLlmResults(newLlmResults);
+
+            // '직접 입력'이 소스였을 경우, manualInput 상태도 동기화
+            if (recordingMethod === 'document') {
+                setManualInput(source_text);
+            }
 
         } catch (error) {
             console.error("LLM 생성 중 오류:", error);
@@ -2284,6 +2259,11 @@ const MeetingMinutes: React.FC = () => {
                     await Promise.all(uploadPromises);
                     setSelectedFiles([]);
                     console.log("파일 업로드 완료");
+
+                    // [추가] 파일 업로드 후 데이터 동기화를 위해 전체 정보 다시 로드
+                    if (selectedMeeting) {
+                        await handleMeetingSelect(selectedMeeting);
+                    }
 
                 } catch (fileError: any) {
                     console.error('파일 업로드 실패:', fileError);
@@ -3037,9 +3017,10 @@ const MeetingMinutes: React.FC = () => {
                         )}
 
                         {/* ✅ 프로그레스 바 추가 */}
-                        {isGenerating && (
+                        {(isGenerating || sttCompleted) && generationPhase === 1 && (
                             <div
-                                ref={progressBarRef}
+                                // ref={progressBarRef}
+                                ref={sttProgressRef}
                                 className="generation-progress"
                                 style={{
                                     padding: '20px',
@@ -3053,13 +3034,13 @@ const MeetingMinutes: React.FC = () => {
                                     //
                                     <div className="generation-progress">
                                         <div className="progress-header">
-                                            <h4>🎙️ STT 변환 진행 중...</h4>
+                                            <h4>{sttStatusMessage}</h4>
                                             {/* ✅ Abort 버튼 추가 */}
                                             <button
                                                 type="button"
                                                 onClick={handleAbortSTT}
                                                 className="abort-button"
-                                                disabled={!currentTaskId}
+                                                disabled={!isGenerating}
                                             >
                                                 ⏹️ 중단
                                             </button>
@@ -3086,108 +3067,21 @@ const MeetingMinutes: React.FC = () => {
                             </div>
                         )}
 
-                        {/*{ recordingMethod === 'document' && llmOutput && (*/}
-                        {/*{ ( llmOutput || (recordingMethod === 'audio') ) && (*/}
                         { ((recordingMethod === 'document' && manualInput && manualInput.trim().length > 0)
                             || (recordingMethod === 'audio' && sttResults && Object.values(sttResults).some(text => text && text.trim().length > 0))) && (
                                 <div>
-                                <div className="generation-panel" style={{flexDirection: 'column', gap: '15px'}}>
-                                    <div style={{display: 'flex', width: '100%', gap: '20px'}}>
-                                        {/*<div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>*/}
-                                        <div className="generation-options" style={{
-                                            flex: 1,
-                                            flexDirection: 'column',
-                                            alignItems: 'flex-start',
-                                            border: '1px solid #eee',
-                                            padding: '15px',
-                                            borderRadius: '8px',
-                                            // opacity: recordingMethod === 'audio' ? 1 : 0.3,
-                                            // pointerEvents: recordingMethod === 'audio' ? 'auto' : 'none'
-                                        }}>
-                                            <h4>1. LLM 선택</h4>
-                                            <label className="meeting-minutes-label" style={{opacity: 0.3}}>
-                                                <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="claude" checked={llmEngine === 'claude'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                                Claude
-                                            </label>
-                                            <label className="meeting-minutes-label">
-                                                <input className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="chatgpt" checked={llmEngine === 'chatgpt'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                                ChatGPT
-                                            </label>
-                                            <label className="meeting-minutes-label" style={{opacity: 0.3}}>
-                                                <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="gemini" checked={llmEngine === 'gemini'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                                Gemini
-                                            </label>
-                                            <label className="meeting-minutes-label" style={{opacity: 0.3}}>
-                                                <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="perplexity" checked={llmEngine === 'perplexity'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                                Perplexity
-                                            </label>
-                                            <label className="meeting-minutes-label" style={{opacity: 0.3}}>
-                                                <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="grok" checked={llmEngine === 'grok'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                                Grok
-                                            </label>
-                                        </div>
-                                        <div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>
-                                            <h4>2. 생성할 문서 타입</h4>
-                                            <label className="meeting-minutes-label">
-                                                <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="summary" checked={llmDocTypes.summary} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                                내용(안건) 정리
-                                            </label>
-                                            <label className="meeting-minutes-label">
-                                                <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="concept" checked={llmDocTypes.concept} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                                컨셉 문서
-                                            </label>
-                                            <label className="meeting-minutes-label">
-                                                <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="draft" checked={llmDocTypes.draft} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                                Draft 기획서
-                                            </label>
-                                            <label className="meeting-minutes-label">
-                                                <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="todolist" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                                To Do 리스트
-                                            </label>
-                                            {/*{ id: 'mindmap_tree', title: 'MindMap 트리', content: '', save: false },*/}
-                                            {/*{ id: 'mindmap_graph', title: 'MindMap 그래프', content: '', save: false },*/}
-                                            {/*{ id: 'cal_gant', title: '캘린더_간트차트', content: '', save: false },*/}
-                                            {/*{ id: 'role', title: 'Role & Responsibility', content: '', save: false },*/}
-                                            {/*{ id: 'glossary', title: '용어/약어', content: '', save: false },*/}
-                                            {/*{ id: 'biz_overview', title: '배경지식/트랜드', content: '', save: false },*/}
-
-                                            {/*<label className="meeting-minutes-label">*/}
-                                            {/*    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="mindmap_tree" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
-                                            {/*    MindMap 트리*/}
-                                            {/*</label>*/}
-                                            {/*<label className="meeting-minutes-label">*/}
-                                            {/*    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="mindmap_graph" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
-                                            {/*    MindMap 그래프*/}
-                                            {/*</label>*/}
-                                            {/*<label className="meeting-minutes-label">*/}
-                                            {/*    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="cal_gant" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
-                                            {/*    캘린더_간트차트*/}
-                                            {/*</label>*/}
-                                            {/*<label className="meeting-minutes-label">*/}
-                                            {/*    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="role" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
-                                            {/*    Role & Responsibility*/}
-                                            {/*</label>*/}
-                                            {/*<label className="meeting-minutes-label">*/}
-                                            {/*    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="glossary" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
-                                            {/*    용어/약어*/}
-                                            {/*</label>*/}
-                                            {/*<label className="meeting-minutes-label">*/}
-                                            {/*    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="biz_overview" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
-                                            {/*    배경지식/트랜드*/}
-                                            {/*</label>*/}
-                                        </div>
+                                    <div className="generation-panel" style={{flexDirection: 'column', gap: '15px'}}>
+                                        <button
+                                            className="btn-secondary"
+                                            // className="btn-disabled"
+                                            // onClick={handleGenerateLLM}
+                                            onClick={() => setShowLlmSettingsModal(true)} // 👈 [수정 후]
+                                            style={{margin: '2rem'}}
+                                            disabled={isGenerating}
+                                        >
+                                            LLM 회의록 생성
+                                        </button>
                                     </div>
-                                    {/*<button className="btn-secondary" onClick={handleGenerate} style={{margin: '2rem'}}>LLM 회의록 생성</button>*/}
-                                    <button
-                                        className="btn-secondary"
-                                        // className="btn-disabled"
-                                        onClick={handleGenerateLLM}
-                                        style={{margin: '2rem'}}
-                                        disabled={isGenerating}
-                                    >
-                                        LLM 회의록 생성
-                                    </button>
-                                </div>
 
                                 {/*<div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 0', margin: '10px 0'}}>*/}
                                 {/*    <div style={{fontSize: '6rem', color: '#18f02f', lineHeight: '1'}}>*/}
@@ -3205,7 +3099,7 @@ const MeetingMinutes: React.FC = () => {
                                         border: '1px solid #e0e0e0'
                                     }}>
                                         {generationPhase === 2 && (
-                                            <div>
+                                            <div ref={llmProgressRef}>
                                                 <div style={{
                                                     display: 'flex',
                                                     alignItems: 'center',
@@ -3235,12 +3129,16 @@ const MeetingMinutes: React.FC = () => {
                                                     {llmDocTypes.concept && (llmDocTypes.summary ? ', 컨셉 문서' : ' 컨셉 문서')}
                                                     {llmDocTypes.draft && ((llmDocTypes.summary || llmDocTypes.concept) ? ', Draft 기획서' : ' Draft 기획서')}
                                                     {llmDocTypes.todolist && ((llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', To Do 리스트' : ' To Do 리스트')}
-                                                    {llmDocTypes.mindmap_tree && ((llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', MindMap 트리' : ' MindMap 트리')}
-                                                    {llmDocTypes.mindmap_graph && ((llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', MindMap 그래프' : ' MindMap 그래프')}
-                                                    {llmDocTypes.cal_gant && ((llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 캘린더_간트차트' : ' 캘린더_간트차트')}
-                                                    {llmDocTypes.role && ((llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', Role & Responsibility' : ' Role & Responsibility')}
-                                                    {llmDocTypes.glossary && ((llmDocTypes.role && llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 용어/약어' : ' 용어/약어')}
-                                                    {llmDocTypes.biz_overview && ((llmDocTypes.glossary && llmDocTypes.role && llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 배경지식/트랜드' : ' 배경지식/트랜드')}
+                                                    {/*{llmDocTypes.mindmap_tree && ((llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', MindMap 트리' : ' MindMap 트리')}*/}
+                                                    {/*{llmDocTypes.mindmap_graph && ((llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', MindMap 그래프' : ' MindMap 그래프')}*/}
+                                                    {/*{llmDocTypes.cal_gant && ((llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 캘린더_간트차트' : ' 캘린더_간트차트')}*/}
+                                                    {/*{llmDocTypes.role && ((llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', Role & Responsibility' : ' Role & Responsibility')}*/}
+                                                    {/*{llmDocTypes.glossary && ((llmDocTypes.role && llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 용어/약어' : ' 용어/약어')}*/}
+                                                    {/*{llmDocTypes.biz_overview && ((llmDocTypes.glossary && llmDocTypes.role && llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 배경지식/트랜드' : ' 배경지식/트랜드')}*/}
+
+                                                    {llmDocTypes.role && ((llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', Role & Responsibility' : ' Role & Responsibility')}
+                                                    {llmDocTypes.glossary && ((llmDocTypes.role && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 용어/약어' : ' 용어/약어')}
+                                                    {llmDocTypes.biz_overview && ((llmDocTypes.glossary && llmDocTypes.role && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 배경지식/트랜드' : ' 배경지식/트랜드')}
                                                     를 생성하고 있습니다...
                                                 </div>
                                             </div>
@@ -3257,16 +3155,12 @@ const MeetingMinutes: React.FC = () => {
                                 {/*        result.content &&*/}
                                 {/*        result.content.trim().length > 0*/}
                                 {/*    ) && (*/}
-                                {llmResults.some(result =>
-                                    llmDocTypes[result.id as keyof typeof llmDocTypes] &&
-                                    result.content &&
-                                    result.content.trim().length > 0
-                                ) && (
+                                {llmResults.some(result => result.content && result.content.trim().length > 0) && (
                                     <div className="meeting-minutes-section">
                                         <h3 className="section-header-meetingminutes">■ 생성된 Draft 기획서, 컨셉문서, 주요 안건 정리</h3>
                                         <div style={{padding: '15px', display: 'flex', flexDirection: 'column', gap: '20px'}}>
                                             {llmResults.map(result => (
-                                                llmDocTypes[result.id as keyof typeof llmDocTypes] && (
+                                                result.content && result.content.trim().length > 0 && (
                                                     <div key={result.id}>
 
                                                         <label className="meeting-minutes-label llm-result-label">
@@ -3306,7 +3200,8 @@ const MeetingMinutes: React.FC = () => {
                                         cursor: (!hasChanges || isFileUploading) ? 'not-allowed' : 'pointer'
                                     }}
                                 >
-                                    서버 저장&nbsp;&nbsp;&nbsp;&&nbsp;&nbsp;&nbsp;공유자에게 전송
+                                    {/*서버 저장&nbsp;&nbsp;&nbsp;&&nbsp;&nbsp;&nbsp;공유자에게 전송*/}
+                                    회의록 공유
                                 </button>
                             </div>
                         )}
@@ -3517,6 +3412,96 @@ const MeetingMinutes: React.FC = () => {
                         initialSelected={sharedWith}
                     />
                 )}
+
+                {/* --- ▼▼▼ [신규] LLM 회의록 생성 설정 모달 ▼▼▼ --- */}
+                {showLlmSettingsModal && (
+                    <div className="modal-overlay" onClick={() => setShowLlmSettingsModal(false)}>
+                        <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
+                            <div className="modal-header">
+                                <h3>LLM 회의록 생성 설정</h3>
+                                <button className="modal-close-btn" onClick={() => setShowLlmSettingsModal(false)}>×</button>
+                            </div>
+                            <div className="modal-body" style={{ padding: '24px' }}>
+
+                                {/* --- 기존 JSX 붙여넣기 --- */}
+                                <div style={{display: 'flex', width: '100%', gap: '20px'}}>
+                                    <div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>
+                                        <h4>1. LLM 선택</h4>
+                                        <label className="meeting-minutes-label" style={{opacity: 0.3}}>
+                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="claude" checked={llmEngine === 'claude'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                            Claude
+                                        </label>
+                                        <label className="meeting-minutes-label">
+                                            <input className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="chatgpt" checked={llmEngine === 'chatgpt'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                            ChatGPT
+                                        </label>
+                                        <label className="meeting-minutes-label" style={{opacity: 0.3}}>
+                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="gemini" checked={llmEngine === 'gemini'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                            Gemini
+                                        </label>
+                                        <label className="meeting-minutes-label" style={{opacity: 0.3}}>
+                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="perplexity" checked={llmEngine === 'perplexity'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                            Perplexity
+                                        </label>
+                                        <label className="meeting-minutes-label" style={{opacity: 0.3}}>
+                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="grok" checked={llmEngine === 'grok'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
+                                            Grok
+                                        </label>
+                                    </div>
+                                    {/*<div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>
+                                        <h4>2. 생성할 문서 타입</h4>
+                                        <label className="meeting-minutes-label" title="요약 정리는 항상 생성됩니다." style={{ opacity: 0.7, cursor: 'not-allowed' }}>
+                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="summary" checked={true} disabled={true} style={{ transform: 'scale(1.5)'}}/>
+                                            내용(안건) 정리 (필수)
+                                        </label>
+                                        <label className="meeting-minutes-label">
+                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="concept" checked={llmDocTypes.concept} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                            컨셉 문서
+                                        </label>
+                                        <label className="meeting-minutes-label">
+                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="draft" checked={llmDocTypes.draft} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                            Draft 기획서
+                                        </label>
+                                        <label className="meeting-minutes-label">
+                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="todolist" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                            To Do 리스트
+                                        </label>
+                                        <label className="meeting-minutes-label">
+                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="role" checked={llmDocTypes.role} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                            Role & Responsibility
+                                        </label>
+                                        <label className="meeting-minutes-label">
+                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="glossary" checked={llmDocTypes.glossary} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                            용어/약어
+                                        </label>
+                                        <label className="meeting-minutes-label">
+                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="biz_overview" checked={llmDocTypes.biz_overview} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
+                                            배경지식/트랜드
+                                        </label>
+                                    </div>*/}
+                                </div>
+                                {/* --- 기존 JSX 끝 --- */}
+
+                            </div>
+                            <div className="modal-footer" style={{ padding: '15px', textAlign: 'right', gap: '8px', display: 'flex', justifyContent: 'flex-end' }}>
+                                <button
+                                    className="btn-secondary"
+                                    onClick={() => setShowLlmSettingsModal(false)}
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    className="btn-primary"
+                                    onClick={handleGenerateLLM}
+                                    disabled={isGenerating}
+                                >
+                                    {isGenerating ? '생성 중...' : '계속진행'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {/* --- ▲▲▲ [신규] LLM 모달 종료 ▲▲▲ --- */}
             </div>
         </div>
     );

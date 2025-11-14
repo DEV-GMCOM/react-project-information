@@ -115,3 +115,5 @@ cursor-tools/
 .codex/
 .codex_config
 .codex_cache/
+
+/python_fastapi_information_symbolic_link
