@@ -425,9 +425,9 @@ const MeetingMinutes: React.FC = () => {
         concept: false,
         draft: false,
         todolist: false,
-        mindmap_tree: false,
-        mindmap_graph: false,
-        cal_gant: false,
+        // mindmap_tree: false,
+        // mindmap_graph: false,
+        // cal_gant: false,
         role: false,
         glossary: false,
         biz_overview: false,
@@ -438,9 +438,9 @@ const MeetingMinutes: React.FC = () => {
         { id: 'concept', title: '컨셉 문서', content: '', save: false },
         { id: 'draft', title: 'Draft 기획서', content: '', save: false },
         { id: 'todolist', title: 'To Do 리스트', content: '', save: false },
-        { id: 'mindmap_tree', title: 'MindMap 트리', content: '', save: false },
-        { id: 'mindmap_graph', title: 'MindMap 그래프', content: '', save: false },
-        { id: 'cal_gant', title: '캘린더_간트차트', content: '', save: false },
+        // { id: 'mindmap_tree', title: 'MindMap 트리', content: '', save: false },
+        // { id: 'mindmap_graph', title: 'MindMap 그래프', content: '', save: false },
+        // { id: 'cal_gant', title: '캘린더_간트차트', content: '', save: false },
         { id: 'role', title: 'Role & Responsibility', content: '', save: false },
         { id: 'glossary', title: '용어/약어', content: '', save: false },
         { id: 'biz_overview', title: '배경지식/트랜드', content: '', save: false },
@@ -1052,9 +1052,9 @@ const MeetingMinutes: React.FC = () => {
                 concept: false,
                 draft: false,
                 todolist: false,
-                mindmap_tree: false,
-                mindmap_graph: false,
-                cal_gant: false,
+                // mindmap_tree: false,
+                // mindmap_graph: false,
+                // cal_gant: false,
                 role: false,
                 glossary: false,
                 biz_overview: false
@@ -1557,9 +1557,9 @@ const MeetingMinutes: React.FC = () => {
             concept: false,
             draft: false,
             todolist: false,
-            mindmap_tree: false,
-            mindmap_graph: false,
-            cal_gant: false,
+            // mindmap_tree: false,
+            // mindmap_graph: false,
+            // cal_gant: false,
             role: false,
             glossary: false,
             biz_overview: false
@@ -2032,9 +2032,8 @@ const MeetingMinutes: React.FC = () => {
         const engine = llmEngine as LLMEngine;
 
         // 3. doc_types 조립 (❌ 핵심 수정 ❌)
-        // { summary: true, concept: false } -> ["summary"]
-        const doc_types = Object.keys(llmDocTypes)
-            .filter(key => llmDocTypes[key as DocType]) as DocType[];
+        // 사용자가 선택하지 않으므로, 모든 정의된 문서 타입을 생성하도록 요청
+        const doc_types = Object.keys(llmDocTypes) as DocType[];
 
         if (doc_types.length === 0) {
             alert("생성할 문서 타입을 1개 이상 선택해주세요.");
@@ -3130,12 +3129,16 @@ const MeetingMinutes: React.FC = () => {
                                                     {llmDocTypes.concept && (llmDocTypes.summary ? ', 컨셉 문서' : ' 컨셉 문서')}
                                                     {llmDocTypes.draft && ((llmDocTypes.summary || llmDocTypes.concept) ? ', Draft 기획서' : ' Draft 기획서')}
                                                     {llmDocTypes.todolist && ((llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', To Do 리스트' : ' To Do 리스트')}
-                                                    {llmDocTypes.mindmap_tree && ((llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', MindMap 트리' : ' MindMap 트리')}
-                                                    {llmDocTypes.mindmap_graph && ((llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', MindMap 그래프' : ' MindMap 그래프')}
-                                                    {llmDocTypes.cal_gant && ((llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 캘린더_간트차트' : ' 캘린더_간트차트')}
-                                                    {llmDocTypes.role && ((llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', Role & Responsibility' : ' Role & Responsibility')}
-                                                    {llmDocTypes.glossary && ((llmDocTypes.role && llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 용어/약어' : ' 용어/약어')}
-                                                    {llmDocTypes.biz_overview && ((llmDocTypes.glossary && llmDocTypes.role && llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 배경지식/트랜드' : ' 배경지식/트랜드')}
+                                                    {/*{llmDocTypes.mindmap_tree && ((llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', MindMap 트리' : ' MindMap 트리')}*/}
+                                                    {/*{llmDocTypes.mindmap_graph && ((llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', MindMap 그래프' : ' MindMap 그래프')}*/}
+                                                    {/*{llmDocTypes.cal_gant && ((llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 캘린더_간트차트' : ' 캘린더_간트차트')}*/}
+                                                    {/*{llmDocTypes.role && ((llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', Role & Responsibility' : ' Role & Responsibility')}*/}
+                                                    {/*{llmDocTypes.glossary && ((llmDocTypes.role && llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 용어/약어' : ' 용어/약어')}*/}
+                                                    {/*{llmDocTypes.biz_overview && ((llmDocTypes.glossary && llmDocTypes.role && llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 배경지식/트랜드' : ' 배경지식/트랜드')}*/}
+
+                                                    {llmDocTypes.role && ((llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', Role & Responsibility' : ' Role & Responsibility')}
+                                                    {llmDocTypes.glossary && ((llmDocTypes.role && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 용어/약어' : ' 용어/약어')}
+                                                    {llmDocTypes.biz_overview && ((llmDocTypes.glossary && llmDocTypes.role && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 배경지식/트랜드' : ' 배경지식/트랜드')}
                                                     를 생성하고 있습니다...
                                                 </div>
                                             </div>
@@ -3445,11 +3448,11 @@ const MeetingMinutes: React.FC = () => {
                                             Grok
                                         </label>
                                     </div>
-                                    <div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>
+                                    {/*<div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>
                                         <h4>2. 생성할 문서 타입</h4>
-                                        <label className="meeting-minutes-label">
-                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="summary" checked={llmDocTypes.summary} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                            내용(안건) 정리
+                                        <label className="meeting-minutes-label" title="요약 정리는 항상 생성됩니다." style={{ opacity: 0.7, cursor: 'not-allowed' }}>
+                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="summary" checked={true} disabled={true} style={{ transform: 'scale(1.5)'}}/>
+                                            내용(안건) 정리 (필수)
                                         </label>
                                         <label className="meeting-minutes-label">
                                             <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="concept" checked={llmDocTypes.concept} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
@@ -3463,18 +3466,6 @@ const MeetingMinutes: React.FC = () => {
                                             <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="todolist" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
                                             To Do 리스트
                                         </label>
-                                        {/*<label className="meeting-minutes-label">*/}
-                                        {/*    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="mindmap_tree" checked={llmDocTypes.mindmap_tree} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
-                                        {/*    MindMap 트리*/}
-                                        {/*</label>*/}
-                                        {/*<label className="meeting-minutes-label">*/}
-                                        {/*    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="mindmap_graph" checked={llmDocTypes.mindmap_graph} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
-                                        {/*    MindMap 그래프*/}
-                                        {/*</label>*/}
-                                        {/*<label className="meeting-minutes-label">*/}
-                                        {/*    <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="cal_gant" checked={llmDocTypes.cal_gant} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>*/}
-                                        {/*    캘린더_간트차트*/}
-                                        {/*</label>*/}
                                         <label className="meeting-minutes-label">
                                             <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="role" checked={llmDocTypes.role} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
                                             Role & Responsibility
@@ -3487,7 +3478,7 @@ const MeetingMinutes: React.FC = () => {
                                             <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="biz_overview" checked={llmDocTypes.biz_overview} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
                                             배경지식/트랜드
                                         </label>
-                                    </div>
+                                    </div>*/}
                                 </div>
                                 {/* --- 기존 JSX 끝 --- */}
 
