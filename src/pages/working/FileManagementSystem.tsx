@@ -4,6 +4,19 @@ import React, { useState, useRef, useEffect } from 'react';
 import { apiClient } from '../../api/utils/apiClient';
 import '../../styles/FileManagementSystem.css';
 import * as XLSX from 'xlsx';
+import { fileUploadService } from '../../api/services/fileUploadService';
+
+// 📁 업로드된 파일 정보 타입
+interface IServerFile {
+    id: number;
+    original_file_name: string;
+    file_size: number;
+    file_type: string;
+    uploaded_at: string;
+    is_readonly: boolean;
+    attachment_type_id: number;
+    download_url?: string;
+}
 
 // 📁 클라우드 파일 정보 타입
 interface CloudFile {
@@ -35,6 +48,25 @@ interface ComparisonResult {
     llmExplanation?: string; // LLM 매칭 설명
 }
 
+// 📂 파일 카테고리 타입
+interface ISubCategory {
+    id: number;
+    name: string;
+}
+
+interface IMainCategory {
+    id: number;
+    name: string;
+    subCategories: ISubCategory[];
+}
+
+// 📎 업로드 대기 파일 타입
+interface IStagedFile {
+    id: string;
+    file: File;
+    categoryId: string;
+}
+
 // ☁️ 고정 클라우드 URL
 const CLOUD_URL = 'https://drive.google.com/drive/folders/1a2b3c4d5e6f7g8h9i0j';
 
@@ -48,10 +80,76 @@ const FileManagementSystem: React.FC = () => {
     const [selectedEngine, setSelectedEngine] = useState<string>('chatgpt'); // LLM 엔진 선택
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // ✅ 파일 업로드 관련 상태
+    const [categories, setCategories] = useState<IMainCategory[]>([]);
+    const [stagedFiles, setStagedFiles] = useState<IStagedFile[]>([]);
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
+    const [droppedFiles, setDroppedFiles] = useState<FileList | null>(null);
+    const [isDragOver, setIsDragOver] = useState<boolean>(false);
+    const [isFileUploading, setIsFileUploading] = useState<boolean>(false);
+    const [serverFiles, setServerFiles] = useState<IServerFile[]>([]); // 업로드된 파일 목록
+
+    // 📊 파일 미리보기 관련 state
+    const [previewData, setPreviewData] = useState<any>(null);
+    const [previewLoading, setPreviewLoading] = useState<boolean>(false);
+    const [selectedFileForPreview, setSelectedFileForPreview] = useState<number | null>(null);
+
+    // FMS 전용 프로젝트 ID (9999)
+    const selectedProjectId = 9999;
+    const selectedCategoryRef = useRef<string>('');
+    const fileUploadInputRef = useRef<HTMLInputElement>(null);
+    const allowedExtensions = ['txt', 'pdf', 'ppt', 'pptx', 'doc', 'docx', 'hwp', 'hwpx', 'png', 'jpg', 'jpeg', 'xls', 'xlsx', 'zip', 'rar', '7z'];
+
     // 📥 페이지 로드 시 자동으로 데이터 로드 및 비교
     useEffect(() => {
         loadDemoData();
+        loadCategories();
+        loadServerFiles(); // 업로드된 파일 목록 조회
     }, []);
+
+    // 📂 업로드된 파일 목록 조회
+    const loadServerFiles = async () => {
+        try {
+            const files = await fileUploadService.getProjectFiles(selectedProjectId);
+            setServerFiles(files);
+            console.log('FMS 파일 목록 조회 성공:', files);
+        } catch (err: any) {
+            console.error('파일 목록 조회 실패:', err);
+        }
+    };
+
+    // 📊 파일 미리보기 로드
+    const loadFilePreview = async (fileId: number) => {
+        setPreviewLoading(true);
+        setSelectedFileForPreview(fileId);
+        try {
+            const response = await apiClient.get(`/projects/${selectedProjectId}/files/${fileId}/preview`);
+            setPreviewData(response.data);
+            console.log('파일 미리보기 성공:', response.data);
+        } catch (err: any) {
+            console.error('파일 미리보기 실패:', err);
+            alert(err.response?.data?.detail || '파일 미리보기에 실패했습니다.');
+            setPreviewData(null);
+        } finally {
+            setPreviewLoading(false);
+        }
+    };
+
+    // 📊 미리보기 닫기
+    const closePreview = () => {
+        setPreviewData(null);
+        setSelectedFileForPreview(null);
+    };
+
+    // 📂 카테고리 목록 로드
+    const loadCategories = async () => {
+        try {
+            const response = await apiClient.get('/fms/categories');
+            setCategories(response.data.categories);
+        } catch (err: any) {
+            console.error('카테고리 로드 실패:', err);
+        }
+    };
 
     // 🔗 데모 데이터 로드 및 자동 비교 (백엔드 API 호출)
     const loadDemoData = async () => {
@@ -203,6 +301,159 @@ const FileManagementSystem: React.FC = () => {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
+    // ===== 파일 업로드 관련 함수들 =====
+
+    // 파일 업로드 대기열에 추가
+    const stageFilesForUpload = (files: FileList | null, categoryIdString: string) => {
+        if (!files || files.length === 0) return;
+        const newStagedFiles: IStagedFile[] = Array.from(files).map(file => ({
+            id: `${file.name}-${file.lastModified}-${Math.random()}`,
+            file: file,
+            categoryId: categoryIdString,
+        }));
+        setStagedFiles(prev => [...prev, ...newStagedFiles]);
+    };
+
+    // 대기열에서 파일 제거
+    const removeStagedFile = (fileId: string) => {
+        setStagedFiles(prevStagedFiles => prevStagedFiles.filter(f => f.id !== fileId));
+    };
+
+    // 카테고리 이름 가져오기
+    const getCategoryNameById = (categoryId: string): string => {
+        if (!categoryId || categories.length === 0) return '분류 없음';
+        const [mainId, subId] = categoryId.split('-').map(Number);
+        const mainCategory = categories.find(cat => cat.id === mainId);
+        if (!mainCategory) return '알 수 없는 분류';
+        const subCategory = mainCategory.subCategories.find(sub => sub.id === subId);
+        return subCategory ? subCategory.name : '알 수 없는 분류';
+    };
+
+    // 파일 선택 핸들러
+    const handleFileSelect = () => {
+        setDroppedFiles(null);
+        setShowCategoryModal(true);
+    };
+
+    // 파일 입력 변경 핸들러
+    const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        stageFilesForUpload(e.target.files, selectedCategoryRef.current);
+        selectedCategoryRef.current = '';
+        if (e.target) e.target.value = '';
+    };
+
+    // 카테고리 선택 확인 핸들러
+    const handleCategoryConfirm = (categoryIdString: string) => {
+        setShowCategoryModal(false);
+        if (droppedFiles) {
+            stageFilesForUpload(droppedFiles, categoryIdString);
+            setDroppedFiles(null);
+        } else {
+            selectedCategoryRef.current = categoryIdString;
+            fileUploadInputRef.current?.click();
+        }
+    };
+
+    // 드래그 앤 드롭 핸들러
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragOver(false);
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            setDroppedFiles(e.dataTransfer.files);
+            setShowCategoryModal(true);
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragOver(false);
+    };
+
+    // 모달 닫기
+    const handleModalClose = () => {
+        setShowCategoryModal(false);
+        setDroppedFiles(null);
+    };
+
+    const handleSubmit = async () => {
+            /*
+        if (!selectedProject?.project_id) {
+            alert("프로젝트가 선택되지 않았습니다.");
+            return;
+        }*/
+        setLoading(true);
+        console.log("저장 버튼 클릭됨. 저장할 데이터가 있다면 API 호출을 여기에 구현합니다.");
+        try {
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            alert("성공적으로 저장되었습니다.");
+        } catch (error) {
+            console.error("저장 중 오류 발생:", error);
+            alert("저장에 실패했습니다.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // category_id를 attachment_type_id로 변환하는 헬퍼 함수
+    const getAttachmentTypeIdFromCategory = (categoryId: string): number => {
+        const typeMap: Record<string, number> = {
+            '1-101': 2,   // 미팅/회의 -> meeting_minutes
+            '1-102': 1,   // RFP/기타 고객요구사항 -> rfp
+            '1-103': 5,   // 제출 견적 -> submission
+            '1-104': 5,   // 제출 문서 -> submission
+            '1-105': 99,  // 기타 관련 파일 -> other
+            '2-201': 6,   // 시안 -> design
+            '2-202': 6,   // 최종 디자인 -> design
+            '3-301': 99,  // 지출 결의 -> other
+            '3-302': 99,  // 정산 -> other
+        };
+        return typeMap[categoryId] || 99;
+    };
+
+    // 파일 업로드 실행
+    const handleUploadStagedFiles = async () => {
+        if (stagedFiles.length === 0) return;
+
+        /*
+        if (!selectedProjectId) {
+            alert('프로젝트를 먼저 선택해주세요.');
+            return;
+        }*/
+
+        setIsFileUploading(true);
+
+        try {
+            const uploadPromises = stagedFiles.map(async (stagedFile) => {
+                const formData = new FormData();
+                formData.append('file', stagedFile.file);
+                formData.append('attachment_type_id', getAttachmentTypeIdFromCategory(stagedFile.categoryId).toString());
+
+                // ✅ 기존 백엔드 엔드포인트 사용
+                return apiClient.post(`/projects/${selectedProjectId}/files/upload`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+            });
+
+            await Promise.all(uploadPromises);
+            alert(`${stagedFiles.length}개의 파일이 성공적으로 업로드되었습니다.`);
+            setStagedFiles([]);
+
+            // ✅ 업로드 후 파일 목록 다시 조회
+            await loadServerFiles();
+        } catch (error: any) {
+            console.error('파일 업로드 실패:', error);
+            alert(`파일 업로드에 실패했습니다: ${error.response?.data?.detail || error.message}`);
+        } finally {
+            setIsFileUploading(false);
+        }
+    };
+
     return (
         <div className="file-management-system-container">
             {/* 헤더 */}
@@ -281,17 +532,188 @@ const FileManagementSystem: React.FC = () => {
                     </div>
                 </div>
 
-                {/* 에러 표시 */}
-                {error && (
-                    <div style={{ padding: '20px', color: 'red', backgroundColor: '#ffebee', margin: '20px', borderRadius: '4px' }}>
-                        <p>⚠️ {error}</p>
+                {/* 파일 업로드 섹션 */}
+                <div className="project-execution-section">
+                    <h3 className="section-header">■ 3. 프로젝트 파일 업로드</h3>
+                    <p style={{ padding: '0 20px', color: '#666', fontSize: '14px' }}>
+                        ※ FMS 전용 파일 저장소 (프로젝트 ID: 9999)
+                    </p>
+                </div>
+                <div className="file-upload-section">
+                    <input ref={fileInputRef} type="file" multiple accept={allowedExtensions.map(ext => `.${ext}`).join(',')} onChange={handleFileInputChange} style={{ display: 'none' }} />
+                    <div className={`file-drop-zone ${isDragOver ? 'drag-over' : ''}`} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={handleFileSelect}>
+                        {stagedFiles.length === 0 ? (
+                            <div className="drop-zone-message">
+                                <div className="drop-zone-icon">📁</div>
+                                <div className="drop-zone-text">
+                                    <p>파일을 여기로 드래그하거나 클릭하여 추가하세요</p>
+                                    <p className="drop-zone-hint">업로드할 파일들이 여기에 표시됩니다.</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="file-list staged-file-list">
+                                {stagedFiles.map(stagedFile => (
+                                    <div key={stagedFile.id} className="file-item staged-file">
+                                        <div className="file-info">
+                                            <span className="file-name">📄 {stagedFile.file.name}</span>
+                                            <div className="file-details">
+                                                <span className="file-category-badge">{getCategoryNameById(stagedFile.categoryId)}</span>
+                                                <span className="file-size">{formatFileSize(stagedFile.file.size)}</span>
+                                            </div>
+                                        </div>
+                                        <button className="file-remove-btn" onClick={(e) => { e.stopPropagation(); removeStagedFile(stagedFile.id); }} title="목록에서 제거">
+                                            🗑️
+                                        </button>
+                                    </div>
+                                ))}
+                                <div className="drop-zone-add-more" onClick={(e) => { e.stopPropagation(); handleFileSelect(); }}>
+                                    <span>+ 더 많은 파일 추가</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    {stagedFiles.length > 0 && (
+                        <div className="upload-actions">
+                            <button className="btn-primary" onClick={handleUploadStagedFiles} disabled={isFileUploading}>
+                                {isFileUploading ? '업로드 중...' : `${stagedFiles.length}개 파일 업로드`}
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* 업로드된 파일 목록 섹션 */}
+                {serverFiles.length > 0 && (
+                    <div className="project-execution-section">
+                        <h3 className="section-header">■ 업로드된 파일 목록 ({serverFiles.length}개)</h3>
+                        <div className="file-list-table-wrapper">
+                            <table className="file-list-table">
+                                <thead>
+                                    <tr>
+                                        <th style={{ width: '50px' }}>번호</th>
+                                        <th style={{ width: '300px' }}>파일명</th>
+                                        <th style={{ width: '100px' }}>파일 크기</th>
+                                        <th style={{ width: '150px' }}>업로드 일시</th>
+                                        <th style={{ width: '120px' }}>파일 타입</th>
+                                        <th style={{ width: '180px' }}>작업</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {serverFiles.map((file, index) => (
+                                        <tr key={file.id}>
+                                            <td>{index + 1}</td>
+                                            <td
+                                                title={file.original_file_name}
+                                                style={{ cursor: 'pointer', color: '#0066cc' }}
+                                                onClick={() => loadFilePreview(file.id)}
+                                            >
+                                                📄 {file.original_file_name}
+                                                {selectedFileForPreview === file.id && ' 👁️'}
+                                            </td>
+                                            <td>{formatFileSize(file.file_size)}</td>
+                                            <td>{new Date(file.uploaded_at).toLocaleString('ko-KR')}</td>
+                                            <td>
+                                                <span className="file-type-badge">
+                                                    {file.file_type || 'unknown'}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button
+                                                    onClick={() => loadFilePreview(file.id)}
+                                                    className="btn-preview"
+                                                    style={{ marginRight: '5px' }}
+                                                    title="미리보기"
+                                                >
+                                                    👁️ 미리보기
+                                                </button>
+                                                <a
+                                                    href={fileUploadService.getDownloadUrl(selectedProjectId, file.id)}
+                                                    className="btn-download"
+                                                    download={file.original_file_name}
+                                                    title="다운로드"
+                                                >
+                                                    ⬇️
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
+
+                {/* 파일 미리보기 섹션 */}
+                {previewData && (
+                    <div className="project-execution-section" style={{ marginTop: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 className="section-header">📊 파일 미리보기: {previewData.file_name}</h3>
+                            <button onClick={closePreview} className="btn-close-preview">✖️ 닫기</button>
+                        </div>
+
+                        {previewLoading ? (
+                            <div style={{ textAlign: 'center', padding: '20px' }}>
+                                <p>파일을 불러오는 중...</p>
+                            </div>
+                        ) : (
+                            <div className="file-list-table-wrapper" style={{ marginTop: '10px', maxHeight: '500px', overflowY: 'auto' }}>
+                                {previewData.file_type === '.xlsx' || previewData.file_type === '.xls' || previewData.file_type === '.csv' ? (
+                                    <>
+                                        <p style={{ marginBottom: '10px', fontSize: '14px', color: '#666' }}>
+                                            총 {previewData.total_rows}개 행 (최대 100개 표시)
+                                        </p>
+                                        <table className="file-list-table">
+                                            <thead>
+                                                <tr>
+                                                    {previewData.columns.map((col: string, idx: number) => (
+                                                        <th key={idx} style={{ minWidth: '120px' }}>{col}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {previewData.data.map((row: any, rowIdx: number) => (
+                                                    <tr key={rowIdx}>
+                                                        {previewData.columns.map((col: string, colIdx: number) => (
+                                                            <td key={colIdx}>{row[col] !== null && row[col] !== undefined ? String(row[col]) : ''}</td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </>
+                                ) : previewData.file_type === '.txt' || previewData.file_type === '.log' || previewData.file_type === '.md' ? (
+                                    <pre style={{
+                                        padding: '10px',
+                                        backgroundColor: '#f5f5f5',
+                                        borderRadius: '5px',
+                                        overflowX: 'auto',
+                                        whiteSpace: 'pre-wrap',
+                                        wordWrap: 'break-word'
+                                    }}>
+                                        {previewData.data.join('\n')}
+                                    </pre>
+                                ) : (
+                                    <p>미리보기를 지원하지 않는 파일 형식입니다.</p>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                <div className="button-section">
+                    <button
+                        type="button"
+                        onClick={handleSubmit}
+                        className="submit-btn"
+                        disabled={loading || isFileUploading}
+                    >
+                        {loading ? '저장 중...' : '저장'}
+                    </button>
+                </div>
 
                 {/* 비교 결과 섹션 */}
                 {comparisonResults.length > 0 && (
                     <div className="file-management-system-section">
-                        <h3 className="section-header">■ 3. 클라우드 파일과 엑셀 메타데이터 비교 결과</h3>
+                        <h3 className="section-header">■ 4. 클라우드 파일과 엑셀 메타데이터 비교 결과</h3>
                         <div style={{ padding: '20px' }}>
                             <table style={{
                                 width: '100%',
@@ -553,6 +975,146 @@ const FileManagementSystem: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* 파일 카테고리 선택 모달 */}
+            {showCategoryModal && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000
+                    }}
+                    onClick={handleModalClose}
+                >
+                    <div
+                        style={{
+                            backgroundColor: 'white',
+                            borderRadius: '8px',
+                            padding: '30px',
+                            maxWidth: '600px',
+                            width: '90%',
+                            maxHeight: '80vh',
+                            overflow: 'auto'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '20px'
+                        }}>
+                            <h3 style={{ margin: 0 }}>파일 유형 선택</h3>
+                            <button
+                                onClick={handleModalClose}
+                                style={{
+                                    padding: '5px 10px',
+                                    backgroundColor: 'transparent',
+                                    border: 'none',
+                                    fontSize: '24px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <p style={{ marginBottom: '20px', color: '#666' }}>
+                            업로드할 파일의 유형을 선택해주세요.
+                        </p>
+
+                        <div>
+                            {categories.map(mainCat => (
+                                <div key={mainCat.id} style={{ marginBottom: '20px' }}>
+                                    <strong style={{
+                                        display: 'block',
+                                        marginBottom: '10px',
+                                        fontSize: '16px',
+                                        color: '#333'
+                                    }}>
+                                        {mainCat.name}
+                                    </strong>
+                                    <div style={{ paddingLeft: '10px' }}>
+                                        {mainCat.subCategories.map(subCat => (
+                                            <label
+                                                key={subCat.id}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    padding: '8px',
+                                                    marginBottom: '5px',
+                                                    cursor: 'pointer',
+                                                    borderRadius: '4px',
+                                                    transition: 'background-color 0.2s'
+                                                }}
+                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="fileCategory"
+                                                    value={`${mainCat.id}-${subCat.id}`}
+                                                    onChange={(e) => selectedCategoryRef.current = e.target.value}
+                                                    style={{ marginRight: '10px' }}
+                                                />
+                                                <span>{subCat.name}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            gap: '10px',
+                            marginTop: '30px'
+                        }}>
+                            <button
+                                onClick={handleModalClose}
+                                style={{
+                                    padding: '10px 20px',
+                                    backgroundColor: '#f5f5f5',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                취소
+                            </button>
+                            <button
+                                onClick={() => {
+                                    handleCategoryConfirm(selectedCategoryRef.current);
+                                    /*
+                                    if (selectedCategoryRef.current) {
+                                        handleCategoryConfirm(selectedCategoryRef.current);
+                                    } else {
+                                        alert('카테고리를 선택해주세요.');
+                                    }*/
+                                }}
+                                style={{
+                                    padding: '10px 20px',
+                                    backgroundColor: '#2196F3',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                선택 완료
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
