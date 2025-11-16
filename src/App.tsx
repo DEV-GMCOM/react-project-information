@@ -40,6 +40,7 @@ import MeetingMinutes from './pages/working/MeetingMinutes';
 import ProjectExecution from './pages/project/ProjectExecution';
 import FileManagementSystem from './pages/working/FileManagementSystem';
 import Policies from "./pages/admin/permission/Policies.tsx";
+import AccessControl from "./pages/admin/permission/AccessControl.tsx";
 
 
 import './styles/App.css';
@@ -455,6 +456,17 @@ function App() {
                         <ProtectedRoute>
                             <Layout>
                                 <Policies />
+                            </Layout>
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/admin/access-control" // 접근 제어 관리 페이지
+                    element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <AccessControl />
                             </Layout>
                         </ProtectedRoute>
                     }

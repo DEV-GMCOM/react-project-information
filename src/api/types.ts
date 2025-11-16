@@ -93,6 +93,7 @@ export interface Employee {
     status: 'active' | 'inactive' | 'terminated';
     created_at: string;
     updated_at: string;
+    role?: Role; // ✅ 추가: 직원의 역할 정보
 }
 
 export interface EmployeeCreate {
@@ -267,5 +268,57 @@ export interface LLMGenerateResponse {
     results: LLMDocumentResult[];
     processing_time_ms: number;
 }
+
+// ✅ Permission 인터페이스 추가
+export interface Permission {
+    permission_id: number;
+    permission_name: string;
+    permission_code: string;
+    resource_type: string;
+    action_type: string;
+    description?: string;
+    is_active: boolean;
+    created_at: string;
+    modified_at: string;
+}
+
+// ✅ 권한 생성 및 수정을 위한 타입 추가
+export interface PermissionCreate {
+    permission_name: string;
+    permission_code: string;
+    resource_type: string;
+    action_type: string;
+    description?: string;
+}
+
+export interface PermissionUpdate extends Partial<PermissionCreate> {}
+
+// ✅ Role 인터페이스 수정 (AuthContext에서 사용되는 Role과 동일)
+export interface Role {
+    role_id: number;
+    role_name: string;
+    role_code: string;
+    description?: string;
+    can_view_finance: boolean; // Re-added
+    can_edit_finance: boolean; // Re-added
+    is_active: boolean;
+    created_at: string;
+    modified_at: string;
+    permissions: Permission[]; // Add permissions list
+}
+
+// ✅ 역할 생성 및 수정을 위한 타입 추가
+export interface RoleCreate {
+    role_name: string;
+    role_code: string;
+    description?: string;
+}
+
+export interface RoleUpdate extends Partial<RoleCreate> {}
+
+// ✅ EmployeeRoleAssignment 인터페이스 제거
+// export interface EmployeeRoleAssignment {
+//     role_id: number;
+// }
 
 
