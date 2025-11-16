@@ -22,7 +22,7 @@ export const setLogoutCallback = (callback: () => void) => {
 
 export const apiClient = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 300000, // 5분 타임아웃
+    timeout: 600000, // 10분 타임아웃
     headers: {
         'Content-Type': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
