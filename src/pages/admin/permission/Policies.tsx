@@ -58,7 +58,7 @@ const PermissionModal: React.FC<PermissionModalProps> = ({
                 </div>
                 <div className="modal-body">
                     <p><strong>사원번호:</strong> {employee.employee_id}</p>
-                    <p><strong>부서:</strong> {employee.department || 'N/A'}</p>
+                    <p><strong>부서:</strong> {employee.department?.name || 'N/A'}</p>
                     <p><strong>직급:</strong> {employee.position || 'N/A'}</p>
                     <p><strong>이메일:</strong> {employee.email || 'N/A'}</p>
 
@@ -238,7 +238,7 @@ const Policies: React.FC = () => {
                                         <tr key={emp.id}>
                                             <td>{emp.employee_id}</td>
                                             <td>{emp.name}</td>
-                                            <td>{emp.department || 'N/A'}</td>
+                                            <td>{emp.department?.name || 'N/A'}</td>
                                             <td>{emp.position || 'N/A'}</td>
                                             <td>{emp.email || 'N/A'}</td>
                                             <td>{emp.role?.role_name || '역할 없음'}</td>

@@ -149,7 +149,7 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
                                             />
                                         </td>
                                         <td>{emp.name}</td>
-                                        <td>{emp.department || '-'}</td>
+                                        <td>{emp.department?.name || '-'}</td>
                                         <td>{emp.position || '-'}</td>
                                     </tr>
                                 ))

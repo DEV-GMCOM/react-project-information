@@ -134,6 +134,43 @@ export interface Project {
     updated_at: string;
 }
 
+export interface ProjectCalendarEntry {
+    event_id: number;
+    year: number;
+    month: number;
+    event_name: string;
+    advertiser?: string;
+    budget?: number;
+    ot_date?: string; // YYYY-MM-DD format
+    bundle_id?: number;
+    cell_color?: string;
+}
+
+export interface ProjectCalendarBundle {
+    id: number;
+    bundle_id: number;
+    project_calendar_event_id: number;
+    bundle_nickname?: string;
+    priority: 'low' | 'medium' | 'high';
+    alarm_start_at?: string;
+    alarm_interval_days?: number;
+    alarm_repeat_count?: number;
+    channels: ProjectCalendarBundleChannel[];
+    recipients: ProjectCalendarBundleRecipient[];
+}
+
+export interface ProjectCalendarBundleChannel {
+    id: number;
+    bundle_id: number;
+    channel: 'email' | 'jandi';
+}
+
+export interface ProjectCalendarBundleRecipient {
+    id: number;
+    bundle_id: number;
+    emp_id: number;
+}
+
 export interface DashboardStats {
     total_stats: {
         companies: number;

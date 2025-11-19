@@ -41,6 +41,9 @@ import PolicyManagement from "./pages/admin/permission/PolicyManagement.tsx";
 import PolicyDetail from "./pages/admin/permission/PolicyDetail.tsx";
 import RbacBuilder from "./pages/admin/permission/RbacBuilder.tsx";
 import AbacBuilder from "./pages/admin/permission/AbacBuilder.tsx";
+import SalesSchedule from "./pages/sales/Schedule.tsx";
+import ClockInOut from "./pages/working/ClockInOut.tsx";
+import Scheduling from "./pages/working/Scheduling.tsx";
 
 
 import './styles/App.css';
@@ -94,9 +97,14 @@ function App() {
                 <Route path="/hr/:id/edit" element={<ProtectedRoute><Layout><EmployeeForm /></Layout></ProtectedRoute>} />
                 <Route path="/hr/employee-management" element={<ProtectedRoute><Layout><EmployeeManagement /></Layout></ProtectedRoute>} />
 
+                {/* Sales */}
+                <Route path="/sales/schedule" element={<ProtectedRoute><Layout><SalesSchedule /></Layout></ProtectedRoute>} />
+
                 {/* Working */}
                 <Route path="/working/meeting-minutes" element={<ProtectedRoute><Layout><MeetingMinutes /></Layout></ProtectedRoute>} />
                 <Route path="/working/fms" element={<ProtectedRoute><Layout><FileManagementSystem /></Layout></ProtectedRoute>} />
+                <Route path="/working/clock-in-out" element={<ProtectedRoute><Layout><ClockInOut /></Layout></ProtectedRoute>} />
+                <Route path="/working/scheduling" element={<ProtectedRoute><Layout><Scheduling /></Layout></ProtectedRoute>} />
 
                 {/* Admin & Permissions */}
                 <Route path="/admin/permission/policy" element={<ProtectedRoute><Layout><PolicyManagement /></Layout></ProtectedRoute>} />

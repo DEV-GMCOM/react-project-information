@@ -90,6 +90,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { path: '/hr/employee-management', name: '직원정보 관리', icon: '🧑‍💼' },
         { path: '/working/fms', name: 'GMCOM 저장소', icon: '💾' },
         { path: '/working/clock-in-out', name: '출퇴근 체크', icon: '⏱️' },
+        { path: '/sales/schedule', name: '영업스케쥴', icon: '📈' },
         { path: '/working/scheduling', name: '스케쥴링', icon: '📅' },
     ];
 
@@ -243,13 +244,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 {accessibleMainMenus.map(renderMenuItem)}
                             </ul>
                         </div>
-                        <div className="nav-divider"></div>
-                        <div className="nav-section nav-section-admin">
-                            {sidebarOpen && <div className="section-header"><div className="section-title">개발 중인 항목</div></div>}
-                            <ul className="nav-list">
-                                {accessibleDevMenus.map(renderMenuItem)}
-                            </ul>
-                        </div>
+                        {!import.meta.env.PROD && (
+                            <>
+                                <div className="nav-divider"></div>
+                                <div className="nav-section nav-section-admin">
+                                    {sidebarOpen && <div className="section-header"><div className="section-title">개발 중인 항목</div></div>}
+                                    <ul className="nav-list">
+                                        {accessibleDevMenus.map(renderMenuItem)}
+                                    </ul>
+                                </div>
+                            </>
+                        )}
                     </nav>
                 </aside>
 

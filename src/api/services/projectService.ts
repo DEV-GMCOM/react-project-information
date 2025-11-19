@@ -1,6 +1,6 @@
 // src/api/services/projectService.ts
 import { apiClient } from '../utils/apiClient';
-import { Project, Paginated } from '../types';
+import { Project, ProjectCalendarEntry } from '../types';
 
 export class ProjectService {
     async getProjects(params?: {
@@ -9,16 +9,12 @@ export class ProjectService {
         search?: string;
         status?: string;
         company_id?: number;
-    }): Promise<Paginated<Project>> {
-        // 기존: '/project/' ❌
-        // 수정: '/projects/' ✅
+    }): Promise<Project[]> { // Changed from Paginated<Project> to Project[] assuming backend returns array
         const response = await apiClient.get('/projects/', { params });
         return response.data;
     }
 
     async getProject(id: number): Promise<Project> {
-        // 기존: '/project/${id}' ❌
-        // 수정: '/projects/${id}' ✅
         const response = await apiClient.get(`/projects/${id}`);
         return response.data;
     }
@@ -35,16 +31,32 @@ export class ProjectService {
         manager_id: number | undefined;
         project_type: string | undefined
     }): Promise<Project> {
-        // 기존: '/project/' ❌
-        // 수정: '/projects/' ✅
         const response = await apiClient.post('/projects/', data);
         return response.data;
     }
 
     async updateProject(id: number, data: Partial<Project>): Promise<Project> {
-        // 기존: '/project/${id}' ❌
-        // 수정: '/projects/${id}' ✅
         const response = await apiClient.put(`/projects/${id}`, data);
+        return response.data;
+    }
+
+    async getProjectCalendar(params: { year?: number | ''; month?: number | ''; advertiser?: string }): Promise<ProjectCalendarEntry[]> {
+        const queryParams: { year?: number; month?: number; advertiser?: string } = {};
+        if (params.year) {
+            queryParams.year = params.year as number;
+        }
+        if (params.month) {
+            queryParams.month = params.month as number;
+        }
+        if (params.advertiser) {
+            queryParams.advertiser = params.advertiser;
+        }
+        const response = await apiClient.get('/project-calendar/', { params: queryParams });
+        return response.data;
+    }
+
+    async getProjectCalendarAdvertisers(): Promise<string[]> {
+        const response = await apiClient.get('/project-calendar/advertisers');
         return response.data;
     }
 }

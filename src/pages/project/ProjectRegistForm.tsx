@@ -1,7 +1,7 @@
-// src/components/project/ProjectRegistForm.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { projectService, companyService, employeeService } from '../../api';
+import type { Company, Employee } from '../../api/types';
 import '../../styles/ProjectRegistForm.css';
 
 interface FormData {
@@ -18,18 +18,6 @@ interface FormData {
     risk_factors: string;       // 위험요소
     success_criteria: string;   // 성공기준
     memo: string;              // 특이사항/메모
-}
-
-interface Company {
-    id: number;
-    company_name: string;
-}
-
-interface Employee {
-    id: number;
-    name: string;
-    department?: string;
-    position?: string;
 }
 
 const ProjectRegistForm: React.FC = () => {
@@ -396,7 +384,7 @@ const ProjectRegistForm: React.FC = () => {
                                 {employees.map(employee => (
                                     <option key={employee.id} value={employee.name}>
                                         {employee.name}
-                                        {employee.department && ` (${employee.department})`}
+                                        {employee.department && ` (${employee.department.name})`}
                                         {employee.position && ` - ${employee.position}`}
                                     </option>
                                 ))}
