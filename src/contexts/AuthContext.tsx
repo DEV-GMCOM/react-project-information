@@ -5,13 +5,18 @@ import AutoLogoutAlertModal from '../components/AutoLogoutAlertModal';
 import { setLogoutCallback } from '../api/utils/apiClient';
 import { ENV } from '../config/env';
 
-// --- 인터페이스 정의 (기존과 동일) ---
+// --- 인터페이스 정의 (수정) ---
+interface Permission {
+    permission_id: number;
+    permission_code: string;
+    permission_name: string;
+}
+
 interface Role {
     role_id: number;
     role_name: string;
     role_code: string;
-    can_view_finance: boolean;
-    can_edit_finance: boolean;
+    permissions: Permission[]; // 권한 목록 추가
 }
 
 interface User {
@@ -33,6 +38,8 @@ interface AuthContextType {
     login: (login_id: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
     checkSession: () => Promise<void>;
+    hasRole: (roleCode: string) => boolean; // hasRole 함수 추가
+    hasPermission: (permissionCode: string) => boolean; // hasPermission 함수 추가
 }
 
 interface AuthProviderProps {
@@ -62,23 +69,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const lastActivityTimeRef = useRef(Date.now());
     const mainTimerRef = useRef<NodeJS.Timeout>();
     const heartbeatTimerRef = useRef<NodeJS.Timeout>();
-    const showIdleModalRef = useRef(showIdleModal); // 클로저 문제 방지를 위한 ref
+    const showIdleModalRef = useRef(showIdleModal);
 
-    // showIdleModal 상태가 변경될 때마다 ref도 함께 업데이트
     useEffect(() => {
         showIdleModalRef.current = showIdleModal;
     }, [showIdleModal]);
+
+    // --- 권한 확인 헬퍼 함수 구현 ---
+    const hasRole = useCallback((roleCode: string): boolean => {
+        return user?.role?.role_code === roleCode;
+    }, [user]);
+
+    const hasPermission = useCallback((permissionCode: string): boolean => {
+        if (!user || !user.role || !user.role.permissions) {
+            return false;
+        }
+        return user.role.permissions.some(p => p.permission_code === permissionCode);
+    }, [user]);
 
 
     // --- 1. 핵심 기능 함수 정의 ---
 
     const logout = useCallback(async (isAutoLogout: boolean = false) => {
-        // 모든 타이머를 확실하게 정리
         if (mainTimerRef.current) clearInterval(mainTimerRef.current);
         if (heartbeatTimerRef.current) clearInterval(heartbeatTimerRef.current);
 
         try {
-            // API 호출은 사용자 정보가 있을 때만 시도
             if (user) {
                 await apiClient.post('/auth/logout');
             }
@@ -95,7 +111,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, [user]);
 
     const sendHeartbeat = useCallback(async () => {
-        // user 상태가 없거나 모달이 떠 있는(유휴상태) 경우 전송 안 함
         if (!user || showIdleModalRef.current) return;
         try {
             console.log('🫀 Heartbeat 전송', new Date().toLocaleTimeString());
@@ -103,7 +118,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } catch (error: any) {
             console.error('❌ Heartbeat 전송 실패:', error.response?.status);
             if (error.response?.status === 401) {
-                logout(); // 세션 만료 시 즉시 로그아웃
+                logout();
             }
         }
     }, [user, logout]);
@@ -118,25 +133,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, []);
 
     const startAllTimers = useCallback(() => {
-        stopAllTimers(); // 시작 전, 항상 기존 타이머를 정리
+        stopAllTimers();
 
-        // Heartbeat 타이머 (서버 세션 연장용)
         heartbeatTimerRef.current = setInterval(sendHeartbeat, ENV.HEARTBEAT_INTERVAL);
         console.log(`❤️ Heartbeat 타이머 시작 (${ENV.HEARTBEAT_INTERVAL / 1000}초 간격)`);
 
-        // 메인 타이머 (UI 유휴 상태 체크 및 카운트다운용, 1초마다 실행)
         mainTimerRef.current = setInterval(() => {
-            // 모달이 팝업된 경우 (카운트다운 로직)
             if (showIdleModalRef.current) {
                 setModalCountdown(prev => {
                     if (prev <= 1) {
-                        logout(true); // 카운트다운 종료 시 자동 로그아웃
+                        logout(true);
                         return 0;
                     }
                     return prev - 1;
                 });
             }
-            // 모달이 없는 경우 (유휴 시간 체크 로직)
             else {
                 const idleTime = Date.now() - lastActivityTimeRef.current;
                 if (idleTime >= ENV.IDLE_TIMEOUT) {
@@ -160,11 +171,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const handleContinueSession = useCallback(() => {
         console.log('✅ 세션을 연장합니다.');
         setShowIdleModal(false);
-        handleUserActivity(); // 마지막 활동 시간 즉시 갱신
-        // 타이머는 아래 useEffect[user] 로직에 의해 자동으로 재시작되므로 직접 호출할 필요 없음
+        handleUserActivity();
     }, [handleUserActivity]);
 
-    // 로그인 상태(user)가 변경될 때 모든 것을 관리하는 메인 useEffect
     useEffect(() => {
         const activityEvents: (keyof WindowEventMap)[] = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'];
 
@@ -184,7 +193,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, [user, startAllTimers, stopAllTimers, handleUserActivity]);
 
 
-    // --- 4. 인증 API 함수 (기존 로직 복원 및 정리) ---
+    // --- 4. 인증 API 함수 ---
 
     const checkSession = useCallback(async () => {
         try {
@@ -197,11 +206,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } catch (error) {
             setUser(null);
         } finally {
-            setIsLoading(false); // ★★★ 로딩 종료 지점
+            setIsLoading(false);
         }
     }, []);
 
-    // ★★★ 앱이 처음 시작될 때 세션을 체크하는 로직 (무한 로딩 해결) ★★★
     useEffect(() => {
         checkSession();
     }, [checkSession]);
@@ -212,9 +220,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 login_id: loginId,
                 password: password
             });
+            // 중요: 백엔드에서 이제 role과 permissions가 포함된 user 객체를 반환해야 합니다.
             setUser(response.data);
 
-            // ✅ 공지 플래그 설정 (추가 부분)
             const today = new Date().toDateString();
             const hiddenUntil = localStorage.getItem('notice_hidden_until');
 
@@ -224,7 +232,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             console.log('✅ 로그인 성공:', response.data);
         } catch (error: any) {
-            // 에러 처리는 기존과 동일하게 유지
             if (error.response && error.response.status === 412) {
                 throw new Error('INITIAL_PASSWORD_SETUP_REQUIRED');
             }
@@ -232,7 +239,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     }, []);
 
-    // apiClient에 전역 로그아웃 콜백 등록 (기존과 동일)
     useEffect(() => {
         setLogoutCallback(() => {
             logout();
@@ -241,14 +247,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 
     // --- 5. 최종 렌더링 ---
+    const contextValue = {
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        logout,
+        checkSession,
+        hasRole,
+        hasPermission
+    };
+
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout, checkSession }}>
+        <AuthContext.Provider value={contextValue}>
             {children}
             <IdleTimeoutModal
                 isOpen={showIdleModal}
                 remainingSeconds={modalCountdown}
                 onContinue={handleContinueSession}
-                onLogout={() => logout()} // 수동 로그아웃
+                onLogout={() => logout()}
             />
             {showAutoLogoutAlert && <AutoLogoutAlertModal onClose={() => setShowAutoLogoutAlert(false)} />}
         </AuthContext.Provider>

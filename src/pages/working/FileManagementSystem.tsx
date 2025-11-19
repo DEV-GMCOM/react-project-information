@@ -110,9 +110,31 @@ const FileManagementSystem: React.FC = () => {
     // 📂 업로드된 파일 목록 조회
     const loadServerFiles = async () => {
         try {
-            const files = await fileUploadService.getProjectFiles(selectedProjectId);
-            setServerFiles(files);
-            console.log('FMS 파일 목록 조회 성공:', files);
+            const filesFromService = await fileUploadService.getProjectFiles(selectedProjectId);
+            
+            const typeMap: Record<string, number> = {
+                'rfp': 1,
+                'meeting_minutes': 2,
+                'proposal': 3,
+                'contract': 4,
+                'submission': 5,
+                'design': 6,
+                'development': 7,
+                'other': 99
+            };
+
+            const transformedFiles: IServerFile[] = filesFromService.map(file => ({
+                id: file.id,
+                original_file_name: file.original_file_name,
+                file_size: file.file_size,
+                file_type: file.file_type,
+                uploaded_at: file.uploaded_at,
+                is_readonly: file.is_readonly,
+                attachment_type_id: typeMap[file.attachment_type] || 99,
+            }));
+
+            setServerFiles(transformedFiles);
+            console.log('FMS 파일 목록 조회 성공:', transformedFiles);
         } catch (err: any) {
             console.error('파일 목록 조회 실패:', err);
         }

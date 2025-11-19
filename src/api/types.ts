@@ -79,11 +79,16 @@ export interface CompanySearchParams {
     business_type?: string;
 }
 
+export interface Department {
+    id: number;
+    name: string;
+}
+
 export interface Employee {
     id: number;
     employee_id: string;
     name: string;
-    department?: string;
+    department?: Department;
     position?: string;
     email?: string;
     phone?: string;
@@ -99,7 +104,7 @@ export interface Employee {
 export interface EmployeeCreate {
     employee_id: string;
     name: string;
-    department?: string;
+    department_id?: number;
     position?: string;
     email?: string;
     phone?: string;

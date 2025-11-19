@@ -211,7 +211,7 @@ const ContactSearchInput: React.FC<ContactSearchInputProps> = ({ searchTerm, onS
 };
 
 const CompanyProfileForm: React.FC = () => {
-    const { hasFinanceAccess, canEditFinance } = usePermissions();
+    const { hasPermission } = usePermissions();
     const [formData, setFormData] = useState<CompanyProfile>(initialCompanyState);
     const [contactFormData, setContactFormData] = useState<ContactProfile>(initialContactState);
     const [originalFormData, setOriginalFormData] = useState<CompanyProfile>(initialCompanyState);
@@ -1225,7 +1225,7 @@ const CompanyProfileForm: React.FC = () => {
                                 />
                             </td>
                         </tr>
-                        {hasFinanceAccess() && (
+                        {hasPermission('VIEW_FINANCE') && (
                             <tr>
                                 <td className="table-cell table-cell-label">거래은행</td>
                                 <td className="table-cell-input">
@@ -1233,7 +1233,7 @@ const CompanyProfileForm: React.FC = () => {
                                         type="text"
                                         name="bankName"
                                         value={formData.bankName}
-                                        disabled={!canEditFinance()}
+                                        disabled={!hasPermission('EDIT_FINANCE')}
                                         onChange={handleInputChange}
                                         className={clsx('profile-input', {
                                             'input-modified': formData.bankName !== originalFormData.bankName
@@ -1246,7 +1246,7 @@ const CompanyProfileForm: React.FC = () => {
                                         type="text"
                                         name="accountNumber"
                                         value={formData.accountNumber}
-                                        disabled={!canEditFinance()}
+                                        disabled={!hasPermission('EDIT_FINANCE')}
                                         onChange={handleInputChange}
                                         className={clsx('profile-input', {
                                             'input-modified': formData.accountNumber !== originalFormData.accountNumber

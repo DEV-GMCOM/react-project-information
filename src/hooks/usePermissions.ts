@@ -1,64 +1,21 @@
 // src/hooks/usePermissions.ts
 import { useAuth } from '../contexts/AuthContext';
 
+/**
+ * 권한 확인 로직을 간편하게 사용하기 위한 커스텀 훅입니다.
+ * 이 훅은 UI 요소(버튼, 메뉴 등)를 조건부로 렌더링할 때 사용됩니다.
+ * 
+ * @example
+ * const { hasPermission } = usePermissions();
+ * 
+ * return (
+ *   <>
+ *     {hasPermission('EDIT_POST') && <button>수정</button>}
+ *   </>
+ * )
+ */
 export const usePermissions = () => {
-    const { user } = useAuth();
+  const { hasRole, hasPermission } = useAuth();
 
-    const hasFinanceAccess = (): boolean => {
-        if (!user) return false;
-
-        // 1. 역할 기반 체크
-        if (user.role?.can_view_finance) {
-            return true;
-        }
-
-        // 2. 부서 기반 체크 (재무본부 소속)
-        if (user.division && user.division.includes('재무')) {
-            return true;
-        }
-
-        // 3. 직급 기반 체크 (임원급 이상)
-        const executivePositions = ['본부장', '이사', '상무', '전무', '부사장', '사장', '대표이사', 'CEO', 'CFO'];
-        if (user.position && executivePositions.some(pos => user.position?.includes(pos))) {
-            return true;
-        }
-
-        return false;
-    };
-
-    const canEditFinance = (): boolean => {
-        if (!user) return false;
-
-        // 1. 역할 기반 체크
-        if (user.role?.can_edit_finance) {
-            return true;
-        }
-
-        // 2. 재무팀장 이상만 수정 가능
-        if (user.division && user.division.includes('재무')) {
-            const managerPositions = ['팀장', '차장', '부장', '본부장', '이사'];
-            if (user.position && managerPositions.some(pos => user.position?.includes(pos))) {
-                return true;
-            }
-        }
-
-        return false;
-    };
-
-    const canAccessField = (fieldName: string): boolean => {
-        // 재무 관련 필드 체크
-        const financeFields = ['bank_name', 'account_number'];
-        if (financeFields.includes(fieldName)) {
-            return hasFinanceAccess();
-        }
-
-        // 일반 필드는 모두 접근 가능
-        return true;
-    };
-
-    return {
-        hasFinanceAccess,
-        canEditFinance,
-        canAccessField
-    };
+  return { hasRole, hasPermission };
 };

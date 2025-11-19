@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import NoticeModal from '../NoticeModal';
 import HelpModal from '../HelpModal';
 import { HelpProvider, useHelp } from '../../contexts/HelpContext';
+import { usePermissions } from '../../hooks/usePermissions'; // usePermissions 훅 임포트
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -14,6 +15,7 @@ interface LayoutProps {
 interface SubMenuItem {
     path: string;
     name: string;
+    permission?: string; // 하위 메뉴에도 권한 속성 추가
 }
 
 interface MenuItem {
@@ -21,6 +23,7 @@ interface MenuItem {
     name: string;
     icon: string;
     subMenus?: SubMenuItem[];
+    permission?: string; // 메뉴 아이템에 권한 속성 추가
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
@@ -29,7 +32,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout } = useAuth();
-    // Layout 컴포넌트 내부에 상태 추가
+    const { hasPermission } = usePermissions(); // 권한 확인 훅 사용
+
     const [showNoticeModal, setShowNoticeModal] = useState(false);
     const [showHelpModal, setShowHelpModal] = useState(false);
     const [currentHelpContent, setCurrentHelpContent] = useState<{ pageName: string; content: React.ReactNode } | null>(null);
@@ -39,24 +43,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     };
     const headerTitle = import.meta.env.VITE_APP_TITLE || 'GMCOM Information System';
 
-    // ▼▼▼ [추가] 이 useEffect 블록 하나만 추가하면 됩니다. ▼▼▼
     useEffect(() => {
         const allMenuItems = [...mainMenuItems, ...devMenuItems, ...adminMenuItems];
-        // 현재 URL 경로와 일치하는 하위 메뉴를 가진 상위 메뉴를 찾습니다.
         const activeParentMenu = allMenuItems.find(item =>
             item.subMenus?.some(subMenu => location.pathname === subMenu.path)
         );
 
-        // 만약 해당하는 상위 메뉴가 있고, 그 메뉴가 아직 펼쳐져 있지 않다면,
         if (activeParentMenu && !expandedMenus.includes(activeParentMenu.path)) {
-            // expandedMenus 상태에 해당 상위 메뉴의 경로를 추가하여 펼칩니다.
             setExpandedMenus(prev => [...prev, activeParentMenu.path]);
         }
-    }, [location.pathname]); // URL 경로가 변경될 때마다 이 로직이 실행됩니다.
+    }, [location.pathname]);
 
-    // Layout 컴포넌트 내부에 useEffect 추가
     useEffect(() => {
-        // 로그인 직후 공지 자동 표시
         const shouldShowNotice = localStorage.getItem('show_notice_on_login');
         if (shouldShowNotice === 'true') {
             setShowNoticeModal(true);
@@ -64,13 +62,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         }
     }, []);
 
-    // 기본 메뉴 항목들
     const mainMenuItems: MenuItem[] = [
-        // {
-        //     path: '/dashboard',
-        //     name: '대시보드',
-        //     icon: '📊'
-        // },
         {
             path: '/information',
             name: '기본정보',
@@ -80,169 +72,67 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 { path: '/info-management/project', name: '프로젝트 프로파일' }
             ]
         },
-        // {
-        //     path: '/project-evaluation',
-        //     name: '1. 프로젝트 자체평가',
-        //     icon: '✅'
-        // },
-        // {
-        //     path: '/project-profile',
-        //     name: '2. 프로젝트 프로파일', // ProjectProfile -> ProjectInformation 으로 흡수
-        //     icon: '📝'
-        // },
-        {
-            path: '/project-kickoff',
-            name: '프로젝트 착수서',
-            icon: '🚀'
-        },
-        {
-            path: '/pt-checklist',
-            name: 'PT 전 체크',
-            icon: '✅'
-        },
-        {
-            path: '/pt-postmortem',
-            name: 'PT 결과분석',
-            icon: '🔍'
-        },
-        {
-            path: '/project-execution',
-            name: '프로젝트 실행파일링',
-            icon: '📁'
-        },
-        {
-            path: '/project-postmortem',
-            name: '프로젝트 결과분석',
-            icon: '📊'
-        },
-        {
-            path: '/working/meeting-minutes',
-            name: '====== 회의록 =======',
-            icon: '🗒️'
-        },
+        { path: '/project-kickoff', name: '프로젝트 착수서', icon: '🚀' },
+        { path: '/pt-checklist', name: 'PT 전 체크', icon: '✅' },
+        { path: '/pt-postmortem', name: 'PT 결과분석', icon: '🔍' },
+        { path: '/project-execution', name: '프로젝트 실행파일링', icon: '📁' },
+        { path: '/project-postmortem', name: '프로젝트 결과분석', icon: '📊' },
+        { path: '/working/meeting-minutes', name: '자동 회의록', icon: '🗒️' }
     ];
 
-    // 개발 중인 메뉴 항목들
     const devMenuItems: MenuItem[] = [
         {
-            path: '/admin/permissions',
+            path: '/admin/permission',
             name: '권한 관리',
             icon: '🚫️',
-            subMenus: [
-                { path: '/admin/access-control', name: '접근 제어 관리' },
-                { path: '/admin/permissions/policies', name: '정책 관리 (Old)' },
-            ]
+            permission: 'admin:manage-policies', // 이 메뉴를 보기 위한 권한
         },
-        {
-            path: '/working/fms',
-            name: 'GMCOM 저장소',
-            icon: '💾', // 📀
-        },
-        {
-            path: '/working/clock-in-out',
-            name: '출퇴근 체크',
-            icon: '⏱️',
-        },
-        {
-            path: '/working/scheduling',
-            name: '스케쥴링',
-            icon: '📅',
-        },
+        { path: '/hr/employee-management', name: '직원정보 관리', icon: '🧑‍💼' },
+        { path: '/working/fms', name: 'GMCOM 저장소', icon: '💾' },
+        { path: '/working/clock-in-out', name: '출퇴근 체크', icon: '⏱️' },
+        { path: '/working/scheduling', name: '스케쥴링', icon: '📅' },
     ];
 
-    // 관리자 메뉴 항목들
-    const adminMenuItems: MenuItem[] = [
-        {
-            path: '/admin/permissions/policies',
-            name: '권한 관리',
-            icon: '🚫',
-            subMenus: [
-                { path: '/admin/permissions/policies', name: '정책 관리' },     //
-                { path: '/admin/permissions/roles', name: '역할 관리' },        // 직급별, 부서별, 개인별
-                { path: '/admin/permissions/pages', name: '페이지 관리' },       //
-                { path: '/admin/permissions/restrictions', name: '한정 관리' }, // 시간별, 외부접근별
-            ]
-        },
+    const adminMenuItems: MenuItem[] = []; // 현재 사용 안 함
 
-        // {
-        //     path: '/admin/users',
-        //     name: '사용자 관리',
-        //     icon: '👤',
-        //     subMenus: [
-        //         { path: '/admin/users', name: '사용자 목록' },
-        //         { path: '/admin/users/permissions', name: '권한 관리' },
-        //         { path: '/admin/users/roles', name: '역할 관리' }
-        //     ]
-        // },
-        // {
-        //     path: '/company',
-        //     name: '업체 관리',
-        //     icon: '🏢',
-        //     subMenus: [
-        //         { path: '/company', name: '업체 목록' },
-        //         { path: '/company/new', name: '업체 등록' },
-        //         { path: '/company/regist', name: '업체 신규등록' },
-        //         { path: '/company/information', name: '[입력폼 샘플] 프로젝트 정보수집' },
-        //         { path: '/company/profile', name: '[입력폼 샘플] 광고주(담당자) 프로파일' }
-        //     ]
-        // },
-        // {
-        //     path: '/hr',
-        //     name: '인적자원 관리',
-        //     icon: '👥',
-        //     subMenus: [
-        //         { path: '/hr', name: '직원 목록' },
-        //         { path: '/hr/new', name: '직원 등록' }
-        //     ]
-        // },
-        // {
-        //     path: '/project',
-        //     name: '프로젝트 관리',
-        //     icon: '📁',
-        //     subMenus: [
-        //         { path: '/project', name: '프로젝트 목록' },
-        //         { path: '/project/new', name: '프로젝트 등록' },
-        //         { path: '/project/regist', name: '프로젝트 신규등록' },
-        //         { path: '/project/information', name: '[입력폼 샘플] 프로젝트 정보수집' },
-        //         { path: '/project/kickoff-checklist', name: '[입력폼 샘플] 프로젝트 평가 체크리스트' },
-        //         { path: '/project/profile', name: '[입력폼 샘플] 프로젝트 프로파일' },
-        //         { path: '/project/kickoff', name: '[입력폼 샘플] 프로젝트 착수서' },
-        //         { path: '/project/pt-checklist', name: '[입력폼 샘플] PT 준비 체크리스트' },
-        //         { path: '/project/postmortem-pt', name: '[입력폼 샘플] PT 사후분석' },
-        //         { path: '/project/postmortem-project', name: '[입력폼 샘플] 프로젝트 실행 결과 사후분석' }
-        //     ]
-        // },
-        // {
-        //     path: '/admin/system',
-        //     name: '시스템 관리',
-        //     icon: '⚙️',
-        //     subMenus: [
-        //         { path: '/admin/system/settings', name: '시스템 설정' },
-        //         { path: '/admin/system/logs', name: '시스템 로그' },
-        //         { path: '/admin/system/backup', name: '백업 관리' }
-        //     ]
-        // },
-        // {
-        //     path: '/admin/database',
-        //     name: '데이터베이스 관리',
-        //     icon: '🗄️',
-        //     subMenus: [
-        //         { path: '/admin/database/maintenance', name: '데이터베이스 유지보수' },
-        //         { path: '/admin/database/migration', name: '데이터 마이그레이션' },
-        //         { path: '/admin/database/monitoring', name: '성능 모니터링' }
-        //     ]
-        // },
-        // {
-        //     path: '/admin/analytics',
-        //     name: '분석 및 리포트',
-        //     icon: '📈',
-        //     subMenus: [
-        //         { path: '/admin/analytics/usage', name: '사용량 분석' },
-        //         { path: '/admin/analytics/performance', name: '성능 분석' },
-        //         { path: '/admin/analytics/reports', name: '통계 리포트' }
-        //     ]
-        // }
-    ];
+    // 권한에 따라 메뉴 필터링하는 로직
+    const filterMenuItems = (items: MenuItem[]): MenuItem[] => {
+        const MANAGERIAL_POSITIONS = ['팀장', '본부장', '부문장', '부사장'];
+
+        return items.map(item => {
+            // 상위 메뉴 자체에 대한 권한 확인
+            if (item.permission && !hasPermission(item.permission)) {
+                return null;
+            }
+
+            if (!item.subMenus) {
+                return item;
+            }
+
+            const filteredSubMenus = item.subMenus.filter(subItem => {
+                const standardPermission = !subItem.permission || hasPermission(subItem.permission);
+                if (!standardPermission) {
+                    return false;
+                }
+                // '구성원 역할/권한' 메뉴에 대한 특별 규칙
+                if (subItem.path === '/admin/permissions/policies') {
+                    const isSuperAdmin = user?.role?.role_code === 'SUPER_ADMIN';
+                    const isManager = user?.position && MANAGERIAL_POSITIONS.includes(user.position);
+                    return isSuperAdmin || isManager;
+                }
+                return true;
+            });
+
+            if (filteredSubMenus.length === 0) {
+                return null;
+            }
+
+            return { ...item, subMenus: filteredSubMenus };
+        }).filter((item): item is MenuItem => item !== null);
+    };
+
+    const accessibleMainMenus = filterMenuItems(mainMenuItems);
+    const accessibleDevMenus = filterMenuItems(devMenuItems);
 
     const toggleMenu = (path: string) => {
         setExpandedMenus(prev =>
@@ -253,22 +143,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     };
 
     const isActive = (path: string) => {
-        if (path === '/dashboard') {
-            return location.pathname === path;
-        }
+        if (path === '/dashboard') return location.pathname === path;
         return location.pathname.startsWith(path);
     };
 
-    const isSubMenuActive = (parentPath: string, subPath: string) => {
+    const isSubMenuActive = (subPath: string) => {
         return location.pathname === subPath;
     };
 
     const hasActiveSubMenu = (item: MenuItem) => {
-        if (!item.subMenus) return false;
-        return item.subMenus.some(subMenu => location.pathname === subMenu.path);
+        return item.subMenus?.some(subMenu => location.pathname === subMenu.path) ?? false;
     };
 
-    // 로그아웃 처리
     const handleLogout = async () => {
         try {
             await logout();
@@ -278,32 +164,23 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         }
     };
 
-    // 사용자 정보 클릭 시 실행될 핸들러
     const handleUserInfoClick = () => {
         navigate('/profile/change-password');
     };
 
-    // 메뉴 항목 렌더링 함수
     const renderMenuItem = (item: MenuItem) => (
         <li key={item.path} className="nav-item">
             {item.subMenus ? (
-                // 서브메뉴가 있는 경우
                 <>
                     <button
-                        className={`nav-link nav-button ${
-                            hasActiveSubMenu(item) ? 'active' : ''
-                        }`}
+                        className={`nav-link nav-button ${hasActiveSubMenu(item) ? 'active' : ''}`}
                         onClick={() => toggleMenu(item.path)}
                     >
                         <span className="nav-icon">{item.icon}</span>
                         {sidebarOpen && (
                             <>
                                 <span className="nav-text">{item.name}</span>
-                                <span className={`nav-arrow ${
-                                    expandedMenus.includes(item.path) ? 'expanded' : ''
-                                }`}>
-                  ▼
-                </span>
+                                <span className={`nav-arrow ${expandedMenus.includes(item.path) ? 'expanded' : ''}`}>▼</span>
                             </>
                         )}
                     </button>
@@ -313,9 +190,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 <li key={subItem.path} className="sub-nav-item">
                                     <Link
                                         to={subItem.path}
-                                        className={`sub-nav-link ${
-                                            isSubMenuActive(item.path, subItem.path) ? 'active' : ''
-                                        }`}
+                                        className={`sub-nav-link ${isSubMenuActive(subItem.path) ? 'active' : ''}`}
                                     >
                                         <span className="sub-nav-text">{subItem.name}</span>
                                     </Link>
@@ -325,11 +200,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     )}
                 </>
             ) : (
-                // 서브메뉴가 없는 경우
-                <Link
-                    to={item.path}
-                    className={`nav-link ${isActive(item.path) ? 'active' : ''}`}
-                >
+                <Link to={item.path} className={`nav-link ${isActive(item.path) ? 'active' : ''}`}>
                     <span className="nav-icon">{item.icon}</span>
                     {sidebarOpen && <span className="nav-text">{item.name}</span>}
                 </Link>
@@ -341,24 +212,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="layout">
             <header className="header">
                 <div className="header-left">
-                    <button
-                        className="sidebar-toggle"
-                        onClick={() => setSidebarOpen(!sidebarOpen)}
-                    >
-                        ☰
-                    </button>
-                    {/*<h1 className="header-title">GMCOM Information System</h1>*/}
+                    <button className="sidebar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
                     <h1 className="header-title">{headerTitle}</h1>
                 </div>
                 <div className="header-right">
                     {user ? (
                         <>
-                            {/*<span className="user-info">*/}
-                            {/*    {user.emp_name}*/}
-                            {/*    {user.position && ` (${user.position})`}*/}
-                            {/*    {user.team && ` - ${user.team}`}*/}
-                            {/*</span>*/}
-                            {/* user-info 영역에 onClick 핸들러와 스타일링을 위한 className 추가 */}
                             <div className="user-info user-info-clickable" onClick={handleUserInfoClick}>
                                 <span>
                                     {user?.emp_name}
@@ -366,30 +225,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                     {user?.team && ` - ${user.team}`}
                                 </span>
                             </div>
-                            {/* ✅ 공지 버튼 추가 */}
-                            <button
-                                className="notice-btn"
-                                onClick={() => setShowNoticeModal(true)}
-                                title="공지사항"
-                            >
-                                📢 공지
-                            </button>
-
-                            {/* ✅ 도움말 버튼 */}
-                            <button
-                                className="help-btn"
-                                onClick={handleShowHelp}
-                                title="도움말"
-                            >
-                                ❓ 도움말
-                            </button>
-
-                            <button
-                                className="logout-btn"
-                                onClick={handleLogout}
-                            >
-                                로그아웃
-                            </button>
+                            <button className="notice-btn" onClick={() => setShowNoticeModal(true)} title="공지사항">📢 공지</button>
+                            <button className="help-btn" onClick={handleShowHelp} title="도움말">❓ 도움말</button>
+                            <button className="logout-btn" onClick={handleLogout}>로그아웃</button>
                         </>
                     ) : (
                         <span className="user-info">로그인 필요</span>
@@ -400,48 +238,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="main-container">
                 <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
                     <nav className="sidebar-nav">
-                        {/* 메인 메뉴 섹션 */}
                         <div className="nav-section nav-section-main">
                             <ul className="nav-list">
-                                {mainMenuItems.map(renderMenuItem)}
+                                {accessibleMainMenus.map(renderMenuItem)}
                             </ul>
                         </div>
-
-                        {/* 구분선 */}
                         <div className="nav-divider"></div>
-
-                        {/* 관리자 메뉴 섹션 */}
                         <div className="nav-section nav-section-admin">
-                            {sidebarOpen && (
-                                <div className="section-header">
-                                    <div className="section-title">개발 중인 항목</div>
-                                </div>
-                            )}
+                            {sidebarOpen && <div className="section-header"><div className="section-title">개발 중인 항목</div></div>}
                             <ul className="nav-list">
-                                {devMenuItems.map(renderMenuItem)}
+                                {accessibleDevMenus.map(renderMenuItem)}
                             </ul>
                         </div>
-
-                        {/* 구분선 */}
-                        <div className="nav-divider"></div>
-
-                        {/*/!* 관리자 메뉴 섹션 *!/*/}
-                        {/*<div className="nav-section nav-section-admin">*/}
-                        {/*    {sidebarOpen && (*/}
-                        {/*        <div className="section-header">*/}
-                        {/*            <div className="section-title">관리자 메뉴</div>*/}
-                        {/*        </div>*/}
-                        {/*    )}*/}
-                        {/*    <ul className="nav-list">*/}
-                        {/*        {adminMenuItems.map(renderMenuItem)}*/}
-                        {/*    </ul>*/}
-                        {/*</div>*/}
                     </nav>
                 </aside>
 
-                {/*<main className="content">*/}
-                {/*    {children}*/}
-                {/*</main>*/}
                 <main className="content">
                     <HelpProvider onShowHelp={handleShowHelp}>
                         <HelpContentSetter setContent={setCurrentHelpContent} />
@@ -460,17 +271,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 onClose={() => setShowNoticeModal(false)}
             />
         </div>
-
     );
 };
 
 const HelpContentSetter: React.FC<{ setContent: (content: any) => void }> = ({ setContent }) => {
     const { helpContent } = useHelp();
-
     React.useEffect(() => {
         setContent(helpContent);
     }, [helpContent, setContent]);
-
     return null;
 };
 

@@ -37,7 +37,7 @@ const EmployeeList: React.FC = () => {
         }
     };
 
-    const departments = [...new Set(employees.map(e => e.department).filter(Boolean))];
+    const departments = [...new Set(employees.map(e => e.department?.name).filter(Boolean))];
 
     const getStatusBadge = (status: string) => {
         const statusColors = {
@@ -123,7 +123,7 @@ const EmployeeList: React.FC = () => {
                                 </div>
                                 <div className="employee-details">
                                     {employee.department && (
-                                        <p><strong>부서:</strong> {employee.department}</p>
+                                        <p><strong>부서:</strong> {employee.department.name}</p>
                                     )}
                                     {employee.position && (
                                         <p><strong>직책:</strong> {employee.position}</p>

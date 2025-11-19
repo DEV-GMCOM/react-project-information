@@ -1,6 +1,6 @@
 // src/api/services/employeeService.ts
 import { apiClient } from '../utils/apiClient';
-import { Employee, EmployeeCreate } from '../types';
+import { Employee, EmployeeCreate, Department } from '../types';
 
 export class EmployeeService {
     async getEmployees(params?: {
@@ -29,9 +29,23 @@ export class EmployeeService {
         return response.data;
     }
 
-    async getDepartments(): Promise<{ departments: Array<{ name: string; employee_count: number }> }> {
-        const response = await apiClient.get('/hr/departments');
+    async getAllDepartments(): Promise<Department[]> {
+        const response = await apiClient.get('/department/');
         return response.data;
+    }
+
+    async createDepartment(data: { name: string }): Promise<Department> {
+        const response = await apiClient.post('/department/', data);
+        return response.data;
+    }
+
+    async updateDepartment(id: number, data: { name: string }): Promise<Department> {
+        const response = await apiClient.put(`/department/${id}`, data);
+        return response.data;
+    }
+
+    async deleteDepartment(id: number): Promise<void> {
+        await apiClient.delete(`/department/${id}`);
     }
 }
 

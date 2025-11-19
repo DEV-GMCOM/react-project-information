@@ -37,7 +37,10 @@ export const apiService = {
     getEmployee: employeeService.getEmployee.bind(employeeService),
     createEmployee: employeeService.createEmployee.bind(employeeService),
     updateEmployee: employeeService.updateEmployee.bind(employeeService),
-    getDepartments: employeeService.getDepartments.bind(employeeService),
+    getAllDepartments: employeeService.getAllDepartments.bind(employeeService),
+    createDepartment: employeeService.createDepartment.bind(employeeService),
+    updateDepartment: employeeService.updateDepartment.bind(employeeService),
+    deleteDepartment: employeeService.deleteDepartment.bind(employeeService),
 
     // Project
     getProjects: projectService.getProjects.bind(projectService),

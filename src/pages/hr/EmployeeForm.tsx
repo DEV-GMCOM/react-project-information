@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiService } from '../../api';  // ✅ 수정
-import type { EmployeeCreate } from '../../api/types';  // ✅ 추가
+import type { EmployeeCreate, Department } from '../../api/types';  // ✅ 추가
 import '../../styles/EmployeeForm.css';
 
 const EmployeeForm: React.FC = () => {
@@ -10,10 +10,10 @@ const EmployeeForm: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const isEdit = Boolean(id);
 
-    const [formData, setFormData] = useState<EmployeeCreate>({
+    const [formData, setFormData] = useState<Partial<EmployeeCreate>>({
         employee_id: '',
         name: '',
-        department: '',
+        department_id: undefined,
         position: '',
         email: '',
         phone: '',
@@ -22,16 +22,29 @@ const EmployeeForm: React.FC = () => {
         address: '',
         status: 'active'
     });
-
+    const [departments, setDepartments] = useState<Department[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string>('');
     const [validationErrors, setValidationErrors] = useState<Partial<EmployeeCreate>>({});
 
     useEffect(() => {
+        loadInitialData();
+    }, []);
+
+    useEffect(() => {
         if (isEdit && id) {
             loadEmployee();
         }
-    }, [isEdit, id]);
+    }, [isEdit, id, departments]);
+
+    const loadInitialData = async () => {
+        try {
+            const depts = await apiService.getAllDepartments();
+            setDepartments(depts);
+        } catch (err) {
+            console.error("Failed to load departments", err);
+        }
+    };
 
     const loadEmployee = async (): Promise<void> => {
         try {
@@ -42,7 +55,7 @@ const EmployeeForm: React.FC = () => {
             setFormData({
                 employee_id: employee.employee_id,
                 name: employee.name,
-                department: employee.department || '',
+                department_id: employee.department?.id,
                 position: employee.position || '',
                 email: employee.email || '',
                 phone: employee.phone || '',
@@ -63,11 +76,11 @@ const EmployeeForm: React.FC = () => {
         const errors: Partial<EmployeeCreate> = {};
 
         // 필수 필드 검증
-        if (!formData.employee_id.trim()) {
+        if (!formData.employee_id?.trim()) {
             errors.employee_id = '사원번호는 필수 입력 항목입니다.';
         }
 
-        if (!formData.name.trim()) {
+        if (!formData.name?.trim()) {
             errors.name = '이름은 필수 입력 항목입니다.';
         }
 
@@ -132,16 +145,16 @@ const EmployeeForm: React.FC = () => {
 
             // 빈 문자열을 undefined로 변환하여 깔끔한 데이터 생성
             const submitData: EmployeeCreate = {
-                employee_id: formData.employee_id.trim(),
-                name: formData.name.trim(),
-                department: formData.department?.trim() || undefined,
+                employee_id: formData.employee_id!.trim(),
+                name: formData.name!.trim(),
+                department_id: formData.department_id,
                 position: formData.position?.trim() || undefined,
                 email: formData.email?.trim() || undefined,
                 phone: formData.phone?.trim() || undefined,
                 hire_date: formData.hire_date || undefined,
                 birth_date: formData.birth_date || undefined,
                 address: formData.address?.trim() || undefined,
-                status: formData.status
+                status: formData.status!
             };
 
             if (isEdit && id) {
@@ -169,7 +182,7 @@ const EmployeeForm: React.FC = () => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: value
+            [name]: name === 'department_id' ? (value ? Number(value) : undefined) : value
         }));
 
         // 입력 중 해당 필드의 에러 메시지 제거
@@ -237,7 +250,7 @@ const EmployeeForm: React.FC = () => {
                 setFormData({
                     employee_id: '',
                     name: '',
-                    department: '',
+                    department_id: undefined,
                     position: '',
                     email: '',
                     phone: '',
@@ -294,6 +307,7 @@ const EmployeeForm: React.FC = () => {
 
     const age = calculateAge();
     const workingYears = calculateWorkingYears();
+    const currentDepartmentName = departments.find(d => d.id === formData.department_id)?.name;
 
     return (
         <div className="employee-form">
@@ -333,7 +347,7 @@ const EmployeeForm: React.FC = () => {
                                 type="text"
                                 id="employee_id"
                                 name="employee_id"
-                                value={formData.employee_id}
+                                value={formData.employee_id || ''}
                                 onChange={handleChange}
                                 required
                                 disabled={loading}
@@ -357,7 +371,7 @@ const EmployeeForm: React.FC = () => {
                                 type="text"
                                 id="name"
                                 name="name"
-                                value={formData.name}
+                                value={formData.name || ''}
                                 onChange={handleChange}
                                 required
                                 disabled={loading}
@@ -373,17 +387,19 @@ const EmployeeForm: React.FC = () => {
 
                     <div className="form-row">
                         <div className="form-group">
-                            <label htmlFor="department">부서</label>
-                            <input
-                                type="text"
-                                id="department"
-                                name="department"
-                                value={formData.department || ''}
+                            <label htmlFor="department_id">부서</label>
+                            <select
+                                id="department_id"
+                                name="department_id"
+                                value={formData.department_id || ''}
                                 onChange={handleChange}
                                 disabled={loading}
-                                placeholder="개발팀, 영업팀, 마케팅팀 등"
-                                maxLength={100}
-                            />
+                            >
+                                <option value="">부서 선택</option>
+                                {departments.map(dept => (
+                                    <option key={dept.id} value={dept.id}>{dept.name}</option>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="form-group">
@@ -551,10 +567,10 @@ const EmployeeForm: React.FC = () => {
                                         <span className="value">{workingYears}년차</span>
                                     </div>
                                 )}
-                                {formData.department && (
+                                {currentDepartmentName && (
                                     <div className="summary-item">
                                         <span className="label">소속 부서:</span>
-                                        <span className="value">{formData.department}</span>
+                                        <span className="value">{currentDepartmentName}</span>
                                     </div>
                                 )}
                                 {formData.position && (
@@ -591,7 +607,7 @@ const EmployeeForm: React.FC = () => {
                     <button
                         type="submit"
                         className="btn btn-primary"
-                        disabled={loading || !formData.employee_id.trim() || !formData.name.trim()}
+                        disabled={loading || !formData.employee_id?.trim() || !formData.name?.trim()}
                     >
                         {loading ? (
                             <>

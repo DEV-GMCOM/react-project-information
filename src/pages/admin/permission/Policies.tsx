@@ -1,19 +1,19 @@
 // src/admin/permission/Policies.tsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { employeeService } from '../../../api/services/employeeService';
 import { roleService } from '../../../api/services/roleService';
-import { Employee, Role, Permission } from '../../../api/types'; // Employee, Role, Permission 타입 임포트
-import '../../../styles/Policies.css'; // 기존 스타일
+import { Employee, Role } from '../../../api/types';
+import { useAuth } from '../../../contexts/AuthContext';
+import '../../../styles/Policies.css';
 
-// 권한 편집 모달 컴포넌트
 interface PermissionModalProps {
     isOpen: boolean;
     onClose: () => void;
     employee: Employee | null;
     allRoles: Role[];
     onSave: (employeeId: number, newRoleId: number) => void;
-    currentRole?: Role; // 현재 할당된 역할
+    currentRole?: Role;
 }
 
 const PermissionModal: React.FC<PermissionModalProps> = ({
@@ -40,12 +40,11 @@ const PermissionModal: React.FC<PermissionModalProps> = ({
         }
     }, [selectedRoleId, allRoles]);
 
-
     if (!isOpen || !employee) return null;
 
     const handleSave = () => {
         if (selectedRoleId !== undefined) {
-            onSave(employee.emp_id, selectedRoleId);
+            onSave(employee.id, selectedRoleId);
         }
         onClose();
     };
@@ -82,10 +81,8 @@ const PermissionModal: React.FC<PermissionModalProps> = ({
                             <h4>선택된 역할 권한: {displayRole.role_name}</h4>
                             {displayRole.permissions && displayRole.permissions.length > 0 ? (
                                 <ul className="permission-list">
-                                    {/* 직접적인 권한 플래그 표시 */}
                                     <li><strong>재무 정보 조회:</strong> {displayRole.can_view_finance ? '허용' : '불가'}</li>
                                     <li><strong>재무 정보 편집:</strong> {displayRole.can_edit_finance ? '허용' : '불가'}</li>
-                                    {/* 상세 권한 목록 표시 */}
                                     {displayRole.permissions.map(perm => (
                                         <li key={perm.permission_id}>
                                             <strong>{perm.permission_name}</strong> ({perm.resource_type} - {perm.action_type})
@@ -108,17 +105,18 @@ const PermissionModal: React.FC<PermissionModalProps> = ({
     );
 };
 
-
 const Policies: React.FC = () => {
+    const { user: currentUser } = useAuth();
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [allRoles, setAllRoles] = useState<Role[]>([]);
     const [showPermissionModal, setShowPermissionModal] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
     const [selectedEmployeeRole, setSelectedEmployeeRole] = useState<Role | undefined>(undefined);
 
+    const MANAGERIAL_POSITIONS = ['팀장', '본부장', '부문장', '부사장'];
+
     const fetchEmployees = useCallback(async () => {
         try {
-            // 백엔드에서 역할 정보를 포함하여 직원 목록을 가져옵니다.
             const fetchedEmployees = await employeeService.getEmployees();
             setEmployees(fetchedEmployees);
         } catch (error) {
@@ -136,46 +134,88 @@ const Policies: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        fetchEmployees();
-        fetchAllRoles();
-    }, [fetchEmployees, fetchAllRoles]);
+        const isCurrentUserSuperAdmin = currentUser?.role?.role_code === 'SUPER_ADMIN';
+        const isCurrentUserManager = currentUser?.position && MANAGERIAL_POSITIONS.includes(currentUser.position);
+
+        if (isCurrentUserSuperAdmin || isCurrentUserManager) {
+            fetchEmployees();
+            fetchAllRoles();
+        }
+    }, [fetchEmployees, fetchAllRoles, currentUser]);
 
     const handleEditPermissions = (employee: Employee) => {
         setSelectedEmployee(employee);
-        // getEmployees에서 이미 역할 정보를 가져왔으므로, 추가 API 호출이 필요 없습니다.
         setSelectedEmployeeRole(employee.role);
         setShowPermissionModal(true);
     };
 
     const handleSavePermissions = async (employeeId: number, newRoleId: number) => {
         try {
-            await roleService.updateEmployeeRole(employeeId, newRoleId); // roleId 직접 전달
+            await roleService.updateEmployeeRole(employeeId, newRoleId);
             alert("역할이 성공적으로 업데이트되었습니다.");
-            fetchEmployees(); // 목록 새로고침
+            fetchEmployees();
         } catch (error) {
             console.error("역할 업데이트 중 오류 발생:", error);
             alert("역할 업데이트에 실패했습니다.");
         }
     };
 
+    const canEditEmployee = useCallback((targetEmployee: Employee): boolean => {
+        if (!currentUser || !targetEmployee) return false;
+        if (currentUser.emp_id === targetEmployee.id) return false; // 본인 수정 불가
+
+        const isCurrentUserSuperAdmin = currentUser.role?.role_code === 'SUPER_ADMIN';
+        if (isCurrentUserSuperAdmin) {
+            return true; // 슈퍼 관리자는 본인 제외 모든 직원 수정 가능
+        }
+
+        // Division head check: Employee type does not have division info. This check cannot be performed.
+        // TODO: Add division to Employee type in backend and frontend to enable this logic.
+        // if (currentUser.position && ['본부장', '부문장', '부사장'].includes(currentUser.position)) {
+        //     return currentUser.division === targetEmployee.division;
+        // }
+
+        if (currentUser.position === '팀장') {
+            return currentUser.team === targetEmployee.department;
+        }
+
+        return false;
+    }, [currentUser]);
+
+    const visibleEmployees = useMemo(() => {
+        return employees.filter(canEditEmployee);
+    }, [employees, canEditEmployee]);
+
+    const isCurrentUserSuperAdmin = currentUser?.role?.role_code === 'SUPER_ADMIN';
+    const isCurrentUserManager = currentUser?.position && MANAGERIAL_POSITIONS.includes(currentUser.position);
+    const isCurrentUserAllowed = isCurrentUserSuperAdmin || isCurrentUserManager;
+
+    if (!isCurrentUserAllowed) {
+        return (
+            <div className="policies-container" style={{ padding: '2rem' }}>
+                <h1>접근 권한이 없습니다.</h1>
+                <p>이 페이지는 관리자 직책 또는 슈퍼 관리자만 접근할 수 있습니다.</p>
+            </div>
+        );
+    }
+
     return (
         <div className="policies-container">
             <div className="policies-header">
                 <div>
-                    <h1 className="policies-title">권한 관리</h1>
+                    <h1 className="policies-title">구성원 역할/권한 설정</h1>
                 </div>
                 <div className="policies-logo">GMCOM</div>
             </div>
 
             <div className="policies-main">
                 <div className="policies-title-section">
-                    <h2 className="policies-subtitle">직원 역할 및 권한 설정</h2>
+                    <h2 className="policies-subtitle">직원별 역할/권한</h2>
                 </div>
 
                 <div className="policies-section">
                     <h3 className="section-header">■ 직원 목록</h3>
                     <div className="table-action-section">
-                        {/* TODO: 검색/필터링 UI 추가 */}
                         <table className="policies-table">
                             <thead>
                                 <tr>
@@ -189,13 +229,13 @@ const Policies: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {employees.length === 0 ? (
+                                {visibleEmployees.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} style={{ textAlign: 'center' }}>직원 정보가 없습니다.</td>
+                                        <td colSpan={7} style={{ textAlign: 'center' }}>관리할 수 있는 직원 정보가 없습니다.</td>
                                     </tr>
                                 ) : (
-                                    employees.map(emp => (
-                                        <tr key={emp.emp_id}>
+                                    visibleEmployees.map(emp => (
+                                        <tr key={emp.id}>
                                             <td>{emp.employee_id}</td>
                                             <td>{emp.name}</td>
                                             <td>{emp.department || 'N/A'}</td>

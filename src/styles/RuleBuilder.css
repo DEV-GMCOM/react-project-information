@@ -1,0 +1,41 @@
+.rule-builder {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: #f9fafb;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.rule-select,
+.rule-input {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: #ffffff;
+}
+
+.rule-select {
+  flex: 2;
+}
+
+.rule-input {
+  flex: 3;
+}
+
+.rule-builder .remove-rule-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  margin-left: auto;
+  transition: color 0.2s;
+}
+
+.rule-builder .remove-rule-btn:hover {
+  color: #ef4444;
+}
