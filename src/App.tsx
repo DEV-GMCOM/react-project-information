@@ -42,6 +42,8 @@ import PolicyDetail from "./pages/admin/permission/PolicyDetail.tsx";
 import RbacBuilder from "./pages/admin/permission/RbacBuilder.tsx";
 import AbacBuilder from "./pages/admin/permission/AbacBuilder.tsx";
 import SalesSchedule from "./pages/sales/Schedule.tsx";
+import CalendarStatus from "./pages/sales/CalendarStatus.tsx";
+import NotificationStatus from "./pages/sales/NotificationStatus.tsx";
 import ClockInOut from "./pages/working/ClockInOut.tsx";
 import Scheduling from "./pages/working/Scheduling.tsx";
 
@@ -98,7 +100,10 @@ function App() {
                 <Route path="/hr/employee-management" element={<ProtectedRoute><Layout><EmployeeManagement /></Layout></ProtectedRoute>} />
 
                 {/* Sales */}
-                <Route path="/sales/schedule" element={<ProtectedRoute><Layout><SalesSchedule /></Layout></ProtectedRoute>} />
+                <Route path="/sales/schedule" element={<ProtectedRoute><Layout><SalesSchedule /></Layout></ProtectedRoute>}>
+                    <Route index element={<CalendarStatus />} />
+                    <Route path="notifications" element={<NotificationStatus />} />
+                </Route>
 
                 {/* Working */}
                 <Route path="/working/meeting-minutes" element={<ProtectedRoute><Layout><MeetingMinutes /></Layout></ProtectedRoute>} />
