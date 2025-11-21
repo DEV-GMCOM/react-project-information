@@ -39,6 +39,7 @@ import ProjectBasicInfoTest from './pages/project/ProjectBasicInforTest'; // PT 
 import MeetingMinutes from './pages/working/MeetingMinutes';
 import ProjectExecution from './pages/project/ProjectExecution';
 import FileManagementSystem from './pages/working/FileManagementSystem';
+import CuratorScheduling from './pages/working/CuratorScheduling';
 import Policies from "./pages/admin/permission/Policies.tsx";
 
 
@@ -444,6 +445,17 @@ function App() {
                         <ProtectedRoute>
                             <Layout>
                                 <FileManagementSystem />
+                            </Layout>
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/working/curator-scheduling"
+                    element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <CuratorScheduling />
                             </Layout>
                         </ProtectedRoute>
                     }

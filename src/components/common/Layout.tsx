@@ -150,6 +150,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             name: '스케쥴링',
             icon: '📅',
         },
+        {
+            path: '/working/curator-scheduling',
+            name: '큐레이터스케쥴링',
+            icon: '🎨',
+        },
     ];
 
     // 관리자 메뉴 항목들

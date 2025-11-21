@@ -1,0 +1,539 @@
+/* CuratorScheduling.css - ProjectKickoff 스타일과 통일 */
+
+/* 컨테이너 */
+.curator-scheduling {
+    font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    min-height: 100vh;
+}
+
+/* 페이지 헤더 */
+.curator-scheduling .page-header {
+    background-color: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.curator-scheduling .page-header h1 {
+    margin: 0 0 8px 0;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.curator-scheduling .page-header p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+/* 메인 콘텐츠 */
+.curator-scheduling .schedule-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow-x: auto;
+}
+
+/* 시간표 테이블 */
+.curator-scheduling .timetable {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #333;
+    table-layout: fixed;
+}
+
+.curator-scheduling .timetable th,
+.curator-scheduling .timetable td {
+    border: 1px solid #ddd;
+    padding: 0;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* 테이블 헤더 */
+.curator-scheduling .timetable th {
+    background-color: #333;
+    color: #fff;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #333;
+}
+
+.curator-scheduling .time-column {
+    width: 80px;
+}
+
+.curator-scheduling .day-column {
+    width: calc((100% - 80px) / 5);
+}
+
+/* 시간 셀 */
+.curator-scheduling .time-cell {
+    background-color: #f8f9fa;
+    font-weight: 500;
+    color: #333;
+    padding: 8px 12px;
+    font-size: 13px;
+    border: 1px solid #ddd;
+}
+
+/* 스케줄 셀 */
+.curator-scheduling .schedule-cell {
+    height: 60px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    position: relative;
+    padding: 4px;
+}
+
+.curator-scheduling .schedule-cell:hover {
+    background-color: #e3f2fd;
+}
+
+.curator-scheduling .schedule-cell.has-schedule {
+    background-color: #e8f5e9;
+}
+
+.curator-scheduling .schedule-cell.has-schedule:hover {
+    background-color: #c8e6c9;
+}
+
+/* 스케줄 아이템 */
+.curator-scheduling .schedule-item {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 4px;
+}
+
+.curator-scheduling .schedule-title {
+    font-weight: 600;
+    font-size: 12px;
+    color: #2e7d32;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.curator-scheduling .schedule-curator {
+    font-size: 11px;
+    color: #666;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 빈 슬롯 */
+.curator-scheduling .empty-slot {
+    color: #ccc;
+    font-size: 20px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.curator-scheduling .schedule-cell:hover .empty-slot {
+    opacity: 1;
+}
+
+/* 로딩 스피너 */
+.curator-scheduling .loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+.curator-scheduling .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* 에러 메시지 */
+.curator-scheduling .error-message {
+    text-align: center;
+    padding: 40px;
+    color: #dc3545;
+}
+
+.curator-scheduling .error-message button {
+    margin-top: 10px;
+    padding: 10px 30px;
+    font-size: 14px;
+    font-weight: bold;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.curator-scheduling .error-message button:hover {
+    background-color: #0056b3;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .curator-scheduling {
+        padding: 10px;
+    }
+
+    .curator-scheduling .page-header {
+        padding: 15px;
+    }
+
+    .curator-scheduling .page-header h1 {
+        font-size: 20px;
+    }
+
+    .curator-scheduling .timetable {
+        font-size: 12px;
+    }
+
+    .curator-scheduling .timetable th {
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+
+    .curator-scheduling .time-cell {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+
+    .curator-scheduling .schedule-cell {
+        height: 50px;
+    }
+
+    .curator-scheduling .schedule-title {
+        font-size: 10px;
+    }
+
+    .curator-scheduling .schedule-curator {
+        font-size: 9px;
+    }
+}
+
+/* 컨트롤 패널 */
+.curator-scheduling .control-panel {
+    background-color: #fff;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.curator-scheduling .algorithm-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.curator-scheduling .algorithm-selector label {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.curator-scheduling .algorithm-selector select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.curator-scheduling .btn-assign-all {
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.curator-scheduling .btn-assign-all:hover {
+    background-color: #0056b3;
+}
+
+.curator-scheduling .btn-optimize {
+    padding: 8px 16px;
+    background-color: #6f42c1;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.curator-scheduling .btn-optimize:hover {
+    background-color: #5a32a3;
+}
+
+.curator-scheduling .btn-optimize:disabled,
+.curator-scheduling .btn-assign-all:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* 담당자 목록 */
+.curator-scheduling .curator-list {
+    background-color: #fff;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.curator-scheduling .curator-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.curator-scheduling .curator-list h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.curator-scheduling .btn-add-curator {
+    padding: 6px 12px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.curator-scheduling .btn-add-curator:hover {
+    background-color: #218838;
+}
+
+.curator-scheduling .curator-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.curator-scheduling .curator-item {
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.curator-scheduling .curator-name {
+    font-weight: 500;
+}
+
+.curator-scheduling .curator-count {
+    color: #666;
+}
+
+.curator-scheduling .btn-delete-curator {
+    margin-left: auto;
+    padding: 2px 6px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.curator-scheduling .btn-delete-curator:hover {
+    background-color: #c82333;
+}
+
+.curator-scheduling .btn-delete-curator:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.curator-scheduling .curator-name-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    margin-top: 8px;
+}
+
+.curator-scheduling .modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.curator-scheduling .modal-buttons button {
+    flex: 1;
+}
+
+/* 모달 */
+.curator-scheduling .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.curator-scheduling .modal-content {
+    background-color: #fff;
+    padding: 24px;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.curator-scheduling .modal-content h3 {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+}
+
+.curator-scheduling .modal-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.curator-scheduling .modal-section:last-of-type {
+    border-bottom: none;
+}
+
+.curator-scheduling .modal-section h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.curator-scheduling .modal-section p {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+}
+
+.curator-scheduling .btn-remove {
+    padding: 6px 12px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.curator-scheduling .btn-remove:hover {
+    background-color: #c82333;
+}
+
+.curator-scheduling .btn-auto-assign {
+    padding: 8px 16px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.curator-scheduling .btn-auto-assign:hover {
+    background-color: #218838;
+}
+
+.curator-scheduling .curator-select-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.curator-scheduling .btn-curator-select {
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.curator-scheduling .btn-curator-select:hover {
+    background-color: #e9ecef;
+}
+
+.curator-scheduling .btn-close {
+    width: 100%;
+    padding: 10px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.curator-scheduling .btn-close:hover {
+    background-color: #5a6268;
+}
+
+/* 요일 컬럼 7일로 수정 */
+.curator-scheduling .day-column {
+    width: calc((100% - 80px) / 7);
+}
+
+/* 인쇄 */
+@media print {
+    .curator-scheduling {
+        background-color: #fff;
+        padding: 0;
+        margin: 0;
+        max-width: none;
+    }
+
+    .curator-scheduling .page-header,
+    .curator-scheduling .schedule-content {
+        box-shadow: none;
+        border-radius: 0;
+    }
+
+    .curator-scheduling .timetable {
+        page-break-inside: avoid;
+    }
+}
