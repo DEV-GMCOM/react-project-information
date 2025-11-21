@@ -55,13 +55,8 @@ export class AuthService {
         return response.data;
     }
 
-    async setInitialPassword(data: { login_id: string; birth_date: string; new_password: string }): Promise<{ message: string }> {
-        const response = await apiClient.post('/auth/set-initial-password', data);
-        return response.data;
-    }
-
-    async resetPassword(data: { login_id: string; birth_date: string; new_password: string }): Promise<{ message: string }> {
-        const response = await apiClient.post('/auth/reset-password', data);
+    async requestPasswordResetWithBirthDate(data: { login_id: string; birth_date: string }): Promise<{ message: string }> {
+        const response = await apiClient.post('/auth/request-password-reset', data);
         return response.data;
     }
 

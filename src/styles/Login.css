@@ -38,16 +38,18 @@
     font-size: 0.9rem;
 }
 
-.form-group input {
+.login-input {
     width: 100%;
     padding: 0.75rem;
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 1rem;
+    box-sizing: border-box;
+    display: block;
     transition: border-color 0.3s;
 }
 
-.form-group input:focus {
+.login-input:focus {
     outline: none;
     border-color: #667eea;
 }
