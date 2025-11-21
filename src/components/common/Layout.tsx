@@ -37,6 +37,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const [showNoticeModal, setShowNoticeModal] = useState(false);
     const [showHelpModal, setShowHelpModal] = useState(false);
     const [currentHelpContent, setCurrentHelpContent] = useState<{ pageName: string; content: React.ReactNode } | null>(null);
+    const hideRestrictedUi = import.meta.env.VITE_HIDE_RESTRICTED_UI === 'true'; // prod-only safety flag
 
     const handleShowHelp = () => {
         setShowHelpModal(true);
@@ -62,7 +63,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         }
     }, []);
 
-    const mainMenuItems: MenuItem[] = [
+    const baseMainMenuItems: MenuItem[] = [
         {
             path: '/information',
             name: '기본정보',
@@ -79,6 +80,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { path: '/project-postmortem', name: '프로젝트 결과분석', icon: '📊' },
         { path: '/working/meeting-minutes', name: '자동 회의록', icon: '🗒️' }
     ];
+    const mainMenuItems = hideRestrictedUi
+        ? baseMainMenuItems.filter(item => item.path !== '/working/meeting-minutes') // block experimental pages in prod
+        : baseMainMenuItems;
 
     const devMenuItems: MenuItem[] = [
         {
@@ -226,8 +230,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                     {user?.team && ` - ${user.team}`}
                                 </span>
                             </div>
-                            <button className="notice-btn" onClick={() => setShowNoticeModal(true)} title="공지사항">📢 공지</button>
-                            <button className="help-btn" onClick={handleShowHelp} title="도움말">❓ 도움말</button>
+                            {!hideRestrictedUi && (
+                                <>
+                                    <button className="notice-btn" onClick={() => setShowNoticeModal(true)} title="공지사항">📢 공지</button>
+                                    <button className="help-btn" onClick={handleShowHelp} title="도움말">❓ 도움말</button>
+                                </>
+                            )}
                             <button className="logout-btn" onClick={handleLogout}>로그아웃</button>
                         </>
                     ) : (
@@ -244,7 +252,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 {accessibleMainMenus.map(renderMenuItem)}
                             </ul>
                         </div>
-                        {!import.meta.env.PROD && (
+                        {!hideRestrictedUi && (
                             <>
                                 <div className="nav-divider"></div>
                                 <div className="nav-section nav-section-admin">
