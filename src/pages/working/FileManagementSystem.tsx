@@ -75,9 +75,10 @@ const FileManagementSystem: React.FC = () => {
     const [cloudFiles, setCloudFiles] = useState<CloudFile[]>([]);
     const [excelMetadata, setExcelMetadata] = useState<ExcelMetadata[]>([]);
     const [comparisonResults, setComparisonResults] = useState<ComparisonResult[]>([]);
+    const [savedResults, setSavedResults] = useState<any[]>([]);  // DB에 저장된 매칭 결과
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
-    const [selectedEngine, setSelectedEngine] = useState<string>('chatgpt'); // LLM 엔진 선택
+    const [selectedEngine, setSelectedEngine] = useState<string>('claude'); // LLM 엔진 선택
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // ✅ 파일 업로드 관련 상태
@@ -105,7 +106,19 @@ const FileManagementSystem: React.FC = () => {
         loadDemoData();
         loadCategories();
         loadServerFiles(); // 업로드된 파일 목록 조회
+        loadMatchingResults(); // DB 저장된 매칭 결과 조회
     }, []);
+
+    // 📊 DB 저장된 매칭 결과 조회
+    const loadMatchingResults = async () => {
+        try {
+            const response = await apiClient.get(`/fms/matching-results/${selectedProjectId}`);
+            console.log('📌 기존 매칭 결과 로드:', response.data);
+            setSavedResults(response.data.results || []);
+        } catch (err: any) {
+            console.error('매칭 결과 로드 실패:', err);
+        }
+    };
 
     // 📂 업로드된 파일 목록 조회
     const loadServerFiles = async () => {
@@ -123,7 +136,7 @@ const FileManagementSystem: React.FC = () => {
         setPreviewLoading(true);
         setSelectedFileForPreview(fileId);
         try {
-            const response = await apiClient.get(`/projects/${selectedProjectId}/files/${fileId}/preview`);
+            const response = await apiClient.get(`/fms/projects/${selectedProjectId}/files/${fileId}/preview`);
             setPreviewData(response.data);
             console.log('파일 미리보기 성공:', response.data);
         } catch (err: any) {
@@ -222,6 +235,7 @@ const FileManagementSystem: React.FC = () => {
             formData.append('use_demo', 'false');
             formData.append('engine', selectedEngine);
             formData.append('excel_file', file);
+            formData.append('project_id', selectedProjectId.toString());
 
             const response = await apiClient.post('/fms/compare-with-llm', formData, {
                 headers: {
@@ -232,7 +246,7 @@ const FileManagementSystem: React.FC = () => {
             console.log('✅ LLM 비교 응답 (엑셀 업로드):', response.data);
 
             // 응답 데이터 처리
-            const { results, matchedCount, notFoundCount, totalMetadataRecords } = response.data;
+            const { results, matchedCount, notFoundCount, totalMetadataRecords, savedResults: dbSavedResults } = response.data;
 
             // 클라우드 파일 목록 추출
             const cloudFileList = results.map((r: ComparisonResult) => r.cloudFile);
@@ -246,6 +260,11 @@ const FileManagementSystem: React.FC = () => {
 
             // 비교 결과 설정
             setComparisonResults(results);
+
+            // DB에 저장된 매칭 결과 설정
+            console.log('📌 savedResults 응답:', dbSavedResults);
+            setSavedResults(dbSavedResults || []);
+            console.log(`✅ DB에 저장된 매칭 결과: ${dbSavedResults?.length || 0}개`);
 
             console.log(`✅ 비교 완료: 클라우드=${cloudFileList.length}, 메타데이터=${metadataList.length}, 매칭=${matchedCount}`);
         } catch (err: any) {
@@ -439,6 +458,59 @@ const FileManagementSystem: React.FC = () => {
 
             await Promise.all(uploadPromises);
             alert(`${stagedFiles.length}개의 파일이 성공적으로 업로드되었습니다.`);
+
+            // ✅ 엑셀 파일이 있으면 자동으로 compare-with-llm 호출
+            const excelFiles = stagedFiles.filter(f =>
+                f.file.name.toLowerCase().endsWith('.xlsx') ||
+                f.file.name.toLowerCase().endsWith('.xls')
+            );
+
+            if (excelFiles.length > 0) {
+                console.log(`🔄 엑셀 파일 ${excelFiles.length}개 감지 - LLM 비교 자동 실행...`);
+
+                for (const excelFile of excelFiles) {
+                    try {
+                        const formData = new FormData();
+                        formData.append('cloud_url', CLOUD_URL);
+                        formData.append('use_demo', 'false');
+                        formData.append('engine', selectedEngine);
+                        formData.append('excel_file', excelFile.file);
+                        formData.append('project_id', selectedProjectId.toString());
+
+                        const response = await apiClient.post('/fms/compare-with-llm', formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' },
+                        });
+
+                        console.log('✅ LLM 비교 완료:', response.data);
+
+                        // 응답 데이터 처리
+                        const { results, matchedCount, savedResults: dbSavedResults } = response.data;
+
+                        // 클라우드 파일 목록 추출
+                        const cloudFileList = results.map((r: ComparisonResult) => r.cloudFile);
+                        setCloudFiles(cloudFileList);
+
+                        // 매칭된 메타데이터 추출
+                        const metadataList = results
+                            .map((r: ComparisonResult) => r.matchedMetadata)
+                            .filter((m: ExcelMetadata | null) => m !== null) as ExcelMetadata[];
+                        setExcelMetadata(metadataList);
+
+                        // 비교 결과 설정
+                        setComparisonResults(results);
+
+                        // DB에 저장된 매칭 결과 설정
+                        console.log('📌 savedResults 응답:', dbSavedResults);
+                        setSavedResults(dbSavedResults || []);
+                        console.log(`✅ DB에 저장된 매칭 결과: ${dbSavedResults?.length || 0}개`);
+
+                        console.log(`✅ 자동 비교 완료: 매칭=${matchedCount}개`);
+                    } catch (compareError: any) {
+                        console.error('❌ LLM 비교 실패:', compareError);
+                    }
+                }
+            }
+
             setStagedFiles([]);
 
             // ✅ 업로드 후 파일 목록 다시 조회
@@ -653,31 +725,7 @@ const FileManagementSystem: React.FC = () => {
                             </div>
                         ) : (
                             <div className="file-list-table-wrapper" style={{ marginTop: '10px', maxHeight: '500px', overflowY: 'auto' }}>
-                                {previewData.file_type === '.xlsx' || previewData.file_type === '.xls' || previewData.file_type === '.csv' ? (
-                                    <>
-                                        <p style={{ marginBottom: '10px', fontSize: '14px', color: '#666' }}>
-                                            총 {previewData.total_rows}개 행 (최대 100개 표시)
-                                        </p>
-                                        <table className="file-list-table">
-                                            <thead>
-                                                <tr>
-                                                    {previewData.columns.map((col: string, idx: number) => (
-                                                        <th key={idx} style={{ minWidth: '120px' }}>{col}</th>
-                                                    ))}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {previewData.data.map((row: any, rowIdx: number) => (
-                                                    <tr key={rowIdx}>
-                                                        {previewData.columns.map((col: string, colIdx: number) => (
-                                                            <td key={colIdx}>{row[col] !== null && row[col] !== undefined ? String(row[col]) : ''}</td>
-                                                        ))}
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </>
-                                ) : previewData.file_type === '.txt' || previewData.file_type === '.log' || previewData.file_type === '.md' ? (
+                                {['.xlsx', 'xlsx', '.xls', 'xls', '.csv', 'csv', '.txt', 'txt', '.log', 'log', '.md', 'md'].includes(previewData.file_type) || previewData.content ? (
                                     <pre style={{
                                         padding: '10px',
                                         backgroundColor: '#f5f5f5',
@@ -686,7 +734,7 @@ const FileManagementSystem: React.FC = () => {
                                         whiteSpace: 'pre-wrap',
                                         wordWrap: 'break-word'
                                     }}>
-                                        {previewData.data.join('\n')}
+                                        {previewData.content || (previewData.data && previewData.data.join('\n'))}
                                     </pre>
                                 ) : (
                                     <p>미리보기를 지원하지 않는 파일 형식입니다.</p>
@@ -707,10 +755,68 @@ const FileManagementSystem: React.FC = () => {
                     </button>
                 </div>
 
+                {/* DB에 저장된 매칭 결과 표시 */}
+                <div className="file-management-system-section" style={{ marginTop: '20px' }}>
+                    <h3 className="section-header">■ 4. DB 저장된 매칭 결과 (file_matching_results) - {savedResults.length}개</h3>
+                {savedResults.length > 0 ? (
+                    <>
+                        <div style={{ padding: '20px' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ backgroundColor: '#e3f2fd' }}>
+                                        <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>행 번호</th>
+                                        <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>콘텐츠 식별자</th>
+                                        <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>매칭 여부</th>
+                                        <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>매칭된 클라우드 파일</th>
+                                        <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>생성일시</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {savedResults.map((result, index) => (
+                                        <tr key={result.id || index} style={{ backgroundColor: result.matched ? '#e8f5e9' : '#ffebee' }}>
+                                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                                {result.rowNumber}
+                                            </td>
+                                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                                                {result.contentIdentifier || '-'}
+                                            </td>
+                                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                                                {result.matched ? '✅ 매칭' : '❌ 미매칭'}
+                                            </td>
+                                            <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                                                {result.matchedCloudFileName || '-'}
+                                            </td>
+                                            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center', fontSize: '0.85em' }}>
+                                                {result.createdAt ? new Date(result.createdAt).toLocaleString('ko-KR') : '-'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '5px' }}>
+                                <p style={{ margin: 0, color: '#333' }}>
+                                    총 저장 레코드: <strong>{savedResults.length}개</strong> |
+                                    매칭: <strong style={{ color: '#4caf50' }}>
+                                        {savedResults.filter(r => r.matched).length}개
+                                    </strong> |
+                                    미매칭: <strong style={{ color: '#f44336' }}>
+                                        {savedResults.filter(r => !r.matched).length}개
+                                    </strong>
+                                </p>
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div style={{ padding: '20px', color: '#999' }}>
+                        저장된 매칭 결과가 없습니다. 엑셀 파일을 업로드하면 자동으로 저장됩니다.
+                    </div>
+                )}
+                </div>
+
                 {/* 비교 결과 섹션 */}
                 {comparisonResults.length > 0 && (
                     <div className="file-management-system-section">
-                        <h3 className="section-header">■ 4. 클라우드 파일과 엑셀 메타데이터 비교 결과</h3>
+                        <h3 className="section-header">■ 5. 클라우드 파일과 엑셀 메타데이터 비교 결과</h3>
                         <div style={{ padding: '20px' }}>
                             <table style={{
                                 width: '100%',
