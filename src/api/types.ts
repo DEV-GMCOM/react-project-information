@@ -89,6 +89,8 @@ export interface Employee {
     employee_id: string;
     name: string;
     department?: Department;
+    division?: string; // ✅ 추가
+    team?: string;     // ✅ 추가
     position?: string;
     email?: string;
     phone?: string;

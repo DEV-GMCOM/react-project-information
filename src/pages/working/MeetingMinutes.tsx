@@ -15,21 +15,20 @@ import { meetingMinuteService } from '../../api/services/meetingMinuteService'; 
 
 import MeetingBasicInfoForm from '../../components/meeting/MeetingBasicInfoForm';
 import NewMeetingModal from '../../components/meeting/NewMeetingModal';
+import MeetingList from '../../components/meeting/MeetingList';
+import EmployeeSearchModal from '../../components/meeting/EmployeeSearchModal';
+import STTSettingsModal from '../../components/meeting/STTSettingsModal';
+import LLMSettingsModal from '../../components/meeting/LLMSettingsModal';
 
 
 // [추가] 에러 핸들러 (프로젝트에 이미 있다면 경로 수정)
 import { handleApiError } from '../../api/utils/errorUtils';
 // ✅ 1. Import 추가 (파일 최상단 import 섹션에)
-import {
-    generationService,
-    STTProgressMessage,
-    STTEngine,
-    LLMEngine,
-    DocType
-} from '../../api/services/generationService';
+import { generationService, STTProgressMessage, STTEngine, LLMEngine, DocType } from '../../api/services/generationService';
 // import { generationService, STTProgressMessage } from '../../api/services/generationService';
 
 import { useHelp } from '../../contexts/HelpContext';
+import { useAuth } from '../../contexts/AuthContext'; // ✅ useAuth import 추가
 
 // [추가] react-datepicker import
 import DatePicker from "react-datepicker";
@@ -65,316 +64,34 @@ interface LLMResultUI {
 }
 
 
-// 직원 검색 모달을 위한 간단한 컴포넌트
-// 실제 구현에서는 별도의 파일로 분리하는 것이 좋습니다.
-const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSelect, initialSelected }) => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [results, setResults] = useState<Employee[]>([]);
-    const [selected, setSelected] = useState<Employee[]>(initialSelected);
+// (EmployeeSearchModal definition removed - imported from component)
+// (MeetingList definition removed - imported from component)
 
-    const handleSearch = async () => {
-        setLoading(true);
-        try {
-            const employees = await employeeService.getEmployees({ search: searchTerm });
-            setResults(employees);
-        } catch (error) {
-            console.error("직원 검색 오류:", error);
-            alert("직원을 검색하는 중 오류가 발생했습니다.");
-        } finally {
-            setLoading(false);
-        }
-    };
 
-    useEffect(() => {
-        handleSearch(); // 컴포넌트 마운트 시 전체 직원 목록 로드
-    }, []);
 
-    const handleCheckboxChange = (employee: Employee) => {
-        setSelected(prev => {
-            if (prev.some(e => e.id === employee.id)) {
-                return prev.filter(e => e.id !== employee.id);
-            } else {
-                return [...prev, employee];
-            }
-        });
-    };
-
-    const handleConfirm = () => {
-        onSelect(selected);
-        onClose();
-    };
-
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content">
-                <div className="modal-header">
-                    <h3>직원 검색</h3>
-                    <button onClick={onClose} className="modal-close-btn">&times;</button>
-                </div>
-                <div className="modal-body">
-                    <div className="input-with-search" style={{ marginBottom: '15px' }}>
-                        <input
-                            type="text"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
-                            placeholder="이름 또는 부서로 검색"
-                            className="project-input"
-                        />
-                        <button onClick={handleSearch} className="search-btn">🔍</button>
-                    </div>
-                    {loading ? (
-                        <div className="loading">검색 중...</div>
-                    ) : (
-                        <table className="search-table">
-                            <thead>
-                            <tr>
-                                <th>선택</th>
-                                <th>이름</th>
-                                <th>부서</th>
-                                <th>직급</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {results.length > 0 ? (
-                                results.map(emp => (
-                                    <tr key={emp.id}>
-                                        <td>
-                                            <input
-                                                type="checkbox"
-                                                checked={selected.some(e => e.id === emp.id)}
-                                                onChange={() => handleCheckboxChange(emp)}
-                                                className="meeting-minutes-checkbox"
-                                            />
-                                        </td>
-                                        <td>{emp.name}</td>
-                                        <td>{emp.department?.name || '-'}</td>
-                                        <td>{emp.position || '-'}</td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan={4} className="no-results">검색 결과가 없습니다.</td>
-                                </tr>
-                            )}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
-                <div className="modal-footer" style={{ padding: '15px', textAlign: 'right' }}>
-                    <button className="btn-primary" onClick={handleConfirm}>확인</button>
-                    <button className="btn-secondary" onClick={onClose} style={{ marginLeft: '10px' }}>취소</button>
-                </div>
-            </div>
-        </div>
-    );
+// Helper function for LLM doc types
+const getLLMDocLabel = (type: string): string => {
+    switch (type) {
+        case 'summary': return '주요 안건 정리';
+        case 'concept': return '컨셉 문서';
+        case 'draft': return 'Draft 기획서';
+        case 'todolist': return 'To Do 리스트';
+        case 'role': return 'Role & Responsibility';
+        case 'glossary': return '용어/약어';
+        case 'biz_overview': return '배경지식/트랜드';
+        case 'concept_ideas': return '컨셉 아이디어';
+        default: return type;
+    }
 };
-// --- ▲▲▲ 직원 검색 모달 종료 ▲▲▲ ---
 
-// const MeetingList: React.FC<MeetingListProps> = ({ meetings, onSelect }) => {
-//     // 날짜 포맷 함수 (필요시)
-//     const formatDateTime = (isoString: string) => {
-//         try {
-//             return new Date(isoString).toLocaleString('ko-KR', {
-//                 year: 'numeric',
-//                 month: '2-digit',
-//                 day: '2-digit',
-//                 hour: '2-digit',
-//                 minute: '2-digit',
-//                 hour12: false
-//             });
-//         } catch (e) {
-//             return isoString;
-//         }
-//     };
-//
-//     return (
-//         <table className="meeting-list-table">
-//             <thead>
-//             <tr>
-//                 <th>회의명</th>
-//                 <th>회의일시</th>
-//                 <th>연계프로젝트</th>
-//                 <th>작성자</th>
-//                 <th>참석자</th>
-//                 <th>태그</th>
-//                 <th>상태</th>
-//             </tr>
-//             </thead>
-//             <tbody>
-//             {meetings.length === 0 ? (
-//                 <tr>
-//                     <td colSpan={7} className="no-results">회의록이 없습니다.</td>
-//                 </tr>
-//             ) : (
-//                 meetings.map(meeting => (
-//                     <tr key={meeting.meeting_id} onClick={() => onSelect(meeting)} className="meeting-list-item" title="클릭하여 상세 정보 보기">
-//                         <td className="meeting-title-cell">
-//                             <span className="meeting-link">{meeting.meeting_title}</span>
-//                         </td>
-//                         <td>{formatDateTime(meeting.meeting_datetime)}</td>
-//                         <td title={meeting.project_name}>{meeting.project_name || 'N/A'}</td>
-//                         <td>{meeting.creator_name || 'N/A'}</td>
-//                         <td title={meeting.attendees_display}>{meeting.attendees_display}</td>
-//                         <td>
-//                             {meeting.tags?.map(tag => (
-//                                 <span key={tag} className="tag-badge" title={tag}>{tag}</span>
-//                             ))}
-//                         </td>
-//                         <td>{meeting.has_llm_documents ? '✔️ AI 생성' : '-'}</td>
-//                     </tr>
-//                 ))
-//             )}
-//             </tbody>
-//         </table>
-//     );
-// };
-const MeetingList: React.FC<MeetingListProps> = ({
-                                                     meetings,
-                                                     onSelect,
-                                                     onDelete,
-                                                     showDelete = false
-                                                 }) => {
-    // 날짜 포맷 함수 (필요시)
-    const formatDateTime = (isoString: string) => {
-        try {
-            return new Date(isoString).toLocaleString('ko-KR', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            });
-        } catch (e) {
-            return isoString;
-        }
-    };
+const MeetingMinutes = () => {
+    const { user } = useAuth(); // ✅ 사용자 정보 가져오기
+    // ... (기존 상태들) ...
 
-    return (
-        <table className="meeting-list-table">
-            <thead>
-            <tr>
-                <th>회의명</th>
-                <th>회의일시</th>
-                <th>연계프로젝트</th>
-                <th>작성자</th>
-                <th>참석자</th>
-                <th>태그</th>
-                <th>상태</th>
-            </tr>
-            </thead>
-            <tbody>
-            {meetings.length === 0 ? (
-                <tr>
-                    <td colSpan={7} className="no-results">회의록이 없습니다.</td>
-                </tr>
-            ) : (
-                meetings.map(meeting => (
-                    <tr key={meeting.meeting_id} className="meeting-list-item">
-                        <td className="meeting-title-cell">
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                gap: '8px'
-                            }}>
-                                <span
-                                    className="meeting-link"
-                                    onClick={() => onSelect(meeting)}
-                                    style={{
-                                        cursor: 'pointer',
-                                        flex: 1
-                                    }}
-                                    title="클릭하여 상세 정보 보기"
-                                >
-                                    {meeting.meeting_title}
-                                </span>
-                                {showDelete && onDelete && (
-                                    <button
-                                        className="btn-delete-small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onDelete(meeting);
-                                        }}
-                                        title="삭제"
-                                    >
-                                        🗑️
-                                    </button>
-                                )}
-                            </div>
-                        </td>
-                        <td onClick={() => onSelect(meeting)} style={{ cursor: 'pointer' }}>
-                            {formatDateTime(meeting.meeting_datetime)}
-                        </td>
-                        <td onClick={() => onSelect(meeting)} style={{ cursor: 'pointer' }} title={meeting.project_name}>
-                            {meeting.project_name || 'N/A'}
-                        </td>
-                        <td onClick={() => onSelect(meeting)} style={{ cursor: 'pointer' }}>
-                            {meeting.creator_name || 'N/A'}
-                        </td>
-                        <td onClick={() => onSelect(meeting)} style={{ cursor: 'pointer' }} title={meeting.attendees_display}>
-                            {meeting.attendees_display}
-                        </td>
-                        <td onClick={() => onSelect(meeting)} style={{ cursor: 'pointer' }}>
-                            {meeting.tags?.map(tag => (
-                                <span key={tag} className="tag-badge" title={tag}>{tag}</span>
-                            ))}
-                        </td>
-                        <td onClick={() => onSelect(meeting)} style={{ cursor: 'pointer' }}>
-                            {meeting.has_llm_documents ? '✔️ AI 생성' : '-'}
-                        </td>
-                    </tr>
-                ))
-            )}
-            </tbody>
-        </table>
-    );
-};
-// --- ▲▲▲ 회의록 목록 컴포넌트 종료 ▲▲▲ ---
+    // ----------------------------------------------------------------------------------------------------
+    // --- 상태 관리 (State Management) ---------------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------------------
 
-
-
-const MeetingMinutes: React.FC = () => {
-
-    // LLM 문서 타입별 라벨 반환 함수
-    const getLLMDocLabel = (docType: string): string => {
-        const labelMap: Record<string, string> = {
-            summary: '요약',
-            concept: '개념 정리',
-            draft: '초안',
-            todolist: '할 일 목록',
-            mindmap_tree: '마인드맵(트리)',
-            mindmap_graph: '마인드맵(그래프)',
-            cal_gant: '캘린더/간트',
-            role: '역할 정의',
-            glossary: '용어집',
-            biz_overview: '비즈니스 개요'
-        };
-
-        return labelMap[docType] || docType;
-    };
-
-    // 원본 데이터 저장 (회의록 로드 시점의 데이터)
-    const [originalData, setOriginalData] = useState<{
-        meetingTitle: string;
-        meetingDateTime: Date | null;
-        meetingPlace: string;
-        projectId: number | null;
-        sharedWithIds: number[];
-        tags: string;
-        shareMethods: { email: boolean; jandi: boolean };
-        attendees: string;
-        manualInput: string;
-        sttResults: Record<string, string>;
-        llmResults: Array<{ id: string; title: string; content: string; save: boolean }>;
-    } | null>(null);
-
-    // 변경 여부 추적
-    const [hasChanges, setHasChanges] = useState(false);
-
-    // 1. 파일 입력(input) DOM에 접근하기 위한 ref
     const fileInputRef = useRef<HTMLInputElement>(null);
     // ✅ [추가] 프로그레스 바 DOM에 접근하기 위한 ref
     const sttProgressRef = useRef<HTMLDivElement>(null);
@@ -419,7 +136,7 @@ const MeetingMinutes: React.FC = () => {
     const [selectedSttSource, setSelectedSttSource] = useState<string>('');
 
     // const [llmEngine, setLlmEngine] = useState<string>('claude');
-    const [llmEngine, setLlmEngine] = useState<string>('chatgpt');
+    const [llmEngine, setLlmEngine] = useState<string>('gemini');
     const [llmDocTypes, setLlmDocTypes] = useState({
         summary: true,
         concept: false,
@@ -431,6 +148,7 @@ const MeetingMinutes: React.FC = () => {
         role: false,
         glossary: false,
         biz_overview: false,
+        concept_ideas: false,
     });
 
     const [llmResults, setLlmResults] = useState([
@@ -444,6 +162,7 @@ const MeetingMinutes: React.FC = () => {
         { id: 'role', title: 'Role & Responsibility', content: '', save: false },
         { id: 'glossary', title: '용어/약어', content: '', save: false },
         { id: 'biz_overview', title: '배경지식/트랜드', content: '', save: false },
+        { id: 'concept_ideas', title: '컨셉 아이디어', content: '', save: false },
     ]);
 
     const [showEmployeeModal, setShowEmployeeModal] = useState(false);
@@ -494,13 +213,24 @@ const MeetingMinutes: React.FC = () => {
     type SaveMode = 'create' | 'update';
     const [saveMode, setSaveMode] = useState<SaveMode>('create');
     const [currentMeetingId, setCurrentMeetingId] = useState<number | null>(null);
+    const [selectedMeeting, setSelectedMeeting] = useState<MeetingMinute | null>(null);
+
+    // ✅ [추가] 읽기 전용 모드 여부 (본인이 작성자가 아니면 true)
+    const isReadOnly = useMemo(() => {
+        if (!selectedMeeting) return false; // 신규 작성 중일 때는 편집 가능
+        if (!user) return true;
+        return selectedMeeting.created_by !== user.emp_id;
+    }, [selectedMeeting, user]);
 
     // State 추가 (기존 state들 아래에)
     const [uploadedFileIds, setUploadedFileIds] = useState<Map<string, number>>(new Map());
     // Map<파일명, file_id> - 업로드된 파일의 ID 추적
 
     const [isNewMeetingModalOpen, setIsNewMeetingModalOpen] = useState(false);
-    const [selectedMeeting, setSelectedMeeting] = useState<MeetingMinute | null>(null);
+
+    // ✅ [복구] 변경 감지 및 원본 데이터 상태
+    const [originalData, setOriginalData] = useState<any>(null);
+    const [hasChanges, setHasChanges] = useState(false);
 
     // ✅ STT 설정 모달 상태
     const [showSttSettingsModal, setShowSttSettingsModal] = useState(false);
@@ -1034,6 +764,7 @@ const MeetingMinutes: React.FC = () => {
                 { id: 'role', title: 'Role & Responsibility', content: '', save: false },
                 { id: 'glossary', title: '용어/약어', content: '', save: false },
                 { id: 'biz_overview', title: '배경지식/트랜드', content: '', save: false },
+                { id: 'concept_ideas', title: '컨셉 아이디어', content: '', save: false },
             ].map(uiTemplate => {
                 const savedDoc = details.llm_documents?.find(doc => doc.document_type === uiTemplate.id);
                 return {
@@ -1046,18 +777,16 @@ const MeetingMinutes: React.FC = () => {
             console.log('LLM 결과 로드 완료');
 
             // [수정] LLM 설정 복원 로직 제거 -> 항상 초기화
-            setLlmEngine('chatgpt');
+            setLlmEngine('gemini');
             setLlmDocTypes({
                 summary: true, // 기본으로 '내용 정리'는 체크
                 concept: false,
                 draft: false,
                 todolist: false,
-                // mindmap_tree: false,
-                // mindmap_graph: false,
-                // cal_gant: false,
                 role: false,
                 glossary: false,
-                biz_overview: false
+                biz_overview: false,
+                concept_ideas: false,
             });
             console.log('LLM 설정 초기화 완료');
 
@@ -1101,6 +830,14 @@ const MeetingMinutes: React.FC = () => {
         setSaveMode('update');
 
         console.log(`회의록 ${meeting.meeting_id} 로드 완료`);
+
+        // ✅ 스크롤 로직 추가
+        setTimeout(() => {
+            const basicInfoSection = document.getElementById('basic-info-section');
+            if (basicInfoSection) {
+                basicInfoSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 100); // UI 갱신 후 스크롤을 위해 약간의 지연 시간 부여
 
     }, []); // 종속성 배열을 비워서 항상 최신 상태를 참조하도록 함
 
@@ -1379,7 +1116,6 @@ const MeetingMinutes: React.FC = () => {
     };
 
     // 파일 다운로드/삭제 핸들러
-    const handleFileDownload = (file: any) => console.log("다운로드:", file);
     // 파일 삭제 핸들러 (서버에 저장된 파일)
     const handleFileDelete = async (file: any) => {
         if (!window.confirm(`${file.original_file_name} 파일을 정말 삭제하시겠습니까?`)) {
@@ -1562,7 +1298,8 @@ const MeetingMinutes: React.FC = () => {
             // cal_gant: false,
             role: false,
             glossary: false,
-            biz_overview: false
+            biz_overview: false,
+            concept_ideas: false
         });
         setLlmResults([]);
     };
@@ -1734,6 +1471,25 @@ const MeetingMinutes: React.FC = () => {
     };
 
     // ✅ STT 실행 (자동 회의록 생성 포함)
+    // [수정] 파일 다운로드 핸들러 (fileUploadService 사용 - ProjectKickoff 참조)
+    const handleFileDownload = async (file: any) => {
+        if (!selectedMeeting?.meeting_id) {
+            alert('회의록 정보가 올바르지 않습니다.');
+            return;
+        }
+
+        try {
+            await fileUploadService.downloadMeetingFile(
+                selectedMeeting.meeting_id,
+                file.id,
+                file.original_file_name
+            );
+        } catch (error: any) {
+            console.error('다운로드 실패:', error);
+            alert(error.message || '파일 다운로드 중 오류가 발생했습니다.');
+        }
+    };
+
     const handleGenerateSTT = async () => {
         completionHandledRef.current = false; // ✅ 완료 처리 잠금 해제
         setSttCompleted(false); // ✅ STT 완료 상태 초기화
@@ -2033,7 +1789,9 @@ const MeetingMinutes: React.FC = () => {
 
         // 3. doc_types 조립 (❌ 핵심 수정 ❌)
         // 사용자가 선택하지 않으므로, 모든 정의된 문서 타입을 생성하도록 요청
-        const doc_types = Object.keys(llmDocTypes) as DocType[];
+        const doc_types = Object.entries(llmDocTypes)
+            .filter(([, checked]) => checked)
+            .map(([key]) => key) as DocType[];
 
         if (doc_types.length === 0) {
             alert("생성할 문서 타입을 1개 이상 선택해주세요.");
@@ -2051,6 +1809,14 @@ const MeetingMinutes: React.FC = () => {
         setShowLlmSettingsModal(false); // 👈 [추가] 유효성 검사 통과 후 모달 닫기
         setIsGenerating(true);
         setGenerationPhase(2); // LLM 진행 중 UI 표시
+
+        // ✅ 알림 창 추가 (사용자 요청)
+        // ✅ 알림 창 수정 (조건부 알림)
+        if (shareMethods.jandi) {
+            alert("LLM 결과 생성 후 이메일 + 잔디 (상단 본인이름 클릭하여 등록 필요) 로 알림이 갑니다.");
+        } else {
+            alert("LLM 결과 생성 후 이메일로 알림이 갑니다.");
+        }
 
         try {
             const payload = {
@@ -2081,6 +1847,7 @@ const MeetingMinutes: React.FC = () => {
                 { id: 'role', title: 'Role & Responsibility', content: '', save: false },
                 { id: 'glossary', title: '용어/약어', content: '', save: false },
                 { id: 'biz_overview', title: '배경지식/트랜드', content: '', save: false },
+                { id: 'concept_ideas', title: '컨셉 아이디어', content: '', save: false },
             ].map(uiTemplate => {
                 const savedDoc = details.llm_documents?.find(doc => doc.document_type === uiTemplate.id);
                 return {
@@ -2204,7 +1971,8 @@ const MeetingMinutes: React.FC = () => {
                 share_methods: shareMethodArray,
 
                 // (가정) 백엔드 필드명: 'shared_with_ids' (공유 대상 직원 ID 목록)
-                shared_with_ids: sharedWithIds,
+                // ✅ ID가 문자열로 오는 경우를 대비해 숫자로 변환
+                shared_with_ids: sharedWith.map(emp => Number(emp.id)),
 
                 // (가정) 백엔드 필드명: 'tags'
                 tags: tagArray,
@@ -2273,6 +2041,8 @@ const MeetingMinutes: React.FC = () => {
             }
 
             // ✅ 공유자 전송 (이미 DB에 저장되어 있으므로)
+            // ❌ [수정] 공유자 알림은 LLM 생성 완료 시에만 발송하므로, 저장 시점에는 발송하지 않음
+            /*
             if (shareMethodArray.length > 0) {
                 try {
                     await generationService.shareMeeting({
@@ -2285,6 +2055,7 @@ const MeetingMinutes: React.FC = () => {
                     // 실패해도 계속 진행 (저장은 이미 완료됨)
                 }
             }
+            */
 
             alert("회의록이 성공적으로 저장되었습니다.");
 
@@ -2449,13 +2220,15 @@ const MeetingMinutes: React.FC = () => {
                         alignItems: 'center'
                     }}>
                         <h4 style={{ margin: 0 }}>■ 회의록 리스트</h4>
-                        <button
-                            className="btn-new-item"
-                            onClick={handleNewMeeting}
-                            // style={{ marginRight: '0.5rem' }}
-                        >
-                            신규 작성
-                        </button>
+                        {activeTab === 'my' && (
+                            <button
+                                className="btn-new-item"
+                                onClick={handleNewMeeting}
+                                // style={{ marginRight: '0.5rem' }}
+                            >
+                                신규 작성
+                            </button>
+                        )}
                     </div>
                     {/* 탭 네비게이션 */}
                     <div className="tab-navigation">
@@ -2553,6 +2326,7 @@ const MeetingMinutes: React.FC = () => {
                                 shareMethods={shareMethods}
                                 // setShareMethods={setShareMethods}
                                 setShareMethods={customSetShareMethods}
+                                readOnly={isReadOnly} // ✅ 읽기 전용 모드 전달
                             />
                         </div>
 
@@ -2581,7 +2355,7 @@ const MeetingMinutes: React.FC = () => {
                                                             className="btn-file-download"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                window.open(file.download_url, '_blank');
+                                                                handleFileDownload(file);
                                                             }}
                                                         >
                                                             ⬇️ 다운로드
@@ -2593,6 +2367,8 @@ const MeetingMinutes: React.FC = () => {
                                                                 handleFileDelete(file);
                                                             }}
                                                             title="삭제"
+                                                            disabled={isReadOnly}
+                                                            style={isReadOnly ? { cursor: 'not-allowed', opacity: 0.5 } : {}}
                                                         >
                                                             🗑️ 삭제
                                                         </button>
@@ -2616,10 +2392,12 @@ const MeetingMinutes: React.FC = () => {
                             accept={allowedExtensions.map(ext => `.${ext}`).join(',')}
                             onChange={handleFileInputChange}
                             style={{ display: 'none' }}
+                            disabled={isReadOnly}
                         />
 
                         {/* --- ▼▼▼ [보존] 파일 업로드 드래그앤드롭 UI ▼▼▼ --- */}
                         {/* 파일 업로드 영역 */}
+                        {!isReadOnly && (
                         <div className="file-upload-section">
                             <div
                                 className={`file-drop-zone ${isDragOver ? 'drag-over' : ''}`}
@@ -2682,14 +2460,14 @@ const MeetingMinutes: React.FC = () => {
                                     </div>
                                 )}
                             </div>
-
                             {isFileUploading && (
-                                <div className="upload-progress">
+                                <div className="upload-status">
                                     <div className="upload-spinner">⏳</div>
                                     <span>파일을 업로드하고 있습니다...</span>
                                 </div>
                             )}
                         </div>
+                        )}
                         {/* --- ▲▲▲ 파일 업로드 UI 종료 ▲▲▲ --- */}
 
                         {/* 회의록 원문 섹션 - 좌우 분할 (단순화: 항상 2패널, full-width 제거) */}
@@ -2708,9 +2486,9 @@ const MeetingMinutes: React.FC = () => {
                                                     name={`recording-method-${currentMeetingId ?? 'new'}`}
                                                     checked={recordingMethod === 'document'}
                                                     onChange={() => setRecordingMethod('document')}
-                                                    disabled={!manualInput || manualInput.trim().length === 0}
-                                                    aria-disabled={!manualInput || manualInput.trim().length === 0}
-                                                    className={`recording-method-radio ${(!manualInput || manualInput.trim().length === 0) ? 'is-disabled' : ''}`}
+                                                    disabled={(!manualInput || manualInput.trim().length === 0) || isReadOnly}
+                                                    aria-disabled={(!manualInput || manualInput.trim().length === 0) || isReadOnly}
+                                                    className={`recording-method-radio ${((!manualInput || manualInput.trim().length === 0) || isReadOnly) ? 'is-disabled' : ''}`}
                                                 />
                                             </div>
                                             <h4>📝 직접 입력 / 문서 업로드</h4>
@@ -2721,6 +2499,7 @@ const MeetingMinutes: React.FC = () => {
                                             value={manualInput}
                                             onChange={(e) => setManualInput(e.target.value)}
                                             placeholder={`선택된 내용이 없습니다.\n직접입력 \n또는 파일(text, txt, md)을 업로드 하세요.`}
+                                            disabled={isReadOnly}
                                         />
                                         {manualInput && (
                                             <div className="meeting-source-hint">
@@ -2741,9 +2520,9 @@ const MeetingMinutes: React.FC = () => {
                                                     checked={recordingMethod === 'audio'}
                                                     onChange={() => setRecordingMethod('audio')}
                                                     // 음성 라디오: 음성 파일이 1개라도 있으면 활성화
-                                                    disabled={!hasAudioFiles}
-                                                    aria-disabled={!hasAudioFiles}
-                                                    className={`recording-method-radio ${(!hasAudioFiles) ? 'is-disabled' : ''}`}
+                                                    disabled={!hasAudioFiles || isReadOnly}
+                                                    aria-disabled={!hasAudioFiles || isReadOnly}
+                                                    className={`recording-method-radio ${(!hasAudioFiles || isReadOnly) ? 'is-disabled' : ''}`}
                                                 />
                                             </div>
                                             {/*<h4>🎙️ 음성에서 추출한 텍스트 (Source)</h4>*/}
@@ -2760,7 +2539,7 @@ const MeetingMinutes: React.FC = () => {
                                                     <div style={{ display: 'flex', gap: '8px' }}>
                                                         <button
                                                             onClick={handleGenerateSTT}
-                                                            disabled={isGenerating}
+                                                            disabled={isGenerating || isReadOnly}
                                                             style={{
                                                                 padding: '6px 12px',
                                                                 fontSize: '13px',
@@ -2768,14 +2547,15 @@ const MeetingMinutes: React.FC = () => {
                                                                 color: 'white',
                                                                 border: 'none',
                                                                 borderRadius: '4px',
-                                                                cursor: isGenerating ? 'not-allowed' : 'pointer',
-                                                                opacity: isGenerating ? 0.6 : 1
+                                                                cursor: (isGenerating || isReadOnly) ? 'not-allowed' : 'pointer',
+                                                                opacity: (isGenerating || isReadOnly) ? 0.6 : 1
                                                             }}
                                                         >
                                                             텍스트 추출
                                                         </button>
                                                         <button
                                                             onClick={() => setShowSttSettingsModal(true)}
+                                                            disabled={isReadOnly}
                                                             style={{
                                                                 padding: '6px 12px',
                                                                 fontSize: '13px',
@@ -2783,7 +2563,8 @@ const MeetingMinutes: React.FC = () => {
                                                                 color: 'white',
                                                                 border: 'none',
                                                                 borderRadius: '4px',
-                                                                cursor: 'pointer'
+                                                                cursor: isReadOnly ? 'not-allowed' : 'pointer',
+                                                                opacity: isReadOnly ? 0.6 : 1
                                                             }}
                                                         >
                                                             설정
@@ -2858,168 +2639,21 @@ const MeetingMinutes: React.FC = () => {
                         )}
 
                         {/* ✅ STT 설정 모달 */}
-                        {showSttSettingsModal && (
-                            <div className="modal-overlay" onClick={() => setShowSttSettingsModal(false)}>
-                                <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-                                    <div className="modal-header">
-                                        <h3>STT 변환 설정</h3>
-                                        <button className="modal-close-btn" onClick={() => setShowSttSettingsModal(false)}>×</button>
-                                    </div>
-                                    <div className="modal-body" style={{ padding: '24px' }}>
-                                        {/* STT 엔진 선택 */}
-                                        <div style={{ marginBottom: '24px' }}>
-                                            <h4 style={{ marginBottom: '12px', fontSize: '15px' }}>STT 엔진</h4>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                                    <input
-                                                        type="radio"
-                                                        name="modal-stt-engine"
-                                                        value="whisper"
-                                                        checked={sttEngine === 'whisper'}
-                                                        onChange={(e) => setSttEngine(e.target.value)}
-                                                    />
-                                                    <span>Whisper (권장)</span>
-                                                </label>
-                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed', opacity: 0.5 }}>
-                                                    <input
-                                                        disabled
-                                                        type="radio"
-                                                        name="modal-stt-engine"
-                                                        value="vosk"
-                                                        checked={sttEngine === 'vosk'}
-                                                        onChange={(e) => setSttEngine(e.target.value)}
-                                                    />
-                                                    <span>Vosk STT (준비중)</span>
-                                                </label>
-                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed', opacity: 0.5 }}>
-                                                    <input
-                                                        disabled
-                                                        type="radio"
-                                                        name="modal-stt-engine"
-                                                        value="google"
-                                                        checked={sttEngine === 'google'}
-                                                        onChange={(e) => setSttEngine(e.target.value)}
-                                                    />
-                                                    <span>Google STT (준비중)</span>
-                                                </label>
-                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed', opacity: 0.5 }}>
-                                                    <input
-                                                        disabled
-                                                        type="radio"
-                                                        name="modal-stt-engine"
-                                                        value="clova"
-                                                        checked={sttEngine === 'clova'}
-                                                        onChange={(e) => setSttEngine(e.target.value)}
-                                                    />
-                                                    <span>Clova Speech (준비중)</span>
-                                                </label>
-                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed', opacity: 0.5 }}>
-                                                    <input
-                                                        disabled
-                                                        type="radio"
-                                                        name="modal-stt-engine"
-                                                        value="aws"
-                                                        checked={sttEngine === 'aws'}
-                                                        onChange={(e) => setSttEngine(e.target.value)}
-                                                    />
-                                                    <span>AWS Transcribe (준비중)</span>
-                                                </label>
-                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed', opacity: 0.5 }}>
-                                                    <input
-                                                        disabled
-                                                        type="radio"
-                                                        name="modal-stt-engine"
-                                                        value="azure"
-                                                        checked={sttEngine === 'azure'}
-                                                        onChange={(e) => setSttEngine(e.target.value)}
-                                                    />
-                                                    <span>Azure Speech (준비중)</span>
-                                                </label>
-                                            </div>
-                                        </div>
+                        <STTSettingsModal
+                            isOpen={showSttSettingsModal}
+                            onClose={() => setShowSttSettingsModal(false)}
+                            onSave={handleSaveSettings}
+                            sttEngine={sttEngine}
+                            setSttEngine={setSttEngine}
+                            sttModelSize={sttModelSize}
+                            setSttModelSize={setSttModelSize}
+                            sttLanguage={sttLanguage}
+                            setSttLanguage={setSttLanguage}
+                        />
 
-                                        {/* 변환 품질 (모델 크기) */}
-                                        <div style={{ marginBottom: '24px' }}>
-                                            <h4 style={{ marginBottom: '12px', fontSize: '15px' }}>변환 품질</h4>
-                                            <select
-                                                value={sttModelSize}
-                                                onChange={(e) => setSttModelSize(e.target.value as any)}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '8px 12px',
-                                                    fontSize: '14px',
-                                                    border: '1px solid #ddd',
-                                                    borderRadius: '4px'
-                                                }}
-                                            >
-                                                <option value="tiny">Tiny (매우 빠름, 낮은 정확도)</option>
-                                                <option value="base">Base (빠름, 보통 정확도)</option>
-                                                <option value="small">Small (보통, 좋은 정확도)</option>
-                                                <option value="medium">Medium (느림, 높은 정확도) - 권장</option>
-                                                <option value="large">Large (매우 느림, 최고 정확도)</option>
-                                            </select>
-                                        </div>
-
-                                        {/* 언어 선택 */}
-                                        <div style={{ marginBottom: '24px' }}>
-                                            <h4 style={{ marginBottom: '12px', fontSize: '15px' }}>언어</h4>
-                                            <select
-                                                value={sttLanguage}
-                                                onChange={(e) => setSttLanguage(e.target.value as any)}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '8px 12px',
-                                                    fontSize: '14px',
-                                                    border: '1px solid #ddd',
-                                                    borderRadius: '4px'
-                                                }}
-                                            >
-                                                <option value="ko">한국어</option>
-                                                <option value="en">영어</option>
-                                                <option value="auto">자동 감지</option>
-                                            </select>
-                                        </div>
-
-                                        {/* 버튼 */}
-                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                            <button
-                                                onClick={() => setShowSttSettingsModal(false)}
-                                                style={{
-                                                    padding: '8px 16px',
-                                                    fontSize: '14px',
-                                                    backgroundColor: '#6c757d',
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer'
-                                                }}
-                                            >
-                                                취소
-                                            </button>
-                                            <button
-                                                onClick={handleSaveSettings}
-                                                style={{
-                                                    padding: '8px 16px',
-                                                    fontSize: '14px',
-                                                    backgroundColor: '#007bff',
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer'
-                                                }}
-                                            >
-                                                저장
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ✅ 프로그레스 바 추가 */}
+                        {/* ✅ 프로그레스 바 추가 (STT) */}
                         {(isGenerating || sttCompleted) && generationPhase === 1 && (
                             <div
-                                // ref={progressBarRef}
                                 ref={sttProgressRef}
                                 className="generation-progress"
                                 style={{
@@ -3030,39 +2664,31 @@ const MeetingMinutes: React.FC = () => {
                                     border: '1px solid #e0e0e0'
                                 }}
                             >
-                                {generationPhase === 1 && (
-                                    //
-                                    <div className="generation-progress">
-                                        <div className="progress-header">
-                                            <h4>{sttStatusMessage}</h4>
-                                            {/* ✅ Abort 버튼 추가 */}
-                                            <button
-                                                type="button"
-                                                onClick={handleAbortSTT}
-                                                className="abort-button"
-                                                disabled={!isGenerating}
-                                            >
-                                                ⏹️ 중단
-                                            </button>
-                                        </div>
-                                        <div className="progress-bar-container">
-                                            <div
-                                                className="progress-bar"
-                                                style={{ width: `${sttProgress}%` }}
-                                            >
-                                                {sttProgress.toFixed(0)}%
-                                            </div>
-                                        </div>
-                                        {/* ✅ 상태 메시지 표시 추가 */}
-                                        <p className="progress-message">{sttStatusMessage}</p>
-                                        <p className="progress-info">엔진: {sttEngine}</p>
-                                        {/* ✅ 남은 시간 표시 */}
-                                        {estimatedTimeRemaining !== null && (
-                                            <p className="progress-info" style={{ color: '#1890ff' }}>
-                                                예상 남은 시간: 약 {estimatedTimeRemaining}초
-                                            </p>
-                                        )}
+                                <div className="progress-header">
+                                    <h4>{sttStatusMessage}</h4>
+                                    <button
+                                        type="button"
+                                        onClick={handleAbortSTT}
+                                        className="abort-button"
+                                        disabled={!isGenerating}
+                                    >
+                                        ⏹️ 중단
+                                    </button>
+                                </div>
+                                <div className="progress-bar-container">
+                                    <div
+                                        className="progress-bar"
+                                        style={{ width: `${sttProgress}%` }}
+                                    >
+                                        {sttProgress.toFixed(0)}%
                                     </div>
+                                </div>
+                                <p className="progress-message">{sttStatusMessage}</p>
+                                <p className="progress-info">엔진: {sttEngine}</p>
+                                {estimatedTimeRemaining !== null && (
+                                    <p className="progress-info" style={{ color: '#1890ff' }}>
+                                        예상 남은 시간: 약 {estimatedTimeRemaining}초
+                                    </p>
                                 )}
                             </div>
                         )}
@@ -3077,7 +2703,7 @@ const MeetingMinutes: React.FC = () => {
                                             // onClick={handleGenerateLLM}
                                             onClick={() => setShowLlmSettingsModal(true)} // 👈 [수정 후]
                                             style={{margin: '2rem'}}
-                                            disabled={isGenerating}
+                                            disabled={isGenerating || isReadOnly}
                                         >
                                             LLM 회의록 생성
                                         </button>
@@ -3170,9 +2796,10 @@ const MeetingMinutes: React.FC = () => {
                                                                 type="checkbox"
                                                                 checked={result.save}
                                                                 onChange={() => handleLlmResultSaveChange(result.id)}
+                                                                disabled={isReadOnly}
                                                                 // /* ✅ style 속성 제거 */
                                                             />
-                                                            <span>{result.title} (서버에 저장)</span>
+                                                            <span>{result.title}</span>
                                                         </label>
                                                         <textarea className="meeting-minutes-textarea" rows={20} value={result.content} readOnly style={{marginTop: '5px'}} />
                                                     </div>
@@ -3189,7 +2816,7 @@ const MeetingMinutes: React.FC = () => {
                         {/*    <button className="btn-primary" onClick={handleSave}>서버 저장&nbsp;&nbsp;&nbsp;&&nbsp;&nbsp;&nbsp;공유자에게 전송</button>*/}
                         {/*</div>*/}
                         {/* 최종 저장 버튼 - 회의록 선택했을 때만 표시 */}
-                        {selectedMeeting && (
+                        {selectedMeeting && !isReadOnly && (
                             <div className="meeting-minutes-actions" style={{justifyContent: 'center'}}>
                                 <button
                                     className="btn-primary"
@@ -3414,93 +3041,14 @@ const MeetingMinutes: React.FC = () => {
                 )}
 
                 {/* --- ▼▼▼ [신규] LLM 회의록 생성 설정 모달 ▼▼▼ --- */}
-                {showLlmSettingsModal && (
-                    <div className="modal-overlay" onClick={() => setShowLlmSettingsModal(false)}>
-                        <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
-                            <div className="modal-header">
-                                <h3>LLM 회의록 생성 설정</h3>
-                                <button className="modal-close-btn" onClick={() => setShowLlmSettingsModal(false)}>×</button>
-                            </div>
-                            <div className="modal-body" style={{ padding: '24px' }}>
-
-                                {/* --- 기존 JSX 붙여넣기 --- */}
-                                <div style={{display: 'flex', width: '100%', gap: '20px'}}>
-                                    <div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>
-                                        <h4>1. LLM 선택</h4>
-                                        <label className="meeting-minutes-label" style={{opacity: 0.3}}>
-                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="claude" checked={llmEngine === 'claude'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                            Claude
-                                        </label>
-                                        <label className="meeting-minutes-label">
-                                            <input className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="chatgpt" checked={llmEngine === 'chatgpt'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                            ChatGPT
-                                        </label>
-                                        <label className="meeting-minutes-label" style={{opacity: 0.3}}>
-                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="gemini" checked={llmEngine === 'gemini'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                            Gemini
-                                        </label>
-                                        <label className="meeting-minutes-label" style={{opacity: 0.3}}>
-                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="perplexity" checked={llmEngine === 'perplexity'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                            Perplexity
-                                        </label>
-                                        <label className="meeting-minutes-label" style={{opacity: 0.3}}>
-                                            <input disabled className="meeting-minutes-radio radio-large" type="radio" name="llm-engine" value="grok" checked={llmEngine === 'grok'} onChange={(e) => setLlmEngine(e.target.value)} style={{ transform: 'scale(1.5)'}}/>
-                                            Grok
-                                        </label>
-                                    </div>
-                                    {/*<div className="generation-options" style={{flex: 1, flexDirection: 'column', alignItems: 'flex-start', border: '1px solid #eee', padding: '15px', borderRadius: '8px'}}>
-                                        <h4>2. 생성할 문서 타입</h4>
-                                        <label className="meeting-minutes-label" title="요약 정리는 항상 생성됩니다." style={{ opacity: 0.7, cursor: 'not-allowed' }}>
-                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="summary" checked={true} disabled={true} style={{ transform: 'scale(1.5)'}}/>
-                                            내용(안건) 정리 (필수)
-                                        </label>
-                                        <label className="meeting-minutes-label">
-                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="concept" checked={llmDocTypes.concept} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                            컨셉 문서
-                                        </label>
-                                        <label className="meeting-minutes-label">
-                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="draft" checked={llmDocTypes.draft} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                            Draft 기획서
-                                        </label>
-                                        <label className="meeting-minutes-label">
-                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="todolist" checked={llmDocTypes.todolist} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                            To Do 리스트
-                                        </label>
-                                        <label className="meeting-minutes-label">
-                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="role" checked={llmDocTypes.role} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                            Role & Responsibility
-                                        </label>
-                                        <label className="meeting-minutes-label">
-                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="glossary" checked={llmDocTypes.glossary} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                            용어/약어
-                                        </label>
-                                        <label className="meeting-minutes-label">
-                                            <input className="meeting-minutes-checkbox checkbox-large" type="checkbox" name="biz_overview" checked={llmDocTypes.biz_overview} onChange={handleLlmDocTypeChange} style={{ transform: 'scale(1.5)'}}/>
-                                            배경지식/트랜드
-                                        </label>
-                                    </div>*/}
-                                </div>
-                                {/* --- 기존 JSX 끝 --- */}
-
-                            </div>
-                            <div className="modal-footer" style={{ padding: '15px', textAlign: 'right', gap: '8px', display: 'flex', justifyContent: 'flex-end' }}>
-                                <button
-                                    className="btn-secondary"
-                                    onClick={() => setShowLlmSettingsModal(false)}
-                                >
-                                    취소
-                                </button>
-                                <button
-                                    className="btn-primary"
-                                    onClick={handleGenerateLLM}
-                                    disabled={isGenerating}
-                                >
-                                    {isGenerating ? '생성 중...' : '계속진행'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <LLMSettingsModal
+                    isOpen={showLlmSettingsModal}
+                    onClose={() => setShowLlmSettingsModal(false)}
+                    onGenerate={handleGenerateLLM}
+                    llmEngine={llmEngine}
+                    setLlmEngine={setLlmEngine}
+                    isGenerating={isGenerating}
+                />
                 {/* --- ▲▲▲ [신규] LLM 모달 종료 ▲▲▲ --- */}
             </div>
         </div>
