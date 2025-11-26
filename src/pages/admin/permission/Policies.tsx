@@ -118,7 +118,9 @@ const Policies: React.FC = () => {
     const fetchEmployees = useCallback(async () => {
         try {
             const fetchedEmployees = await employeeService.getEmployees();
-            setEmployees(fetchedEmployees);
+            // admin 계정 제외
+            const filteredEmployees = fetchedEmployees.filter(emp => emp.employee_id !== 'admin');
+            setEmployees(filteredEmployees);
         } catch (error) {
             console.error("직원 목록을 불러오는 중 오류 발생:", error);
         }

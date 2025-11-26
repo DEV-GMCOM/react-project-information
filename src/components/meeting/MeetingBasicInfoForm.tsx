@@ -2,8 +2,7 @@
 import React from 'react';
 import DatePicker from "react-datepicker";
 import { ko } from 'date-fns/locale';
-import { Employee } from '../../api/types';
-
+import { Employee, EmployeeSimple } from '../../api/types';
 
 
 interface MeetingBasicInfoFormProps {
@@ -15,13 +14,13 @@ interface MeetingBasicInfoFormProps {
     setMeetingPlace: (value: string) => void;
     projectName: string;
     onProjectSearch: () => void;
-    sharedWith: Employee[];
+    sharedWith: EmployeeSimple[];
     onEmployeeSearch: () => void;
     onRemoveEmployee: (id: number) => void;
-    attendees: string;
-    setAttendees: (value: string) => void;
     tags: string;
     setTags: (value: string) => void;
+    companionAttendees: string; // ✅ 추가
+    setCompanionAttendees: (value: string) => void; // ✅ 추가
     shareMethods: { email: boolean; jandi: boolean };
     setShareMethods: (value: { email: boolean; jandi: boolean }) => void;
     readOnly?: boolean; // 모달에서는 false, 페이지에서는 상황에 따라
@@ -39,10 +38,10 @@ const MeetingBasicInfoForm: React.FC<MeetingBasicInfoFormProps> = ({
                                                                        sharedWith,
                                                                        onEmployeeSearch,
                                                                        onRemoveEmployee,
-                                                                       attendees,
-                                                                       setAttendees,
                                                                        tags,
                                                                        setTags,
+                                                                       companionAttendees, // ✅ 추가
+                                                                       setCompanionAttendees, // ✅ 추가
                                                                        shareMethods,
                                                                        setShareMethods,
                                                                        readOnly = false
@@ -121,7 +120,7 @@ const MeetingBasicInfoForm: React.FC<MeetingBasicInfoFormProps> = ({
 
                 {/* 회의록 공유 */}
                 <div className="writer-field">
-                    <label className="writer-field-label">회의록 공유</label>
+                    <label className="writer-field-label">참석자</label>
                     {/*<div className="input-with-search">*/}
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%' }}>
                         <input
@@ -140,29 +139,6 @@ const MeetingBasicInfoForm: React.FC<MeetingBasicInfoFormProps> = ({
                             🔍
                         </button>
                     </div>
-                    {sharedWith.length > 0 && (
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
-                            {sharedWith.map(emp => (
-                                <span key={emp.id} className="tag-chip">
-                                    {emp.name}
-                                    {!readOnly && (
-                                        <button
-                                            type="button"
-                                            onClick={() => onRemoveEmployee(emp.id)}
-                                            style={{
-                                                marginLeft: '4px',
-                                                background: 'none',
-                                                border: 'none',
-                                                cursor: 'pointer'
-                                            }}
-                                        >
-                                            ×
-                                        </button>
-                                    )}
-                                </span>
-                            ))}
-                        </div>
-                    )}
                 </div>
 
                 {/* 공유 방법 */}
@@ -192,16 +168,18 @@ const MeetingBasicInfoForm: React.FC<MeetingBasicInfoFormProps> = ({
                     </div>
                 </div>
 
-                {/* 그 외 참석자 */}
+
+
+                {/* 동석자 */}
                 <div className="writer-field">
-                    <label className="writer-field-label">그 외 참석자</label>
+                    <label className="writer-field-label">동석자</label>
                     <input
                         type="text"
                         className="writer-field-input"
                         style={{ width: '100%' }}
-                        value={attendees}
-                        onChange={(e) => setAttendees(e.target.value)}
-                        placeholder="참석자 이름을 입력하세요 (쉼표로 구분)"
+                        value={companionAttendees}
+                        onChange={(e) => setCompanionAttendees(e.target.value)}
+                        placeholder="동석자 이름을 입력하세요 (쉼표로 구분)"
                         disabled={readOnly}
                     />
                 </div>

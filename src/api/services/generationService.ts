@@ -137,6 +137,45 @@ export const generationService = {
     },
 
     /**
+     * 기존 파일로 STT 작업 생성 (신규)
+     */
+    async createSTTTaskFromExistingFile(
+        engine: STTEngine,
+        fileId: number,
+        options?: {
+            model_size?: 'tiny' | 'base' | 'small' | 'medium' | 'large';
+            language?: string;
+        }
+    ): Promise<STTCreateResponse> {
+        const formData = new FormData();
+        formData.append('engine', engine);
+        formData.append('file_id', fileId.toString());
+
+        if (options?.model_size) {
+            formData.append('model_size', options.model_size);
+        }
+        if (options?.language) {
+            formData.append('language', options.language);
+        }
+
+        try {
+            const response = await apiClient.post<STTCreateResponse>(
+                '/generation/stt/create/from-file',
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }
+            );
+            return response.data;
+        } catch (error: any) {
+            console.error('❌ 기존 파일 STT 작업 생성 실패:', error);
+            throw error;
+        }
+    },
+
+    /**
      * STT 결과 조회
      */
     async getSTTResult(fileId: number): Promise<STTResultResponse> {
@@ -157,7 +196,19 @@ export const generationService = {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.hostname;
         const port = import.meta.env.DEV ? '8001' : window.location.port;
-        const wsUrl = `${protocol}//${host}:${port}/api/ws/stt/${taskId}`;
+
+        const sessionId = localStorage.getItem('session_id'); // ✅ 세션 ID 가져오기
+
+        // [추가] 세션 ID가 없으면 에러 발생
+        if (!sessionId) {
+            const error = new Error('세션 ID가 없어 WebSocket 연결을 시도할 수 없습니다. 다시 로그인해주세요.');
+            console.error('❌ WebSocket 연결 실패:', error.message);
+            onError?.(error);
+            // WebSocket 객체를 반환해야 하므로 임시로 빈 객체 반환
+            return { close: () => {}, send: () => {} } as unknown as WebSocket; // 더미 객체 반환
+        }
+
+        const wsUrl = `${protocol}//${host}:${port}/api/ws/stt/${taskId}?session_id=${sessionId}`; // ✅ URL에 추가
 
         console.log('🔌 WebSocket 연결 시도:', wsUrl);
 

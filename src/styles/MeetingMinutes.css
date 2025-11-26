@@ -1425,3 +1425,49 @@
     pointer-events: none;
     cursor: not-allowed;
 }
+
+/* Dot-Cursor 스피너 스타일 */
+.dot-cursor-spinner {
+    width: 24px;
+    height: 24px;
+    position: relative;
+    border: 2px solid transparent; /* 기본 테두리 없음 */
+    border-radius: 4px; /* 사각형 커서 모양 */
+    margin-right: 10px;
+    flex-shrink: 0; /* 공간 차지 */
+}
+
+.dot-cursor-spinner::before {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background-color: #007bff; /* 파란색 점 */
+    border-radius: 50%;
+    animation: dot-travel 1.5s infinite ease-in-out;
+}
+
+@keyframes dot-travel {
+    0% { top: -4px; left: -4px; transform: scale(1); } /* 좌상단 */
+    25% { top: -4px; left: calc(100% - 4px); transform: scale(0.8); } /* 우상단 */
+    50% { top: calc(100% - 4px); left: calc(100% - 4px); transform: scale(1); } /* 우하단 */
+    75% { top: calc(100% - 4px); left: -4px; transform: scale(0.8); } /* 좌하단 */
+    100% { top: -4px; left: -4px; transform: scale(1); } /* 좌상단 */
+}
+
+/* STT 주의 문구 박스 */
+.stt-warning-box {
+    background-color: #fff0f0; /* 아주 연한 빨간색 배경 */
+    border: 1px solid #ff4d4f; /* 빨간색 테두리 */
+    border-radius: 6px;
+    padding: 12px 15px;
+    margin-top: 20px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #cf1322; /* 진한 빨간색 텍스트 */
+    word-break: keep-all; /* 단어가 잘리지 않도록 */
+}
+
+.stt-warning-box strong {
+    font-weight: 700;
+}

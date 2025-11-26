@@ -1,7 +1,7 @@
 // src/components/meeting/NewMeetingModal.tsx
 import React from 'react';
 import MeetingBasicInfoForm from './MeetingBasicInfoForm';
-import { Employee } from '../../api/types';
+import { Employee, EmployeeSimple } from '../../api/types';
 import '../../styles/modal.css';
 
 interface NewMeetingModalProps {
@@ -17,13 +17,13 @@ interface NewMeetingModalProps {
     setMeetingPlace: (value: string) => void;
     projectName: string;
     onProjectSearch: () => void;
-    sharedWith: Employee[];
+    sharedWith: EmployeeSimple[];
     onEmployeeSearch: () => void;
     onRemoveEmployee: (id: number) => void;
-    attendees: string;
-    setAttendees: (value: string) => void;
     tags: string;
     setTags: (value: string) => void;
+    companionAttendees: string; // ✅ 추가
+    setCompanionAttendees: (value: string) => void; // ✅ 추가
     shareMethods: { email: boolean; jandi: boolean };
     setShareMethods: (value: { email: boolean; jandi: boolean }) => void;
 }

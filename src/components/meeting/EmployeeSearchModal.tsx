@@ -1,28 +1,42 @@
 // src/components/meeting/EmployeeSearchModal.tsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { Employee } from '../../api/types';
+import { Employee, EmployeeSimple } from '../../api/types';
 import { employeeService } from '../../api/services/employeeService';
 import '../../styles/modal.css';
 
 interface EmployeeSearchModalProps {
     onClose: () => void;
-    onSelect: (selectedEmployees: Employee[]) => void;
-    initialSelected: Employee[];
+    onSelect: (selectedEmployees: EmployeeSimple[]) => void; // ✅ 변경
+    initialSelected: EmployeeSimple[]; // ✅ 변경
+    currentUserId?: number; // 현재 로그인한 사용자 ID (목록에서 제외)
 }
 
-const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSelect, initialSelected }) => {
+const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSelect, initialSelected, currentUserId }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState<Employee[]>([]);
-    const [selected, setSelected] = useState<Employee[]>(initialSelected);
+    const [selected, setSelected] = useState<EmployeeSimple[]>(initialSelected);
     // 정렬 상태 추가
     const [sortConfig, setSortConfig] = useState<{ key: 'name' | 'dept' | null, direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
 
     const handleSearch = async () => {
         setLoading(true);
         try {
-            const employees = await employeeService.getEmployees({ search: searchTerm });
-            setResults(employees);
+            const params: any = {
+                limit: 1000  // 충분히 큰 값으로 설정하여 모든 직원 가져오기
+            };
+            // 검색어가 있을 때만 search 파라미터 추가
+            if (searchTerm && searchTerm.trim() !== '') {
+                params.search = searchTerm;
+            }
+            const employees = await employeeService.getEmployees(params);
+            // 현재 사용자와 employee_id가 'admin'인 경우 제외
+            const filteredEmployees = employees.filter(emp => {
+                if (currentUserId && emp.id === currentUserId) return false;
+                if (emp.employee_id === 'admin') return false;
+                return true;
+            });
+            setResults(filteredEmployees);
         } catch (error) {
             console.error("직원 검색 오류:", error);
             alert("직원을 검색하는 중 오류가 발생했습니다.");
@@ -35,12 +49,17 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
         handleSearch(); // 컴포넌트 마운트 시 전체 직원 목록 로드
     }, []);
 
+    useEffect(() => {
+        setSelected(initialSelected); // initialSelected가 변경될 때마다 selected 상태 업데이트
+    }, [initialSelected]);
+
     const handleCheckboxChange = (employee: Employee) => {
         setSelected(prev => {
-            if (prev.some(e => e.id === employee.id)) {
-                return prev.filter(e => e.id !== employee.id);
+            const simpleEmployee: EmployeeSimple = { id: employee.id, name: employee.name }; // ✅ EmployeeSimple로 변환
+            if (prev.some(e => e.id === simpleEmployee.id)) {
+                return prev.filter(e => e.id !== simpleEmployee.id);
             } else {
-                return [...prev, employee];
+                return [...prev, simpleEmployee];
             }
         });
     };
@@ -63,8 +82,9 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
             // 전체 선택: 현재 결과 항목들을 selected에 추가 (중복 방지)
             const newSelected = [...selected];
             results.forEach(emp => {
-                if (!newSelected.some(s => s.id === emp.id)) {
-                    newSelected.push(emp);
+                const simpleEmployee: EmployeeSimple = { id: emp.id, name: emp.name }; // ✅ EmployeeSimple로 변환
+                if (!newSelected.some(s => s.id === simpleEmployee.id)) {
+                    newSelected.push(simpleEmployee);
                 }
             });
             setSelected(newSelected);
@@ -95,6 +115,8 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
     // 정렬된 데이터 계산
     const sortedResults = useMemo(() => {
         let sortableItems = [...results];
+
+        // 1. 정렬 로직 적용
         if (sortConfig.key !== null) {
             sortableItems.sort((a, b) => {
                 let aValue = '';
@@ -117,8 +139,13 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
                 return 0;
             });
         }
-        return sortableItems;
-    }, [results, sortConfig]);
+
+        // 2. 선택된 항목을 상단에 배치
+        const selectedItems = sortableItems.filter(emp => selected.some(s => s.id === emp.id));
+        const unselectedItems = sortableItems.filter(emp => !selected.some(s => s.id === emp.id));
+
+        return [...selectedItems, ...unselectedItems];
+    }, [results, sortConfig, selected]);
 
     // 정렬 아이콘 렌더링
     const renderSortIcon = (key: 'name' | 'dept') => {

@@ -84,13 +84,18 @@ export interface Department {
     name: string;
 }
 
-export interface Employee {
+export interface EmployeeSimple { // ✅ 새로운 인터페이스
+    id: number;
+    name: string;
+}
+
+export interface Employee { // ✅ 복구
     id: number;
     employee_id: string;
     name: string;
-    department?: Department;
-    division?: string; // ✅ 추가
-    team?: string;     // ✅ 추가
+    department?: Department; // ✅ Department 객체 타입으로 복구
+    division?: string;
+    team?: string;
     position?: string;
     email?: string;
     phone?: string;
@@ -100,7 +105,7 @@ export interface Employee {
     status: 'active' | 'inactive' | 'terminated';
     created_at: string;
     updated_at: string;
-    role?: Role; // ✅ 추가: 직원의 역할 정보
+    role?: Role;
 }
 
 export interface EmployeeCreate {
@@ -254,8 +259,9 @@ export interface MeetingMinute {
     project_id: number | null;
     project_name?: string;
     creator_name?: string;
-    attendees_display: string;
-    shared_with: Employee[];
+    sharers_display?: string; // ✅ 추가
+    companion_attendees?: string; // ✅ 추가
+    shared_with: EmployeeSimple[];
     tags: string[];
     share_methods: ('email' | 'jandi')[];
     is_active: boolean;
