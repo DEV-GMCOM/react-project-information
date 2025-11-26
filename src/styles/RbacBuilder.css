@@ -1,511 +1,506 @@
+/* RbacBuilder.css */
+
 .rbac-builder-container {
-    padding: 2rem;
-    background-color: #f9f9f9;
     height: 100%;
-}
-
-/* 섹션1: 권한 관리 (full width, 상단) */
-.permission-management-section {
-    background-color: #fff;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 2rem;
-}
-
-.permission-form-and-list {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    background-color: #f8f9fa;
+    overflow-y: auto; /* 전체 스크롤 허용 */
 }
 
-.permission-form {
-    display: grid;
-    /* 리소스, 액션, 권한명, 권한코드를 2x2로 배치 */
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem 1rem; /* 세로 간격, 가로 간격 */
-    align-items: center;
-}
-
-.permission-form select,
-.permission-form input[type="text"] { /* input[type="text"]로 명확히 지정 */
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    width: 100%; /* 그리드 아이템 내에서 너비 채우기 */
-}
-
-/* textarea는 전체 너비를 차지하도록 */
-.permission-form textarea {
-    grid-column: 1 / -1; /* textarea가 전체 너비를 차지하도록 설정 */
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    resize: vertical;
-    width: 100%; /* 그리드 아이템 내에서 너비 채우기 */
-    margin-top: 0.5rem; /* 다른 필드와의 간격 */
-    margin-bottom: 0.5rem; /* 버튼과의 여백 */
-    min-height: 60px; /* 최소 높이 설정 */
-}
-
-.permission-form .form-buttons {
-    grid-column: 1 / -1; /* 버튼들도 전체 너비를 차지하도록 설정 */
-    display: flex;
-    justify-content: flex-end; /* 버튼들을 오른쪽으로 정렬 */
-    gap: 0.5rem;
-    margin-top: 0.5rem; /* textarea와의 여백 */
-}
-
-.permission-form .btn-create,
-.permission-form .btn-update {
-    padding: 0.5rem 1.5rem;
-    background-color: #007bff;
+/* --- [New] Badge Styles --- */
+.badge-new {
+    background-color: #28a745;
     color: white;
-    border: none;
+    font-size: 0.7rem;
+    padding: 2px 6px;
     border-radius: 4px;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.permission-form .btn-create:hover,
-.permission-form .btn-update:hover {
-    background-color: #0056b3;
-}
-
-.permission-form .btn-cancel,
-.btn-cancel {
-    padding: 0.5rem 1rem;
-    background-color: #6c757d;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.permission-form .btn-cancel:hover,
-.btn-cancel:hover {
-    background-color: #5a6268;
-}
-
-.permission-list-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 0.75rem;
-    padding: 1rem;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-.permission-list-item {
-    background-color: #fff;
-    padding: 0.75rem 1rem;
-    border-radius: 5px;
-    border: 1px solid #eee;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    display: flex;
-    /* justify-content: space-between; 제거. flex-direction: column으로 변경되었기 때문 */
-    /* align-items: center; 제거 */
-    flex-direction: column; /* 설명 표시를 위해 */
-    align-items: flex-start; /* 왼쪽 정렬 */
-    cursor: pointer;
-    transition: all 0.2s;
-    /* position: relative; 제거 */
-}
-
-.permission-list-item:hover {
-    background-color: #f0f8ff;
-    border-color: #007bff;
-}
-
-.permission-list-item.selected {
-    background-color: #e7f3ff;
-    border-color: #007bff;
-    box-shadow: 0 2px 6px rgba(0,123,255,0.2);
-}
-
-.permission-list-item .permission-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    flex: 1;
-    width: 100%; /* 부모 너비 채우기 */
-}
-
-.permission-list-item .permission-header { /* 권한명과 코드를 감싸는 div 추가 */
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start; /* 세로 정렬 상단 기준 (텍스트가 두 줄이 되므로) */
-    width: 100%;
-}
-
-.permission-list-item .permission-info strong {
-    color: #333;
-    font-size: 1rem; /* 크기 약간 키움 */
-}
-
-.permission-list-item .permission-code {
-    color: #6c757d; /* 더 연한 회색 */
-    font-size: 0.85rem;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace; /* 코드 폰트 적용 */
-    white-space: nowrap; /* 코드 줄바꿈 방지 */
-}
-
-.permission-list-item .permission-desc { /* 설명 스타일 추가 */
-    font-size: 0.8rem;
-    color: #777;
-    margin-top: 0.5rem;
-    line-height: 1.4;
-    white-space: pre-wrap; /* 줄바꿈 유지 */
-    width: 100%;
-}
-
-.permission-list-item .delete-btn {
-    background: none;
-    border: none;
-    color: #dc3545;
-    font-size: 16px; /* 텍스트에 맞춰 크기 조절 */
+    margin-left: 8px;
     font-weight: bold;
-    cursor: pointer;
-    margin-left: 1rem; /* 텍스트와의 간격 */
-    flex-shrink: 0; /* 버튼이 줄어들지 않도록 */
-    /* position: absolute; top; right; padding; 제거 */
+    vertical-align: middle;
 }
 
-.permission-list-item .delete-btn:hover {
-    color: #c82333;
+.tree-node.virtual {
+    border-left: 4px solid #ffc107; /* Yellow/Orange for virtual/unsaved items */
+    background-color: #fffbf2;
 }
 
-.rbac-main-content {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 2rem;
-    margin-top: 0rem;
+.tree-node.virtual .node-header {
+    background-color: #fff8e1;
 }
 
-.roles-section {
-    background-color: #fff;
-    padding: 1.5rem;
+/* Hide old Page Manager styles if still present, or repurposed */
+.page-permission-manager {
+    display: none; 
+}
+
+
+/* --- Divider --- */
+.rbac-divider {
+    height: 1px;
+    background: #ddd;
+    margin: 20px;
+}
+
+.rbac-layout-bottom-header {
+    padding: 0 20px;
+    margin-bottom: 10px;
+}
+
+.rbac-layout-bottom-header h2 {
+    font-size: 1.2rem;
+    margin: 0 0 5px 0;
+    color: #333;
+}
+
+.rbac-layout-bottom-header p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* --- Layout Adjustments --- */
+.rbac-layout {
+    display: flex;
+    gap: 20px;
+    /* height: 100%;  Remove full height restriction to allow page scroll if needed */
+    padding: 20px;
+    min-height: 500px; /* 최소 높이 확보 */
+}
+
+
+/* --- Left Sidebar: Roles --- */
+.role-sidebar {
+    width: 300px;
+    background: white;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* 우측 패널: 권한 할당 + 멤버 관리 2단 구조 */
-.right-panel {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
-}
-
-.permissions-section {
-    background-color: #fff;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
     flex-shrink: 0;
 }
 
-h1, h2 {
-    color: #333;
-}
-
-.add-item-form {
-    display: flex;
-    margin-bottom: 1rem;
-    gap: 0.5rem; /* Add gap between items */
-}
-
-.add-item-form input {
-    flex-grow: 1;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-/* Style for the buttons inside the add form */
-.add-item-form button {
-    padding: 0.5rem 1rem;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    flex-shrink: 0; /* Prevent button from shrinking */
-}
-
-.add-item-form.multi-line {
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: stretch;
-}
-
-.add-item-form.multi-line button {
-    margin-left: 0;
-}
-
-.add-item-form button:hover {
-    background-color: #0056b3;
-}
-
-.roles-section ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    max-height: 60vh;
-    overflow-y: auto;
-}
-
-.roles-section li {
-    padding: 0.75rem;
+.sidebar-header {
+    padding: 15px;
     border-bottom: 1px solid #eee;
-    cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.roles-section li:hover {
-    background-color: #f0f0f0;
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
 }
 
-.roles-section li.selected {
+.sidebar-header button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.role-mini-form {
+    padding: 10px;
+    background: #f1f8ff;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.role-mini-form input {
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.role-mini-form .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 5px;
+}
+
+.role-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.role-list li {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f5f5f5;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.role-list li:hover {
+    background-color: #fafafa;
+}
+
+.role-list li.active {
     background-color: #e7f3ff;
-    color: #333;
-    font-weight: bold;
-    border-left: 4px solid #007bff; /* 왼쪽 테두리로 선택 강조 */
+    border-left: 4px solid #007bff;
 }
 
-.edit-btn {
+.role-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.role-name {
+    font-weight: 500;
+}
+
+.role-code {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.role-actions {
+    display: flex;
+    gap: 5px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.role-list li:hover .role-actions {
+    opacity: 1;
+}
+
+/* --- Main Content: Permissions --- */
+.permission-content {
+    flex: 1;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.content-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-primary {
     background: #28a745;
     color: white;
     border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    padding: 8px 16px;
+    border-radius: 4px;
     cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* --- Tree View --- */
+.permission-tree-container {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.tree-node {
+    margin-bottom: 15px;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    background: #fff;
+}
+
+.page-node {
+    border-left: 4px solid #28a745;
+}
+
+.orphan-node {
+    border-left: 4px solid #6c757d;
+    opacity: 0.8;
+}
+
+.node-header {
+    padding: 10px 15px;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+}
+
+.node-header label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+
+.node-code {
+    font-weight: normal;
+    font-size: 0.8rem;
+    color: #888;
+    margin-left: 5px;
+}
+
+.node-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.node-actions button {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.node-actions button:hover {
+    background: #eee;
+}
+
+.node-children {
+    padding: 15px;
+}
+
+.children-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 10px;
+}
+
+.child-node {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.child-node:hover {
+    border-color: #b8daff;
+    background: #f0f8ff;
+}
+
+.child-node label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    flex: 1;
+    font-size: 0.95rem;
+}
+
+.child-type-badge {
+    font-size: 0.7rem;
+    padding: 2px 4px;
+    border-radius: 3px;
     font-weight: bold;
-    line-height: 24px;
+    min-width: 15px;
     text-align: center;
+}
+
+.section-node .child-type-badge {
+    background: #e3f2fd;
+    color: #007bff;
+}
+
+.action-node .child-type-badge {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.unknown-node .child-type-badge {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+.child-actions {
+    opacity: 0.2;
+    transition: opacity 0.2s;
+}
+
+.child-node:hover .child-actions {
+    opacity: 1;
+}
+
+.icon-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 5px;
+}
+
+.icon-btn.delete {
+    color: #dc3545;
+}
+
+.icon-btn:hover {
+    transform: scale(1.2);
+}
+
+.empty-children {
+    color: #aaa;
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+/* --- Role Members Section --- */
+.role-members-section {
+    margin-top: 30px;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 15px;
+}
+
+.role-members-section .section-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.members-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.member-chip {
+    background: #e9ecef;
+    padding: 5px 10px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.member-chip button {
+    border: none;
+    background: #6c757d;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
     font-size: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.edit-btn:hover {
-    background: #218838;
-}
-
-.delete-btn {
-    background: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
     cursor: pointer;
-    font-weight: bold;
-    line-height: 24px;
-    text-align: center;
 }
 
-.delete-btn:hover {
-    background: #c82333;
+/* --- Modal --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
 }
 
-.permission-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 10px;
-    padding: 15px;
-    border: 1px solid #e0e0e0;
+.modal-content {
+    background: white;
+    padding: 25px;
     border-radius: 8px;
-    background-color: #f9f9f9;
-    max-height: 400px; /* 스크롤 가능하게 */
-    overflow-y: auto;
+    width: 500px;
+    max-width: 90%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-.permission-item {
-    background-color: #fff;
-    padding: 10px 15px;
-    border-radius: 5px;
-    border: 1px solid #eee;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    display: flex; /* ADDED */
-    justify-content: space-between; /* ADDED */
-    align-items: center; /* ADDED */
+.permission-modal h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
 }
 
-.permission-item label {
-    cursor: pointer;
-    display: flex; /* ADDED */
-    align-items: center; /* ADDED */
-    gap: 8px; /* ADDED */
-    flex-grow: 1; /* ADDED */
+.form-group {
+    margin-bottom: 15px;
 }
 
-.permission-item input[type="checkbox"] {
-    margin-right: 0; /* Reset default margin */
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
 }
 
-.permission-item .delete-btn {
-    flex-shrink: 0; /* Prevent button from shrinking */
-    margin-left: 10px; /* Space between label and button */
-    background: none;
-    border: none;
-    color: #dc3545;
-    font-size: 16px;
-    cursor: pointer;
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
 }
 
-.permission-item .delete-btn:hover {
-    color: #c82333;
+.input-group {
+    display: flex;
+    align-items: center;
 }
 
+.input-group .prefix {
+    background: #eee;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+    font-family: monospace;
+}
 
+.input-group input {
+    border-radius: 0 4px 4px 0;
+}
 
-
-.save-actions {
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid #eee;
+.modal-actions {
     display: flex;
     justify-content: flex-end;
-}
-
-.save-btn {
-    padding: 0.75rem 1.5rem;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: bold;
-}
-
-.save-btn:hover {
-    background-color: #218838;
-}
-
-.save-btn:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
-/* 전역 저장 버튼 (페이지 최하단) */
-.global-save-section {
-    margin-top: 2rem;
-    padding: 1.5rem 0;
-    border-top: 2px solid #ddd;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.global-save-btn {
-    padding: 1rem 3rem;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1.1rem;
-    font-weight: bold;
-    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
-    transition: all 0.2s;
-}
-
-.global-save-btn:hover {
-    background-color: #218838;
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
-    transform: translateY(-1px);
-}
-
-.global-save-btn:active {
-    transform: translateY(0);
-}
-
-/* --- [추가] 역할 멤버 관리 섹션 --- */
-.assigned-employees-section {
-    grid-column: 1 / -1;
+    gap: 10px;
     margin-top: 20px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background-color: #fff;
-    overflow: hidden;
 }
 
-.assigned-employees-section .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #f7f7f7;
-    padding: 10px 15px;
-    border-bottom: 1px solid #ddd;
-}
-
-.assigned-employees-section .section-header h3 {
-    margin: 0;
-    font-size: 16px;
-}
-
-.btn-add-member {
-    background-color: #28a745;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.btn-add-member:hover {
-    background-color: #218838;
-}
-
-.employee-list {
-    padding: 15px;
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-.employee-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px;
-    border-bottom: 1px solid #eee;
-}
-
-.employee-item:last-child {
-    border-bottom: none;
-}
-
-.btn-remove-member {
-    background: none;
-    border: 1px solid #dc3545;
-    color: #dc3545;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
-    font-weight: bold;
+.empty-state {
     display: flex;
     align-items: center;
     justify-content: center;
-    line-height: 1;
-}
-
-.btn-remove-member:hover {
-    background-color: #dc3545;
-    color: white;
-}
-
-/* RBAC 페이지의 직원 검색 모달 너비를 600px로 지정 */
-.rbac-builder-container .modal-content {
-    max-width: 600px;
+    height: 100%;
+    color: #999;
+    font-size: 1.2rem;
 }
