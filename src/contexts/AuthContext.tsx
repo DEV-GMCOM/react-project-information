@@ -103,6 +103,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } finally {
             setUser(null);
             setShowIdleModal(false);
+            localStorage.removeItem('session_id'); // ✅ 로그아웃 시 세션 ID 명시적으로 제거
             if (isAutoLogout) {
                 localStorage.setItem('auto_logout_reason', 'inactivity');
                 setShowAutoLogoutAlert(true);
@@ -222,6 +223,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             });
             // 중요: 백엔드에서 이제 role과 permissions가 포함된 user 객체를 반환해야 합니다.
             setUser(response.data);
+            localStorage.setItem('session_id', response.data.session_id); // ✅ 추가: 로그인 시 session_id 저장
 
             const today = new Date().toDateString();
             const hiddenUntil = localStorage.getItem('notice_hidden_until');

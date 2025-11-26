@@ -68,7 +68,9 @@ const ProjectRegistForm: React.FC = () => {
                 employeeService.getEmployees({ limit: 1000, status: 'active' })
             ]);
             setCompanies(companiesData);
-            setEmployees(employeesData);
+            // admin 계정 제외
+            const filteredEmployees = employeesData.filter(emp => emp.employee_id !== 'admin');
+            setEmployees(filteredEmployees);
         } catch (err: any) {
             console.error('Form data loading error:', err);
         }

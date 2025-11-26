@@ -31,11 +31,29 @@ const meetingMinuteService = {
     },
 
     /**
+     * 부서(팀) 회의록 목록을 가져옵니다.
+     */
+    async getDepartmentMeetings(params: GetMeetingsParams = {}): Promise<MeetingMinute[]> {
+        const response = await apiClient.get<MeetingMinute[]>('/meeting-minutes/department', { params });
+        return response.data;
+    },
+
+    /**
      * 전체 회의록 목록을 가져옵니다. (관리자용)
      */
     async getAllMeetings(params: GetMeetingsParams = {}): Promise<MeetingMinute[]> {
         const response = await apiClient.get<MeetingMinute[]>('/meeting-minutes/all', { params });
         return response.data;
+    },
+
+    /**
+     * 회의록 개수를 조회합니다.
+     */
+    async getMeetingsCount(type: 'my' | 'shared' | 'dept' | 'all', params: GetMeetingsParams = {}): Promise<number> {
+        const response = await apiClient.get<{ total_count: number }>('/meeting-minutes/count', {
+            params: { ...params, type }
+        });
+        return response.data.total_count;
     },
 
     /**

@@ -131,7 +131,11 @@ const RbacBuilder: React.FC = () => {
     
         useEffect(() => {
             fetchData();
-            employeeService.getEmployees({ limit: 1000 }).then(setAllEmployees);
+            employeeService.getEmployees({ limit: 1000 }).then(employees => {
+                // admin 계정 제외
+                const filteredEmployees = employees.filter(emp => emp.employee_id !== 'admin');
+                setAllEmployees(filteredEmployees);
+            });
         }, []);
     
         useEffect(() => {

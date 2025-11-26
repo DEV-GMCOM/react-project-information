@@ -201,7 +201,7 @@ export class FileUploadService {
                         file_size: fileInfo.file_size,
                         file_type: fileInfo.file_type,
                         uploaded_at: fileInfo.uploaded_at,
-                        download_url: `/api/projects/${projectId}/files/${fileInfo.id}/download`
+                        download_url: `projects/${projectId}/files/${fileInfo.id}/download`
                     };
                 }
             }
@@ -309,12 +309,24 @@ export class FileUploadService {
 
     // 파일 다운로드 처리 - Firefox만 fetch 사용
     async downloadFile(projectId: number, fileId: number, fileName: string): Promise<void> {
+        const url = `/api/projects/${projectId}/files/${fileId}/download`;
+        await this.performDownload(url, fileName);
+    }
+
+    // 회의록 파일 다운로드
+    async downloadMeetingFile(meetingId: number, fileId: number, fileName: string): Promise<void> {
+        const url = `/api/meetings/${meetingId}/files/${fileId}/download`;
+        await this.performDownload(url, fileName);
+    }
+
+    // 공통 다운로드 로직
+    private async performDownload(url: string, fileName: string): Promise<void> {
         try {
-            console.log(`파일 다운로드 시작: projectId=${projectId}, fileId=${fileId}`);
-            console.log(`원본 파일명: ${fileName}`);
+            console.log(`파일 다운로드 요청: ${url}`);
+            console.log(`요청 파일명: ${fileName}`);
 
             // 모든 브라우저에서 fetch 사용 (통일성)
-            const response = await fetch(`/api/projects/${projectId}/files/${fileId}/download`, {
+            const response = await fetch(url, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -335,30 +347,30 @@ export class FileUploadService {
 
                 // 1순위: filename*=UTF-8''인코딩된파일명 (RFC 6266)
                 const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;,\s]+)/i);
+                
                 if (utf8Match && utf8Match[1]) {
                     try {
                         downloadFileName = decodeURIComponent(utf8Match[1]);
                         console.log(`UTF-8 디코딩 성공: ${downloadFileName}`);
                     } catch (e) {
                         console.warn('UTF-8 디코딩 실패:', e);
+                        // 디코딩 실패 시 다음 순위로 넘어가지 않고 기본값(fileName) 유지 또는 아래 로직 실행 여부 결정
+                        // 여기서는 실패했으므로 2순위 시도하도록 할 수도 있지만, 
+                        // 보통 UTF-8 매칭이 되었는데 디코딩만 실패하는 경우는 드물다.
                     }
-                }
-
-                // 2순위: filename="파일명" (fallback)
-                if (!utf8Match || downloadFileName === fileName) {
+                } else {
+                    // 2순위: filename="파일명" (fallback) - 1순위 매칭 실패 시에만 실행
                     const quotedMatch = contentDisposition.match(/filename="([^"]+)"/i);
                     if (quotedMatch && quotedMatch[1]) {
                         downloadFileName = quotedMatch[1];
                         console.log(`quoted filename: ${downloadFileName}`);
-                    }
-                }
-
-                // 3순위: filename=파일명 (따옴표 없음)
-                if (downloadFileName === fileName) {
-                    const unquotedMatch = contentDisposition.match(/filename=([^;,\s]+)/i);
-                    if (unquotedMatch && unquotedMatch[1]) {
-                        downloadFileName = unquotedMatch[1];
-                        console.log(`unquoted filename: ${downloadFileName}`);
+                    } else {
+                        // 3순위: filename=파일명 (따옴표 없음)
+                        const unquotedMatch = contentDisposition.match(/filename=([^;,\s]+)/i);
+                        if (unquotedMatch && unquotedMatch[1]) {
+                            downloadFileName = unquotedMatch[1];
+                            console.log(`unquoted filename: ${downloadFileName}`);
+                        }
                     }
                 }
             }
@@ -643,7 +655,7 @@ export class FileUploadService {
             file_size: fileInfo.file_size,
             file_type: fileInfo.file_type,
             uploaded_at: fileInfo.uploaded_at,
-            download_url: `/api/files/${fileInfo.id}/download`
+            download_url: `files/${fileInfo.id}/download`
         };
     }
 

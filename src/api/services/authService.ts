@@ -65,6 +65,12 @@ export class AuthService {
         const response = await apiClient.put('/auth/change-password', data); // RESTful하게 PUT 메소드 사용 권장
         return response.data;
     }
+
+    // 👇 추가된 메소드: 잔디 연결 API 호출
+    async connectJandi(data: { link: string }): Promise<{ message: string }> {
+        const response = await apiClient.put('/auth/me/jandi-connection', { jandi_webhook_url: data.link });
+        return response.data;
+    }
 }
 
 export const authService = new AuthService();
