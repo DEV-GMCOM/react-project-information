@@ -6,7 +6,7 @@ import Cookies from 'js-cookie'; // ✅ 쿠키 라이브러리 추가 필요
 // [추가] API 서비스 및 타입 import
 import { projectService } from '../../api/services/projectService';
 import { employeeService } from '../../api/services/employeeService';
-import { Project, Employee, MeetingMinute } from '../../api/types';
+import { Project, Employee, MeetingMinute, EmployeeSimple } from '../../api/types';
 import { fileUploadService } from '../../api/services/fileUploadService';
 import apiClient from '../../api/utils/apiClient';
 
@@ -24,7 +24,7 @@ import LLMSettingsModal from '../../components/meeting/LLMSettingsModal';
 // [추가] 에러 핸들러 (프로젝트에 이미 있다면 경로 수정)
 import { handleApiError } from '../../api/utils/errorUtils';
 // ✅ 1. Import 추가 (파일 최상단 import 섹션에)
-import { generationService, STTProgressMessage, STTEngine, LLMEngine, DocType } from '../../api/services/generationService';
+import { generationService, STTProgressMessage, STTEngine, LLMEngine, DocType, STTCreateResponse } from '../../api/services/generationService';
 // import { generationService, STTProgressMessage } from '../../api/services/generationService';
 
 import { useHelp } from '../../contexts/HelpContext';
@@ -194,17 +194,29 @@ const MeetingMinutes = () => {
     };
 
     const [shareMethod, setShareMethod] = useState<'email' | 'jandi'>('email');
-    const [attendees, setAttendees] = useState<string>('');
+
     const [tags, setTags] = useState<string>('');
+    const [companionAttendees, setCompanionAttendees] = useState<string>(''); // ✅ 추가
     // 탭 상태 관리
-    const [activeTab, setActiveTab] = useState<'my' | 'shared' | 'all'>('my');
+    const [activeTab, setActiveTab] = useState<'my' | 'shared' | 'dept' | 'all'>('my');
     const [llmOutput, setLlmOutput] = useState(true);
     // --- ▲▲▲ 상태 관리 종료 ▲▲▲ ---
 
+    // [추가] 정렬 상태 (useCallback보다 먼저 선언)
+    const [sortBy, setSortBy] = useState<string>('meeting_datetime');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
     const [myMeetings, setMyMeetings] = useState<MeetingMinute[]>([]);
     const [sharedMeetings, setSharedMeetings] = useState<MeetingMinute[]>([]);
+    const [deptMeetings, setDeptMeetings] = useState<MeetingMinute[]>([]); // ✅ 부서 회의록 추가
+    const [allMeetings, setAllMeetings] = useState<MeetingMinute[]>([]); // ✅ 추가
     const [listLoading, setListLoading] = useState(false);
     const [listError, setListError] = useState<string | null>(null);
+    
+    // [추가] 페이지네이션 상태
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(0);
+    const ITEMS_PER_PAGE = 15;
 
     // 필터 상태 추가
     const [filterType, setFilterType] = useState<'all' | 'project' | 'independent'>('all');
@@ -214,6 +226,76 @@ const MeetingMinutes = () => {
     const [saveMode, setSaveMode] = useState<SaveMode>('create');
     const [currentMeetingId, setCurrentMeetingId] = useState<number | null>(null);
     const [selectedMeeting, setSelectedMeeting] = useState<MeetingMinute | null>(null);
+
+    const loadMeetings = useCallback(async (tab: 'my' | 'shared' | 'dept' | 'all', filter: typeof filterType, page: number = 1) => { // ✅ 'dept' 및 page 추가
+        setListLoading(true);
+        setListError(null);
+        try {
+            const skip = (page - 1) * ITEMS_PER_PAGE;
+            const params: any = { limit: ITEMS_PER_PAGE, skip };
+
+            if (filter === 'project') {
+                params.has_project = true;
+            } else if (filter === 'independent') {
+                params.has_project = false;
+            }
+            // [추가] 정렬 파라미터
+            if (sortBy) {
+                params.sort_by = sortBy;
+            }
+            if (sortOrder) {
+                params.sort_order = sortOrder;
+            }
+
+            // 데이터와 카운트를 병렬로 조회
+            const [data, totalCount] = await Promise.all([
+                (async () => {
+                    if (tab === 'my') return meetingMinuteService.getMyMeetings(params);
+                    if (tab === 'shared') return meetingMinuteService.getSharedMeetings(params);
+                    if (tab === 'dept') return meetingMinuteService.getDepartmentMeetings(params);
+                    return meetingMinuteService.getAllMeetings(params);
+                })(),
+                meetingMinuteService.getMeetingsCount(tab, params)
+            ]);
+            
+            if (tab === 'my') setMyMeetings(data);
+            else if (tab === 'shared') setSharedMeetings(data);
+            else if (tab === 'dept') setDeptMeetings(data);
+            else setAllMeetings(data);
+            
+            setTotalPages(Math.ceil(totalCount / ITEMS_PER_PAGE));
+            setCurrentPage(page);
+
+        } catch (error) {
+            console.error(`Error loading ${tab} meetings with filter ${filter}:`, error);
+            setListError('회의록 목록을 불러오는 중 오류가 발생했습니다.');
+            handleApiError(error);
+        } finally {
+            setListLoading(false);
+        }
+    }, [sortBy, sortOrder]); // ✅ 의존성 배열에 추가
+
+    // [추가] 정렬 핸들러
+    const handleSort = useCallback((column: string) => {
+        if (column === sortBy) {
+            setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+        } else {
+            setSortBy(column);
+            setSortOrder('desc'); // 기본 내림차순
+        }
+        // 정렬 변경 시 1페이지로 리셋하고 다시 로드해야 함 -> useEffect가 처리하도록 activeTab 변경?
+        // 아니면 loadMeetings 직접 호출. 정렬 변경은 useEffect[sortBy, sortOrder]로 처리하는 게 좋음
+    }, [sortBy]);
+    
+    // 정렬 변경 시 데이터 다시 로드
+    useEffect(() => {
+        loadMeetings(activeTab, filterType, 1);
+    }, [sortBy, sortOrder, activeTab, filterType, loadMeetings]);
+
+    // 탭이 변경될 때 해당 탭의 데이터를 로드 (기존 useEffect 대체)
+    // useEffect(() => {
+    //    loadMeetings(activeTab, filterType, 1);
+    // }, [activeTab, filterType, loadMeetings]);
 
     // ✅ [추가] 읽기 전용 모드 여부 (본인이 작성자가 아니면 true)
     const isReadOnly = useMemo(() => {
@@ -268,7 +350,7 @@ const MeetingMinutes = () => {
         setProjectName('');
         setSelectedProjectId(null);
         setSharedWith([]);
-        setAttendees('');
+
         setTags('');
         setShareMethods({ email: true, jandi: false });
         setCurrentMeetingId(null);
@@ -328,7 +410,7 @@ const MeetingMinutes = () => {
                     project_id: created.project_id,
                     project_name: projectName || '',
                     creator_name: '', // 서버에서 받아온 데이터로 채울 수 있음
-                    attendees_display: '',
+
                     tags: tags.split(',').map(t => t.trim()).filter(t => t),
                     share_methods: Object.entries(shareMethods)
                         .filter(([, checked]) => checked)
@@ -566,47 +648,6 @@ const MeetingMinutes = () => {
         };
     }, [setHelpContent]);
 
-    const loadMeetings = useCallback(async (tab: 'my' | 'shared', filter: typeof filterType) => {
-        setListLoading(true);
-        setListError(null);
-        try {
-            // filter를 백엔드가 이해하는 has_project로 변환
-            const params: any = { limit: 50 };
-
-            if (filter === 'project') {
-                params.has_project = true;
-            } else if (filter === 'independent') {
-                params.has_project = false;
-            }
-            // filter === 'all'이면 has_project를 전달하지 않음 (undefined)
-
-            if (tab === 'my') {
-                const data = await meetingMinuteService.getMyMeetings(params);
-                setMyMeetings(data);
-            } else if (tab === 'shared') {
-                const data = await meetingMinuteService.getSharedMeetings(params);
-                setSharedMeetings(data);
-            }
-        } catch (error) {
-            console.error(`Error loading ${tab} meetings with filter ${filter}:`, error);
-            setListError('회의록 목록을 불러오는 중 오류가 발생했습니다.');
-            handleApiError(error);
-        } finally {
-            setListLoading(false);
-        }
-    }, []);
-
-    // 탭이 변경될 때 해당 탭의 데이터를 로드
-    useEffect(() => {
-        // 'my' 탭은 기본으로 로드
-        if (activeTab === 'my') {
-            loadMeetings('my', filterType);
-        } else if (activeTab === 'shared') {
-            loadMeetings('shared', filterType);
-        }
-        // loadMeetings 함수는 useCallback으로 메모이제이션되었으므로 의존성 배열에 추가
-    }, [activeTab, filterType, loadMeetings]);
-
     // [신규] 필터 변경 핸들러
     const handleFilterChange = (event: ChangeEvent<HTMLSelectElement>) => {
         setFilterType(event.target.value as 'all' | 'project' | 'independent');
@@ -717,10 +758,11 @@ const MeetingMinutes = () => {
         setMeetingTitle(meeting.meeting_title);
         setMeetingDateTime(meeting.meeting_datetime ? new Date(meeting.meeting_datetime) : null);
         setMeetingPlace(meeting.meeting_place || '');
+        setCompanionAttendees(meeting.companion_attendees || ''); // ✅ 추가
         setProjectName(meeting.project_name || '');
         setSelectedProjectId(meeting.project_id || null);
-        setSharedWith(meeting.shared_with || []);
-        setAttendees(meeting.attendees_display || '');
+
+
         setTags(meeting.tags?.join(', ') || '');
         setShareMethods({
             email: meeting.share_methods?.includes('email') ?? true,
@@ -774,6 +816,10 @@ const MeetingMinutes = () => {
                 };
             });
             setLlmResults(newLlmResults);
+            
+            // ✅ details가 로드된 후 setSharedWith 호출 (원래 747 라인이 있던 곳으로 이동)
+            setSharedWith(details.shared_with || []); // ✅ 여기로 이동
+
             console.log('LLM 결과 로드 완료');
 
             // [수정] LLM 설정 복원 로직 제거 -> 항상 초기화
@@ -812,7 +858,7 @@ const MeetingMinutes = () => {
                     email: meeting.share_methods?.includes('email') ?? true,
                     jandi: meeting.share_methods?.includes('jandi') ?? false
                 },
-                attendees: meeting.attendees_display || '',
+
                 manualInput: details.basic_minutes || '',
                 sttResults: { ...loadedSttResults },
                 llmResults: JSON.parse(JSON.stringify(newLlmResults))
@@ -876,7 +922,7 @@ const MeetingMinutes = () => {
     const [projectTotalCount, setProjectTotalCount] = useState(0);
 
     const [showEmployeeSearchModal, setShowEmployeeSearchModal] = useState(false);
-    const [sharedWith, setSharedWith] = useState<Employee[]>([]); // Employee 객체 배열로 관리
+    const [sharedWith, setSharedWith] = useState<EmployeeSimple[]>([]); // ✅ EmployeeSimple[]로 변경
     // --- ▲▲▲ 상태 관리 종료 ▲▲▲ ---
 
     const [meetingTitle, setMeetingTitle] = useState<string>('');
@@ -891,11 +937,40 @@ const MeetingMinutes = () => {
     const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
     const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
     const [sttStatusMessage, setSttStatusMessage] = useState<string>('');
+    const [llmStatusMessage, setLlmStatusMessage] = useState<string>('LLM 문서 생성 준비 중...'); // [추가] LLM 진행 상태 메시지
+
+
+
+
 
     const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<number | null>(null);
     const [conversionDuration, setConversionDuration] = useState<number | null>(null);
     const [wsStartTime, setWsStartTime] = useState<number | null>(null);
     const [sttCompleted, setSttCompleted] = useState<boolean>(false); // ✅ STT 완료 상태 추가
+
+    // [추가] 오디오 예상 시간 계산용
+    const [audioDuration, setAudioDuration] = useState<number | null>(null);
+    const STT_SPEED_FACTORS = {
+        "tiny": 10.0, "base": 5.0, "small": 3.0,
+        "medium": 1.5, "large": 0.8
+    };
+
+    const getAudioDuration = (file: File): Promise<number | null> => {
+        return new Promise((resolve) => {
+            const objectUrl = URL.createObjectURL(file);
+            const audio = document.createElement('audio');
+            audio.preload = 'metadata';
+            audio.onloadedmetadata = () => {
+                URL.revokeObjectURL(objectUrl);
+                resolve(audio.duration);
+            };
+            audio.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                resolve(null);
+            };
+            audio.src = objectUrl;
+        });
+    };
 
     // ✅ [추가] STT 작업 시작 시 프로그레스 바로 스크롤하는 효과
     useEffect(() => {
@@ -1007,6 +1082,14 @@ const MeetingMinutes = () => {
             setSttCompleted(false); // ✅ 새 파일 추가 시 STT 완료 상태 초기화
             setSelectedFiles(prev => [...prev, ...validFiles]);
 
+            // [추가] 오디오 파일 길이 측정
+            const audioFile = validFiles.find(f => f.type.startsWith('audio/') || audioExtensions.includes(f.name.split('.').pop()?.toLowerCase() || ''));
+            if (audioFile) {
+                getAudioDuration(audioFile).then(duration => {
+                    if (duration) setAudioDuration(duration);
+                });
+            }
+
             // 텍스트 파일 자동 로드
             for (const file of validFiles) {
                 const ext = file.name.split('.').pop()?.toLowerCase();
@@ -1093,6 +1176,14 @@ const MeetingMinutes = () => {
         if (validFiles.length > 0) {
             setSttCompleted(false); // ✅ 새 파일 추가 시 STT 완료 상태 초기화
             setSelectedFiles(prev => [...prev, ...validFiles]);
+
+            // [추가] 오디오 파일 길이 측정
+            const audioFile = validFiles.find(f => f.type.startsWith('audio/') || audioExtensions.includes(f.name.split('.').pop()?.toLowerCase() || ''));
+            if (audioFile) {
+                getAudioDuration(audioFile).then(duration => {
+                    if (duration) setAudioDuration(duration);
+                });
+            }
 
             // 텍스트 파일 자동 로드
             for (const file of validFiles) {
@@ -1279,8 +1370,8 @@ const MeetingMinutes = () => {
         setProjectName('');
         setSelectedProjectId(null);
         setSharedWith([]);
-        setAttendees(''); // ✅ 수정: 빈 문자열로
-        setTags(''); // ✅ 수정: 빈 문자열로
+        setCompanionAttendees(''); // ✅ 추가
+        setTags('');
         setShareMethods({ email: false, jandi: false }); // ✅ 수정: slack → jandi
         setRecordingMethod('audio');
         setSelectedFiles([]);
@@ -1428,7 +1519,7 @@ const MeetingMinutes = () => {
     // --- ▲▲▲ 프로젝트 검색 핸들러 종료 ▲▲▲ ---
 
     // --- ▼▼▼ [수정] 공유 인원 핸들러 ▼▼▼ ---
-    const handleSharedWithSelect = (selectedEmployees: Employee[]) => {
+    const handleSharedWithSelect = (selectedEmployees: EmployeeSimple[]) => {
         setSharedWith(selectedEmployees);
     };
 
@@ -1459,7 +1550,7 @@ const MeetingMinutes = () => {
                 .filter(([, checked]) => checked)
                 .map(([key]) => key),
             tags: tags.split(',').map(t => t.trim()).filter(t => t),
-            attendee_ids: [],
+            companion_attendees: companionAttendees, // ✅ 추가
             basic_minutes: manualInput || ''
         };
 
@@ -1490,7 +1581,112 @@ const MeetingMinutes = () => {
         }
     };
 
+    // [추가] WebSocket 메시지 핸들러 (재사용)
+    const handleSttProgressMessage = useCallback((data: STTProgressMessage) => {
+        // console.log('📊 진행률 수신:', data);
+
+        switch (data.status) {
+            case 'completed':
+                if (completionHandledRef.current) return;
+                completionHandledRef.current = true;
+
+                console.log('✅ STT 변환 완료');
+                setSttProgress(100);
+                setSttStatusMessage('변환 완료!');
+
+                if (data.result_text) {
+                    // 메타데이터에 엔진 정보가 있으면 사용, 없으면 현재 설정
+                    // const engine = (data.metadata as any)?.engine || sttEngine;
+                    const engine = sttEngine; 
+                    
+                    setSttResults(prev => ({ ...prev, [engine]: data.result_text! }));
+                    setSelectedSttSource(engine);
+                    alert('STT 변환이 완료되었습니다.');
+                }
+
+                setIsGenerating(false);
+                setSttCompleted(true);
+                setCurrentTaskId(null);
+                setEstimatedTimeRemaining(null);
+                localStorage.removeItem('currentSttTaskId');
+                break;
+
+            case 'failed':
+            case 'aborted':
+                if (completionHandledRef.current) return;
+                completionHandledRef.current = true;
+
+                setIsGenerating(false);
+                setSttCompleted(false);
+                setEstimatedTimeRemaining(null);
+                setSttStatusMessage(data.status === 'failed' ? '변환 실패' : '중단됨');
+                setGenerationPhase(0);
+                setCurrentTaskId(null);
+                localStorage.removeItem('currentSttTaskId');
+                
+                if (data.status === 'failed') alert(`오류: ${data.error}`);
+                break;
+
+            case 'processing':
+            case 'pending':
+                setSttProgress(data.progress);
+                setSttStatusMessage(data.message || '');
+                break;
+        }
+    }, [sttEngine]);
+
+    // [추가] 작업 복구 로직
+    useEffect(() => {
+        const savedTaskId = localStorage.getItem('currentSttTaskId');
+        if (savedTaskId) {
+            checkAndResumeTask(savedTaskId);
+        }
+    }, []); // 마운트 시 1회 실행
+
+    const checkAndResumeTask = async (taskId: string) => {
+        try {
+            const statusRes = await generationService.getSTTStatus(taskId);
+            if (['processing', 'pending'].includes(statusRes.status)) {
+                console.log("🔄 STT 작업 복구 중:", taskId);
+                setIsGenerating(true);
+                setGenerationPhase(1);
+                setCurrentTaskId(taskId);
+                setSttProgress(statusRes.progress);
+                setSttStatusMessage(statusRes.metadata?.message || '작업 복구 중...');
+                
+                completionHandledRef.current = false;
+                
+                const ws = generationService.connectSTTProgress(
+                    taskId,
+                    handleSttProgressMessage,
+                    (err) => console.error("WS 재연결 실패:", err)
+                );
+                setWsConnection(ws);
+            } else {
+                localStorage.removeItem('currentSttTaskId');
+            }
+        } catch (e) {
+            console.error("작업 복구 실패:", e);
+            localStorage.removeItem('currentSttTaskId');
+        }
+    };
+
     const handleGenerateSTT = async () => {
+        // [추가] 이미 진행 중인 STT 작업이 있는지 확인 (혹시 모를 중복 요청 방지)
+        if (isGenerating && generationPhase === 1) {
+            alert("이미 STT 변환이 진행 중입니다. 잠시 기다려주세요.");
+            return;
+        }
+
+        // [추가] localStorage에 taskId가 남아있는데 currentTaskId가 null인 경우 (복구되지 않은 상태)
+        const savedTaskId = localStorage.getItem('currentSttTaskId');
+        if (savedTaskId && !currentTaskId) {
+            alert("이전에 중단된 STT 작업이 있습니다. 페이지를 새로고침하여 복구를 시도하거나 잠시 기다려주세요.");
+            return;
+        }
+        
+        // [추가] 텍스트 추출 버튼 클릭 시 자동으로 'audio' 모드로 전환
+        setRecordingMethod('audio');
         completionHandledRef.current = false; // ✅ 완료 처리 잠금 해제
         setSttCompleted(false); // ✅ STT 완료 상태 초기화
 
@@ -1499,15 +1695,11 @@ const MeetingMinutes = () => {
         console.log("현재 회의록 ID:", currentMeetingId);
 
         // --- 파라미터 유효성 검증 ---
-        if (selectedFiles.length === 0) {
-            alert("STT 변환을 위한 음성 파일을 먼저 업로드해주세요.");
-            return;
-        }
+        // [수정] 로컬 파일과 서버 파일 모두 확인
 
         setIsGenerating(true);
         setGenerationPhase(1);
         setSttProgress(0);
-        // setSttStatusMessage('작업 생성 중...');
         setSttStatusMessage('준비 중...');
 
         try {
@@ -1521,50 +1713,84 @@ const MeetingMinutes = () => {
             }
 
             // ✅ 2단계: STT 실행
-            setSttStatusMessage('파일 업로드 중...');
+            setSttStatusMessage('파일 확인 중...');
 
-            // --- ✅ 수정된 코드 ---
-            const audioFile = selectedFiles.find(file => {
+            // 1. 로컬 파일 확인
+            const fileToConvert = selectedFiles.find(file => {
                 const ext = file.name.split('.').pop()?.toLowerCase();
-                // (Line 427의 audioExtensions 배열을 사용)
                 return ext && audioExtensions.includes(ext);
             });
 
+            // 2. 로컬 파일이 없으면 서버 파일 확인
+            let existingFileId: number | null = null;
+
+            if (!fileToConvert) {
+                const serverAudioFile = serverFiles.find(file => {
+                    const name = file.original_file_name || file.file_name;
+                    const ext = name?.split('.').pop()?.toLowerCase();
+                    return ext && audioExtensions.includes(ext);
+                });
+
+                if (serverAudioFile) {
+                    console.log("서버에 있는 오디오 파일을 사용합니다:", serverAudioFile.original_file_name);
+                    existingFileId = serverAudioFile.id;
+                }
+            }
+
             // 음성 파일이 없는 경우 STT 실행 중단
-            if (!audioFile) {
-                alert("STT 변환을 위한 음성 파일(mp3, m4a, wav 등)을 업로드해주세요.");
+            if (!fileToConvert && !existingFileId) {
+                alert("STT 변환을 위한 음성 파일(mp3, m4a, wav 등)을 업로드하거나, 기존 파일 목록에서 확인해주세요.");
                 setIsGenerating(false); // 로딩 중단
                 setGenerationPhase(0); // 단계 초기화
                 return;
             }
 
-            const fileToConvert = audioFile; // 찾은 음성 파일을 STT 대상으로 지정
-            // const fileToConvert = selectedFiles[0];
             const engineToUse = sttEngine as any; // STTEngine 타입
+            let createResponse: STTCreateResponse | undefined;
 
-            // // meeting_id 확인
-            // const meetingIdToSend = currentMeetingId || undefined;
-            // console.log("전송할 meeting_id:", meetingIdToSend);
+            if (fileToConvert) {
+                // [기존 로직] 파일 업로드 및 작업 생성
+                setSttStatusMessage('파일 업로드 중...');
+                createResponse = await generationService.createSTTTask(
+                    engineToUse,
+                    fileToConvert,
+                    {
+                        model_size: sttModelSize,
+                        language: sttLanguage,
+                        meeting_id: meetingId
+                    }
+                );
+            } else if (existingFileId) {
+                // [신규 로직] 기존 파일 ID로 작업 생성
+                setSttStatusMessage('작업 생성 중...');
+                createResponse = await generationService.createSTTTaskFromExistingFile(
+                    engineToUse,
+                    existingFileId,
+                    {
+                        model_size: sttModelSize,
+                        language: sttLanguage
+                    }
+                );
+            }
 
-            // 비동기 작업 생성
-            const createResponse = await generationService.createSTTTask(
-                engineToUse,
-                fileToConvert,
-                {
-                    model_size: sttModelSize, // 설정된 모델 크기 사용
-                    language: sttLanguage,   // 설정된 언어 사용
-                    meeting_id: meetingId
-                }
-            );
+            if (!createResponse) {
+                console.error("STT 작업 생성 응답이 없습니다.");
+                setIsGenerating(false);
+                setGenerationPhase(0);
+                return;
+            }
 
             const taskId = createResponse.task_id;
             const fileId = createResponse.file_id;  // 파일 ID 받음
 
             setCurrentTaskId(taskId);
-            // 파일 ID 저장 (나중에 STT 결과 조회용)
-            setUploadedFileIds(prev => new Map(prev).set(fileToConvert.name, fileId));
+            
+            // 파일 ID 저장 (로컬 파일인 경우만)
+            if (fileToConvert) {
+                setUploadedFileIds(prev => new Map(prev).set(fileToConvert.name, fileId));
+            }
 
-            console.log(`✅ 파일 업로드 완료: file_id=${fileId}`);
+            console.log(`✅ STT 작업 시작: task_id=${taskId}, file_id=${fileId}`);
             setSttStatusMessage('WebSocket 연결 중...');
             setWsStartTime(Date.now());
 
@@ -1620,69 +1846,18 @@ const MeetingMinutes = () => {
             //         setCurrentTaskId(null);
             //     }
             // );
+            console.log(`✅ STT 작업 시작: task_id=${taskId}, file_id=${fileId}`);
+            
+            // [추가] 작업 ID를 localStorage에 저장 (새로고침/이동 시 복구용)
+            localStorage.setItem('currentSttTaskId', taskId);
+            
+            setSttStatusMessage('WebSocket 연결 중...');
+            setWsStartTime(Date.now());
+
+            // ✅ 3단계: WebSocket 진행률 수신
             const ws = generationService.connectSTTProgress(
                 taskId,
-                async (data: STTProgressMessage) => {
-                    console.log('📊 진행률 수신:', data);
-
-                    // --- 상태별 처리 ---
-                    switch (data.status) {
-                        case 'completed':
-                            if (completionHandledRef.current) return;
-                            completionHandledRef.current = true;
-
-                            console.log('✅ STT 변환 완료 (WebSocket)');
-                            setSttProgress(100);
-                            setSttStatusMessage('변환 완료!');
-
-                            if (data.result_text) {
-                                setSttResults(prev => ({ ...prev, [sttEngine]: data.result_text }));
-                                setSelectedSttSource(sttEngine);
-                                alert(`[${sttEngine}] STT 변환이 완료되었습니다.`);
-                            } else {
-                                console.error("STT 완료 메시지에 결과 텍스트가 없습니다.");
-                                alert("STT 결과를 수신했지만 텍스트가 비어있습니다.");
-                            }
-
-                            // 최종 UI 상태 업데이트
-                            setIsGenerating(false);
-                            setSttCompleted(true);
-                            setCurrentTaskId(null);
-                            setEstimatedTimeRemaining(null);
-                            break;
-
-                        case 'failed':
-                        case 'aborted':
-                            if (completionHandledRef.current) return;
-                            completionHandledRef.current = true;
-
-                            console.log(`⏹️ 작업 실패 또는 중단: ${data.status}`);
-                            setIsGenerating(false);
-                            setSttCompleted(false);
-                            setEstimatedTimeRemaining(null);
-                            setSttStatusMessage(data.status === 'failed' ? '변환 실패' : '작업이 중단되었습니다');
-                            setGenerationPhase(0);
-                            setCurrentTaskId(null);
-
-                            alert(data.status === 'failed' ? `STT 변환 실패: ${data.error || '알 수 없는 오류'}` : 'STT 변환이 중단되었습니다.');
-                            break;
-
-                        case 'processing':
-                        case 'pending':
-                            // 진행 중일 때만 프로그레스 바 및 메시지 업데이트
-                            setSttProgress(data.progress);
-                            setSttStatusMessage(data.message || '');
-
-                            // 남은 시간 계산
-                            if (data.progress > 0 && data.progress < 100 && wsStartTime) {
-                                const elapsed = Date.now() - wsStartTime;
-                                const estimatedTotal = (elapsed / data.progress) * 100;
-                                const remaining = Math.max(0, estimatedTotal - elapsed);
-                                setEstimatedTimeRemaining(Math.ceil(remaining / 1000));
-                            }
-                            break;
-                    }
-                },
+                handleSttProgressMessage, // [수정] 공통 핸들러 사용
                 (error) => {
                     console.error('WebSocket 에러:', error);
                     alert('WebSocket 연결 실패. 네트워크를 확인해주세요.');
@@ -1690,6 +1865,7 @@ const MeetingMinutes = () => {
                     setGenerationPhase(0);
                     setCurrentTaskId(null);
                     setEstimatedTimeRemaining(null);
+                    localStorage.removeItem('currentSttTaskId'); // [추가] 에러 시에도 localStorage 제거
                 }
             );
 
@@ -1729,6 +1905,14 @@ const MeetingMinutes = () => {
             await generationService.abortSTTTask(currentTaskId);
 
             alert('STT 변환 중단 요청이 전송되었습니다.');
+            
+            // [추가] 중단 요청 후 프론트엔드 상태 초기화
+            setIsGenerating(false);
+            setGenerationPhase(0);
+            setCurrentTaskId(null);
+            setSttCompleted(false);
+            setEstimatedTimeRemaining(null); // 예상 시간도 초기화
+            localStorage.removeItem('currentSttTaskId');
         } catch (error) {
             console.error('Abort 요청 실패:', error);
         }
@@ -1809,6 +1993,7 @@ const MeetingMinutes = () => {
         setShowLlmSettingsModal(false); // 👈 [추가] 유효성 검사 통과 후 모달 닫기
         setIsGenerating(true);
         setGenerationPhase(2); // LLM 진행 중 UI 표시
+        setLlmStatusMessage('LLM 문서 생성 준비 중...'); // [추가] 초기 메시지
 
         // ✅ 알림 창 추가 (사용자 요청)
         // ✅ 알림 창 수정 (조건부 알림)
@@ -1827,8 +2012,10 @@ const MeetingMinutes = () => {
                 stt_original_id         // ✅ 추가 (선택)
             };
 
+            setLlmStatusMessage('AI 모델 호출 중...'); // [추가]
             // 1. LLM 생성 요청
             await generationService.generateLLM(payload);
+            setLlmStatusMessage('문서 생성 완료! 결과 저장 중...'); // [추가]
 
             alert(`[${engine}] LLM 문서 생성이 완료되었습니다. 최신 정보를 다시 불러옵니다.`);
 
@@ -1866,9 +2053,11 @@ const MeetingMinutes = () => {
         } catch (error) {
             console.error("LLM 생성 중 오류:", error);
             handleApiError(error);
+            setLlmStatusMessage('LLM 문서 생성 실패'); // [추가]
         } finally {
             setIsGenerating(false);
             setGenerationPhase(0);
+            setLlmStatusMessage('LLM 문서 생성 준비 중...'); // [추가] 초기 메시지로 복구
         }
     };
 
@@ -2073,7 +2262,7 @@ const MeetingMinutes = () => {
                 sharedWithIds: sharedWith.map(emp => emp.id),
                 tags,
                 shareMethods: { ...shareMethods },
-                attendees,
+                // attendees,
                 manualInput,
                 sttResults: { ...sttResults },
                 llmResults: JSON.parse(JSON.stringify(llmResults))
@@ -2112,7 +2301,7 @@ const MeetingMinutes = () => {
         const placeChanged = meetingPlace !== originalData.meetingPlace;
         const projectChanged = selectedProjectId !== originalData.projectId;
         const tagsChanged = tags !== originalData.tags;
-        const attendeesChanged = attendees !== originalData.attendees;
+
         const manualInputChanged = manualInput !== originalData.manualInput;
 
         // sharedWith 비교
@@ -2137,7 +2326,7 @@ const MeetingMinutes = () => {
             placeChanged ||
             projectChanged ||
             tagsChanged ||
-            attendeesChanged ||
+            // attendeesChanged || // 이 부분 삭제
             manualInputChanged ||
             sharedWithChanged ||
             shareMethodsChanged ||
@@ -2153,7 +2342,6 @@ const MeetingMinutes = () => {
         selectedProjectId,
         sharedWith,
         tags,
-        attendees,
         manualInput,
         shareMethods,
         sttResults,
@@ -2245,9 +2433,14 @@ const MeetingMinutes = () => {
                             공유받은 회의록
                         </button>
                         <button
+                            className={`tab-button ${activeTab === 'dept' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('dept')}
+                        >
+                            부서 회의록
+                        </button>
+                        <button
                             className={`tab-button ${activeTab === 'all' ? 'active' : ''}`}
                             onClick={() => setActiveTab('all')}
-                            disabled
                         >
                             전체 회의록
                         </button>
@@ -2278,6 +2471,10 @@ const MeetingMinutes = () => {
                                             onSelect={handleMeetingSelect}
                                             onDelete={handleDeleteMeeting}
                                             showDelete={true}
+                                            hideCreatorColumn={true} // ✅ 추가
+                                            onSort={handleSort} // ✅ 추가
+                                            sortBy={sortBy} // ✅ 추가
+                                            sortOrder={sortOrder} // ✅ 추가
                                         />
                                     </div>
                                 )}
@@ -2287,20 +2484,65 @@ const MeetingMinutes = () => {
                                             meetings={sharedMeetings}
                                             onSelect={handleMeetingSelect}
                                             showDelete={false}
+                                            hideCreatorColumn={false} // ✅ 작성자 컬럼 표시
+                                            onSort={handleSort} // ✅ 추가
+                                            sortBy={sortBy} // ✅ 추가
+                                            sortOrder={sortOrder} // ✅ 추가
+                                        />
+                                    </div>
+                                )}
+                                {activeTab === 'dept' && (
+                                    <div className="tab-pane active">
+                                        <MeetingList
+                                            meetings={deptMeetings}
+                                            onSelect={handleMeetingSelect}
+                                            showDelete={false}
+                                            hideCreatorColumn={false}
+                                            onSort={handleSort}
+                                            sortBy={sortBy}
+                                            sortOrder={sortOrder}
                                         />
                                     </div>
                                 )}
                                 {activeTab === 'all' && (
                                     <div className="tab-pane active">
-                                        <p>전체 회의록 리스트가 여기에 표시됩니다. (권한에 따라)</p>
-                                        {/* TODO: '전체 회의록' 리스트 컴포넌트 렌더링 */}
-                                        {/* 예: <AllMeetingMinutesList /> */}
+                                        <MeetingList
+                                            meetings={allMeetings} // ✅ allMeetings 사용
+                                            onSelect={handleMeetingSelect}
+                                            showDelete={false} // 전체 회의록에서는 삭제 버튼 숨김
+                                            hideCreatorColumn={false} // 작성자 컬럼 표시
+                                            onSort={handleSort} // ✅ 추가
+                                            sortBy={sortBy} // ✅ 추가
+                                            sortOrder={sortOrder} // ✅ 추가
+                                        />
+                                    </div>
+                                )}
+
+                                {/* 페이지네이션 컨트롤 */}
+                                {totalPages > 0 && (
+                                    <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '20px', gap: '10px' }}>
+                                        <button
+                                            disabled={currentPage === 1}
+                                            onClick={() => loadMeetings(activeTab, filterType, currentPage - 1)}
+                                            className="btn-secondary btn-sm"
+                                            style={{ padding: '5px 10px', fontSize: '12px' }}
+                                        >
+                                            &lt; 이전
+                                        </button>
+                                        <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{currentPage} / {totalPages}</span>
+                                        <button
+                                            disabled={currentPage >= totalPages}
+                                            onClick={() => loadMeetings(activeTab, filterType, currentPage + 1)}
+                                            className="btn-secondary btn-sm"
+                                            style={{ padding: '5px 10px', fontSize: '12px' }}
+                                        >
+                                            다음 &gt;
+                                        </button>
                                     </div>
                                 )}
                             </>
                         )}
-                    </div>
-                </div>
+                    </div>                </div>
 
                 {/* 기본 정보 섹션 - 컴포넌트로 교체 */}
                 {selectedMeeting && (
@@ -2319,10 +2561,10 @@ const MeetingMinutes = () => {
                                 sharedWith={sharedWith}
                                 onEmployeeSearch={() => setShowEmployeeSearchModal(true)}
                                 onRemoveEmployee={(id) => setSharedWith(prev => prev.filter(emp => emp.id !== id))}
-                                attendees={attendees}
-                                setAttendees={setAttendees}
                                 tags={tags}
                                 setTags={setTags}
+                                companionAttendees={companionAttendees} // ✅ 추가
+                                setCompanionAttendees={setCompanionAttendees} // ✅ 추가
                                 shareMethods={shareMethods}
                                 // setShareMethods={setShareMethods}
                                 setShareMethods={customSetShareMethods}
@@ -2536,39 +2778,50 @@ const MeetingMinutes = () => {
                                             }}>
                                                 <h4 style={{ margin: 0 }}>🎙️ 음성에서 추출한 텍스트 (Source)</h4>
                                                 {hasAudioFiles && (
-                                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                                        <button
-                                                            onClick={handleGenerateSTT}
-                                                            disabled={isGenerating || isReadOnly}
-                                                            style={{
-                                                                padding: '6px 12px',
-                                                                fontSize: '13px',
-                                                                backgroundColor: '#007bff',
-                                                                color: 'white',
-                                                                border: 'none',
-                                                                borderRadius: '4px',
-                                                                cursor: (isGenerating || isReadOnly) ? 'not-allowed' : 'pointer',
-                                                                opacity: (isGenerating || isReadOnly) ? 0.6 : 1
-                                                            }}
-                                                        >
-                                                            텍스트 추출
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setShowSttSettingsModal(true)}
-                                                            disabled={isReadOnly}
-                                                            style={{
-                                                                padding: '6px 12px',
-                                                                fontSize: '13px',
-                                                                backgroundColor: '#6c757d',
-                                                                color: 'white',
-                                                                border: 'none',
-                                                                borderRadius: '4px',
-                                                                cursor: isReadOnly ? 'not-allowed' : 'pointer',
-                                                                opacity: isReadOnly ? 0.6 : 1
-                                                            }}
-                                                        >
-                                                            설정
-                                                        </button>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                                                        {/* [추가] 예상 소요 시간 표시 */}
+                                                        {audioDuration && !isGenerating && !sttCompleted && (
+                                                            <div style={{ fontSize: '12px', color: '#1890ff', fontWeight: 'bold' }}>
+                                                                ⏱️ 예상 소요 시간: 약 {Math.ceil(audioDuration / (STT_SPEED_FACTORS[sttModelSize as keyof typeof STT_SPEED_FACTORS] || 1.5))}초
+                                                            </div>
+                                                        )}
+                                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                                            <button
+                                                                onClick={handleGenerateSTT}
+                                                                disabled={isGenerating || isReadOnly}
+                                                                style={{
+                                                                    padding: '6px 12px',
+                                                                    fontSize: '13px',
+                                                                    backgroundColor: '#007bff',
+                                                                    color: 'white',
+                                                                    border: 'none',
+                                                                    borderRadius: '4px',
+                                                                    cursor: (isGenerating || isReadOnly) ? 'not-allowed' : 'pointer',
+                                                                    opacity: (isGenerating || isReadOnly) ? 0.6 : 1
+                                                                }}
+                                                            >
+                                                                텍스트 추출
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setRecordingMethod('audio'); // [추가] 설정 버튼 클릭 시 'audio' 모드로 전환
+                                                                    setShowSttSettingsModal(true);
+                                                                }}
+                                                                disabled={isReadOnly}
+                                                                style={{
+                                                                    padding: '6px 12px',
+                                                                    fontSize: '13px',
+                                                                    backgroundColor: '#6c757d',
+                                                                    color: 'white',
+                                                                    border: 'none',
+                                                                    borderRadius: '4px',
+                                                                    cursor: isReadOnly ? 'not-allowed' : 'pointer',
+                                                                    opacity: isReadOnly ? 0.6 : 1
+                                                                }}
+                                                            >
+                                                                설정
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -2652,48 +2905,44 @@ const MeetingMinutes = () => {
                         />
 
                         {/* ✅ 프로그레스 바 추가 (STT) */}
-                        {(isGenerating || sttCompleted) && generationPhase === 1 && (
-                            <div
-                                ref={sttProgressRef}
-                                className="generation-progress"
-                                style={{
-                                    padding: '20px',
-                                    backgroundColor: '#f8f9fa',
-                                    borderRadius: '8px',
-                                    margin: '20px 0',
-                                    border: '1px solid #e0e0e0'
-                                }}
-                            >
-                                <div className="progress-header">
-                                    <h4>{sttStatusMessage}</h4>
-                                    <button
-                                        type="button"
-                                        onClick={handleAbortSTT}
-                                        className="abort-button"
-                                        disabled={!isGenerating}
-                                    >
-                                        ⏹️ 중단
-                                    </button>
-                                </div>
-                                <div className="progress-bar-container">
-                                    <div
-                                        className="progress-bar"
-                                        style={{ width: `${sttProgress}%` }}
-                                    >
-                                        {sttProgress.toFixed(0)}%
-                                    </div>
-                                </div>
-                                <p className="progress-message">{sttStatusMessage}</p>
-                                <p className="progress-info">엔진: {sttEngine}</p>
-                                {estimatedTimeRemaining !== null && (
-                                    <p className="progress-info" style={{ color: '#1890ff' }}>
-                                        예상 남은 시간: 약 {estimatedTimeRemaining}초
-                                    </p>
-                                )}
-                            </div>
-                        )}
-
-                        { ((recordingMethod === 'document' && manualInput && manualInput.trim().length > 0)
+                                                    {isGenerating && (
+                                                        <div className="generation-progress">
+                                                            <div className="progress-header">
+                                                                {/* h4와 메시지 결합 */}
+                                                                <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                    <div className="dot-cursor-spinner"></div>
+                                                                    <span>STT 변환 진행 중: {sttStatusMessage}</span>
+                                                                </h4>
+                                                                <button
+                                                                    onClick={handleAbortSTT}
+                                                                    className="abort-button"
+                                                                    disabled={!isGenerating}
+                                                                >
+                                                                    ⏹️ 중단
+                                                                </button>
+                                                            </div>
+                                                            <div className="progress-bar-container">
+                                                                <div
+                                                                    className="progress-bar"
+                                                                    style={{ width: `${sttProgress}%` }}
+                                                                >
+                                                                    {sttProgress.toFixed(0)}%
+                                                                </div>
+                                                            </div>
+                                                            {estimatedTimeRemaining !== null && (
+                                                                <p className="progress-info" style={{ color: '#1890ff' }}>
+                                                                    예상 남은 시간: 약 {estimatedTimeRemaining}초
+                                                                </p>
+                                                            )}
+                        
+                                                            {/* [추가] 주의 문구 박스 */}
+                                                            <div className="stt-warning-box">
+                                                                ⚠️ &nbsp;**참고:** 진행률은 시뮬레이션된 예상 시간으로 실제 처리 시간과 다를 수 있습니다.<br/>
+                                                                ⏳ &nbsp;이 페이지를 이동하거나 닫아도 변환 작업은 백그라운드에서 계속됩니다.<br/>
+                                                                🔔 &nbsp;완료 시 이메일과 잔디(Jandi)로 알림을 드립니다. 알림 수신 후 다시 방문해주세요!
+                                                            </div>
+                                                        </div>
+                                                    )}                        { ((recordingMethod === 'document' && manualInput && manualInput.trim().length > 0)
                             || (recordingMethod === 'audio' && sttResults && Object.values(sttResults).some(text => text && text.trim().length > 0))) && (
                                 <div>
                                     <div className="generation-panel" style={{flexDirection: 'column', gap: '15px'}}>
@@ -2725,48 +2974,33 @@ const MeetingMinutes = () => {
                                         border: '1px solid #e0e0e0'
                                     }}>
                                         {generationPhase === 2 && (
-                                            <div ref={llmProgressRef}>
+                                            <div ref={llmProgressRef} style={{padding: '20px 25px', backgroundColor: '#f0f5ff', borderRadius: '8px', margin: '20px 0', border: '1px solid #d6e4ff', minHeight: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+                                                
                                                 <div style={{
                                                     display: 'flex',
                                                     alignItems: 'center',
+                                                    justifyContent: 'center',
                                                     gap: '15px',
-                                                    marginBottom: '10px'
+                                                    marginBottom: '20px',
+                                                    minHeight: '40px'
                                                 }}>
-                                                    <div className="spinner" style={{
-                                                        width: '30px',
-                                                        height: '30px',
-                                                        border: '4px solid #f3f3f3',
-                                                        borderTop: '4px solid #1890ff',
-                                                        borderRadius: '50%',
-                                                        animation: 'spin 1s linear infinite'
-                                                    }}></div>
-                                                    <h4 style={{margin: 0, fontSize: '16px', color: '#333'}}>
-                                                        🤖 Phase 2: LLM 문서 생성 중
+                                                    {/* 스피너 교체 */}
+                                                    <div className="dot-cursor-spinner"></div>
+                                                    <h4 style={{margin: 0, fontSize: '18px', color: '#1d39c4'}}>
+                                                        🤖 LLM 문서 생성 중: {llmStatusMessage} {/* 메시지 통합 */}
                                                     </h4>
                                                 </div>
-                                                <div style={{
-                                                    marginTop: '8px',
-                                                    fontSize: '12px',
-                                                    color: '#666',
-                                                    marginLeft: '45px'
-                                                }}>
-                                                    AI가 회의록을 분석하여
-                                                    {llmDocTypes.summary && ' 안건 정리'}
-                                                    {llmDocTypes.concept && (llmDocTypes.summary ? ', 컨셉 문서' : ' 컨셉 문서')}
-                                                    {llmDocTypes.draft && ((llmDocTypes.summary || llmDocTypes.concept) ? ', Draft 기획서' : ' Draft 기획서')}
-                                                    {llmDocTypes.todolist && ((llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', To Do 리스트' : ' To Do 리스트')}
-                                                    {/*{llmDocTypes.mindmap_tree && ((llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', MindMap 트리' : ' MindMap 트리')}*/}
-                                                    {/*{llmDocTypes.mindmap_graph && ((llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', MindMap 그래프' : ' MindMap 그래프')}*/}
-                                                    {/*{llmDocTypes.cal_gant && ((llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 캘린더_간트차트' : ' 캘린더_간트차트')}*/}
-                                                    {/*{llmDocTypes.role && ((llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', Role & Responsibility' : ' Role & Responsibility')}*/}
-                                                    {/*{llmDocTypes.glossary && ((llmDocTypes.role && llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 용어/약어' : ' 용어/약어')}*/}
-                                                    {/*{llmDocTypes.biz_overview && ((llmDocTypes.glossary && llmDocTypes.role && llmDocTypes.cal_gant && llmDocTypes.mindmap_graph && llmDocTypes.mindmap_tree && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 배경지식/트랜드' : ' 배경지식/트랜드')}*/}
+                                                
+                                                {/* 기존 메시지 영역 삭제 */}
+                                                {/* <div style={{ ... }}> {llmStatusMessage} </div> */}
 
-                                                    {llmDocTypes.role && ((llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', Role & Responsibility' : ' Role & Responsibility')}
-                                                    {llmDocTypes.glossary && ((llmDocTypes.role && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 용어/약어' : ' 용어/약어')}
-                                                    {llmDocTypes.biz_overview && ((llmDocTypes.glossary && llmDocTypes.role && llmDocTypes.todolist && llmDocTypes.draft || llmDocTypes.summary || llmDocTypes.concept) ? ', 배경지식/트랜드' : ' 배경지식/트랜드')}
-                                                    를 생성하고 있습니다...
+                                                {/* STT와 동일한 주의 문구 박스 */}
+                                                <div className="stt-warning-box">
+                                                    ⚠️ &nbsp;**참고:** LLM 문서 생성에는 수십 초에서 수 분이 소요될 수 있습니다.<br/>
+                                                    ⏳ &nbsp;이 페이지를 이동하거나 닫아도 문서 생성은 백그라운드에서 계속됩니다.<br/>
+                                                    🔔 &nbsp;완료 시 이메일과 잔디(Jandi)로 알림을 드립니다. 알림 수신 후 다시 방문해주세요!
                                                 </div>
+                                                
                                             </div>
                                         )}
                                     </div>
@@ -2828,7 +3062,7 @@ const MeetingMinutes = () => {
                                     }}
                                 >
                                     {/*서버 저장&nbsp;&nbsp;&nbsp;&&nbsp;&nbsp;&nbsp;공유자에게 전송*/}
-                                    회의록 공유
+                                    저장 및 공유
                                 </button>
                             </div>
                         )}
@@ -2852,12 +3086,12 @@ const MeetingMinutes = () => {
                     sharedWith={sharedWith}
                     onEmployeeSearch={() => setShowEmployeeSearchModal(true)}
                     onRemoveEmployee={(id) => setSharedWith(prev => prev.filter(emp => emp.id !== id))}
-                    attendees={attendees}
-                    setAttendees={setAttendees}
                     tags={tags}
                     setTags={setTags}
+                    companionAttendees={companionAttendees} // ✅ 추가
+                    setCompanionAttendees={setCompanionAttendees} // ✅ 추가
                     shareMethods={shareMethods}
-                    setShareMethods={setShareMethods}
+                    setShareMethods={customSetShareMethods}
                 />
 
                 {/* --- ▼▼▼ [추가] 프로젝트 검색 모달 ▼▼▼ --- */}
@@ -3037,6 +3271,7 @@ const MeetingMinutes = () => {
                         onClose={() => setShowEmployeeSearchModal(false)}
                         onSelect={handleSharedWithSelect}
                         initialSelected={sharedWith}
+                        currentUserId={user?.emp_id}
                     />
                 )}
 
