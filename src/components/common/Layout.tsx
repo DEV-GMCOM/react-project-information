@@ -78,19 +78,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { path: '/pt-postmortem', name: 'PT 결과분석', icon: '🔍' },
         { path: '/project-execution', name: '프로젝트 실행파일링', icon: '📁' },
         { path: '/project-postmortem', name: '프로젝트 결과분석', icon: '📊' },
-        { path: '/working/meeting-minutes', name: '자동 회의록', icon: '🗒️' }
+        { path: '/working/meeting-minutes', name: '자동 회의록', icon: '🗒️' },
+        {
+            path: '/admin/permission',
+            name: '권한 관리',
+            icon: '🚫️',
+            permission: 'admin:manage-policies', // 이 메뉴를 보기 위한 권한
+        }
     ];
     const mainMenuItems = hideRestrictedUi
         ? baseMainMenuItems.filter(item => item.path !== '/working/meeting-minutes') // block experimental pages in prod
         : baseMainMenuItems;
 
     const devMenuItems: MenuItem[] = [
-        {
-            path: '/admin/permission',
-            name: '권한 관리',
-            icon: '🚫️',
-            permission: 'admin:manage-policies', // 이 메뉴를 보기 위한 권한
-        },
         { path: '/hr/employee-management', name: '직원정보 관리', icon: '🧑‍💼' },
         { path: '/working/fms', name: 'GMCOM 저장소', icon: '💾' },
         { path: '/working/clock-in-out', name: '출퇴근 체크', icon: '⏱️' },
@@ -102,8 +102,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     // 권한에 따라 메뉴 필터링하는 로직
     const filterMenuItems = (items: MenuItem[]): MenuItem[] => {
-        const MANAGERIAL_POSITIONS = ['팀장', '본부장', '부문장', '부사장'];
-
         return items.map(item => {
             // 상위 메뉴 자체에 대한 권한 확인
             if (item.permission && !hasPermission(item.permission)) {
@@ -115,17 +113,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             }
 
             const filteredSubMenus = item.subMenus.filter(subItem => {
-                const standardPermission = !subItem.permission || hasPermission(subItem.permission);
-                if (!standardPermission) {
-                    return false;
-                }
-                // '구성원 역할/권한' 메뉴에 대한 특별 규칙
-                if (subItem.path === '/admin/permissions/policies') {
-                    const isSuperAdmin = user?.role?.role_code === 'SUPER_ADMIN';
-                    const isManager = user?.position && MANAGERIAL_POSITIONS.includes(user.position);
-                    return isSuperAdmin || isManager;
-                }
-                return true;
+                // 하위 메뉴에 권한 설정이 있으면 확인, 없으면 통과
+                return !subItem.permission || hasPermission(subItem.permission);
             });
 
             if (filteredSubMenus.length === 0) {

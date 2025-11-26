@@ -1,22 +1,211 @@
-
 .rbac-builder-container {
     padding: 2rem;
     background-color: #f9f9f9;
     height: 100%;
 }
 
-.rbac-main-content {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 2rem;
-    margin-top: 1rem;
-}
-
-.roles-section, .permissions-section {
+/* 섹션1: 권한 관리 (full width, 상단) */
+.permission-management-section {
     background-color: #fff;
     padding: 1.5rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.permission-form-and-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.permission-form {
+    display: grid;
+    /* 리소스, 액션, 권한명, 권한코드를 2x2로 배치 */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem 1rem; /* 세로 간격, 가로 간격 */
+    align-items: center;
+}
+
+.permission-form select,
+.permission-form input[type="text"] { /* input[type="text"]로 명확히 지정 */
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%; /* 그리드 아이템 내에서 너비 채우기 */
+}
+
+/* textarea는 전체 너비를 차지하도록 */
+.permission-form textarea {
+    grid-column: 1 / -1; /* textarea가 전체 너비를 차지하도록 설정 */
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    resize: vertical;
+    width: 100%; /* 그리드 아이템 내에서 너비 채우기 */
+    margin-top: 0.5rem; /* 다른 필드와의 간격 */
+    margin-bottom: 0.5rem; /* 버튼과의 여백 */
+    min-height: 60px; /* 최소 높이 설정 */
+}
+
+.permission-form .form-buttons {
+    grid-column: 1 / -1; /* 버튼들도 전체 너비를 차지하도록 설정 */
+    display: flex;
+    justify-content: flex-end; /* 버튼들을 오른쪽으로 정렬 */
+    gap: 0.5rem;
+    margin-top: 0.5rem; /* textarea와의 여백 */
+}
+
+.permission-form .btn-create,
+.permission-form .btn-update {
+    padding: 0.5rem 1.5rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.permission-form .btn-create:hover,
+.permission-form .btn-update:hover {
+    background-color: #0056b3;
+}
+
+.permission-form .btn-cancel,
+.btn-cancel {
+    padding: 0.5rem 1rem;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.permission-form .btn-cancel:hover,
+.btn-cancel:hover {
+    background-color: #5a6268;
+}
+
+.permission-list-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.permission-list-item {
+    background-color: #fff;
+    padding: 0.75rem 1rem;
+    border-radius: 5px;
+    border: 1px solid #eee;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    display: flex;
+    /* justify-content: space-between; 제거. flex-direction: column으로 변경되었기 때문 */
+    /* align-items: center; 제거 */
+    flex-direction: column; /* 설명 표시를 위해 */
+    align-items: flex-start; /* 왼쪽 정렬 */
+    cursor: pointer;
+    transition: all 0.2s;
+    /* position: relative; 제거 */
+}
+
+.permission-list-item:hover {
+    background-color: #f0f8ff;
+    border-color: #007bff;
+}
+
+.permission-list-item.selected {
+    background-color: #e7f3ff;
+    border-color: #007bff;
+    box-shadow: 0 2px 6px rgba(0,123,255,0.2);
+}
+
+.permission-list-item .permission-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+    width: 100%; /* 부모 너비 채우기 */
+}
+
+.permission-list-item .permission-header { /* 권한명과 코드를 감싸는 div 추가 */
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* 세로 정렬 상단 기준 (텍스트가 두 줄이 되므로) */
+    width: 100%;
+}
+
+.permission-list-item .permission-info strong {
+    color: #333;
+    font-size: 1rem; /* 크기 약간 키움 */
+}
+
+.permission-list-item .permission-code {
+    color: #6c757d; /* 더 연한 회색 */
+    font-size: 0.85rem;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace; /* 코드 폰트 적용 */
+    white-space: nowrap; /* 코드 줄바꿈 방지 */
+}
+
+.permission-list-item .permission-desc { /* 설명 스타일 추가 */
+    font-size: 0.8rem;
+    color: #777;
+    margin-top: 0.5rem;
+    line-height: 1.4;
+    white-space: pre-wrap; /* 줄바꿈 유지 */
+    width: 100%;
+}
+
+.permission-list-item .delete-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    font-size: 16px; /* 텍스트에 맞춰 크기 조절 */
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 1rem; /* 텍스트와의 간격 */
+    flex-shrink: 0; /* 버튼이 줄어들지 않도록 */
+    /* position: absolute; top; right; padding; 제거 */
+}
+
+.permission-list-item .delete-btn:hover {
+    color: #c82333;
+}
+
+.rbac-main-content {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 2rem;
+    margin-top: 0rem;
+}
+
+.roles-section {
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 우측 패널: 권한 할당 + 멤버 관리 2단 구조 */
+.right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.permissions-section {
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    flex-shrink: 0;
 }
 
 h1, h2 {
@@ -83,9 +272,31 @@ h1, h2 {
 }
 
 .roles-section li.selected {
-    background-color: #007bff;
-    color: white;
+    background-color: #e7f3ff;
+    color: #333;
     font-weight: bold;
+    border-left: 4px solid #007bff; /* 왼쪽 테두리로 선택 강조 */
+}
+
+.edit-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-weight: bold;
+    line-height: 24px;
+    text-align: center;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.edit-btn:hover {
+    background: #218838;
 }
 
 .delete-btn {
@@ -185,6 +396,39 @@ h1, h2 {
     cursor: not-allowed;
 }
 
+/* 전역 저장 버튼 (페이지 최하단) */
+.global-save-section {
+    margin-top: 2rem;
+    padding: 1.5rem 0;
+    border-top: 2px solid #ddd;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.global-save-btn {
+    padding: 1rem 3rem;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    transition: all 0.2s;
+}
+
+.global-save-btn:hover {
+    background-color: #218838;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+    transform: translateY(-1px);
+}
+
+.global-save-btn:active {
+    transform: translateY(0);
+}
+
 /* --- [추가] 역할 멤버 관리 섹션 --- */
 .assigned-employees-section {
     grid-column: 1 / -1;
@@ -265,4 +509,3 @@ h1, h2 {
 .rbac-builder-container .modal-content {
     max-width: 600px;
 }
-

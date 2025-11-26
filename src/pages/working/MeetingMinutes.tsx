@@ -40,20 +40,6 @@ import '../../styles/FormPage.css';
 import '../../styles/MeetingMinutes.css';
 import '../../styles/ProjectBasicInfoForm.css'; // 검색 모달 등에 필요한 스타일
 
-// --- ▼▼▼ 회의록 목록 컴포넌트 (별도 파일 분리 권장) ▼▼▼ ---
-interface MeetingListProps {
-    meetings: MeetingMinute[];
-    onSelect: (meeting: MeetingMinute) => void;
-    onDelete?: (meeting: MeetingMinute) => void;  // ✅ 삭제 핸들러 추가
-    showDelete?: boolean;  // ✅ 삭제 버튼 표시 여부
-}
-// --- ▼▼▼ [수정] 직원 검색 모달 ▼▼▼ ---
-interface EmployeeSearchModalProps {
-    onClose: () => void;
-    onSelect: (selectedEmployees: Employee[]) => void;
-    initialSelected: Employee[];
-}
-
 // 파일 상단의 상태 정의 부분
 interface LLMResultUI {
     id: string;
@@ -1519,8 +1505,13 @@ const MeetingMinutes = () => {
     // --- ▲▲▲ 프로젝트 검색 핸들러 종료 ▲▲▲ ---
 
     // --- ▼▼▼ [수정] 공유 인원 핸들러 ▼▼▼ ---
-    const handleSharedWithSelect = (selectedEmployees: EmployeeSimple[]) => {
-        setSharedWith(selectedEmployees);
+    const handleSharedWithSelect = (selectedEmployees: Employee[]) => {
+        // Employee[]를 EmployeeSimple[]로 변환 (id, name만 저장)
+        const simpleEmployees: EmployeeSimple[] = selectedEmployees.map(emp => ({
+            id: emp.id,
+            name: emp.name
+        }));
+        setSharedWith(simpleEmployees);
     };
 
     const removeSharedEmployee = (employeeId: number) => {

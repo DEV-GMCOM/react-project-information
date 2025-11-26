@@ -6,8 +6,8 @@ import '../../styles/modal.css';
 
 interface EmployeeSearchModalProps {
     onClose: () => void;
-    onSelect: (selectedEmployees: EmployeeSimple[]) => void; // ✅ 변경
-    initialSelected: EmployeeSimple[]; // ✅ 변경
+    onSelect: (selectedEmployees: Employee[]) => void;
+    initialSelected: Employee[] | EmployeeSimple[]; // 둘 다 지원
     currentUserId?: number; // 현재 로그인한 사용자 ID (목록에서 제외)
 }
 
@@ -15,7 +15,7 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState<Employee[]>([]);
-    const [selected, setSelected] = useState<EmployeeSimple[]>(initialSelected);
+    const [selected, setSelected] = useState<Employee[]>([]);
     // 정렬 상태 추가
     const [sortConfig, setSortConfig] = useState<{ key: 'name' | 'dept' | null, direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
 
@@ -50,16 +50,19 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
     }, []);
 
     useEffect(() => {
-        setSelected(initialSelected); // initialSelected가 변경될 때마다 selected 상태 업데이트
-    }, [initialSelected]);
+        // initialSelected가 EmployeeSimple[]인 경우 id만으로 매칭
+        // results에서 해당 id를 찾아 Employee[]로 변환
+        const initialIds = initialSelected.map(emp => emp.id);
+        const matchedEmployees = results.filter(emp => initialIds.includes(emp.id));
+        setSelected(matchedEmployees);
+    }, [initialSelected, results]);
 
     const handleCheckboxChange = (employee: Employee) => {
         setSelected(prev => {
-            const simpleEmployee: EmployeeSimple = { id: employee.id, name: employee.name }; // ✅ EmployeeSimple로 변환
-            if (prev.some(e => e.id === simpleEmployee.id)) {
-                return prev.filter(e => e.id !== simpleEmployee.id);
+            if (prev.some(e => e.id === employee.id)) {
+                return prev.filter(e => e.id !== employee.id);
             } else {
-                return [...prev, simpleEmployee];
+                return [...prev, employee];
             }
         });
     };
@@ -82,9 +85,8 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
             // 전체 선택: 현재 결과 항목들을 selected에 추가 (중복 방지)
             const newSelected = [...selected];
             results.forEach(emp => {
-                const simpleEmployee: EmployeeSimple = { id: emp.id, name: emp.name }; // ✅ EmployeeSimple로 변환
-                if (!newSelected.some(s => s.id === simpleEmployee.id)) {
-                    newSelected.push(simpleEmployee);
+                if (!newSelected.some(s => s.id === emp.id)) {
+                    newSelected.push(emp);
                 }
             });
             setSelected(newSelected);
