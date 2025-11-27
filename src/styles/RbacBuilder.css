@@ -122,7 +122,34 @@
 .role-mini-form .form-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 5px;
+    gap: 8px;
+    margin-top: 4px;
+    align-self: stretch; /* 버튼 행이 입력 필드 아래에 딱 붙도록 전체 너비 사용 */
+}
+
+.role-mini-form .form-actions button {
+    background: #007bff;
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.role-mini-form .form-actions button:hover {
+    background: #0069d9;
+    transform: translateY(-1px);
+}
+
+.role-mini-form .form-actions button:active {
+    transform: translateY(0);
+}
+
+.role-mini-form .form-actions button + button {
+    background: #6c757d;
 }
 
 .role-list {

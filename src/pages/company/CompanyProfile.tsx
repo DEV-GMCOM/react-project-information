@@ -963,7 +963,7 @@ const CompanyProfileForm: React.FC = () => {
 
         return showContactSearchModal ? (
             <div className="modal-overlay" onClick={() => setShowContactSearchModal(false)}>
-                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-content modal-content-wide" onClick={(e) => e.stopPropagation()}>
                     <div className="modal-header">
                         <h3>담당자 검색</h3>
                         <button

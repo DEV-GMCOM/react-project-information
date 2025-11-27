@@ -1204,7 +1204,7 @@ const ProjectProfileForm: React.FC = () => {
             {/* [이 코드 블록을 return문의 최하단에 추가하세요] */}
             {showContactSearchModal && (
                 <div className="modal-overlay" onClick={() => setShowContactSearchModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                    <div className="modal-content modal-content-wide" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>담당자 검색</h3>
                             <button className="modal-close-btn" onClick={() => setShowContactSearchModal(false)}>×</button>

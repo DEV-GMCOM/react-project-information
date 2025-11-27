@@ -14,20 +14,18 @@
     z-index: 9999;
 }
 
-/* 모달 컨테이너 */
-.modal-content {
-    background: white;
-    border-radius: 12px;
-    padding: 32px;
-    max-width: 500px;
-    width: 90%;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
+/* 모달 컨테이너 - 기본 스타일 (검색 모달 등은 각 페이지 CSS에서 정의) */
+/* .modal-content 전역 스타일은 주석 처리 - 각 페이지에서 개별 정의 */
 
 /* ✅ Idle 타임아웃 모달*/
 .modal-content.idle-timeout-modal {
+    background: white;
+    border-radius: 12px;
+    padding: 32px;
     text-align: center;
     max-width: 420px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 /* Idle 타임아웃 모달 */
