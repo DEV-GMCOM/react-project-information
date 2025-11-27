@@ -299,6 +299,7 @@ const MeetingMinutes = () => {
     // ✅ [복구] 변경 감지 및 원본 데이터 상태
     const [originalData, setOriginalData] = useState<any>(null);
     const [hasChanges, setHasChanges] = useState(false);
+    const [detailLoading, setDetailLoading] = useState(false); // ✅ 상세 로딩 상태 추가
 
     // ✅ STT 설정 모달 상태
     const [showSttSettingsModal, setShowSttSettingsModal] = useState(false);
@@ -640,86 +641,11 @@ const MeetingMinutes = () => {
     };
 
     // --- ▼▼▼ 회의록 선택 핸들러 ▼▼▼ ---
-    // const handleMeetingSelect = useCallback(async (meeting: MeetingMinute) => {
-    //     console.log('선택된 회의록:', meeting);
-    //
-    //     setSelectedMeeting(meeting);
-    //
-    //     // 기본 정보 로드
-    //     setMeetingTitle(meeting.meeting_title);
-    //     setMeetingDateTime(meeting.meeting_datetime ? new Date(meeting.meeting_datetime) : null);
-    //     setMeetingPlace(meeting.meeting_place || '');
-    //     setProjectName(meeting.project_name || '');
-    //     setSelectedProjectId(meeting.project_id || null);
-    //     setSharedWith(meeting.shared_with || []);
-    //     setAttendees(meeting.attendees_display || '');
-    //     setTags(meeting.tags?.join(', ') || '');
-    //     setShareMethods({
-    //         email: meeting.share_methods?.includes('email') ?? true,
-    //         jandi: meeting.share_methods?.includes('jandi') ?? false
-    //     });
-    //
-    //     // basic_minutes 로드
-    //     setManualInput(meeting.basic_minutes || '');
-    //
-    //     try {
-    //         // ✅ 상세 정보 조회 (STT/LLM 포함)
-    //         const details = await meetingMinuteService.getMeetingDetails(meeting.meeting_id);
-    //
-    //         console.log('상세 정보:', details);
-    //
-    //         // ✅ 파일 목록 설정
-    //         if (details.file_attachments) {
-    //             setServerFiles(details.file_attachments);
-    //         }
-    //
-    //         // ✅ STT 결과 처리
-    //         if (details.stt_originals && details.stt_originals.length > 0) {
-    //             const sttData: Record<string, string> = {};
-    //             details.stt_originals.forEach((stt: any) => {
-    //                 sttData[stt.stt_engine_type] = stt.original_text;
-    //             });
-    //
-    //             // 기존 sttResults와 병합
-    //             setSttResults(prev => ({ ...prev, ...sttData }));
-    //
-    //             // 가장 최근 STT 결과를 기본 선택
-    //             setSelectedSttSource(details.stt_originals[0].stt_engine_type);
-    //
-    //             console.log('STT 결과 로드 완료:', Object.keys(sttData));
-    //         }
-    //
-    //         // ✅ LLM 결과 처리
-    //         if (details.llm_documents && details.llm_documents.length > 0) {
-    //             setLlmResults(prev =>
-    //                 prev.map(result => {
-    //                     const llmDoc = details.llm_documents?.find(
-    //                         (doc: any) => doc.document_type === result.id
-    //                     );
-    //                     return llmDoc
-    //                         ? { ...result, content: llmDoc.document_content || '', save: true }
-    //                         : result;
-    //                 })
-    //             );
-    //
-    //             console.log('LLM 결과 로드 완료');
-    //         }
-    //
-    //     } catch (error) {
-    //         console.error('상세 정보 로드 실패:', error);
-    //         alert('상세 정보를 불러오는 중 오류가 발생했습니다.');
-    //     }
-    //
-    //     setCurrentMeetingId(meeting.meeting_id);
-    //     setSaveMode('update');
-    //
-    //     console.log(`회의록 ${meeting.meeting_id} 로드 완료`);
-    //
-    //
-    // }, []); // 의존성 배열 비움 (다른 상태 변경 시 재생성 방지)
-    // // --- ▲▲▲ 회의록 선택 핸들러 종료 ▲▲▲ ---
     const handleMeetingSelect = useCallback(async (meeting: MeetingMinute) => {
         console.log('선택된 회의록:', meeting);
+        
+        // ✅ 상세 로딩 시작
+        setDetailLoading(true);
 
         // [추가] 다른 회의록을 선택했으므로, 로컬에서 선택한 파일 목록을 초기화합니다.
         setSelectedFiles([]);
@@ -856,6 +782,9 @@ const MeetingMinutes = () => {
         } catch (error) {
             console.error('상세 정보 로드 실패:', error);
             alert('상세 정보를 불러오는 중 오류가 발생했습니다.');
+        } finally {
+            // ✅ 상세 로딩 종료
+            setDetailLoading(false);
         }
 
         setCurrentMeetingId(meeting.meeting_id);
@@ -2373,6 +2302,43 @@ const MeetingMinutes = () => {
 
     return (
         <div className="meeting-minutes-container">
+            {/* ✅ 상세 로딩 오버레이 */}
+            {detailLoading && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    zIndex: 9999,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    flexDirection: 'column',
+                    color: 'white',
+                    backdropFilter: 'blur(3px)'
+                }}>
+                    <div className="loading-spinner" style={{
+                        width: '50px',
+                        height: '50px',
+                        border: '5px solid rgba(255,255,255,0.3)',
+                        borderTop: '5px solid white',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                    }}></div>
+                    <style>{`
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                    `}</style>
+                    <div style={{ marginTop: '20px', fontSize: '18px', fontWeight: 'bold' }}>
+                        회의록 상세 정보를 불러오는 중입니다...
+                    </div>
+                </div>
+            )}
+
             <div className="meeting-minutes-header">
                 <div>
                     <h1 className="meeting-minutes-title">회의록 자동 문서화</h1>
@@ -2450,7 +2416,10 @@ const MeetingMinutes = () => {
 
                         {/* ✅ [수정] 로딩/에러/목록 렌더링 로직 추가 */}
                         {listLoading ? (
-                            <div className="loading">목록을 불러오는 중...</div>
+                            <div className="meeting-list-loading">
+                                <span className="circle-spinner"></span>
+                                목록을 불러오는 중...
+                            </div>
                         ) : listError ? (
                             <div className="error">{listError}</div>
                         ) : (

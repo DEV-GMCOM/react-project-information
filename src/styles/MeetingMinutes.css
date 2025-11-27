@@ -623,6 +623,31 @@
     color: #666;
 }
 
+/* Meeting list loading */
+.meeting-list-loading {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+/* Circle spinner */
+.circle-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 8px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: meeting-spinner-spin 0.6s linear infinite;
+    vertical-align: middle;
+}
+
+@keyframes meeting-spinner-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 
 /* --- 컴포넌트별 스타일 --- */
 

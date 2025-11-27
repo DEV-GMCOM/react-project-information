@@ -14,7 +14,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredPermi
     if (isLoading) {
         return (
             <div className="loading-container">
-                <div className="spinner">로딩 중...</div>
+                <div className="route-loading-spinner" role="status" aria-label="로딩 중">
+                    <span className="sr-only">로딩 중</span>
+                </div>
             </div>
         );
     }

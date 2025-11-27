@@ -145,6 +145,7 @@ const RbacBuilder: React.FC = () => {
     const [roles, setRoles] = useState<Role[]>([]);
     const [permissions, setPermissions] = useState<Permission[]>([]);
     const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
     
     // Role Form State
     const [roleForm, setRoleForm] = useState<{ name: string, code: string, id?: number }>({ name: '', code: '' });
@@ -160,6 +161,7 @@ const RbacBuilder: React.FC = () => {
     const [initialAssignedEmployees, setInitialAssignedEmployees] = useState<Employee[]>([]);
     const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
     const [applyingToAll, setApplyingToAll] = useState(false); // 모든 직원에게 적용 여부
+    const [isMembersLoading, setIsMembersLoading] = useState(false);
     
     // Permission Modal State (Sub-items only)
     const [isPermModalOpen, setIsPermModalOpen] = useState(false);
@@ -191,10 +193,11 @@ const RbacBuilder: React.FC = () => {
             setSelectedVirtualNodes(new Set());
             setApplyingToAll(selectedRole.applying_to_all || false); // 모든 직원 적용 여부 설정
 
+            setIsMembersLoading(true);
             roleService.getEmployeesForRole(selectedRole.role_id).then(emps => {
                 setAssignedEmployees(emps);
                 setInitialAssignedEmployees(emps);
-            });
+            }).finally(() => setIsMembersLoading(false));
             setRoleForm({ name: '', code: '' });
             setIsRoleEditing(false);
         } else {
@@ -203,10 +206,12 @@ const RbacBuilder: React.FC = () => {
             setInitialAssignedEmployees([]);
             setSelectedVirtualNodes(new Set());
             setApplyingToAll(false);
+            setIsMembersLoading(false);
         }
     }, [selectedRole, tree, orphans]); 
 
     const fetchData = async () => {
+        setIsLoading(true);
         try {
             const [rolesData, permissionsData] = await Promise.all([
                 roleService.getAllRoles(),
@@ -216,6 +221,9 @@ const RbacBuilder: React.FC = () => {
             setPermissions(permissionsData);
         } catch (error) {
             console.error('Failed to fetch data:', error);
+            alert('데이터를 불러오는데 실패했습니다.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -357,10 +365,11 @@ const RbacBuilder: React.FC = () => {
             if (updated) {
                 setSelectedRole(updated);
                 setPendingPermissionIds(new Set(updated.permissions.map(p => p.permission_id)));
+                setIsMembersLoading(true);
                 roleService.getEmployeesForRole(updated.role_id).then(emps => {
                     setAssignedEmployees(emps);
                     setInitialAssignedEmployees(emps);
-                });
+                }).finally(() => setIsMembersLoading(false));
             }
         } catch (e: any) { // any 타입 추가
             console.error(e);
@@ -504,7 +513,6 @@ const RbacBuilder: React.FC = () => {
 
     return (
         <div className="rbac-builder-container">
-            
             {/* Top Header Area (No CRUD, just title) */}
             <div className="rbac-layout-bottom-header" style={{marginTop: '20px'}}>
                 <h2>역할 및 접근 권한 관리</h2>
@@ -520,18 +528,18 @@ const RbacBuilder: React.FC = () => {
                             + 새 역할
                         </button>
                     </div>
-                    
+
                     {(!selectedRole || isRoleEditing) && (
                          <div className="role-mini-form">
-                            <input 
-                                placeholder="역할명" 
-                                value={roleForm.name} 
-                                onChange={e => setRoleForm({...roleForm, name: e.target.value})} 
+                            <input
+                                placeholder="역할명"
+                                value={roleForm.name}
+                                onChange={e => setRoleForm({...roleForm, name: e.target.value})}
                             />
-                            <input 
-                                placeholder="코드 (예: ROLE_ADMIN)" 
-                                value={roleForm.code} 
-                                onChange={e => setRoleForm({...roleForm, code: e.target.value})} 
+                            <input
+                                placeholder="코드 (예: ROLE_ADMIN)"
+                                value={roleForm.code}
+                                onChange={e => setRoleForm({...roleForm, code: e.target.value})}
                             />
                             <div className="form-actions">
                                 <button onClick={handleSaveRole}>저장</button>
@@ -540,36 +548,42 @@ const RbacBuilder: React.FC = () => {
                          </div>
                     )}
 
-                    <ul className="role-list">
-                        {roles.map(role => (
-                            <li 
-                                key={role.role_id} 
-                                className={selectedRole?.role_id === role.role_id ? 'active' : ''}
-                                onClick={() => {
-                                    setSelectedRole(role);
-                                    setRoleForm({ name: role.role_name, code: role.role_code, id: role.role_id });
-                                    setIsRoleEditing(false);
-                                }}
-                            >
-                                <div className="role-info">
-                                    <span className="role-name">{role.role_name}</span>
-                                    <span className="role-code">{role.role_code}</span>
-                                </div>
-                                <div className="role-actions">
-                                    <button className="icon-btn edit" onClick={(e) => {
-                                        e.stopPropagation();
+                    {isLoading ? (
+                        <div className="role-list-loading">
+                            <div className="spinner"></div>
+                        </div>
+                    ) : (
+                        <ul className="role-list">
+                            {roles.map(role => (
+                                <li
+                                    key={role.role_id}
+                                    className={selectedRole?.role_id === role.role_id ? 'active' : ''}
+                                    onClick={() => {
                                         setSelectedRole(role);
                                         setRoleForm({ name: role.role_name, code: role.role_code, id: role.role_id });
-                                        setIsRoleEditing(true);
-                                    }}>✎</button>
-                                    <button className="icon-btn delete" onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteRole(role.role_id);
-                                    }}>×</button>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
+                                        setIsRoleEditing(false);
+                                    }}
+                                >
+                                    <div className="role-info">
+                                        <span className="role-name">{role.role_name}</span>
+                                        <span className="role-code">{role.role_code}</span>
+                                    </div>
+                                    <div className="role-actions">
+                                        <button className="icon-btn edit" onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedRole(role);
+                                            setRoleForm({ name: role.role_name, code: role.role_code, id: role.role_id });
+                                            setIsRoleEditing(true);
+                                        }}>✎</button>
+                                        <button className="icon-btn delete" onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteRole(role.role_id);
+                                        }}>×</button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
 
                 {/* Main Content: Permissions Tree */}
@@ -681,7 +695,14 @@ const RbacBuilder: React.FC = () => {
                             <div className="role-members-section">
                                 <div className="section-header">
                                     <h3>멤버 관리 ({applyingToAll ? '모든 직원' : assignedEmployees.length})</h3>
-                                    {!applyingToAll && <button onClick={() => setIsEmployeeModalOpen(true)}>+ 멤버 추가</button>}
+                                    {!applyingToAll && (
+                                        <button
+                                            className="add-member-button"
+                                            onClick={() => setIsEmployeeModalOpen(true)}
+                                        >
+                                            + 멤버 추가
+                                        </button>
+                                    )}
                                 </div>
 
                                 {/* 모든 직원에게 적용 체크박스 */}
@@ -700,25 +721,34 @@ const RbacBuilder: React.FC = () => {
                                     </label>
                                 </div>
 
-                                {!applyingToAll && (
-                                    <div className="members-list">
-                                        {assignedEmployees.map(emp => {
-                                            const deptInfo = [emp.division, emp.team].filter(Boolean).join(' ');
-                                            return (
-                                                <div key={emp.id} className="member-chip">
-                                                    <span>
-                                                        {emp.name} | {emp.position || '-'} | {deptInfo || '-'}
-                                                    </span>
-                                                    <button onClick={() => handleRemoveEmployee(emp.id)}>×</button>
-                                                </div>
-                                            );
-                                        })}
+                                {isMembersLoading ? (
+                                    <div className="members-loading">
+                                        <div className="spinner" aria-hidden="true"></div>
+                                        <span>등록된 멤버를 찾는 중입니다.</span>
                                     </div>
-                                )}
-                                {applyingToAll && (
-                                    <div className="members-list" style={{ padding: '1rem', textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
-                                        모든 직원이 이 역할을 부여받습니다.
-                                    </div>
+                                ) : (
+                                    <>
+                                        {!applyingToAll && (
+                                            <div className="members-list">
+                                                {assignedEmployees.map(emp => {
+                                                    const deptInfo = [emp.division, emp.team].filter(Boolean).join(' ');
+                                                    return (
+                                                        <div key={emp.id} className="member-chip">
+                                                            <span>
+                                                                {emp.name} | {emp.position || '-'} | {deptInfo || '-'}
+                                                            </span>
+                                                            <button onClick={() => handleRemoveEmployee(emp.id)}>×</button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                        {applyingToAll && (
+                                            <div className="members-list" style={{ padding: '1rem', textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+                                                모든 직원이 이 역할을 부여받습니다.
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
 

@@ -6,6 +6,29 @@
     flex-direction: column;
     background-color: #f8f9fa;
     overflow-y: auto; /* 전체 스크롤 허용 */
+    position: relative;
+}
+
+/* Role List Loading */
+.role-list-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.role-list-loading .spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /* --- [New] Badge Styles --- */
@@ -416,6 +439,50 @@
     display: flex;
     justify-content: space-between;
     margin-bottom: 15px;
+}
+
+.add-member-button {
+    background: linear-gradient(135deg, #4f8ef7, #2f6fe4);
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(47, 111, 228, 0.25);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+
+.add-member-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(47, 111, 228, 0.25);
+    filter: brightness(1.05);
+}
+
+.add-member-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(47, 111, 228, 0.25);
+}
+
+.members-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    background: #f8f9fa;
+    border: 1px dashed #d1d9e0;
+    border-radius: 6px;
+    color: #4a5568;
+    font-size: 0.95rem;
+}
+
+.members-loading .spinner {
+    width: 22px;
+    height: 22px;
+    border: 3px solid #eef2f7;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
 }
 
 .members-list {
