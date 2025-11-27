@@ -129,6 +129,7 @@ const Login: React.FC = () => {
                                     type="text"
                                     id="login_id_set"
                                     name="login_id"
+                                    className="login-input"
                                     value={formData.login_id}
                                     onChange={handleChange}
                                     required
@@ -138,7 +139,7 @@ const Login: React.FC = () => {
                             </div>
                             <div className="form-group">
                                 <label htmlFor="birth_date_set">생년월일 6자리</label>
-                                <input type="text" id="birth_date_set" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} required maxLength={6} placeholder="ex: 800101" />
+                                <input type="text" id="birth_date_set" className="login-input" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} required maxLength={6} placeholder="ex: 800101" />
                             </div>
                             {error && <div className="error-message">{error}</div>}
                             <button type="submit" className="login-button" disabled={isLoading}>
