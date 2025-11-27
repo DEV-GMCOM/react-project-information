@@ -90,8 +90,9 @@ export class RoleService {
         return response.data;
     }
 
-    async unassignRoleFromEmployee(employeeId: number): Promise<void> {
-        await apiClient.delete(`/permissions/employees/${employeeId}/role`);
+    async unassignRoleFromEmployee(employeeId: number, roleId?: number): Promise<void> {
+        const params = roleId ? { role_id: roleId } : {};
+        await apiClient.delete(`/permissions/employees/${employeeId}/role`, { params });
     }
 
     async assignRoleToEmployeesBatch(roleId: number, employeeIds: number[]): Promise<void> {

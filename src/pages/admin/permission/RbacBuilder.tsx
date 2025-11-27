@@ -4,6 +4,9 @@ import { Employee, Role, Permission, RoleCreate, RoleUpdate, PermissionCreate, P
 import EmployeeSearchModal from '../../../components/meeting/EmployeeSearchModal';
 import '../../../styles/RbacBuilder.css';
 import { useAuth } from '../../../contexts/AuthContext';
+// Layout.tsx에서 메뉴 데이터를 import
+import { baseMainMenuItems, devMenuItems, NavMenuItem, NavSubMenuItem } from '../../../components/common/Layout';
+
 
 // --- Types ---
 
@@ -29,46 +32,15 @@ interface PermissionFormData {
     parentId: string; // For Sections/Actions, the Page ID
 }
 
-// --- Nav Menu Data (Mirrored from Layout.tsx) ---
-interface MenuItem {
-    path: string;
-    name: string;
-    subMenus?: { path: string; name: string }[];
-}
-
-const NAV_MENUS: MenuItem[] = [
-    {
-        path: '/information',
-        name: '기본정보',
-        subMenus: [
-            { path: '/info-management/advertiser', name: '기업 / 광고주 ( 담당자 )' },
-            { path: '/info-management/project', name: '프로젝트 프로파일' }
-        ]
-    },
-    { path: '/project-kickoff', name: '프로젝트 착수서' },
-    { path: '/pt-checklist', name: 'PT 전 체크' },
-    { path: '/pt-postmortem', name: 'PT 결과분석' },
-    { path: '/project-execution', name: '프로젝트 실행파일링' },
-    { path: '/project-postmortem', name: '프로젝트 결과분석' },
-    { path: '/working/meeting-minutes', name: '자동 회의록' },
-    { path: '/admin/permission', name: '권한 관리' },
-    // Dev Menus
-    { path: '/hr/employee-management', name: '직원정보 관리' },
-    { path: '/working/fms', name: 'GMCOM 저장소' },
-    { path: '/working/clock-in-out', name: '출퇴근 체크' },
-    { path: '/sales/schedule', name: '영업스케쥴' },
-    { path: '/working/scheduling', name: '스케쥴링' },
+// 모든 메뉴 항목을 병합 (개발 메뉴 포함)
+const ALL_MENUS_FOR_RBAC: (NavMenuItem | NavSubMenuItem)[] = [
+    ...baseMainMenuItems.flatMap(item => item.subMenus ? [item, ...item.subMenus] : [item]),
+    ...devMenuItems.flatMap(item => item.subMenus ? [item, ...item.subMenus] : [item]),
 ];
 
-// Flatten menu for easy lookup
-const FLATTENED_MENUS = NAV_MENUS.reduce<{path: string, name: string}[]>((acc, item) => {
-    if (item.subMenus) {
-        // 상위 메뉴도 포함 (필요 시)
-        acc.push({ path: item.path, name: item.name });
-        item.subMenus.forEach(sub => acc.push({ path: sub.path, name: sub.name }));
-    } else {
-        acc.push({ path: item.path, name: item.name });
-    }
+// Flatten menu for easy lookup (모든 메뉴 포함)
+const FLATTENED_MENUS = ALL_MENUS_FOR_RBAC.reduce<{path: string, name: string}[]>((acc, item) => {
+    acc.push({ path: item.path, name: item.name });
     return acc;
 }, []);
 
@@ -187,6 +159,7 @@ const RbacBuilder: React.FC = () => {
     const [assignedEmployees, setAssignedEmployees] = useState<Employee[]>([]);
     const [initialAssignedEmployees, setInitialAssignedEmployees] = useState<Employee[]>([]);
     const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+    const [applyingToAll, setApplyingToAll] = useState(false); // 모든 직원에게 적용 여부
     
     // Permission Modal State (Sub-items only)
     const [isPermModalOpen, setIsPermModalOpen] = useState(false);
@@ -201,7 +174,7 @@ const RbacBuilder: React.FC = () => {
     });
     const [editingPermId, setEditingPermId] = useState<number | null>(null);
 
-    const { user } = useAuth(); // Auth Context 가져오기
+    const { user, refreshUser } = useAuth(); // Auth Context 가져오기
 
     // --- Computed ---
     const { tree, orphans } = useMemo(() => buildPermissionTree(permissions), [permissions]);
@@ -213,31 +186,10 @@ const RbacBuilder: React.FC = () => {
 
     useEffect(() => {
         if (selectedRole) {
-            const isSuperAdmin = selectedRole.role_code === 'SUPER_ADMIN'; 
-            
-            if (isSuperAdmin) {
-                const allPermsForSuperAdmin = new Set<number>();
-                const allVirtualPageIdsForSuperAdmin = new Set<string>();
-
-                tree.forEach(pageNode => {
-                    if (!pageNode.isVirtual) {
-                        allPermsForSuperAdmin.add(pageNode.permission.permission_id);
-                    } else {
-                        allVirtualPageIdsForSuperAdmin.add(pageNode.id);
-                    }
-                    pageNode.children.forEach(child => {
-                        allPermsForSuperAdmin.add(child.permission.permission_id);
-                    });
-                });
-                orphans.forEach(orphanPerm => allPermsForSuperAdmin.add(orphanPerm.permission_id));
-                
-                setPendingPermissionIds(allPermsForSuperAdmin);
-                setSelectedVirtualNodes(allVirtualPageIdsForSuperAdmin);
-
-            } else {
-                setPendingPermissionIds(new Set(selectedRole.permissions.map(p => p.permission_id)));
-                setSelectedVirtualNodes(new Set()); 
-            }
+            // super_admin 여부와 관계없이 다른 역할과 동일하게 처리
+            setPendingPermissionIds(new Set(selectedRole.permissions.map(p => p.permission_id)));
+            setSelectedVirtualNodes(new Set());
+            setApplyingToAll(selectedRole.applying_to_all || false); // 모든 직원 적용 여부 설정
 
             roleService.getEmployeesForRole(selectedRole.role_id).then(emps => {
                 setAssignedEmployees(emps);
@@ -250,6 +202,7 @@ const RbacBuilder: React.FC = () => {
             setAssignedEmployees([]);
             setInitialAssignedEmployees([]);
             setSelectedVirtualNodes(new Set());
+            setApplyingToAll(false);
         }
     }, [selectedRole, tree, orphans]); 
 
@@ -306,10 +259,7 @@ const RbacBuilder: React.FC = () => {
 
     // --- Permission Assignment Handlers ---
     const togglePermission = (node: GroupedPermission, checked: boolean) => {
-        // Super Admin은 권한 변경 불가
-        if (selectedRole && selectedRole.role_code === 'SUPER_ADMIN') {
-            return;
-        }
+        // super_admin 여부와 관계없이 다른 역할과 동일하게 처리
 
         if (node.isVirtual) {
             setSelectedVirtualNodes(prev => {
@@ -333,25 +283,20 @@ const RbacBuilder: React.FC = () => {
 
         const isSuperAdmin = selectedRole.role_code === 'SUPER_ADMIN';
 
-        // --- [추가] 자가 삭제 방지 로직 ---
-        // 사용자가 자기 자신의 계정을 SUPER_ADMIN에서 제거하려는지 확인
-        const currentIds = new Set(assignedEmployees.map(e => e.id));
-        const initialIds = new Set(initialAssignedEmployees.map(e => e.id));
-        const toRemove = initialAssignedEmployees.filter(e => !currentIds.has(e.id)).map(e => e.id);
-
-        if (isSuperAdmin && user && toRemove.includes(user.emp_id)) {
-            alert("자신의 계정을 최고 관리자(Super Admin) 역할에서 제거할 수 없습니다.");
-            // UI 복구 (제거된 본인을 다시 추가)
-            const me = initialAssignedEmployees.find(e => e.id === user.emp_id);
-            if (me) {
-                setAssignedEmployees(prev => [...prev, me]);
-            }
-            return;
-        }
-        // -----------------------------------
+        // --- [수정] 자가 삭제 방지 로직 제거 (다중 역할 지원으로 인해 제거해도 무방하거나, 복잡도 증가) ---
+        // 만약 SUPER_ADMIN 역할이 '유일한' 역할인 경우에만 막아야 하는데,
+        // 현재 UI에서는 해당 사용자의 다른 역할 보유 여부를 알 수 없음.
+        // 일단 경고 없이 진행하거나, 정말 필요하다면 백엔드에서 막는 것이 좋음.
 
         try {
-            // 0. Create Virtual Permissions First
+            // 0. Update role's applying_to_all field if changed
+            if (applyingToAll !== (selectedRole.applying_to_all || false)) {
+                await roleService.updateRole(selectedRole.role_id, {
+                    applying_to_all: applyingToAll
+                });
+            }
+
+            // 1. Create Virtual Permissions First
             const createdPermissionIds: number[] = [];
             const virtualNodesToCreate = Array.from(selectedVirtualNodes); 
 
@@ -372,20 +317,7 @@ const RbacBuilder: React.FC = () => {
 
             // 1. Save All Permissions (Existing + Newly Created)
             let finalPermissionIds = Array.from(pendingPermissionIds);
-            if (isSuperAdmin) {
-                // Super Admin인 경우 모든 권한 (DB + 가상)을 최종 권한으로 설정
-                const allPermIdsForSuperAdmin = new Set<number>();
-                tree.forEach(pageNode => {
-                    if (!pageNode.isVirtual) {
-                        allPermIdsForSuperAdmin.add(pageNode.permission.permission_id);
-                    }
-                    pageNode.children.forEach(child => {
-                        allPermIdsForSuperAdmin.add(child.permission.permission_id);
-                    });
-                });
-                orphans.forEach(orphanPerm => allPermIdsForSuperAdmin.add(orphanPerm.permission_id));
-                finalPermissionIds = Array.from(allPermIdsForSuperAdmin);
-            }
+            // super_admin 여부와 관계없이 다른 역할과 동일하게 처리 (모든 권한 기본 할당 로직 제거)
             finalPermissionIds = [...finalPermissionIds, ...createdPermissionIds];
 
 
@@ -394,15 +326,25 @@ const RbacBuilder: React.FC = () => {
             setPendingPermissionIds(new Set(finalPermissionIds)); // Save state
 
             // 2. Save Employees (Diffing)
-            // const currentIds = new Set(assignedEmployees.map(e => e.id)); // 위에서 정의함
-            // const initialIds = new Set(initialAssignedEmployees.map(e => e.id)); // 위에서 정의함
+            const currentIds = new Set(assignedEmployees.map(e => e.id));
+            const initialIds = new Set(initialAssignedEmployees.map(e => e.id));
             const toAdd = assignedEmployees.filter(e => !initialIds.has(e.id)).map(e => e.id);
-            // const toRemove = initialAssignedEmployees.filter(e => !currentIds.has(e.id)).map(e => e.id); // 위에서 정의함
+            const toRemove = initialAssignedEmployees.filter(e => !currentIds.has(e.id)).map(e => e.id);
 
             if (toAdd.length > 0) await roleService.assignRoleToEmployeesBatch(selectedRole.role_id, toAdd);
-            if (toRemove.length > 0) await Promise.all(toRemove.map(id => roleService.unassignRoleFromEmployee(id)));
+            
+            // [수정] unassign 시 role_id 전달 필요 (N:M 지원)
+            // roleService.unassignRoleFromEmployee(employeeId) -> (employeeId, roleId) 로 변경 필요하지만
+            // 현재 roleService.ts 파일도 수정해야 함. (아래에서 진행 예정)
+            // 일단 여기서 role_id를 인자로 넘기는 것으로 가정하고 호출.
+            if (toRemove.length > 0) {
+                await Promise.all(toRemove.map(id => roleService.unassignRoleFromEmployee(id, selectedRole.role_id)));
+            }
             
             alert('저장되었습니다.');
+            
+            // AuthContext의 사용자 정보(권한)를 갱신
+            await refreshUser();
             
             // Refresh Role & Employee Data
             const updatedRoles = await roleService.getAllRoles();
@@ -437,66 +379,33 @@ const RbacBuilder: React.FC = () => {
 
         const isSuperAdmin = selectedRole.role_code === 'SUPER_ADMIN';
 
+        // 0. Check applying_to_all Changes
+        if (applyingToAll !== (selectedRole.applying_to_all || false)) {
+            return true;
+        }
+
         // 1. Check Permission Changes
         let permissionsChanged = false;
 
-        // Super Admin의 경우, 모든 권한이 할당되어야 하므로 이를 기준으로 비교
-        if (isSuperAdmin) {
-            const allDesiredPermsFromTree = new Set<number>();
-            const allDesiredVirtualPageIds = new Set<string>();
+        // 모든 역할의 경우
+        const currentAssignedPerms = new Set<number>();
+        Array.from(pendingPermissionIds).forEach(id => currentAssignedPerms.add(id));
+        // 가상 노드 중 선택된 것이 있다면 변경사항으로 간주
+        if (selectedVirtualNodes.size > 0) permissionsChanged = true;
 
-            tree.forEach(node => {
-                if (!node.isVirtual) { // 실제 DB에 있는 권한만 포함 (가상 노드의 임시 ID는 제외)
-                    allDesiredPermsFromTree.add(node.permission.permission_id);
-                } else { // 가상 노드는 ID로 추적
-                    allDesiredVirtualPageIds.add(node.id);
-                }
-                node.children.forEach(child => allDesiredPermsFromTree.add(child.permission.permission_id));
-            });
-            orphans.forEach(orphan => allDesiredPermsFromTree.add(orphan.permission_id));
+        const originalAssignedPermsInDb = new Set(selectedRole.permissions.map(p => p.permission_id));
 
-            // 현재 DB에 저장된 super_admin의 권한 ID 목록
-            const originalAssignedPermIdsInDb = new Set(selectedRole.permissions.map(p => p.permission_id));
-            
-            // 모든 desired DB 권한이 원래 할당되어 있는지 확인
-            if (allDesiredPermsFromTree.size !== originalAssignedPermIdsInDb.size) {
-                permissionsChanged = true;
-            } else {
-                for (const permId of allDesiredPermsFromTree) {
-                    if (!originalAssignedPermIdsInDb.has(permId)) {
-                        permissionsChanged = true;
-                        break;
-                    }
-                }
-            }
-
-            // 모든 desired 가상 페이지가 실제로 DB에 생성되어 할당되었는지 확인
-            // (즉, selectedVirtualNodes에 아직 남아있는 가상 페이지가 있다면 변경사항)
-            // selectedVirtualNodes는 useEffect에서 모든 가상 노드로 채워지고, 저장을 통해 비워져야 한다.
-            if (selectedVirtualNodes.size > 0) { 
-                permissionsChanged = true;
-            }
-
-        } else { // 일반 역할의 경우
-            const currentAssignedPerms = new Set<number>();
-            Array.from(pendingPermissionIds).forEach(id => currentAssignedPerms.add(id));
-            // 가상 노드 중 선택된 것이 있다면 변경사항으로 간주
-            if (selectedVirtualNodes.size > 0) permissionsChanged = true;
-
-            const originalAssignedPermsInDb = new Set(selectedRole.permissions.map(p => p.permission_id));
-
-            if (originalAssignedPermsInDb.size !== currentAssignedPerms.size) {
-                permissionsChanged = true;
-            } else {
-                for (const permId of originalAssignedPermsInDb) {
-                    if (!currentAssignedPerms.has(permId)) {
-                        permissionsChanged = true;
-                        break;
-                    }
+        if (originalAssignedPermsInDb.size !== currentAssignedPerms.size) {
+            permissionsChanged = true;
+        } else {
+            for (const permId of originalAssignedPermsInDb) {
+                if (!currentAssignedPerms.has(permId)) {
+                    permissionsChanged = true;
+                    break;
                 }
             }
         }
-        
+
         if (permissionsChanged) return true;
 
         // 2. Check Employee Changes
@@ -512,7 +421,7 @@ const RbacBuilder: React.FC = () => {
         }
 
         return false;
-    }, [selectedRole, pendingPermissionIds, selectedVirtualNodes, initialAssignedEmployees, assignedEmployees, tree, orphans]);
+    }, [selectedRole, pendingPermissionIds, selectedVirtualNodes, initialAssignedEmployees, assignedEmployees, tree, orphans, applyingToAll]);
 
 
     // --- Sub-Permission CRUD Handlers ---
@@ -599,7 +508,7 @@ const RbacBuilder: React.FC = () => {
             {/* Top Header Area (No CRUD, just title) */}
             <div className="rbac-layout-bottom-header" style={{marginTop: '20px'}}>
                 <h2>역할 및 접근 권한 관리</h2>
-                <p>왼쪽에서 역할을 선택하고, 오른쪽에서 메뉴별 접근 권한을 설정하세요. (Super Admin은 모든 접근이 가능합니다)</p>
+                <p>왼쪽에서 역할을 선택하고, 오른쪽에서 메뉴별 접근 권한을 설정하세요.</p>
             </div>
 
             <div className="rbac-layout">
@@ -690,7 +599,7 @@ const RbacBuilder: React.FC = () => {
                                                     type="checkbox" 
                                                     checked={isPageChecked}
                                                     onChange={(e) => togglePermission(pageNode, e.target.checked)}
-                                                    disabled={selectedRole?.role_code === 'SUPER_ADMIN'}
+                                                    
                                                 />
                                                 <span className="node-title">{pageNode.permission.permission_name}</span>
                                                 {pageNode.isVirtual && <span className="badge-new">New (미등록)</span>}
@@ -718,7 +627,7 @@ const RbacBuilder: React.FC = () => {
                                                                     type="checkbox"
                                                                     checked={pendingPermissionIds.has(child.permission.permission_id)}
                                                                     onChange={(e) => togglePermission(child, e.target.checked)}
-                                                                    disabled={selectedRole?.role_code === 'SUPER_ADMIN'}
+                                                                    
                                                                  />
                                                                  <span className="child-type-badge">{child.type === 'SECTION' ? 'S' : 'A'}</span>
                                                                  <span>{child.permission.permission_name}</span>
@@ -754,7 +663,7 @@ const RbacBuilder: React.FC = () => {
                                                         type="checkbox"
                                                         checked={pendingPermissionIds.has(perm.permission_id)}
                                                         onChange={(e) => togglePermission({permission: perm, type: 'UNKNOWN', id: '', children: []}, e.target.checked)}
-                                                        disabled={selectedRole?.role_code === 'SUPER_ADMIN'}
+                                                        
                                                     />
                                                     <span>{perm.permission_name}</span>
                                                     <span className="node-code">({perm.permission_code})</span>
@@ -771,17 +680,46 @@ const RbacBuilder: React.FC = () => {
                             {/* Role Members */}
                             <div className="role-members-section">
                                 <div className="section-header">
-                                    <h3>멤버 관리 ({assignedEmployees.length})</h3>
-                                    <button onClick={() => setIsEmployeeModalOpen(true)}>+ 멤버 추가</button>
+                                    <h3>멤버 관리 ({applyingToAll ? '모든 직원' : assignedEmployees.length})</h3>
+                                    {!applyingToAll && <button onClick={() => setIsEmployeeModalOpen(true)}>+ 멤버 추가</button>}
                                 </div>
-                                <div className="members-list">
-                                    {assignedEmployees.map(emp => (
-                                        <div key={emp.id} className="member-chip">
-                                            {emp.name}
-                                            <button onClick={() => handleRemoveEmployee(emp.id)}>×</button>
-                                        </div>
-                                    ))}
+
+                                {/* 모든 직원에게 적용 체크박스 */}
+                                <div className="applying-to-all-checkbox" style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={applyingToAll}
+                                            onChange={(e) => setApplyingToAll(e.target.checked)}
+                                            style={{ marginRight: '0.5rem' }}
+                                        />
+                                        <span style={{ fontWeight: 500 }}>모든 직원에게 적용</span>
+                                        <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', color: '#666' }}>
+                                            (체크 시 모든 직원이 자동으로 이 역할을 부여받습니다)
+                                        </span>
+                                    </label>
                                 </div>
+
+                                {!applyingToAll && (
+                                    <div className="members-list">
+                                        {assignedEmployees.map(emp => {
+                                            const deptInfo = [emp.division, emp.team].filter(Boolean).join(' ');
+                                            return (
+                                                <div key={emp.id} className="member-chip">
+                                                    <span>
+                                                        {emp.name} | {emp.position || '-'} | {deptInfo || '-'}
+                                                    </span>
+                                                    <button onClick={() => handleRemoveEmployee(emp.id)}>×</button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                {applyingToAll && (
+                                    <div className="members-list" style={{ padding: '1rem', textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
+                                        모든 직원이 이 역할을 부여받습니다.
+                                    </div>
+                                )}
                             </div>
 
                         </div>

@@ -16,7 +16,7 @@ interface Role {
     role_id: number;
     role_name: string;
     role_code: string;
-    permissions: Permission[]; // 권한 목록 추가
+    permissions: Permission[]; 
 }
 
 interface User {
@@ -27,8 +27,9 @@ interface User {
     division?: string;
     team?: string;
     position?: string;
-    role_id?: number;
-    role?: Role;
+    role_id?: number; // Deprecated
+    role?: Role;      // Deprecated (Primary role)
+    roles?: Role[];   // NEW: Multiple roles
 }
 
 interface AuthContextType {
@@ -38,8 +39,9 @@ interface AuthContextType {
     login: (login_id: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
     checkSession: () => Promise<void>;
-    hasRole: (roleCode: string) => boolean; // hasRole 함수 추가
-    hasPermission: (permissionCode: string) => boolean; // hasPermission 함수 추가
+    refreshUser: () => Promise<void>; // Add this line
+    hasRole: (roleCode: string) => boolean;
+    hasPermission: (permissionCode: string) => boolean;
 }
 
 interface AuthProviderProps {
@@ -75,16 +77,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         showIdleModalRef.current = showIdleModal;
     }, [showIdleModal]);
 
-    // --- 권한 확인 헬퍼 함수 구현 ---
+    // --- 권한 확인 헬퍼 함수 (N:M 지원 수정) ---
     const hasRole = useCallback((roleCode: string): boolean => {
-        return user?.role?.role_code === roleCode;
+        if (!user || !user.roles) return false;
+        // 사용자가 가진 역할 중 하나라도 일치하면 true
+        return user.roles.some(r => r.role_code === roleCode);
     }, [user]);
 
     const hasPermission = useCallback((permissionCode: string): boolean => {
-        if (!user || !user.role || !user.role.permissions) {
-            return false;
+        if (!user || !user.roles) return false;
+        
+        // super_admin 특별 처리 로직 제거
+
+        // 사용자가 가진 모든 역할의 권한을 순회하며 확인 (Union)
+        for (const role of user.roles) {
+            if (role.permissions && role.permissions.some(p => p.permission_code === permissionCode)) {
+                return true;
+            }
         }
-        return user.role.permissions.some(p => p.permission_code === permissionCode);
+        return false;
     }, [user]);
 
 
@@ -103,7 +114,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } finally {
             setUser(null);
             setShowIdleModal(false);
-            localStorage.removeItem('session_id'); // ✅ 로그아웃 시 세션 ID 명시적으로 제거
+            localStorage.removeItem('session_id'); 
             if (isAutoLogout) {
                 localStorage.setItem('auto_logout_reason', 'inactivity');
                 setShowAutoLogoutAlert(true);
@@ -114,7 +125,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const sendHeartbeat = useCallback(async () => {
         if (!user || showIdleModalRef.current) return;
         try {
-            console.log('🫀 Heartbeat 전송', new Date().toLocaleTimeString());
+            // console.log('🫀 Heartbeat 전송', new Date().toLocaleTimeString());
             await apiClient.post('/auth/heartbeat');
         } catch (error: any) {
             console.error('❌ Heartbeat 전송 실패:', error.response?.status);
@@ -221,9 +232,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 login_id: loginId,
                 password: password
             });
-            // 중요: 백엔드에서 이제 role과 permissions가 포함된 user 객체를 반환해야 합니다.
             setUser(response.data);
-            localStorage.setItem('session_id', response.data.session_id); // ✅ 추가: 로그인 시 session_id 저장
+            localStorage.setItem('session_id', response.data.session_id); 
 
             const today = new Date().toDateString();
             const hiddenUntil = localStorage.getItem('notice_hidden_until');
@@ -248,6 +258,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, [logout]);
 
 
+    const refreshUser = useCallback(async () => {
+        await checkSession();
+    }, [checkSession]);
+
     // --- 5. 최종 렌더링 ---
     const contextValue = {
         user,
@@ -256,6 +270,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         login,
         logout,
         checkSession,
+        refreshUser, // Add this line
         hasRole,
         hasPermission
     };

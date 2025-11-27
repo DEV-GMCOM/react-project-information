@@ -351,6 +351,7 @@ export interface Role {
     description?: string;
     can_view_finance: boolean; // Re-added
     can_edit_finance: boolean; // Re-added
+    applying_to_all: boolean; // 모든 직원에게 적용 여부
     is_active: boolean;
     created_at: string;
     modified_at: string;
@@ -362,6 +363,9 @@ export interface RoleCreate {
     role_name: string;
     role_code: string;
     description?: string;
+    can_view_finance?: boolean;
+    can_edit_finance?: boolean;
+    applying_to_all?: boolean;
 }
 
 export interface RoleUpdate extends Partial<RoleCreate> {}
