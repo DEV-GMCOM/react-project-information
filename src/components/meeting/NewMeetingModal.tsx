@@ -1,5 +1,5 @@
 // src/components/meeting/NewMeetingModal.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import MeetingBasicInfoForm from './MeetingBasicInfoForm';
 import { Employee, EmployeeSimple } from '../../api/types';
 import '../../styles/modal.css';
@@ -34,15 +34,19 @@ const NewMeetingModal: React.FC<NewMeetingModalProps> = ({
                                                              onSave,
                                                              ...formProps
                                                          }) => {
+    const [isLoading, setIsLoading] = useState<boolean>(false); // 로딩 상태 추가
+
     if (!isOpen) return null;
 
     const handleSave = async () => {
+        setIsLoading(true); // 저장 시작 시 로딩 활성화
         try {
             await onSave();
             onClose();
         } catch (error) {
-            // alert은 onSave 내부에서 처리하므로 여기서는 아무것도 안 함
             console.error('저장 실패:', error);
+        } finally {
+            setIsLoading(false); // 저장 완료/실패 시 로딩 비활성화
         }
     };
 
@@ -62,8 +66,10 @@ const NewMeetingModal: React.FC<NewMeetingModalProps> = ({
                     <MeetingBasicInfoForm {...formProps} />
                 </div>
                 <div className="modal-actions">
-                    <button className="btn-secondary" onClick={onClose}>취소</button>
-                    <button className="btn-primary" onClick={handleSave}>저장</button>
+                    <button className="btn-secondary" onClick={onClose} disabled={isLoading}>취소</button>
+                    <button className="btn-primary" onClick={handleSave} disabled={isLoading}>
+                        {isLoading ? <div className="circle-spinner"></div> : '저장'}
+                    </button>
                 </div>
             </div>
         </div>

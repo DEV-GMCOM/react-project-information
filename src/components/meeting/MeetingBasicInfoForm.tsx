@@ -51,7 +51,7 @@ const MeetingBasicInfoForm: React.FC<MeetingBasicInfoFormProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 {/* 회의록 제목 */}
                 <div className="writer-field">
-                    <label className="writer-field-label">회의록 제목</label>
+                    <label className="writer-field-label writer-field-label-title">회의록 제목</label>
                     <input
                         type="text"
                         className="writer-field-input"
