@@ -84,13 +84,67 @@ export interface Department {
     name: string;
 }
 
+// ✅ 부서 관리용 상세 타입
+export interface DepartmentFull {
+    dept_id: number;
+    dept_name: string;
+    dept_code?: string;
+    description?: string;
+    parent_dept_id?: number;
+    manager_emp_id?: number;
+    sort_order: number;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+    employee_count?: number;
+    manager_name?: string;
+}
+
+export interface DepartmentCreate {
+    dept_name: string;
+    dept_code?: string;
+    description?: string;
+    parent_dept_id?: number;
+    manager_emp_id?: number;
+    sort_order?: number;
+}
+
+export interface DepartmentUpdate {
+    dept_name?: string;
+    dept_code?: string;
+    description?: string;
+    parent_dept_id?: number;
+    manager_emp_id?: number;
+    sort_order?: number;
+    is_active?: boolean;
+}
+
+export interface DepartmentEmployee {
+    emp_id: number;
+    id: string;
+    name: string;
+    team?: string;
+    title?: string;
+    position?: string;
+    email?: string;
+    is_active: boolean;
+}
+
+export interface DepartmentEmployeesResponse {
+    dept_id: number;
+    dept_name: string;
+    employees: DepartmentEmployee[];
+}
+
+
 export interface EmployeeSimple { // ✅ 새로운 인터페이스
     id: number;
     name: string;
 }
 
 export interface Employee { // ✅ 복구
-    id: number;
+    emp_id: number;  // 기본키 (DB emp_id)
+    id: string;      // 로그인 ID (DB id)
     employee_id: string;
     name: string;
     department?: Department; // ✅ Department 객체 타입으로 복구
@@ -120,6 +174,20 @@ export interface EmployeeCreate {
     address?: string;
     status: 'active' | 'inactive' | 'terminated';
 }
+
+export interface EmployeeUpdate {
+    name?: string;
+    division?: string;
+    team?: string;
+    position?: string;
+    title?: string;
+    email?: string;
+    mobile?: string;
+    birth?: string;
+    role_id?: number;
+    is_active?: boolean;
+}
+
 
 export interface Project {
     id: number;

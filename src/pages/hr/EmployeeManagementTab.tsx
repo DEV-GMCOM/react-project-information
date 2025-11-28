@@ -1,5 +1,6 @@
 // src/pages/hr/EmployeeManagementTab.tsx
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { apiService } from '../../api';
 import type { Employee, EmployeeCreate, EmployeeUpdate } from '../../api/types';
 
@@ -365,14 +366,14 @@ const EmployeeManagementTab: React.FC = () => {
                 </tbody>
             </table>
 
-            {/* 부서 이동 모달 */}
-            {isMoveModalOpen && (
+            {/* 부서 이동 모달 - Portal로 body에 렌더링 */}
+            {isMoveModalOpen && ReactDOM.createPortal(
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                    backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999
                 }} onClick={() => setIsMoveModalOpen(false)}>
                     <div style={{
-                        backgroundColor: 'white', padding: '20px', borderRadius: '8px', width: '400px', maxWidth: '90%'
+                        backgroundColor: 'white', padding: '20px', borderRadius: '8px', width: '400px', maxWidth: '90%', position: 'relative', zIndex: 100000
                     }} onClick={(e) => e.stopPropagation()}>
                         <h3 style={{ marginTop: 0 }}>직원 부서 이동</h3>
                         <p>{selectedEmployees.length}명의 직원을 이동합니다.</p>
@@ -408,17 +409,18 @@ const EmployeeManagementTab: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
-            {/* 직원 등록/수정 모달 */}
-            {isModalOpen && (
+            {/* 직원 등록/수정 모달 - Portal로 body에 렌더링 */}
+            {isModalOpen && ReactDOM.createPortal(
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                    backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999
                 }} onClick={() => setIsModalOpen(false)}>
                     <div style={{
-                        backgroundColor: 'white', padding: '20px', borderRadius: '8px', width: '500px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto'
+                        backgroundColor: 'white', padding: '20px', borderRadius: '8px', width: '500px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto', position: 'relative', zIndex: 100000
                     }} onClick={(e) => e.stopPropagation()}>
                         <h3 style={{ marginTop: 0 }}>{editingEmployee ? '직원 정보 수정' : '새 직원 등록'}</h3>
                         <form onSubmit={handleSubmit}>
@@ -559,7 +561,8 @@ const EmployeeManagementTab: React.FC = () => {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

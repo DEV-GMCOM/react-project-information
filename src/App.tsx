@@ -17,7 +17,7 @@ import CompanyProfile from './pages/company/CompanyProfile';
 import CompanyEmployeeProfile from './pages/company/CompanyEmployeeProfile';
 import EmployeeList from './pages/hr/EmployeeList';
 import EmployeeForm from './pages/hr/EmployeeForm';
-import EmployeeManagement from "./pages/hr/EmployeeManagement.tsx";
+import HRManagement from "./pages/hr/HRManagement.tsx";
 import ProjectList from './pages/project/ProjectList';
 import ProjectForm from './pages/project/ProjectForm';
 import ProjectRegistForm from './pages/project/ProjectRegistForm';
@@ -97,7 +97,7 @@ function App() {
                 <Route path="/hr" element={<ProtectedRoute><Layout><EmployeeList /></Layout></ProtectedRoute>} />
                 <Route path="/hr/new" element={<ProtectedRoute><Layout><EmployeeForm /></Layout></ProtectedRoute>} />
                 <Route path="/hr/:id/edit" element={<ProtectedRoute><Layout><EmployeeForm /></Layout></ProtectedRoute>} />
-                <Route path="/hr/employee-management" element={<ProtectedRoute><Layout><EmployeeManagement /></Layout></ProtectedRoute>} />
+                <Route path="/hr/employee-management" element={<ProtectedRoute><Layout><HRManagement /></Layout></ProtectedRoute>} />
 
                 {/* Sales */}
                 <Route path="/sales/schedule" element={<ProtectedRoute><Layout><SalesSchedule /></Layout></ProtectedRoute>}>

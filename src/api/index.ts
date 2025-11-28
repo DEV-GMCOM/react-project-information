@@ -15,12 +15,15 @@ export { companyService } from './services/companyService';
 export { employeeService } from './services/employeeService';
 export { projectService } from './services/projectService';
 export { dashboardService } from './services/dashboardService';
+export { departmentService } from './services/departmentService';
 
 // 기존 코드와의 호환성을 위한 통합 객체
 import { companyService } from './services/companyService';
 import { employeeService } from './services/employeeService';
 import { projectService } from './services/projectService';
 import { dashboardService } from './services/dashboardService';
+import { departmentService } from './services/departmentService';
+
 
 export const apiService = {
     // Company
@@ -38,9 +41,17 @@ export const apiService = {
     createEmployee: employeeService.createEmployee.bind(employeeService),
     updateEmployee: employeeService.updateEmployee.bind(employeeService),
     getAllDepartments: employeeService.getAllDepartments.bind(employeeService),
-    createDepartment: employeeService.createDepartment.bind(employeeService),
-    updateDepartment: employeeService.updateDepartment.bind(employeeService),
-    deleteDepartment: employeeService.deleteDepartment.bind(employeeService),
+
+    // Department (신규 부서 관리 API)
+    getDepartments: departmentService.getDepartments.bind(departmentService),
+    getDepartment: departmentService.getDepartment.bind(departmentService),
+    createDepartment: departmentService.createDepartment.bind(departmentService),
+    updateDepartment: departmentService.updateDepartment.bind(departmentService),
+    deleteDepartment: departmentService.deleteDepartment.bind(departmentService),
+    getDepartmentEmployees: departmentService.getDepartmentEmployees.bind(departmentService),
+    moveEmployeesToDepartment: departmentService.moveEmployeesToDepartment.bind(departmentService),
+    syncDepartmentsFromEmployees: departmentService.syncDepartmentsFromEmployees.bind(departmentService),
+
 
     // Project
     getProjects: projectService.getProjects.bind(projectService),
