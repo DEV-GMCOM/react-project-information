@@ -80,25 +80,24 @@ export interface CompanySearchParams {
 }
 
 export interface Department {
-    id: number;
-    name: string;
-}
-
-// ✅ 부서 관리용 상세 타입
-export interface DepartmentFull {
+    id?: number;           // 일부 화면에서 사용
+    name?: string;         // 일부 화면에서 사용
     dept_id: number;
     dept_name: string;
     dept_code?: string;
     description?: string;
     parent_dept_id?: number;
     manager_emp_id?: number;
-    sort_order: number;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
+    sort_order?: number;
+    is_active?: boolean;
+    created_at?: string;
+    updated_at?: string;
     employee_count?: number;
     manager_name?: string;
 }
+
+// ✅ 부서 관리용 상세 타입 (Department와 동일)
+export type DepartmentFull = Department;
 
 export interface DepartmentCreate {
     dept_name: string;
@@ -151,28 +150,40 @@ export interface Employee { // ✅ 복구
     division?: string;
     team?: string;
     position?: string;
+    title?: string;      // 직급
     email?: string;
     phone?: string;
+    mobile?: string;     // 휴대폰
     hire_date?: string;
     birth_date?: string;
+    birth?: string;      // 생년월일 (YYYYMMDD)
     address?: string;
     status: 'active' | 'inactive' | 'terminated';
+    is_active?: boolean; // 재직 상태
     created_at: string;
     updated_at: string;
     role?: Role;
 }
 
 export interface EmployeeCreate {
-    employee_id: string;
+    id?: string;           // 사번/로그인 ID
+    pw?: string;           // 비밀번호
+    employee_id?: string;  // 사원번호 (optional)
     name: string;
     department_id?: number;
+    division?: string;
+    team?: string;
     position?: string;
+    title?: string;
     email?: string;
     phone?: string;
+    mobile?: string;
     hire_date?: string;
     birth_date?: string;
+    birth?: string;
     address?: string;
-    status: 'active' | 'inactive' | 'terminated';
+    status?: 'active' | 'inactive' | 'terminated';
+    is_active?: boolean;
 }
 
 export interface EmployeeUpdate {
