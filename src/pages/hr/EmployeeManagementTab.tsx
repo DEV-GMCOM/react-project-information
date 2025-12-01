@@ -36,7 +36,6 @@ const EmployeeManagementTab: React.FC = () => {
         team: '',
         position: '',
         title: '',
-        email: '',
         mobile: '',
         birth: '',
         is_active: true
@@ -83,7 +82,6 @@ const EmployeeManagementTab: React.FC = () => {
             team: '',
             position: '',
             title: '',
-            email: '',
             mobile: '',
             birth: '',
             is_active: true
@@ -100,7 +98,6 @@ const EmployeeManagementTab: React.FC = () => {
             team: emp.team || '',
             position: emp.position || '',
             title: emp.title || '',
-            email: emp.email || '',
             mobile: emp.mobile || '',
             birth: emp.birth || '',
             is_active: emp.is_active
@@ -108,8 +105,34 @@ const EmployeeManagementTab: React.FC = () => {
         setIsModalOpen(true);
     };
 
+    // 휴대폰 번호 포맷 검증 (010-1234-5678 형태)
+    const validateMobile = (mobile: string): boolean => {
+        if (!mobile) return true; // 선택 입력이므로 빈 값 허용
+        const mobileRegex = /^01[0-9]-[0-9]{3,4}-[0-9]{4}$/;
+        return mobileRegex.test(mobile);
+    };
+
+    // 생년월일 포맷 검증 (YYMMDD 6자리)
+    const validateBirth = (birth: string): boolean => {
+        if (!birth) return true; // 선택 입력이므로 빈 값 허용
+        const birthRegex = /^[0-9]{6}$/;
+        return birthRegex.test(birth);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // 휴대폰 번호 포맷 검증
+        if (formData.mobile && !validateMobile(formData.mobile)) {
+            alert('휴대폰 번호는 010-1234-5678 형식으로 입력해주세요.');
+            return;
+        }
+
+        // 생년월일 포맷 검증
+        if (formData.birth && !validateBirth(formData.birth)) {
+            alert('생년월일은 6자리(YYMMDD)로 입력해주세요. 예: 941004');
+            return;
+        }
 
         try {
             if (editingEmployee) {
@@ -119,7 +142,6 @@ const EmployeeManagementTab: React.FC = () => {
                     team: formData.team,
                     position: formData.position,
                     title: formData.title,
-                    email: formData.email,
                     mobile: formData.mobile,
                     birth: formData.birth,
                     is_active: formData.is_active
@@ -139,10 +161,9 @@ const EmployeeManagementTab: React.FC = () => {
                     team: formData.team,
                     position: formData.position,
                     title: formData.title,
-                    email: formData.email,
                     mobile: formData.mobile,
                     birth: formData.birth,
-                    is_active: formData.is_active
+                    is_active: true // 항상 재직 상태로 등록
                 };
                 await apiService.createEmployee(createData);
                 alert('새 직원이 등록되었습니다.');
@@ -503,15 +524,6 @@ const EmployeeManagementTab: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>이메일</label>
-                                    <input
-                                        type="email"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px', boxSizing: 'border-box' }}
-                                    />
-                                </div>
-                                <div>
                                     <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>휴대폰</label>
                                     <input
                                         type="tel"
@@ -527,22 +539,24 @@ const EmployeeManagementTab: React.FC = () => {
                                         type="text"
                                         value={formData.birth}
                                         onChange={(e) => setFormData({ ...formData, birth: e.target.value })}
-                                        placeholder="YYYYMMDD"
-                                        maxLength={8}
+                                        placeholder="YYMMDD (예: 941004)"
+                                        maxLength={6}
                                         style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px', boxSizing: 'border-box' }}
                                     />
                                 </div>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>재직 상태</label>
-                                    <select
-                                        value={formData.is_active ? 'active' : 'inactive'}
-                                        onChange={(e) => setFormData({ ...formData, is_active: e.target.value === 'active' })}
-                                        style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px', boxSizing: 'border-box' }}
-                                    >
-                                        <option value="active">재직</option>
-                                        <option value="inactive">퇴사</option>
-                                    </select>
-                                </div>
+                                {editingEmployee && (
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>재직 상태</label>
+                                        <select
+                                            value={formData.is_active ? 'active' : 'inactive'}
+                                            onChange={(e) => setFormData({ ...formData, is_active: e.target.value === 'active' })}
+                                            style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px', boxSizing: 'border-box' }}
+                                        >
+                                            <option value="active">재직</option>
+                                            <option value="inactive">퇴사</option>
+                                        </select>
+                                    </div>
+                                )}
                             </div>
                             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
                                 <button
