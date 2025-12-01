@@ -38,14 +38,25 @@ const OrganizationChart: React.FC = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [empData, deptData] = await Promise.all([
+            const [empData, deptRawData] = await Promise.all([
                 apiService.getEmployees({ limit: 1000 }),
                 apiService.getDepartments().catch(() => [])
             ]);
             setEmployees(empData);
-            setDepartments(deptData);
+            
+            const transformedDeptData: Department[] = deptRawData.map((d: any) => ({
+                ...d,
+                sort_order: d.sort_order === null ? 0 : d.sort_order, // null -> 0 변환
+                description: d.description === null ? '' : d.description, // null -> '' 변환
+                dept_code: d.dept_code === null ? '' : d.dept_code, // null -> '' 변환
+                manager_emp_id: d.manager_emp_id === null ? null : d.manager_emp_id,
+                parent_dept_id: d.parent_dept_id === null ? null : d.parent_dept_id,
+                employee_count: d.employee_count === null ? 0 : d.employee_count,
+                manager_name: d.manager_name === null ? '' : d.manager_name,
+            }));
+            setDepartments(transformedDeptData);
             // 모든 부서 펼치기
-            setExpandedDepts(new Set(deptData.map((d: Department) => d.dept_id)));
+            setExpandedDepts(new Set(transformedDeptData.map((d: Department) => d.dept_id)));
         } catch (error) {
             console.error('Failed to load data:', error);
         } finally {
@@ -171,12 +182,12 @@ const OrganizationChart: React.FC = () => {
         const setLevels = (nodes: DeptTreeNode[], level: number) => {
             nodes.forEach(node => {
                 node.level = level;
-                node.children.sort((a, b) => a.dept.sort_order - b.dept.sort_order);
+                node.children.sort((a, b) => (a.dept.sort_order || 0) - (b.dept.sort_order || 0));
                 setLevels(node.children, level + 1);
             });
         };
 
-        roots.sort((a, b) => a.dept.sort_order - b.dept.sort_order);
+        roots.sort((a, b) => (a.dept.sort_order || 0) - (b.dept.sort_order || 0));
         setLevels(roots, 0);
 
         return roots;

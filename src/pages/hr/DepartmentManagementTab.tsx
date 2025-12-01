@@ -11,7 +11,7 @@ interface Department {
     description: string | null;
     parent_dept_id: number | null;
     manager_emp_id: number | null;
-    sort_order: number;
+    sort_order: number; // types.ts에서는 number | null 이지만 여기서는 number로 사용
     is_active: boolean;
     created_at: string;
     updated_at: string;
@@ -26,11 +26,11 @@ interface DepartmentTreeNode extends Department {
 
 interface DepartmentFormData {
     dept_name: string;
-    dept_code: string;
-    description: string;
+    dept_code: string | null; // types.ts에서는 string | null
+    description: string | null; // types.ts에서는 string | null
     parent_dept_id: number | null;
     manager_emp_id: number | null;
-    sort_order: number;
+    sort_order: number; // types.ts에서는 number | null 이지만 여기서는 number로 사용
 }
 
 const DepartmentManagementTab: React.FC = () => {
@@ -65,9 +65,19 @@ const DepartmentManagementTab: React.FC = () => {
 
             try {
                 const deptData = await apiService.getDepartments();
-                setDepartments(deptData);
+                const transformedDeptData: Department[] = deptData.map((d: any) => ({
+                    ...d,
+                    sort_order: d.sort_order === null ? 0 : d.sort_order, // null -> 0 변환
+                    description: d.description === null ? '' : d.description, // null -> '' 변환
+                    dept_code: d.dept_code === null ? '' : d.dept_code, // null -> '' 변환
+                    manager_emp_id: d.manager_emp_id === null ? null : d.manager_emp_id,
+                    parent_dept_id: d.parent_dept_id === null ? null : d.parent_dept_id,
+                    employee_count: d.employee_count === null ? 0 : d.employee_count,
+                    manager_name: d.manager_name === null ? '' : d.manager_name,
+                }));
+                setDepartments(transformedDeptData);
                 // 모든 부서 펼치기
-                setExpandedDepts(new Set(deptData.map((d: Department) => d.dept_id)));
+                setExpandedDepts(new Set(transformedDeptData.map((d: Department) => d.dept_id)));
             } catch {
                 const deptMap = new Map<string, { count: number; employees: Employee[] }>();
                 empData.forEach(emp => {
@@ -82,18 +92,20 @@ const DepartmentManagementTab: React.FC = () => {
                 const fakeDepts: Department[] = Array.from(deptMap.entries()).map(([name, data], idx) => ({
                     dept_id: idx + 1,
                     dept_name: name,
-                    dept_code: null,
-                    description: null,
+                    dept_code: null, // string | null
+                    description: null, // string | null
                     parent_dept_id: null,
                     manager_emp_id: null,
-                    sort_order: idx,
+                    sort_order: idx, // number
                     is_active: true,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
-                    employee_count: data.count,
-                    manager_name: null
+                    employee_count: data.count, // number
+                    manager_name: null // string | null
                 }));
                 setDepartments(fakeDepts);
+                // 모든 부서 펼치기
+                setExpandedDepts(new Set(fakeDepts.map((d: Department) => d.dept_id)));
             }
         } catch (error) {
             console.error('Failed to load data:', error);
@@ -133,7 +145,7 @@ const DepartmentManagementTab: React.FC = () => {
             });
         };
 
-        roots.sort((a, b) => a.sort_order - b.sort_order);
+        roots.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
         setLevels(roots, 0);
 
         return roots;
@@ -612,7 +624,7 @@ const DepartmentManagementTab: React.FC = () => {
                                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>부서 코드</label>
                                 <input
                                     type="text"
-                                    value={formData.dept_code}
+                                    value={formData.dept_code || ''} // null -> '' 변환
                                     onChange={(e) => setFormData({ ...formData, dept_code: e.target.value })}
                                     placeholder="예: DIV1, TEAM1"
                                     style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px', boxSizing: 'border-box' }}
@@ -621,7 +633,7 @@ const DepartmentManagementTab: React.FC = () => {
                             <div style={{ marginBottom: '15px' }}>
                                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>설명</label>
                                 <textarea
-                                    value={formData.description}
+                                    value={formData.description || ''} // null -> '' 변환
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     placeholder="부서에 대한 설명을 입력하세요"
                                     rows={3}

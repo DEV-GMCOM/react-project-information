@@ -84,15 +84,15 @@ export interface Department {
     name?: string;         // 일부 화면에서 사용
     dept_id: number;
     dept_name: string;
-    dept_code?: string;
-    description?: string;
-    parent_dept_id?: number;
-    manager_emp_id?: number;
-    sort_order?: number;
+    dept_code: string | null; // null 허용, undefined 불허
+    description: string | null; // null 허용, undefined 불허
+    parent_dept_id: number | null; // null 허용, undefined 불허
+    manager_emp_id: number | null; // null 허용, undefined 불허
+    sort_order: number | null; // null 허용, undefined 불허
     is_active?: boolean;
     created_at?: string;
     updated_at?: string;
-    employee_count?: number;
+    employee_count: number; // number | null; // API 스키마에 따라 유동적
     manager_name?: string;
 }
 
@@ -101,20 +101,20 @@ export type DepartmentFull = Department;
 
 export interface DepartmentCreate {
     dept_name: string;
-    dept_code?: string;
-    description?: string;
-    parent_dept_id?: number;
-    manager_emp_id?: number;
-    sort_order?: number;
+    dept_code: string | null; // null 허용, undefined 불허
+    description: string | null; // null 허용, undefined 불허
+    parent_dept_id: number | null; // null 허용, undefined 불허
+    manager_emp_id: number | null; // null 허용, undefined 불허
+    sort_order: number | null; // null 허용, undefined 불허
 }
 
 export interface DepartmentUpdate {
     dept_name?: string;
-    dept_code?: string;
-    description?: string;
-    parent_dept_id?: number;
-    manager_emp_id?: number;
-    sort_order?: number;
+    dept_code: string | null; // null 허용, undefined 불허
+    description: string | null; // null 허용, undefined 불허
+    parent_dept_id: number | null; // null 허용, undefined 불허
+    manager_emp_id: number | null; // null 허용, undefined 불허
+    sort_order: number | null; // null 허용, undefined 불허
     is_active?: boolean;
 }
 

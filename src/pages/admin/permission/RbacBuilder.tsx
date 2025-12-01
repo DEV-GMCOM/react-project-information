@@ -334,10 +334,10 @@ const RbacBuilder: React.FC = () => {
             setPendingPermissionIds(new Set(finalPermissionIds)); // Save state
 
             // 2. Save Employees (Diffing)
-            const currentIds = new Set(assignedEmployees.map(e => e.id));
-            const initialIds = new Set(initialAssignedEmployees.map(e => e.id));
-            const toAdd = assignedEmployees.filter(e => !initialIds.has(e.id)).map(e => e.id);
-            const toRemove = initialAssignedEmployees.filter(e => !currentIds.has(e.id)).map(e => e.id);
+            const currentIds = new Set(assignedEmployees.map(e => e.emp_id)); // emp_id 사용
+            const initialIds = new Set(initialAssignedEmployees.map(e => e.emp_id)); // emp_id 사용
+            const toAdd = assignedEmployees.filter(e => !initialIds.has(e.emp_id)).map(e => e.emp_id);
+            const toRemove = initialAssignedEmployees.filter(e => !currentIds.has(e.emp_id)).map(e => e.emp_id);
 
             if (toAdd.length > 0) await roleService.assignRoleToEmployeesBatch(selectedRole.role_id, toAdd);
             
@@ -418,8 +418,8 @@ const RbacBuilder: React.FC = () => {
         if (permissionsChanged) return true;
 
         // 2. Check Employee Changes
-        const originalEmpIds = new Set(initialAssignedEmployees.map(e => e.id));
-        const currentEmpIds = new Set(assignedEmployees.map(e => e.id));
+        const originalEmpIds = new Set(initialAssignedEmployees.map(e => e.emp_id)); // emp_id 사용
+        const currentEmpIds = new Set(assignedEmployees.map(e => e.emp_id)); // emp_id 사용
         
         if (originalEmpIds.size !== currentEmpIds.size) return true;
         for (const id of originalEmpIds) {
@@ -508,7 +508,7 @@ const RbacBuilder: React.FC = () => {
     };
 
     const handleRemoveEmployee = (empId: number) => {
-        setAssignedEmployees(prev => prev.filter(e => e.id !== empId));
+        setAssignedEmployees(prev => prev.filter(e => e.emp_id !== empId));
     };
 
     return (
@@ -737,7 +737,7 @@ const RbacBuilder: React.FC = () => {
                                                             <span>
                                                                 {emp.name} | {emp.position || '-'} | {deptInfo || '-'}
                                                             </span>
-                                                            <button onClick={() => handleRemoveEmployee(emp.id)}>×</button>
+                                                            <button onClick={() => handleRemoveEmployee(emp.emp_id)}>×</button>
                                                         </div>
                                                     );
                                                 })}
@@ -828,8 +828,8 @@ const RbacBuilder: React.FC = () => {
                     onClose={() => setIsEmployeeModalOpen(false)}
                     onSelect={(emps) => {
                         setAssignedEmployees(prev => {
-                            const existing = new Set(prev.map(e => e.id));
-                            const newEmps = emps.filter(e => !existing.has(e.id));
+                            const existing = new Set(prev.map(e => e.emp_id)); // emp_id 사용
+                            const newEmps = emps.filter(e => !existing.has(e.emp_id)); // emp_id 사용
                             return [...prev, ...newEmps];
                         });
                         setIsEmployeeModalOpen(false);

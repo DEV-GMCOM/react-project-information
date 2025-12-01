@@ -1437,7 +1437,7 @@ const MeetingMinutes = () => {
     const handleSharedWithSelect = (selectedEmployees: Employee[]) => {
         // Employee[]를 EmployeeSimple[]로 변환 (id, name만 저장)
         const simpleEmployees: EmployeeSimple[] = selectedEmployees.map(emp => ({
-            id: emp.id,
+            id: emp.emp_id, // emp_id 사용
             name: emp.name
         }));
         setSharedWith(simpleEmployees);

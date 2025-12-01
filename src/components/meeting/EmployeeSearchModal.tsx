@@ -32,7 +32,7 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
             const employees = await employeeService.getEmployees(params);
             // 현재 사용자와 employee_id가 'admin'인 경우 제외
             const filteredEmployees = employees.filter(emp => {
-                if (currentUserId && emp.id === currentUserId) return false;
+                if (currentUserId && emp.emp_id === currentUserId) return false;
                 if (emp.employee_id === 'admin') return false;
                 return true;
             });

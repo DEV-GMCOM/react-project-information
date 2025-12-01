@@ -43,10 +43,12 @@ const PermissionModal: React.FC<PermissionModalProps> = ({
     if (!isOpen || !employee) return null;
 
     const handleSave = () => {
-        if (selectedRoleId !== undefined) {
-            onSave(employee.id, selectedRoleId);
+        if (selectedRoleId) {
+            onSave(employee.emp_id, selectedRoleId);
+            onClose();
+        } else {
+            // 선택된 역할이 없을 때 아무것도 하지 않음 (또는 alert 등 추가 가능)
         }
-        onClose();
     };
 
     return (
@@ -164,7 +166,7 @@ const Policies: React.FC = () => {
 
     const canEditEmployee = useCallback((targetEmployee: Employee): boolean => {
         if (!currentUser || !targetEmployee) return false;
-        if (currentUser.emp_id === targetEmployee.id) return false; // 본인 수정 불가
+        if (currentUser.emp_id === targetEmployee.emp_id) return false; // 본인 수정 불가
 
         const isCurrentUserSuperAdmin = currentUser.role?.role_code === 'SUPER_ADMIN';
         if (isCurrentUserSuperAdmin) {
