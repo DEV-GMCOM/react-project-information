@@ -70,6 +70,20 @@ const getLLMDocLabel = (type: string): string => {
     }
 };
 
+// Helper function: 초를 시분초로 변환
+const formatTimeFromSeconds = (totalSeconds: number): string => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = Math.ceil(totalSeconds % 60);
+
+    const parts: string[] = [];
+    if (hours > 0) parts.push(`${hours}시간`);
+    if (minutes > 0) parts.push(`${minutes}분`);
+    if (seconds > 0 || parts.length === 0) parts.push(`${seconds}초`);
+
+    return parts.join(' ');
+};
+
 const MeetingMinutes = () => {
     const { user } = useAuth(); // ✅ 사용자 정보 가져오기
     // ... (기존 상태들) ...
@@ -889,31 +903,35 @@ const MeetingMinutes = () => {
 
     // ✅ [추가] STT 작업 시작 시 프로그레스 바로 스크롤하는 효과
     useEffect(() => {
-        if (isGenerating && generationPhase === 1 && sttProgressRef.current) {
-            sttProgressRef.current.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
+        if (isGenerating && generationPhase === 1) {
+            // DOM 렌더링 완료 대기 후 스크롤
+            const scrollTimer = setTimeout(() => {
+                if (sttProgressRef.current) {
+                    sttProgressRef.current.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
+            }, 100); // 100ms 딜레이로 DOM 렌더링 보장
+
+            return () => clearTimeout(scrollTimer);
         }
     }, [isGenerating, generationPhase]);
 
     // [추가] LLM 생성 시작 시 프로그레스 바로 스크롤
     useEffect(() => {
-        if (isGenerating && generationPhase === 2 && llmProgressRef.current) {
-            llmProgressRef.current.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
-        }
-    }, [isGenerating, generationPhase]);
+        if (isGenerating && generationPhase === 2) {
+            // DOM 렌더링 완료 대기 후 스크롤
+            const scrollTimer = setTimeout(() => {
+                if (llmProgressRef.current) {
+                    llmProgressRef.current.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
+            }, 100); // 100ms 딜레이로 DOM 렌더링 보장
 
-    // [추가] LLM 생성 시작 시 프로그레스 바로 스크롤
-    useEffect(() => {
-        if (isGenerating && generationPhase === 2 && llmProgressRef.current) {
-            llmProgressRef.current.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
+            return () => clearTimeout(scrollTimer);
         }
     }, [isGenerating, generationPhase]);
 
@@ -1555,13 +1573,15 @@ const MeetingMinutes = () => {
         }
     }, [sttEngine]);
 
-    // [추가] 작업 복구 로직
+    // [추가] 작업 복구 로직 - selectedMeeting이 있을 때만 실행 (상세 페이지에서만)
     useEffect(() => {
+        if (!selectedMeeting) return; // 리스트 페이지에서는 실행 안함
+
         const savedTaskId = localStorage.getItem('currentSttTaskId');
         if (savedTaskId) {
             checkAndResumeTask(savedTaskId);
         }
-    }, []); // 마운트 시 1회 실행
+    }, [selectedMeeting?.meeting_id]); // selectedMeeting이 있을 때만 실행
 
     const checkAndResumeTask = async (taskId: string) => {
         try {
@@ -2742,7 +2762,7 @@ const MeetingMinutes = () => {
                                                         {/* [추가] 예상 소요 시간 표시 */}
                                                         {audioDuration && !isGenerating && !sttCompleted && (
                                                             <div style={{ fontSize: '12px', color: '#1890ff', fontWeight: 'bold' }}>
-                                                                ⏱️ 예상 소요 시간: 약 {Math.ceil(audioDuration / (STT_SPEED_FACTORS[sttModelSize as keyof typeof STT_SPEED_FACTORS] || 1.5))}초
+                                                                ⏱️ 예상 소요 시간: 약 {formatTimeFromSeconds(Math.ceil(audioDuration / (STT_SPEED_FACTORS[sttModelSize as keyof typeof STT_SPEED_FACTORS] || 1.5)))}
                                                             </div>
                                                         )}
                                                         <div style={{ display: 'flex', gap: '8px' }}>
@@ -2865,8 +2885,8 @@ const MeetingMinutes = () => {
                         />
 
                         {/* ✅ 프로그레스 바 추가 (STT) */}
-                                                    {isGenerating && (
-                                                        <div className="generation-progress">
+                                                    {isGenerating && generationPhase === 1 && (
+                                                        <div className="generation-progress" ref={sttProgressRef}>
                                                             <div className="progress-header">
                                                                 {/* h4와 메시지 결합 */}
                                                                 <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -2891,7 +2911,7 @@ const MeetingMinutes = () => {
                                                             </div>
                                                             {estimatedTimeRemaining !== null && (
                                                                 <p className="progress-info" style={{ color: '#1890ff' }}>
-                                                                    예상 남은 시간: 약 {estimatedTimeRemaining}초
+                                                                    예상 남은 시간: 약 {formatTimeFromSeconds(estimatedTimeRemaining)}
                                                                 </p>
                                                             )}
                         
