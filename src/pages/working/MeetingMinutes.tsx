@@ -361,7 +361,7 @@ const MeetingMinutes = () => {
                 meeting_datetime: new Date(meetingDateTime).toISOString(),
                 meeting_place: meetingPlace || '미정',
                 project_id: selectedProjectId,
-                shared_with_ids: sharedWith.map(emp => emp.id),
+                shared_with_ids: sharedWith.map(emp => emp.emp_id),
                 share_methods: Object.entries(shareMethods)
                     .filter(([, checked]) => checked)
                     .map(([key]) => key),
@@ -764,7 +764,7 @@ const MeetingMinutes = () => {
                 meetingDateTime: meeting.meeting_datetime ? new Date(meeting.meeting_datetime) : null,
                 meetingPlace: meeting.meeting_place || '',
                 projectId: meeting.project_id || null,
-                sharedWithIds: (meeting.shared_with || []).map(emp => emp.id),
+                sharedWithIds: (meeting.shared_with || []).map(emp => emp.emp_id),
                 tags: meeting.tags?.join(', ') || '',
                 shareMethods: {
                     email: meeting.share_methods?.includes('email') ?? true,
@@ -1437,14 +1437,14 @@ const MeetingMinutes = () => {
     const handleSharedWithSelect = (selectedEmployees: Employee[]) => {
         // Employee[]를 EmployeeSimple[]로 변환 (id, name만 저장)
         const simpleEmployees: EmployeeSimple[] = selectedEmployees.map(emp => ({
-            id: emp.emp_id, // emp_id 사용
+            emp_id: emp.emp_id, // emp_id 사용
             name: emp.name
         }));
         setSharedWith(simpleEmployees);
     };
 
     const removeSharedEmployee = (employeeId: number) => {
-        setSharedWith(prev => prev.filter(e => e.id !== employeeId));
+        setSharedWith(prev => prev.filter(e => e.emp_id !== employeeId));
     };
     // --- ▲▲▲ 공유 인원 핸들러 종료 ▲▲▲ ---
 
@@ -1465,7 +1465,7 @@ const MeetingMinutes = () => {
             meeting_datetime: new Date(meetingDateTime).toISOString(),
             meeting_place: meetingPlace || '미정',
             project_id: selectedProjectId,
-            shared_with_ids: sharedWith.map(emp => emp.id),
+            shared_with_ids: sharedWith.map(emp => emp.emp_id),
             share_methods: Object.entries(shareMethods)
                 .filter(([, checked]) => checked)
                 .map(([key]) => key),
@@ -2046,7 +2046,7 @@ const MeetingMinutes = () => {
                 .map(([key]) => key);
 
             // [추가] sharedWith를 [1, 2, 3] 형태의 ID 배열로 변환
-            const sharedWithIds = sharedWith.map(emp => emp.id);
+            const sharedWithIds = sharedWith.map(emp => emp.emp_id);
 
             // [추가] tags를 ['tag1', 'tag2'] 형태의 배열로 변환
             const tagArray = tags.split(',').map(t => t.trim()).filter(t => t);
@@ -2081,7 +2081,7 @@ const MeetingMinutes = () => {
 
                 // (가정) 백엔드 필드명: 'shared_with_ids' (공유 대상 직원 ID 목록)
                 // ✅ ID가 문자열로 오는 경우를 대비해 숫자로 변환
-                shared_with_ids: sharedWith.map(emp => Number(emp.id)),
+                shared_with_ids: sharedWith.map(emp => emp.emp_id),
 
                 // (가정) 백엔드 필드명: 'tags'
                 tags: tagArray,
@@ -2179,7 +2179,7 @@ const MeetingMinutes = () => {
                 meetingDateTime,
                 meetingPlace,
                 projectId: selectedProjectId,
-                sharedWithIds: sharedWith.map(emp => emp.id),
+                sharedWithIds: sharedWith.map(emp => emp.emp_id),
                 tags,
                 shareMethods: { ...shareMethods },
                 // attendees,
@@ -2225,7 +2225,7 @@ const MeetingMinutes = () => {
         const manualInputChanged = manualInput !== originalData.manualInput;
 
         // sharedWith 비교
-        const currentSharedIds = sharedWith.map(emp => emp.id).sort();
+        const currentSharedIds = sharedWith.map(emp => emp.emp_id).sort();
         const originalSharedIds = [...originalData.sharedWithIds].sort();
         const sharedWithChanged = JSON.stringify(currentSharedIds) !== JSON.stringify(originalSharedIds);
 
@@ -2520,7 +2520,7 @@ const MeetingMinutes = () => {
                                 onProjectSearch={() => setShowProjectSearchModal(true)}
                                 sharedWith={sharedWith}
                                 onEmployeeSearch={() => setShowEmployeeSearchModal(true)}
-                                onRemoveEmployee={(id) => setSharedWith(prev => prev.filter(emp => emp.id !== id))}
+                                onRemoveEmployee={(id) => setSharedWith(prev => prev.filter(emp => emp.emp_id !== id))}
                                 tags={tags}
                                 setTags={setTags}
                                 companionAttendees={companionAttendees} // ✅ 추가
@@ -3045,7 +3045,7 @@ const MeetingMinutes = () => {
                     onProjectSearch={() => setShowProjectSearchModal(true)}
                     sharedWith={sharedWith}
                     onEmployeeSearch={() => setShowEmployeeSearchModal(true)}
-                    onRemoveEmployee={(id) => setSharedWith(prev => prev.filter(emp => emp.id !== id))}
+                    onRemoveEmployee={(id) => setSharedWith(prev => prev.filter(emp => emp.emp_id !== id))}
                     tags={tags}
                     setTags={setTags}
                     companionAttendees={companionAttendees} // ✅ 추가

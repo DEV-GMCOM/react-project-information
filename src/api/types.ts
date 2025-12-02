@@ -137,7 +137,7 @@ export interface DepartmentEmployeesResponse {
 
 
 export interface EmployeeSimple { // ✅ 새로운 인터페이스
-    id: number;
+    emp_id: number;
     name: string;
 }
 
