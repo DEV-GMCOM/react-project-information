@@ -1583,10 +1583,51 @@ const MeetingMinutes = () => {
         }
     }, [selectedMeeting?.meeting_id]); // selectedMeeting이 있을 때만 실행
 
+    // [추가] 앱 복귀 시(백그라운드 -> 포그라운드) 상태 재확인
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                const savedTaskId = localStorage.getItem('currentSttTaskId');
+                // 현재 생성 중이라고 표시되어 있는데 포그라운드로 왔다면 상태 확인 필요
+                if (savedTaskId && isGenerating) {
+                    console.log("👀 앱 복귀 감지: STT 작업 상태 재확인");
+                    checkAndResumeTask(savedTaskId);
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [isGenerating]);
+
     const checkAndResumeTask = async (taskId: string) => {
         try {
             const statusRes = await generationService.getSTTStatus(taskId);
-            if (['processing', 'pending'].includes(statusRes.status)) {
+            
+            if (statusRes.status === 'completed') {
+                console.log("✅ STT 작업이 이미 완료되었습니다. 결과를 로드합니다.");
+                
+                // 완료 UI 처리
+                setSttProgress(100);
+                setSttStatusMessage('변환 완료!');
+                
+                // 결과 텍스트 업데이트
+                if (statusRes.result_text) {
+                    const engine = (statusRes.metadata as any)?.engine || sttEngine;
+                    setSttResults(prev => ({ ...prev, [engine]: statusRes.result_text! }));
+                    setSelectedSttSource(engine);
+                }
+                
+                // 상태 정리
+                setIsGenerating(false);
+                setSttCompleted(true);
+                setCurrentTaskId(null);
+                setEstimatedTimeRemaining(null);
+                localStorage.removeItem('currentSttTaskId');
+                
+            } else if (['processing', 'pending'].includes(statusRes.status)) {
                 console.log("🔄 STT 작업 복구 중:", taskId);
                 setIsGenerating(true);
                 setGenerationPhase(1);
@@ -1603,11 +1644,14 @@ const MeetingMinutes = () => {
                 );
                 setWsConnection(ws);
             } else {
+                // failed, aborted 등
                 localStorage.removeItem('currentSttTaskId');
+                setIsGenerating(false);
             }
         } catch (e) {
             console.error("작업 복구 실패:", e);
             localStorage.removeItem('currentSttTaskId');
+            setIsGenerating(false);
         }
     };
 
