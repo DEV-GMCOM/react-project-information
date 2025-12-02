@@ -1688,6 +1688,12 @@ const MeetingMinutes = () => {
             const engineToUse = sttEngine as any; // STTEngine 타입
             let createResponse: STTCreateResponse | undefined;
 
+            // ✅ 참석자 정보 준비 (shared_with_ids, share_methods)
+            const shared_with_ids = sharedWith.map(emp => emp.emp_id);
+            const share_methods_array = Object.entries(shareMethods)
+                .filter(([_, enabled]) => enabled)
+                .map(([method, _]) => method);
+
             if (fileToConvert) {
                 // [기존 로직] 파일 업로드 및 작업 생성
                 setSttStatusMessage('파일 업로드 중...');
@@ -1697,7 +1703,9 @@ const MeetingMinutes = () => {
                     {
                         model_size: sttModelSize,
                         language: sttLanguage,
-                        meeting_id: meetingId
+                        meeting_id: meetingId,
+                        shared_with_ids: shared_with_ids,  // ✅ 추가
+                        share_methods: share_methods_array  // ✅ 추가
                     }
                 );
             } else if (existingFileId) {
@@ -1708,7 +1716,9 @@ const MeetingMinutes = () => {
                     existingFileId,
                     {
                         model_size: sttModelSize,
-                        language: sttLanguage
+                        language: sttLanguage,
+                        shared_with_ids: shared_with_ids,  // ✅ 추가
+                        share_methods: share_methods_array  // ✅ 추가
                     }
                 );
             }
@@ -1944,12 +1954,20 @@ const MeetingMinutes = () => {
         }
 
         try {
+            // ✅ 참석자 정보 준비
+            const shared_with_ids = sharedWith.map(emp => emp.emp_id);
+            const share_methods_array = Object.entries(shareMethods)
+                .filter(([_, enabled]) => enabled)
+                .map(([method, _]) => method);
+
             const payload = {
                 source_text,
                 engine,
                 doc_types,
                 meeting_id: meetingId,  // ✅ 추가
-                stt_original_id         // ✅ 추가 (선택)
+                stt_original_id,        // ✅ 추가 (선택)
+                shared_with_ids: shared_with_ids,  // ✅ 추가
+                share_methods: share_methods_array  // ✅ 추가
             };
 
             setLlmStatusMessage('AI 모델 호출 중...'); // [추가]

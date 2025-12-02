@@ -1,6 +1,7 @@
 // src/api/services/generationService.ts
 
 import apiClient from '../utils/apiClient';
+import { ENV } from '../../config/env';
 
 // 타입 정의
 export type STTEngine = "whisper" | "clova" | "google" | "aws" | "azure" | "vosk";
@@ -49,6 +50,8 @@ export interface LLMRequestPayload {
     doc_types: DocType[];
     meeting_id: number;  // ✅ 필수로 추가
     stt_original_id?: number;  // ✅ 선택 추가
+    shared_with_ids?: number[]; // ✅ 추가
+    share_methods?: string[]; // ✅ 추가
 }
 
 export interface LLMResult {
@@ -89,6 +92,8 @@ export const generationService = {
             model_size?: 'tiny' | 'base' | 'small' | 'medium' | 'large';
             language?: string;
             meeting_id?: number;
+            shared_with_ids?: number[];
+            share_methods?: string[];
         }
     ): Promise<STTCreateResponse> {
         const formData = new FormData();
@@ -103,6 +108,14 @@ export const generationService = {
         }
         if (options?.meeting_id !== null && options?.meeting_id !== undefined) {
             formData.append('meeting_id', options.meeting_id.toString());
+        }
+
+        // ✅ 추가: 참석자 정보 전달
+        if (options?.shared_with_ids && options.shared_with_ids.length > 0) {
+            formData.append('shared_with_ids', options.shared_with_ids.join(','));
+        }
+        if (options?.share_methods && options.share_methods.length > 0) {
+            formData.append('share_methods', options.share_methods.join(','));
         }
 
         console.log('📤 STT 요청 전송:');
@@ -145,6 +158,8 @@ export const generationService = {
         options?: {
             model_size?: 'tiny' | 'base' | 'small' | 'medium' | 'large';
             language?: string;
+            shared_with_ids?: number[];
+            share_methods?: string[];
         }
     ): Promise<STTCreateResponse> {
         const formData = new FormData();
@@ -156,6 +171,14 @@ export const generationService = {
         }
         if (options?.language) {
             formData.append('language', options.language);
+        }
+
+        // ✅ 추가: 참석자 정보 전달
+        if (options?.shared_with_ids && options.shared_with_ids.length > 0) {
+            formData.append('shared_with_ids', options.shared_with_ids.join(','));
+        }
+        if (options?.share_methods && options.share_methods.length > 0) {
+            formData.append('share_methods', options.share_methods.join(','));
         }
 
         try {
@@ -193,10 +216,6 @@ export const generationService = {
         onProgress: (data: STTProgressMessage) => void,
         onError?: (error: Error) => void
     ): WebSocket {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.hostname;
-        const port = import.meta.env.DEV ? '8001' : window.location.port;
-
         const sessionId = localStorage.getItem('session_id'); // ✅ 세션 ID 가져오기
 
         // [추가] 세션 ID가 없으면 에러 발생
@@ -208,7 +227,19 @@ export const generationService = {
             return { close: () => {}, send: () => {} } as unknown as WebSocket; // 더미 객체 반환
         }
 
-        const wsUrl = `${protocol}//${host}:${port}/api/ws/stt/${taskId}?session_id=${sessionId}`; // ✅ URL에 추가
+        // ✅ [수정] ENV.API_URL 기반으로 WebSocket URL 동적 생성
+        let baseUrl = ENV.API_URL;
+        // 상대 경로인 경우 절대 경로로 변환
+        if (baseUrl.startsWith('/')) {
+            baseUrl = `${window.location.protocol}//${window.location.host}${baseUrl}`;
+        }
+
+        const url = new URL(baseUrl);
+        const wsProtocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsHost = url.host; // hostname + port
+        const basePath = url.pathname.replace(/\/$/, ''); // 끝 슬래시 제거
+
+        const wsUrl = `${wsProtocol}//${wsHost}${basePath}/ws/stt/${taskId}?session_id=${sessionId}`;
 
         console.log('🔌 WebSocket 연결 시도:', wsUrl);
 
