@@ -256,11 +256,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                     {user?.team && ` - ${user.team}`}
                                 </span>
                             </div>
+                            <button className="notice-btn" onClick={() => setShowNoticeModal(true)} title="공지사항">📢 공지</button>
                             {!hideRestrictedUi && (
-                                <>
-                                    <button className="notice-btn" onClick={() => setShowNoticeModal(true)} title="공지사항">📢 공지</button>
-                                    <button className="help-btn" onClick={handleShowHelp} title="도움말">❓ 도움말</button>
-                                </>
+                                <button className="help-btn" onClick={handleShowHelp} title="도움말">❓ 도움말</button>
                             )}
                             <button className="logout-btn" onClick={handleLogout}>로그아웃</button>
                         </>
