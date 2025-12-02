@@ -10,6 +10,20 @@ interface NoticeModalProps {
 const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
+    // Vite base path 대응
+    const baseUrl = import.meta.env.BASE_URL;
+    // BASE_URL 끝에 슬래시가 없으면 추가하여 경로 오류 방지
+    const safeBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+    
+    // 가이드 이미지 목록
+    const guideImages = [
+        'guide_01.png',
+        'guide_02.png',
+        'guide_03.png',
+        'guide_04.png',
+        'guide_05.png'
+    ];
+
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="notice-modal" onClick={(e) => e.stopPropagation()}>
@@ -37,12 +51,23 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose }) => {
                     </div>
 
                     <div className="notice-item">
-                        <h3>📋 사용 가이드</h3>
+                        <h3>📋 잔디(Jandi) 연동 가이드</h3>
                         <p className="notice-date">2025-01-01</p>
                         <p className="notice-content">
-                            프로젝트 관리 시스템 사용 가이드가 업데이트되었습니다.<br />
-                            상단 메뉴의 '도움말'을 참고해주세요.
+                            알림을 받기 위한 잔디 웹훅(Webhook) 연동 방법입니다.<br />
+                            아래 이미지를 따라 설정을 진행해주세요.
                         </p>
+                        <div className="notice-guide-images">
+                            {guideImages.map((imageName, index) => (
+                                <img
+                                    key={index}
+                                    src={`${safeBaseUrl}guide/jandi_webhook/${imageName}`}
+                                    alt={`사용 가이드 ${index + 1}`}
+                                    className="guide-image"
+                                    style={{ marginBottom: '10px' }}
+                                />
+                            ))}
+                        </div>
                     </div>
                 </div>
                 <div className="notice-footer">
