@@ -506,6 +506,52 @@ const ProjectPostmortemForm: React.FC = () => {
         return dateString.replace(/-/g, '.');
     };
 
+    // 파트 목록을 내부/외부 카테고리로 분리하고 상태를 갱신하는 헬퍼
+    const processParts = (parts: any[] = []) => {
+        const categoryIdToName: { [key: number]: string } = {};
+        const internalCats: string[] = [];
+        const externalCats: string[] = [];
+
+        // DB에 placeholder로 들어간 '선택' row가 있어 API 응답에 포함되는 것이 중복 원인
+        const sanitizedParts = (parts || []).filter((part: any) => {
+            const name = (part?.name || '').trim();
+            return name && name !== '선택';
+        });
+
+        sanitizedParts.forEach((part: any) => {
+            const name = (part?.name || '').trim();
+            categoryIdToName[part.category] = name;
+            if (part.is_inner) {
+                if (!internalCats.includes(name)) internalCats.push(name);
+            } else {
+                if (!externalCats.includes(name)) externalCats.push(name);
+            }
+        });
+
+        setInternalCategories(internalCats);
+        setExternalCategories(externalCats);
+
+        return { categoryIdToName, internalCats, externalCats };
+    };
+
+    // available_parts가 비어있을 때 백업 API에서 파트를 가져옴 (프로젝트 선택 이후에만 사용)
+    const ensureCategories = async (parts: any[] = []) => {
+        if (parts && parts.length > 0) {
+            return processParts(parts);
+        }
+
+        try {
+            const response = await apiClient.get('/projects/postmortem/parts');
+            return processParts(response.data || []);
+        } catch (err) {
+            console.error('⚠️ 파트 목록 로드 실패:', err);
+            // 실패 시에도 빈 값 반환
+            setInternalCategories([]);
+            setExternalCategories([]);
+            return { categoryIdToName: {}, internalCats: [], externalCats: [] };
+        }
+    };
+
     // 프로젝트 Postmortem 데이터 로드
     const loadPostmortemData = async (projectId: number) => {
         try {
@@ -517,28 +563,11 @@ const ProjectPostmortemForm: React.FC = () => {
 
             console.log('📥 백엔드에서 받은 데이터:', data);  // 디버깅용
 
+            // available_parts가 비어 있으면 별도 API로 카테고리를 가져와 드롭다운을 채움
+            const { categoryIdToName, internalCats, externalCats } = await ensureCategories(data?.available_parts || []);
+
             if (data && data.postmortem) {
                 const postmortem = data.postmortem;
-
-                // 🔥 available_parts로 category ID → 이름 매핑 생성 및 카테고리 목록 상태 업데이트
-                const categoryIdToName: { [key: number]: string } = {};
-                const internalCats: string[] = [];
-                const externalCats: string[] = [];
-
-                (data.available_parts || []).forEach((part: any) => {
-                    categoryIdToName[part.category] = part.name;
-                    if (part.is_inner) { // is_inner 필드 사용 (백엔드 모델 참조)
-                         internalCats.push(part.name);
-                    } else {
-                         externalCats.push(part.name);
-                    }
-                });
-                
-                // 카테고리 상태 업데이트
-                setInternalCategories(internalCats);
-                setExternalCategories(externalCats);
-
-                console.log('📋 Category 매핑:', categoryIdToName);
 
                 // teams를 category 이름을 기준으로 내부팀과 외부협력사로 분리
                 // 저장된 데이터의 category는 ID일 수도 있고 이름일 수도 있음 (마이그레이션 과도기 고려)
@@ -603,6 +632,7 @@ const ProjectPostmortemForm: React.FC = () => {
             console.error('❌ Postmortem 데이터 로드 오류:', err);
             // 404는 데이터가 없는 것이므로 에러로 처리하지 않음
             if (err.response?.status === 404) {
+                await ensureCategories([]); // 프로젝트 선택 후에도 드롭다운은 채움
                 setFormData(prev => ({
                     ...prev,
                     executionDate: '',
