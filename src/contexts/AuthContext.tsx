@@ -42,6 +42,7 @@ interface AuthContextType {
     refreshUser: () => Promise<void>; // Add this line
     hasRole: (roleCode: string) => boolean;
     hasPermission: (permissionCode: string) => boolean;
+    hasUnreadNotification: boolean; // ✅ 추가
 }
 
 interface AuthProviderProps {
@@ -66,12 +67,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [showIdleModal, setShowIdleModal] = useState(false);
     const [modalCountdown, setModalCountdown] = useState(ENV.IDLE_WARNING_COUNTDOWN / 1000);
     const [showAutoLogoutAlert, setShowAutoLogoutAlert] = useState(false);
+    
+    // 알림 상태
+    const [hasUnreadNotification, setHasUnreadNotification] = useState(false); // ✅ 추가
 
     // 타이머와 마지막 활동 시간을 관리하기 위한 ref
     const lastActivityTimeRef = useRef(Date.now());
     const mainTimerRef = useRef<NodeJS.Timeout>();
     const heartbeatTimerRef = useRef<NodeJS.Timeout>();
     const showIdleModalRef = useRef(showIdleModal);
+    const notificationCheckCounter = useRef(0); // ✅ 알림 체크 카운터 추가
+    const heartbeatCounter = useRef(0); // ✅ Heartbeat 카운터 추가
 
     useEffect(() => {
         showIdleModalRef.current = showIdleModal;
@@ -135,20 +141,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     }, [user, logout]);
 
+    // ✅ 알림 체크 함수 (3분마다 실행)
+    const checkNotifications = useCallback(async () => {
+        if (!user) return;
+        // TODO: 실제 API 연동 필요 (Mock)
+        // try {
+        //     const res = await apiClient.get('/notifications/unread-check');
+        //     setHasUnreadNotification(res.data.hasUnread);
+        // } catch (e) { console.error(e); }
+        setHasUnreadNotification(true); // 테스트용: 항상 true
+    }, [user]);
+
 
     // --- 2. 타이머 관리 로직 ---
 
     const stopAllTimers = useCallback(() => {
         if (mainTimerRef.current) clearInterval(mainTimerRef.current);
-        if (heartbeatTimerRef.current) clearInterval(heartbeatTimerRef.current);
+        // if (heartbeatTimerRef.current) clearInterval(heartbeatTimerRef.current); // 통합으로 인해 불필요
         console.log('⏹️ 모든 타이머가 중지되었습니다.');
     }, []);
 
     const startAllTimers = useCallback(() => {
         stopAllTimers();
 
-        heartbeatTimerRef.current = setInterval(sendHeartbeat, ENV.HEARTBEAT_INTERVAL);
-        console.log(`❤️ Heartbeat 타이머 시작 (${ENV.HEARTBEAT_INTERVAL / 1000}초 간격)`);
+        // 기존 별도 타이머 제거
+        // heartbeatTimerRef.current = setInterval(sendHeartbeat, ENV.HEARTBEAT_INTERVAL);
 
         mainTimerRef.current = setInterval(() => {
             if (showIdleModalRef.current) {
@@ -167,11 +184,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     setShowIdleModal(true);
                     setModalCountdown(ENV.IDLE_WARNING_COUNTDOWN / 1000);
                 }
+
+                // ✅ 1. Heartbeat 체크 (설정된 간격마다)
+                heartbeatCounter.current += 1;
+                const heartbeatIntervalSec = ENV.HEARTBEAT_INTERVAL / 1000;
+                if (heartbeatCounter.current >= heartbeatIntervalSec) {
+                    heartbeatCounter.current = 0;
+                    sendHeartbeat();
+                }
+
+                // ✅ 2. 알림 폴링 (180초 = 3분)
+                notificationCheckCounter.current += 1;
+                if (notificationCheckCounter.current >= 180) {
+                    notificationCheckCounter.current = 0;
+                    checkNotifications();
+                }
             }
         }, 1000);
-        console.log('⏰ 메인 유휴상태 체크 타이머 시작 (1초 간격)');
+        console.log('⏰ 메인 통합 타이머 시작 (1초 간격 - Idle/Heartbeat/Noti)');
 
-    }, [stopAllTimers, sendHeartbeat, logout]);
+    }, [stopAllTimers, sendHeartbeat, logout, checkNotifications]);
 
 
     // --- 3. 이벤트 핸들러 및 라이프사이클 관리 ---
@@ -272,7 +304,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         checkSession,
         refreshUser, // Add this line
         hasRole,
-        hasPermission
+        hasPermission,
+        hasUnreadNotification // ✅ 추가
     };
 
     return (
