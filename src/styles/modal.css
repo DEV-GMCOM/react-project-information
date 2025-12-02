@@ -23,7 +23,7 @@
     border-radius: 12px;
     padding: 32px;
     text-align: center;
-    width: 360px; /* 좁은 폭 고정 */
+    width: 390px; /* 좁은 폭 고정 */
     max-width: 90vw;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     position: relative; /* 필요한 경우 z-index 등을 위해 */

@@ -328,7 +328,7 @@ const MeetingMinutes = () => {
         const savedLanguage = Cookies.get('stt_language');
 
         if (savedEngine) setSttEngine(savedEngine);
-        if (savedModelSize) setSttModelSize(savedModelSize as any);
+        setSttModelSize('medium'); // 백엔드에서 medium 모델로 고정되었으므로 프론트엔드도 고정
         if (savedLanguage) setSttLanguage(savedLanguage as any);
     }, []);
 
@@ -336,7 +336,6 @@ const MeetingMinutes = () => {
     const handleSaveSettings = () => {
         // 쿠키에 무기한 저장 (expires 생략하면 세션 쿠키가 되므로 명시)
         Cookies.set('stt_engine', sttEngine, { expires: 36500 }); // 100년
-        Cookies.set('stt_model_size', sttModelSize, { expires: 36500 });
         Cookies.set('stt_language', sttLanguage, { expires: 36500 });
 
         alert('설정이 저장되었습니다.');
