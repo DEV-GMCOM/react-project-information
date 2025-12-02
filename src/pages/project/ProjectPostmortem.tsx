@@ -191,29 +191,9 @@ const ProjectPostmortemForm: React.FC = () => {
         writerDepartment: ''
     });
 
-    //***************************************************************************************************
-    // 아래 내용 반드시 바뀌어야 한다. 서버의 테이블에 저장된 값으로 가져와 동적으로 배정하고, 또한 응답값을 동적으로 분류되도록..
-    //***************************************************************************************************
-    const internalCategories = ['기획', 'Proj 메인', '무대 및 연출', '인력', '제작'];
-    const externalCategories = ['무대', '전시', '영상장비', '음향', '영상제작', '조명', '음악제작', 'VJ', '진행인력', '경호', '렌탈', '기타'];
-
-    // // API 호출 함수들
-    // const apiCall = async (url: string, options?: RequestInit) => {
-    //     const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8001'}${url}`, {
-    //         headers: {
-    //             'Content-Type': 'application/json',
-    //             ...options?.headers,
-    //         },
-    //         ...options,
-    //     });
-    //
-    //     if (!response.ok) {
-    //         const errorData = await response.json().catch(() => ({ detail: '알 수 없는 오류가 발생했습니다.' }));
-    //         throw new Error(errorData.detail || `API 오류: ${response.status}`);
-    //     }
-    //
-    //     return response.json();
-    // };
+    // 카테고리 상태 관리 (API에서 받아온 값으로 설정)
+    const [internalCategories, setInternalCategories] = useState<string[]>([]);
+    const [externalCategories, setExternalCategories] = useState<string[]>([]);
 
     const { setHelpContent } = useHelp();
 
@@ -540,27 +520,47 @@ const ProjectPostmortemForm: React.FC = () => {
             if (data && data.postmortem) {
                 const postmortem = data.postmortem;
 
-                // 🔥 available_parts로 category ID → 이름 매핑 생성
+                // 🔥 available_parts로 category ID → 이름 매핑 생성 및 카테고리 목록 상태 업데이트
                 const categoryIdToName: { [key: number]: string } = {};
+                const internalCats: string[] = [];
+                const externalCats: string[] = [];
+
                 (data.available_parts || []).forEach((part: any) => {
                     categoryIdToName[part.category] = part.name;
+                    if (part.is_inner) { // is_inner 필드 사용 (백엔드 모델 참조)
+                         internalCats.push(part.name);
+                    } else {
+                         externalCats.push(part.name);
+                    }
                 });
+                
+                // 카테고리 상태 업데이트
+                setInternalCategories(internalCats);
+                setExternalCategories(externalCats);
+
                 console.log('📋 Category 매핑:', categoryIdToName);
 
-                // teams를 category 기준으로 내부팀과 외부협력사로 분리
-                const internalTeams = (data.teams || [])
-                    .filter((t: any) => t.category < 100)
-                    .map((t: any) => ({
-                        category: categoryIdToName[t.category] || String(t.category),  // ✅ ID → 이름 변환
-                        details: t.details || ''
-                    }));
+                // teams를 category 이름을 기준으로 내부팀과 외부협력사로 분리
+                // 저장된 데이터의 category는 ID일 수도 있고 이름일 수도 있음 (마이그레이션 과도기 고려)
+                // 하지만 백엔드에서 ID로 저장하므로 여기서는 ID -> 이름 변환이 핵심
 
-                const externalPartners = (data.teams || [])
-                    .filter((t: any) => t.category >= 100)
-                    .map((t: any) => ({
-                        category: categoryIdToName[t.category] || String(t.category),  // ✅ ID → 이름 변환
-                        details: t.details || ''
-                    }));
+                const internalTeams: { category: string; details: string }[] = [];
+                const externalPartners: { category: string; details: string }[] = [];
+
+                (data.teams || []).forEach((t: any) => {
+                    const categoryName = categoryIdToName[t.category] || String(t.category);
+                    
+                    // 카테고리 이름이 내부 카테고리 목록에 있으면 내부팀, 아니면 외부팀으로 분류
+                    // (단, 초기 로딩 시점에는 internalCats 상태가 아직 반영 안되었을 수 있으므로 로컬 변수 사용)
+                    if (internalCats.includes(categoryName)) {
+                        internalTeams.push({ category: categoryName, details: t.details || '' });
+                    } else if (externalCats.includes(categoryName)) {
+                        externalPartners.push({ category: categoryName, details: t.details || '' });
+                    } else {
+                         // 매핑되지 않는 카테고리는 일단 외부로 뺌 (또는 기타)
+                         externalPartners.push({ category: categoryName, details: t.details || '' });
+                    }
+                });
 
                 console.log('✅ 내부팀:', internalTeams);
                 console.log('✅ 외부협력사:', externalPartners);

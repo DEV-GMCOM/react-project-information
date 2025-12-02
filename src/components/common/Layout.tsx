@@ -115,11 +115,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const headerTitle = import.meta.env.VITE_APP_TITLE || 'GMCOM Information System';
 
     // Layout 내부에서 사용할 필터링된 메뉴
-    const displayMainMenus = hideRestrictedUi
-        ? baseMainMenuItems.filter(item => item.path !== '/working/meeting-minutes') // block experimental pages in prod
-        : baseMainMenuItems;
-
-    const displayDevMenus = hideRestrictedUi ? [] : devMenuItems;
+    // 메뉴 숨김 처리 해제 (항상 모든 메뉴 표시)
+    const displayMainMenus = baseMainMenuItems;
+    const displayDevMenus = devMenuItems;
     
     useEffect(() => {
         const allMenuItems = [...displayMainMenus, ...displayDevMenus, ...adminMenuItems]; // Display 메뉴들을 사용
