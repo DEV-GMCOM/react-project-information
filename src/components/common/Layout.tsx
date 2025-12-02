@@ -6,7 +6,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import NoticeModal from '../NoticeModal';
 import HelpModal from '../HelpModal';
 import { HelpProvider, useHelp } from '../../contexts/HelpContext';
-import { usePermissions } from '../../hooks/usePermissions'; // usePermissions 훅 임포트
+import { usePermissions } from '../../hooks/usePermissions';
+import { hasUnreadNotices } from '../../utils/noticeCookie'; // 공지사항 읽음 체크 유틸
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -76,6 +77,37 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const [showHelpModal, setShowHelpModal] = useState(false);
     const [currentHelpContent, setCurrentHelpContent] = useState<{ pageName: string; content: React.ReactNode } | null>(null);
     const hideRestrictedUi = import.meta.env.VITE_HIDE_RESTRICTED_UI === 'true'; // prod-only safety flag
+
+    // 알림/공지 읽음 상태 관리
+    const [hasUnreadNotice, setHasUnreadNotice] = useState(false);
+    const [hasUnreadNotification, setHasUnreadNotification] = useState(false);
+
+    // 3분(180000ms)마다 알림 체크 (Polling) 및 초기 로드 시 공지 체크
+    useEffect(() => {
+        const checkUnreadStatus = () => {
+            // 1. 공지사항 쿠키 체크
+            setHasUnreadNotice(hasUnreadNotices());
+
+            // 2. 개인 알림 체크 (Mock: 랜덤하게 true/false 설정하거나 API 호출)
+            // 실제로는 API 호출: const unread = await notificationService.hasUnread();
+            // 여기서는 예시로 '내 알림' 탭의 더미 데이터에 unread가 있으므로 true로 가정 (또는 로컬 스토리지 연동)
+            // 임시: 50% 확률로 읽지 않은 알림이 있다고 가정 (테스트용)
+            // setHasUnreadNotification(Math.random() > 0.5);
+            setHasUnreadNotification(true); // 테스트를 위해 항상 true로 설정 (더미 데이터에 unread가 있으므로)
+        };
+
+        checkUnreadStatus(); // 초기 실행
+
+        const interval = setInterval(checkUnreadStatus, 180000); // 3분 주기
+        return () => clearInterval(interval);
+    }, []);
+
+    // 모달이 닫힐 때 읽음 상태 다시 체크 (사용자가 읽었을 수 있으므로)
+    const handleNoticeModalClose = () => {
+        setShowNoticeModal(false);
+        setHasUnreadNotice(hasUnreadNotices()); // 쿠키가 업데이트되었을 수 있음
+        // 알림은 모달 내부에서 읽음 처리 후 상태 업데이트 필요 (여기서는 생략 or 콜백 전달)
+    };
 
     // 현재 경로에 대한 권한 체크
     const checkCurrentPagePermission = () => {
@@ -256,7 +288,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                     {user?.team && ` - ${user.team}`}
                                 </span>
                             </div>
-                            <button className="notice-btn" onClick={() => setShowNoticeModal(true)} title="공지사항">📢 공지</button>
+                            <button 
+                                className="notice-btn" 
+                                onClick={() => setShowNoticeModal(true)} 
+                                title="공지사항"
+                                style={{ position: 'relative' }}
+                            >
+                                📢 공지
+                                {(hasUnreadNotice || hasUnreadNotification) && (
+                                    <span style={{ 
+                                        position: 'absolute', 
+                                        top: '2px', 
+                                        right: '2px', 
+                                        color: '#ef4444', 
+                                        fontSize: '8px',
+                                        lineHeight: 1 
+                                    }}>●</span>
+                                )}
+                            </button>
                             {!hideRestrictedUi && (
                                 <button className="help-btn" onClick={handleShowHelp} title="도움말">❓ 도움말</button>
                             )}
@@ -330,7 +379,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             />
             <NoticeModal
                 isOpen={showNoticeModal}
-                onClose={() => setShowNoticeModal(false)}
+                onClose={handleNoticeModalClose}
             />
         </div>
     );

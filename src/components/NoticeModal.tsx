@@ -1,6 +1,7 @@
 // src/components/NoticeModal.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/NoticeModal.css';
+import { markAllNoticesAsRead, hasUnreadNotices } from '../utils/noticeCookie'; // 쿠키 유틸 임포트
 
 // 이미지 Assets Import (Vite가 경로 자동 처리)
 import guide01 from '../assets/guide/jandi_webhook/guide_01.png';
@@ -17,6 +18,24 @@ interface NoticeModalProps {
 
 const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose }) => {
     const [activeTab, setActiveTab] = useState<'notice' | 'notification'>('notice');
+    const [hasUnreadNotice, setHasUnreadNotice] = useState(false);
+
+    // 모달이 열릴 때 읽음 상태 체크
+    useEffect(() => {
+        if (isOpen) {
+            setHasUnreadNotice(hasUnreadNotices());
+        }
+    }, [isOpen]);
+
+    // 공지사항 탭이 활성화되면 읽음 처리
+    useEffect(() => {
+        if (isOpen && activeTab === 'notice') {
+            markAllNoticesAsRead();
+            // UI 갱신은 약간의 지연을 두거나, 다음 열릴 때 반영 (여기서는 즉시 반영 안 해도 됨, 버튼의 점은 Layout에서 관리)
+            // 하지만 모달 내부 탭의 점은 사라지게 하고 싶다면:
+            setHasUnreadNotice(false);
+        }
+    }, [isOpen, activeTab]);
 
     if (!isOpen) return null;
 
@@ -74,6 +93,7 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose }) => {
                         onClick={() => setActiveTab('notice')}
                     >
                         📢 공지사항
+                        {hasUnreadNotice && <span style={{ marginLeft: '6px', color: '#ef4444', fontSize: '12px' }}>●</span>}
                     </button>
                     <button
                         className={`notice-tab-btn ${activeTab === 'notification' ? 'active' : ''}`}
