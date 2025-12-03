@@ -9,7 +9,9 @@ export interface Notice {
     notifyEndAt?: string | null;
     isActive: boolean;
     createdBy?: number;
+    creatorName?: string; // 추가
     updatedBy?: number | null;
+    updaterName?: string | null; // 추가
     createdAt?: string;
     updatedAt?: string;
 }
@@ -21,4 +23,12 @@ export interface NoticePayload {
     notifyStartAt?: string | null;
     notifyEndAt?: string | null;
     isActive: boolean;
+}
+
+export interface NoticeListResponse {
+    items: Notice[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
 }

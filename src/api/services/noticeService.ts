@@ -1,13 +1,15 @@
 import { apiClient } from '../utils/apiClient';
-import { Notice, NoticePayload, NoticeType } from '../../types/notice';
+import { Notice, NoticePayload, NoticeType, NoticeListResponse } from '../../types/notice';
 
 export interface NoticeQuery {
     isActive?: boolean;
     noticeType?: NoticeType;
+    page?: number;
+    limit?: number;
 }
 
 export const noticeService = {
-    async getNotices(params?: NoticeQuery): Promise<Notice[]> {
+    async getNotices(params?: NoticeQuery): Promise<NoticeListResponse> {
         const response = await apiClient.get('/notices', { params });
         return response.data;
     },

@@ -12,7 +12,7 @@ const emptyForm: NoticePayload = {
     noticeType: 'system',
     notifyStartAt: null,
     notifyEndAt: null,
-    isActive: true
+    isActive: false // 초기값을 미체크 상태로 변경
 };
 
 const NoticeManagement: React.FC = () => {
@@ -27,24 +27,42 @@ const NoticeManagement: React.FC = () => {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [previewNotice, setPreviewNotice] = useState<Notice | null>(null);
 
+    // 페이징 상태
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const limit = 10; // 페이지당 10개
+
     useEffect(() => {
-        fetchNotices();
+        fetchNotices(1); // 필터 변경 시 1페이지부터 조회
     }, [selectedType, showInactive]);
 
-    const fetchNotices = async () => {
+    useEffect(() => {
+        fetchNotices(page); // 페이지 변경 시 해당 페이지 조회
+    }, [page]);
+
+    const fetchNotices = async (currentPage: number) => {
         setLoading(true);
         setError(null);
         try {
             const data = await noticeService.getNotices({
                 noticeType: selectedType === 'all' ? undefined : selectedType,
-                isActive: showInactive ? undefined : true
+                isActive: showInactive ? undefined : true,
+                page: currentPage,
+                limit: limit
             });
-            setNotices(data);
+            setNotices(data.items);
+            setTotalPages(data.totalPages);
         } catch (err) {
             console.error('공지 조회 실패', err);
             setError('공지 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setPage(newPage);
         }
     };
 
@@ -70,7 +88,9 @@ const NoticeManagement: React.FC = () => {
                 setNotices(prev => prev.map(item => item.id === editingId ? updated : item));
             } else {
                 const created = await noticeService.createNotice(payload);
-                setNotices(prev => [created, ...prev]);
+                // 등록 후 첫 페이지로 이동하여 목록 갱신
+                setPage(1);
+                fetchNotices(1);
             }
             resetForm();
         } catch (err) {
@@ -100,26 +120,24 @@ const NoticeManagement: React.FC = () => {
 
     const handleDelete = async (id: number) => {
         if (!window.confirm('이 공지를 삭제하시겠습니까?')) return;
+        
+        // 삭제 작업 시작 시 로딩 표시
+        setLoading(true);
         setError(null);
         try {
             await noticeService.deleteNotice(id);
-            setNotices(prev => prev.filter(item => item.id !== id));
+            // 삭제 후 현재 페이지 다시 로드 (await로 완료 대기)
+            await fetchNotices(page);
             if (editingId === id) {
                 resetForm();
             }
         } catch (err) {
             console.error('공지 삭제 실패', err);
             setError('공지 삭제에 실패했습니다.');
+            // 에러 발생 시 로딩 해제 (성공 시에는 fetchNotices 내부의 finally에서 해제됨)
+            setLoading(false);
         }
     };
-
-    const filteredNotices = useMemo(() => {
-        return notices.filter(item => {
-            const matchesType = selectedType === 'all' ? true : item.noticeType === selectedType;
-            const matchesActive = showInactive ? true : item.isActive;
-            return matchesType && matchesActive;
-        });
-    }, [notices, selectedType, showInactive]);
 
     const statusBadge = (isActive: boolean) => (
         <span className={`${styles.statusBadge} ${isActive ? styles.statusActive : styles.statusInactive}`}>
@@ -158,6 +176,17 @@ const NoticeManagement: React.FC = () => {
         }).format(date);
     };
 
+    const getNoticeEmoji = (type: NoticeType) => {
+        switch (type) {
+            case 'system': return '⚙️';
+            case 'maintenance': return '🛠️';
+            case 'alert': return '🔔';
+            case 'emergency': return '🚨';
+            case 'guide': return '📘';
+            default: return '📢';
+        }
+    };
+
     return (
         <div className={styles.noticeManagementContainer}>
             {/* Header */}
@@ -173,92 +202,125 @@ const NoticeManagement: React.FC = () => {
                 )}
             </div>
 
-            {/* Form Section */}
-            <div className={styles.noticeFormCard}>
-                <h2 className={styles.noticeCardTitle}>
-                    {editingId ? '✏️ 공지 수정' : '📝 공지 등록'}
-                </h2>
-                <form onSubmit={handleSubmit}>
-                    <div className={styles.noticeFormGrid}>
-                        <div className={styles.noticeFormGroup}>
-                            <label className={styles.noticeFormLabel}>제목</label>
-                            <input
-                                type="text"
-                                className={styles.noticeInput}
-                                value={form.title}
-                                onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
-                                required
-                                placeholder="공지 제목을 입력하세요"
-                            />
-                        </div>
-                        <div className={styles.noticeFormGroup}>
-                            <label className={styles.noticeFormLabel}>공지 유형</label>
-                            <select
-                                className={styles.noticeSelect}
-                                value={form.noticeType}
-                                onChange={(e) => setForm(prev => ({ ...prev, noticeType: e.target.value as NoticeType }))}
-                            >
-                                <option value="system">시스템</option>
-                                <option value="maintenance">점검</option>
-                                <option value="alert">알림</option>
-                                <option value="emergency">긴급</option>
-                                <option value="guide">가이드</option>
-                            </select>
-                        </div>
-                        <div className={styles.noticeFormGroup}>
-                            <label className={styles.noticeFormLabel}>노출 시작</label>
-                            <input
-                                type="datetime-local"
-                                className={styles.noticeInput}
-                                value={form.notifyStartAt || ''}
-                                onChange={(e) => setForm(prev => ({ ...prev, notifyStartAt: e.target.value || null }))}
-                            />
-                        </div>
-                        <div className={styles.noticeFormGroup}>
-                            <label className={styles.noticeFormLabel}>노출 종료</label>
-                            <input
-                                type="datetime-local"
-                                className={styles.noticeInput}
-                                value={form.notifyEndAt || ''}
-                                onChange={(e) => setForm(prev => ({ ...prev, notifyEndAt: e.target.value || null }))}
-                            />
-                        </div>
-                        <div className={`${styles.noticeFormGroup} ${styles.fullWidth}`}>
-                            <label className={styles.noticeFormLabel}>내용</label>
+            {/* Editor Section (Split Layout) */}
+            <form onSubmit={handleSubmit} className={styles.editorLayout}>
+                {/* Left: Simulated Modal (Visual Editor) */}
+                <div className={styles.simulatedModal}>
+                    <div className={styles.simulatedHeader}>
+                        <h2 className={styles.simulatedHeaderTitle}>📢 공지사항</h2>
+                        <button type="button" className={styles.previewCloseBtn} style={{ cursor: 'default' }}>×</button>
+                    </div>
+                    <div className={styles.simulatedBody}>
+                        <div className={styles.simulatedNoticeItem}>
+                            <div className={styles.simulatedTitleRow}>
+                                <span className={styles.simulatedEmoji}>{getNoticeEmoji(form.noticeType)}</span>
+                                <input
+                                    type="text"
+                                    className={styles.invisibleInput}
+                                    value={form.title}
+                                    onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
+                                    required
+                                    placeholder="공지 제목을 입력하세요"
+                                />
+                            </div>
+                            <div className={styles.simulatedMeta}>
+                                <span>{typeLabel(form.noticeType)}</span>
+                                <span>·</span>
+                                <span>
+                                    {form.notifyStartAt ? formatDate(form.notifyStartAt) : '시작일 미정'} ~{' '}
+                                    {form.notifyEndAt ? formatDate(form.notifyEndAt) : '종료일 미정'}
+                                </span>
+                            </div>
                             <textarea
-                                className={styles.noticeTextarea}
+                                className={styles.invisibleTextarea}
                                 value={form.content}
                                 onChange={(e) => setForm(prev => ({ ...prev, content: e.target.value }))}
                                 required
-                                rows={5}
-                                placeholder="공지 내용을 입력하세요"
+                                placeholder="공지 내용을 입력하세요. 실제 모달과 유사한 환경에서 작성할 수 있습니다."
                             />
                         </div>
                     </div>
+                </div>
 
-                    <div className={styles.noticeCheckboxWrapper}>
-                        <input
-                            type="checkbox"
-                            id="isActive"
-                            checked={form.isActive}
-                            onChange={(e) => setForm(prev => ({ ...prev, isActive: e.target.checked }))}
-                        />
-                        <label htmlFor="isActive" className={styles.noticeCheckboxLabel}>활성화 (체크 시 즉시 노출 가능 상태가 됩니다)</label>
+                {/* Right: Control Panel */}
+                <div className={styles.controlPanel}>
+                    <h3 className={styles.controlSectionTitle}>
+                        {editingId ? '✏️ 설정 수정' : '📝 새 공지 설정'}
+                    </h3>
+                    
+                    <div className={styles.noticeFormGroup}>
+                        <label className={styles.noticeFormLabel}>공지 유형</label>
+                        <select
+                            className={styles.noticeSelect}
+                            value={form.noticeType}
+                            onChange={(e) => setForm(prev => ({ ...prev, noticeType: e.target.value as NoticeType }))}
+                        >
+                            <option value="system">시스템</option>
+                            <option value="maintenance">점검</option>
+                            <option value="alert">알림</option>
+                            <option value="emergency">긴급</option>
+                            <option value="guide">가이드</option>
+                        </select>
                     </div>
 
+                    <div className={styles.noticeFormGroup}>
+                        <label className={styles.noticeFormLabel}>노출 시작</label>
+                        <input
+                            type="datetime-local"
+                            className={styles.noticeInput}
+                            value={form.notifyStartAt || ''}
+                            onChange={(e) => setForm(prev => ({ ...prev, notifyStartAt: e.target.value || null }))}
+                        />
+                    </div>
+
+                    <div className={styles.noticeFormGroup}>
+                        <label className={styles.noticeFormLabel}>노출 종료</label>
+                        <input
+                            type="datetime-local"
+                            className={styles.noticeInput}
+                            value={form.notifyEndAt || ''}
+                            onChange={(e) => setForm(prev => ({ ...prev, notifyEndAt: e.target.value || null }))}
+                        />
+                    </div>
+
+                    <div className={styles.noticeCheckboxWrapper}>
+                        <label className={styles.noticeCheckboxLabel}>
+                            <input
+                                type="checkbox"
+                                checked={form.isActive}
+                                onChange={(e) => {
+                                    const newIsActive = e.target.checked;
+                                    setForm(prev => {
+                                        const newState = { ...prev, isActive: newIsActive };
+                                        if (newIsActive && !prev.notifyStartAt) {
+                                            // 즉시 활성화 시 노출 시작일에 현재 시각 자동 입력
+                                            const now = new Date();
+                                            const pad = (n: number) => n.toString().padStart(2, '0');
+                                            newState.notifyStartAt = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                                        }
+                                        return newState;
+                                    });
+                                }}
+                                style={{ marginRight: '8px' }}
+                            />
+                            즉시 활성화 (사용자에게 노출)
+                        </label>
+                    </div>
+
+                    {error && <div className={styles.formErrorMessage}>{error}</div>}
+
                     <div className={styles.noticeFormActions}>
-                        <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={saving}>
-                            {saving ? '저장 중...' : editingId ? '수정 완료' : '공지 등록'}
-                        </button>
                         {editingId && (
                             <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={resetForm}>
                                 취소
                             </button>
                         )}
+                        <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`} disabled={saving}>
+                            {saving ? '저장 중...' : editingId ? '수정 완료' : '공지 등록'}
+                        </button>
                     </div>
-                </form>
-                {error && <div className={styles.formErrorMessage}>{error}</div>}
-            </div>
+                </div>
+            </form>
 
             {/* Filter Section */}
             <div className={styles.noticeFilterBar}>
@@ -267,7 +329,10 @@ const NoticeManagement: React.FC = () => {
                     <select
                         className={styles.noticeSelect}
                         value={selectedType}
-                        onChange={(e) => setSelectedType(e.target.value as NoticeTypeFilter)}
+                        onChange={(e) => {
+                            setSelectedType(e.target.value as NoticeTypeFilter);
+                            setPage(1); // 필터 변경 시 1페이지로
+                        }}
                     >
                         <option value="all">전체 보기</option>
                         <option value="system">시스템</option>
@@ -282,14 +347,17 @@ const NoticeManagement: React.FC = () => {
                         type="checkbox"
                         id="showInactive"
                         checked={showInactive}
-                        onChange={(e) => setShowInactive(e.target.checked)}
+                        onChange={(e) => {
+                            setShowInactive(e.target.checked);
+                            setPage(1); // 필터 변경 시 1페이지로
+                        }}
                     />
                     <label htmlFor="showInactive" className={styles.noticeCheckboxLabel}>비활성 공지 포함</label>
                 </div>
                 <button
                     type="button"
                     className={`${styles.btn} ${styles.btnSecondary}`}
-                    onClick={fetchNotices}
+                    onClick={() => fetchNotices(page)}
                     style={{ marginLeft: 'auto' }}
                 >
                     ↻ 목록 새로고침
@@ -298,9 +366,13 @@ const NoticeManagement: React.FC = () => {
 
             {/* List Section */}
             <div className={styles.noticeListCard}>
+                {loading && (
+                    <div className={styles.loadingOverlay}>
+                        <div className={styles.spinner}></div>
+                    </div>
+                )}
                 <div className={styles.noticeListHeader}>
                     <h2 className={styles.noticeListTitle}>📋 공지 목록</h2>
-                    {loading && <span style={{ color: '#6b7280', fontSize: '14px' }}>데이터를 불러오는 중입니다...</span>}
                 </div>
                 <div className={styles.noticeTableContainer}>
                     <table className={styles.noticeTable}>
@@ -314,14 +386,14 @@ const NoticeManagement: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredNotices.length === 0 ? (
+                            {!loading && notices.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className={styles.emptyState}>
-                                        {loading ? '로딩 중...' : '등록된 공지가 없습니다.'}
+                                        등록된 공지가 없습니다.
                                     </td>
                                 </tr>
                             ) : (
-                                filteredNotices.map(notice => (
+                                notices.map(notice => (
                                     <tr key={notice.id}>
                                         <td style={{ fontWeight: 600 }}>{notice.title}</td>
                                         <td>{typeLabel(notice.noticeType)}</td>
@@ -367,6 +439,30 @@ const NoticeManagement: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+                {/* Pagination Control */}
+                {totalPages > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '20px', gap: '10px' }}>
+                        <button 
+                            onClick={() => handlePageChange(page - 1)} 
+                            disabled={page === 1}
+                            className={styles.btnSecondary}
+                            style={{ padding: '6px 12px' }}
+                        >
+                            &lt; 이전
+                        </button>
+                        <span style={{ display: 'flex', alignItems: 'center', fontWeight: 500 }}>
+                            {page} / {totalPages}
+                        </span>
+                        <button 
+                            onClick={() => handlePageChange(page + 1)} 
+                            disabled={page === totalPages}
+                            className={styles.btnSecondary}
+                            style={{ padding: '6px 12px' }}
+                        >
+                            다음 &gt;
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Preview Modal */}
@@ -396,5 +492,6 @@ const NoticeManagement: React.FC = () => {
         </div>
     );
 };
+
 
 export default NoticeManagement;
