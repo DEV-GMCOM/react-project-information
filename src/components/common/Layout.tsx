@@ -1,5 +1,5 @@
 // src/components/common/Layout.tsx
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef, useCallback} from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import '../../styles/Layout.css';
 import { useAuth } from '../../contexts/AuthContext';
@@ -7,6 +7,7 @@ import NoticeModal from '../NoticeModal';
 import HelpModal from '../HelpModal';
 import { HelpProvider, useHelp } from '../../contexts/HelpContext';
 import { usePermissions } from '../../hooks/usePermissions'; // usePermissions 훅 임포트
+import apiClient from '../../api/utils/apiClient';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -60,6 +61,7 @@ export const devMenuItems: NavMenuItem[] = [
     { path: '/working/clock-in-out', name: '출퇴근 체크', icon: '⏱️', permission: 'page:working_clock-in-out' },
     { path: '/sales/schedule', name: '영업스케쥴', icon: '📈', permission: 'page:sales_schedule' },
     { path: '/working/scheduling', name: '스케쥴링', icon: '📅', permission: 'page:working_scheduling' },
+    { path: '/working/vision-api', name: '비전API', icon: '👁️' },
 ];
 
 const adminMenuItems: NavMenuItem[] = []; // 현재 사용 안 함
@@ -75,7 +77,45 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const [showNoticeModal, setShowNoticeModal] = useState(false);
     const [showHelpModal, setShowHelpModal] = useState(false);
     const [currentHelpContent, setCurrentHelpContent] = useState<{ pageName: string; content: React.ReactNode } | null>(null);
+    const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+    const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const hideRestrictedUi = import.meta.env.VITE_HIDE_RESTRICTED_UI === 'true'; // prod-only safety flag
+
+    // 알림 수 조회 (heartbeat API 사용)
+    const fetchNotificationCount = useCallback(async () => {
+        if (!user) return;
+        try {
+            const response = await apiClient.post('/auth/heartbeat');
+            if (response.data && typeof response.data.unread_notification_count === 'number') {
+                setUnreadNotificationCount(response.data.unread_notification_count);
+            }
+        } catch (error) {
+            // 세션 만료 등 오류 시 무시
+            console.error('Heartbeat error:', error);
+        }
+    }, [user]);
+
+    // 폴링 설정 (30초마다)
+    useEffect(() => {
+        if (user) {
+            // 초기 로드
+            fetchNotificationCount();
+            // 폴링 시작 (30초마다)
+            pollingIntervalRef.current = setInterval(fetchNotificationCount, 30000);
+        }
+        return () => {
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+                pollingIntervalRef.current = null;
+            }
+        };
+    }, [user, fetchNotificationCount]);
+
+    // 알림 모달 열기 (알림 탭으로 열기)
+    const handleOpenNotificationModal = () => {
+        setShowNoticeModal(true);
+        // NoticeModal에서 알림 탭으로 전환하도록 할 수 있지만, 현재는 그냥 모달 열기
+    };
 
     // 현재 경로에 대한 권한 체크
     const checkCurrentPagePermission = () => {
@@ -260,6 +300,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </div>
                             {!hideRestrictedUi && (
                                 <>
+                                    <button className="notification-btn" onClick={handleOpenNotificationModal} title="알림">
+                                        🔔
+                                        {unreadNotificationCount > 0 && (
+                                            <span className="notification-badge">{unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}</span>
+                                        )}
+                                    </button>
                                     <button className="notice-btn" onClick={() => setShowNoticeModal(true)} title="공지사항">📢 공지</button>
                                     <button className="help-btn" onClick={handleShowHelp} title="도움말">❓ 도움말</button>
                                 </>

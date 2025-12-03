@@ -46,6 +46,7 @@ import CalendarStatus from "./pages/sales/CalendarStatus.tsx";
 import NotificationStatus from "./pages/sales/NotificationStatus.tsx";
 import ClockInOut from "./pages/working/ClockInOut.tsx";
 import Scheduling from "./pages/working/Scheduling.tsx";
+import VisionAPI from "./pages/working/VisionAPI.tsx";
 
 
 import './styles/App.css';
@@ -110,6 +111,7 @@ function App() {
                 <Route path="/working/fms" element={<ProtectedRoute><Layout><FileManagementSystem /></Layout></ProtectedRoute>} />
                 <Route path="/working/clock-in-out" element={<ProtectedRoute><Layout><ClockInOut /></Layout></ProtectedRoute>} />
                 <Route path="/working/scheduling" element={<ProtectedRoute><Layout><Scheduling /></Layout></ProtectedRoute>} />
+                <Route path="/working/vision-api" element={<ProtectedRoute><Layout><VisionAPI /></Layout></ProtectedRoute>} />
 
                 {/* Admin & Permissions */}
                 <Route path="/admin/permission/policy" element={<ProtectedRoute><Layout><PolicyManagement /></Layout></ProtectedRoute>} />
