@@ -43,14 +43,21 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, previewNotic
 
             const now = new Date();
             const validNotices = data.items.filter(notice => {
-                // 시작일과 종료일이 모두 존재해야 함
-                if (!notice.notifyStartAt || !notice.notifyEndAt) return false;
+                // 시작일이 없으면 제외 (노출 대기 상태로 간주)
+                if (!notice.notifyStartAt) return false;
                 
                 const start = new Date(notice.notifyStartAt);
-                const end = new Date(notice.notifyEndAt);
-                
-                // 현재 시각이 기간 내에 있어야 함
-                return now >= start && now <= end;
+                const end = notice.notifyEndAt ? new Date(notice.notifyEndAt) : null;
+                const now = new Date(); // 현재 시각을 매 필터링마다 새로 가져오도록
+
+                // 시작일은 지났어야 함
+                if (now < start) return false;
+
+                // 종료일이 없는 경우 (무기한)
+                if (!end) return true;
+
+                // 종료일이 있는 경우
+                return now <= end;
             });
 
             setActiveNotices(validNotices);
@@ -202,23 +209,7 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, previewNotic
                             ))}
 
                             {/* 하드코딩된 예시 공지 (유지 - 순서상 뒤로 밀림) */}
-                            <div className="notice-item">
-                                <h3>🎉 시스템 업데이트 안내</h3>
-                                <p className="notice-date">2025-12-03</p>
-                                <p className="notice-content">
-                                    회의록 자동 문서화 기능이 추가되었습니다.<br />
-                                    음성 파일을 업로드하여 자동으로 회의록을 생성할 수 있습니다.
-                                </p>
-                            </div>
-
-                            <div className="notice-item">
-                                <h3>⚠️ 정기 점검 안내</h3>
-                                <p className="notice-date">2025-12-03</p>
-                                <p className="notice-content">
-                                    매주 금요일 18시~22시 정기 점검이 진행됩니다.<br />
-                                    해당 시간에는 서비스 이용이 제한될 수 있습니다.
-                                </p>
-                            </div>
+                            {/* '시스템 업데이트 안내'와 '정기 점검 안내'는 삭제됨 */}
 
                             <div className="notice-item">
                                 <h3>📋 사용 가이드</h3>
