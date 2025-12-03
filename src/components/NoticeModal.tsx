@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/NoticeModal.css';
 import { markAllNoticesAsRead, hasUnreadNotices } from '../utils/noticeCookie'; // 쿠키 유틸 임포트
-import { Notice } from '../types/notice'; // Notice 타입 임포트
+import { Notice, NoticeType } from '../types/notice'; // Notice 타입 임포트
+import { noticeService } from '../api/services/noticeService'; // API 서비스 임포트
 
 // 이미지 Assets Import (Vite가 경로 자동 처리)
 import guide01 from '../assets/guide/jandi_webhook/guide_01.png';
@@ -21,13 +22,42 @@ interface NoticeModalProps {
 const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, previewNotice }) => {
     const [activeTab, setActiveTab] = useState<'notice' | 'notification'>('notice');
     const [hasUnreadNotice, setHasUnreadNotice] = useState(false);
+    const [activeNotices, setActiveNotices] = useState<Notice[]>([]); // 활성 공지 목록
 
-    // 모달이 열릴 때 읽음 상태 체크
+    // 모달이 열릴 때 읽음 상태 체크 및 공지 목록 조회
     useEffect(() => {
-        if (isOpen && !previewNotice) { // 미리보기가 아닐 때만 체크
+        if (isOpen && !previewNotice) { // 미리보기가 아닐 때만 동작
             setHasUnreadNotice(hasUnreadNotices());
+            fetchActiveNotices();
         }
     }, [isOpen, previewNotice]);
+
+    const fetchActiveNotices = async () => {
+        try {
+            // 활성 상태인 공지만 조회 (페이지네이션 없이 전체 조회하거나 충분히 큰 limit 설정)
+            // NoticeListResponse에서 items 추출
+            const data = await noticeService.getNotices({ 
+                isActive: true, 
+                limit: 50 // 충분히 큰 수로 설정하여 상단에 노출
+            });
+
+            const now = new Date();
+            const validNotices = data.items.filter(notice => {
+                // 시작일과 종료일이 모두 존재해야 함
+                if (!notice.notifyStartAt || !notice.notifyEndAt) return false;
+                
+                const start = new Date(notice.notifyStartAt);
+                const end = new Date(notice.notifyEndAt);
+                
+                // 현재 시각이 기간 내에 있어야 함
+                return now >= start && now <= end;
+            });
+
+            setActiveNotices(validNotices);
+        } catch (error) {
+            console.error("Failed to fetch active notices:", error);
+        }
+    };
 
     // 공지사항 탭이 활성화되면 읽음 처리
     useEffect(() => {
@@ -38,6 +68,17 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, previewNotic
             setHasUnreadNotice(false);
         }
     }, [isOpen, activeTab, previewNotice]);
+
+    const getNoticeEmoji = (type: NoticeType) => {
+        switch (type) {
+            case 'system': return '⚙️';
+            case 'maintenance': return '🛠️';
+            case 'alert': return '🔔';
+            case 'emergency': return '🚨';
+            case 'guide': return '📘';
+            default: return '📢';
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -52,7 +93,7 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, previewNotic
                     </div>
                     <div className="notice-body">
                         <div className="notice-item">
-                            <h3>{previewNotice.title}</h3>
+                            <h3>{getNoticeEmoji(previewNotice.noticeType)} {previewNotice.title}</h3>
                             <p className="notice-date">
                                 {previewNotice.notifyStartAt ? new Date(previewNotice.notifyStartAt).toLocaleDateString() : '날짜 미정'}
                             </p>
@@ -76,7 +117,6 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, previewNotic
     // 기존 로직 (전체 공지 목록 및 알림 탭)
     // 가이드 이미지 목록 (Import된 객체 사용)
     const guideImages = [guide01, guide02, guide03, guide04, guide05, guide06];
-    // ... (이하 생략, 기존 코드 유지)
 
     // 이미지별 설명
     const imageDescriptions = [
@@ -144,6 +184,24 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, previewNotic
                     {activeTab === 'notice' ? (
                         // --- 공지사항 탭 내용 ---
                         <>
+                            {/* 실제 활성 공지 렌더링 (최상단 배치) */}
+                            {activeNotices.map(notice => (
+                                <div className="notice-item" key={notice.id}>
+                                    <h3>{getNoticeEmoji(notice.noticeType)} {notice.title}</h3>
+                                    <p className="notice-date">
+                                        {notice.notifyStartAt ? new Date(notice.notifyStartAt).toLocaleDateString() : ''}
+                                    </p>
+                                    <div className="notice-content">
+                                        {notice.contentType === 'html' ? (
+                                            <div dangerouslySetInnerHTML={{ __html: notice.content }} />
+                                        ) : (
+                                            notice.content
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+
+                            {/* 하드코딩된 예시 공지 (유지 - 순서상 뒤로 밀림) */}
                             <div className="notice-item">
                                 <h3>🎉 시스템 업데이트 안내</h3>
                                 <p className="notice-date">2025-12-03</p>
