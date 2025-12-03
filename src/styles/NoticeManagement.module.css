@@ -388,6 +388,11 @@
     background-color: #f9fafb;
 }
 
+.selectedRow {
+    background-color: #e0f2fe !important;
+    border-left: 4px solid #2563eb;
+}
+
 .statusBadge {
     display: inline-flex;
     align-items: center;

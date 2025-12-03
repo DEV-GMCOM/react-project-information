@@ -163,11 +163,11 @@ const NoticeManagement: React.FC = () => {
             badgeClass = styles.statusInactive;
         } else if (!start || (start && now < start)) { // 시작일이 없거나 현재보다 미래인 경우
             emoji = '🔵';
-            statusText = '노출 대기';
+            statusText = '공지 대기';
             badgeClass = styles.statusActive; // 노출 예정도 활성 대기이므로 active와 유사한 색상
         } else if (end && now > end) { // 활성이고 시작일이 지났지만, 종료일이 현재보다 과거인 경우
             emoji = '⚫';
-            statusText = '노출 만료';
+            statusText = '공지 만료';
             badgeClass = styles.statusExpired;
         } else { // 활성이고 시작일이 지났고, 종료일이 없거나 현재보다 미래인 경우
             emoji = '🟢';
@@ -232,11 +232,7 @@ const NoticeManagement: React.FC = () => {
                     <h1>공지 관리</h1>
                     <p className={styles.noticeBreadcrumb}>운영관리 &gt; 공지 관리</p>
                 </div>
-                {user && (
-                    <div className={styles.noticeAuthorInfo}>
-                        작성자: {user.emp_name || user.email}
-                    </div>
-                )}
+                
             </div>
 
             {/* Editor Section (Split Layout) */}
@@ -350,7 +346,7 @@ const NoticeManagement: React.FC = () => {
                     </div>
 
                     <div className={styles.noticeFormGroup}>
-                        <label className={styles.noticeFormLabel}>노출 시작</label>
+                        <label className={styles.noticeFormLabel}>공지 시작</label>
                         <input
                             type="datetime-local"
                             className={styles.noticeInput}
@@ -360,7 +356,7 @@ const NoticeManagement: React.FC = () => {
                     </div>
 
                     <div className={styles.noticeFormGroup}>
-                        <label className={styles.noticeFormLabel}>노출 종료</label>
+                        <label className={styles.noticeFormLabel}>공지 종료</label>
                         <input
                             type="datetime-local"
                             className={styles.noticeInput}
@@ -452,7 +448,7 @@ const NoticeManagement: React.FC = () => {
                                         </select>
                                     </div>
                                 </th>
-                                <th>노출 기간</th>
+                                <th>공지 기간</th>
                                 <th>
                                     <div style={{ display: 'flex', alignItems: 'center' }}>
                                         상태
@@ -481,7 +477,10 @@ const NoticeManagement: React.FC = () => {
                                 </tr>
                             ) : (
                                 notices.map(notice => (
-                                    <tr key={notice.id}>
+                                    <tr 
+                                        key={notice.id} 
+                                        className={editingId === notice.id ? styles.selectedRow : ''}
+                                    >
                                         <td style={{ fontWeight: 600 }}>{notice.title}</td>
                                         <td>{typeLabel(notice.noticeType)}</td>
                                         <td>
