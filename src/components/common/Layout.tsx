@@ -7,7 +7,6 @@ import NoticeModal from '../NoticeModal';
 import HelpModal from '../HelpModal';
 import { HelpProvider, useHelp } from '../../contexts/HelpContext';
 import { usePermissions } from '../../hooks/usePermissions';
-import { hasUnreadNotices } from '../../utils/noticeCookie'; // 공지사항 읽음 체크 유틸
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -113,26 +112,29 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, logout, hasUnreadNotification } = useAuth(); // ✅ useAuth에서 가져옴
+    const { user, logout, hasUnreadNotification, hasUnreadPublicNotice, refreshNotifications } = useAuth(); // ✅ useAuth에서 가져옴
     const { hasPermission } = usePermissions(); // 권한 확인 훅 사용
+
+    // 🔴 디버깅용 로그: 빨간 점 표시 원인 추적
+    useEffect(() => {
+        if (hasUnreadPublicNotice || hasUnreadNotification) {
+            console.log(
+                `🔴 [알림 점 표시] 원인: ` +
+                `${hasUnreadPublicNotice ? '[공지사항(Public)] ' : ''}` +
+                `${hasUnreadNotification ? '[개인알림(Personal)]' : ''}`
+            );
+        }
+    }, [hasUnreadPublicNotice, hasUnreadNotification]);
 
     const [showNoticeModal, setShowNoticeModal] = useState(false);
     const [showHelpModal, setShowHelpModal] = useState(false);
     const [currentHelpContent, setCurrentHelpContent] = useState<{ pageName: string; content: React.ReactNode } | null>(null);
     const hideRestrictedUi = import.meta.env.VITE_HIDE_RESTRICTED_UI === 'true'; // prod-only safety flag
 
-    // 공지사항 읽음 상태 관리 (로컬 쿠키 기반)
-    const [hasUnreadNotice, setHasUnreadNotice] = useState(false);
-
-    // 초기 로드 시 공지사항 읽음 여부 체크
-    useEffect(() => {
-        setHasUnreadNotice(hasUnreadNotices());
-    }, []);
-
-    // 모달이 닫힐 때 읽음 상태 다시 체크
-    const handleNoticeModalClose = () => {
+    // 모달이 닫힐 때 읽음 상태 다시 체크 (API를 통해 갱신 요청)
+    const handleNoticeModalClose = async () => {
         setShowNoticeModal(false);
-        setHasUnreadNotice(hasUnreadNotices());
+        await refreshNotifications();
     };
 
     // 현재 경로에 대한 권한 체크
@@ -321,7 +323,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 style={{ position: 'relative' }}
                             >
                                 📢 공지
-                                {(hasUnreadNotice || hasUnreadNotification) && (
+                                {(hasUnreadPublicNotice || hasUnreadNotification) && (
                                     <span style={{ 
                                         position: 'absolute', 
                                         top: '2px', 

@@ -4,6 +4,9 @@ import IdleTimeoutModal from '../components/IdleTimeoutModal';
 import AutoLogoutAlertModal from '../components/AutoLogoutAlertModal';
 import { setLogoutCallback } from '../api/utils/apiClient';
 import { ENV } from '../config/env';
+import { noticeService } from '../api/services/noticeService';
+import { notificationService } from '../api/services/notificationService';
+import { hasNewPublicNotices } from '../utils/noticeCookie';
 
 // --- 인터페이스 정의 (수정) ---
 interface Permission {
@@ -42,7 +45,9 @@ interface AuthContextType {
     refreshUser: () => Promise<void>; // Add this line
     hasRole: (roleCode: string) => boolean;
     hasPermission: (permissionCode: string) => boolean;
-    hasUnreadNotification: boolean; // ✅ 추가
+    hasUnreadNotification: boolean; // ✅ 추가 (개인 알림)
+    hasUnreadPublicNotice: boolean; // ✅ 추가 (공지사항)
+    refreshNotifications: () => Promise<void>;
 }
 
 interface AuthProviderProps {
@@ -69,7 +74,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [showAutoLogoutAlert, setShowAutoLogoutAlert] = useState(false);
     
     // 알림 상태
-    const [hasUnreadNotification, setHasUnreadNotification] = useState(false); // ✅ 추가
+    const [hasUnreadNotification, setHasUnreadNotification] = useState(false); // 개인 알림
+    const [hasUnreadPublicNotice, setHasUnreadPublicNotice] = useState(false); // 공지사항
 
     // 타이머와 마지막 활동 시간을 관리하기 위한 ref
     const lastActivityTimeRef = useRef(Date.now());
@@ -141,15 +147,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     }, [user, logout]);
 
-    // ✅ 알림 체크 함수 (3분마다 실행)
+    // ✅ 알림 및 공지사항 체크 함수 (3분마다 실행)
     const checkNotifications = useCallback(async () => {
         if (!user) return;
-        // TODO: 실제 API 연동 필요 (Mock)
-        // try {
-        //     const res = await apiClient.get('/notifications/unread-check');
-        //     setHasUnreadNotification(res.data.hasUnread);
-        // } catch (e) { console.error(e); }
-        setHasUnreadNotification(true); // 테스트용: 항상 true
+
+        // 1. 개인 알림 체크
+        try {
+            const unreadCount = await notificationService.getUnreadCount();
+            setHasUnreadNotification(unreadCount > 0);
+        } catch (e) {
+            console.error("Failed to check notifications:", e);
+        }
+
+        // 2. 공지사항 체크
+        try {
+             const data = await noticeService.getNotices({ isActive: true, limit: 100 });
+             // 필터링 로직 (NoticeModal과 동일하게 적용)
+             const now = new Date();
+             const validNotices = data.items.filter(notice => {
+                 if (!notice.notifyStartAt) return false;
+                 const start = new Date(notice.notifyStartAt);
+                 const end = notice.notifyEndAt ? new Date(notice.notifyEndAt) : null;
+                 if (now < start) return false;
+                 if (!end) return true;
+                 return now <= end;
+             });
+
+             const serverIds = validNotices.map(n => n.id);
+             // 쿠키와 비교
+             const hasNew = hasNewPublicNotices(serverIds);
+             setHasUnreadPublicNotice(hasNew);
+
+        } catch (e) {
+            console.error("Failed to check public notices:", e);
+        }
     }, [user]);
 
 
@@ -166,6 +197,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         // 기존 별도 타이머 제거
         // heartbeatTimerRef.current = setInterval(sendHeartbeat, ENV.HEARTBEAT_INTERVAL);
+        
+        // 초기 실행 (로그인 직후 등)
+        checkNotifications();
 
         mainTimerRef.current = setInterval(() => {
             if (showIdleModalRef.current) {
@@ -305,7 +339,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         refreshUser, // Add this line
         hasRole,
         hasPermission,
-        hasUnreadNotification // ✅ 추가
+        hasUnreadNotification, // ✅ 추가 (개인 알림)
+        hasUnreadPublicNotice, // ✅ 추가 (공지사항)
+        refreshNotifications: checkNotifications // 강제 새로고침 필요 시 사용
     };
 
     return (
