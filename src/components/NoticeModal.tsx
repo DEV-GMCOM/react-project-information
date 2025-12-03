@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/NoticeModal.css';
 import { markAllNoticesAsRead, hasUnreadNotices } from '../utils/noticeCookie'; // 쿠키 유틸 임포트
+import { Notice } from '../types/notice'; // Notice 타입 임포트
 
 // 이미지 Assets Import (Vite가 경로 자동 처리)
 import guide01 from '../assets/guide/jandi_webhook/guide_01.png';
@@ -14,33 +15,68 @@ import guide06 from '../assets/guide/jandi_webhook/guide_06.png';
 interface NoticeModalProps {
     isOpen: boolean;
     onClose: () => void;
+    previewNotice?: Notice | null; // 미리보기용 단일 공지 데이터 (Optional)
 }
 
-const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose }) => {
+const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, previewNotice }) => {
     const [activeTab, setActiveTab] = useState<'notice' | 'notification'>('notice');
     const [hasUnreadNotice, setHasUnreadNotice] = useState(false);
 
     // 모달이 열릴 때 읽음 상태 체크
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && !previewNotice) { // 미리보기가 아닐 때만 체크
             setHasUnreadNotice(hasUnreadNotices());
         }
-    }, [isOpen]);
+    }, [isOpen, previewNotice]);
 
     // 공지사항 탭이 활성화되면 읽음 처리
     useEffect(() => {
-        if (isOpen && activeTab === 'notice') {
+        if (isOpen && activeTab === 'notice' && !previewNotice) {
             markAllNoticesAsRead();
             // UI 갱신은 약간의 지연을 두거나, 다음 열릴 때 반영 (여기서는 즉시 반영 안 해도 됨, 버튼의 점은 Layout에서 관리)
             // 하지만 모달 내부 탭의 점은 사라지게 하고 싶다면:
             setHasUnreadNotice(false);
         }
-    }, [isOpen, activeTab]);
+    }, [isOpen, activeTab, previewNotice]);
 
     if (!isOpen) return null;
 
+    // 미리보기 모드일 경우 렌더링
+    if (previewNotice) {
+        return (
+            <div className="modal-overlay" onClick={onClose}>
+                <div className="notice-modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="notice-header">
+                        <h2>📢 공지 미리보기</h2>
+                        <button className="notice-close-btn" onClick={onClose}>×</button>
+                    </div>
+                    <div className="notice-body">
+                        <div className="notice-item">
+                            <h3>{previewNotice.title}</h3>
+                            <p className="notice-date">
+                                {previewNotice.notifyStartAt ? new Date(previewNotice.notifyStartAt).toLocaleDateString() : '날짜 미정'}
+                            </p>
+                            <div className="notice-content">
+                                {previewNotice.contentType === 'html' ? (
+                                    <div dangerouslySetInnerHTML={{ __html: previewNotice.content }} />
+                                ) : (
+                                    previewNotice.content
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="notice-footer" style={{ justifyContent: 'flex-end' }}>
+                        <button className="btn-primary" onClick={onClose}>닫기</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // 기존 로직 (전체 공지 목록 및 알림 탭)
     // 가이드 이미지 목록 (Import된 객체 사용)
     const guideImages = [guide01, guide02, guide03, guide04, guide05, guide06];
+    // ... (이하 생략, 기존 코드 유지)
 
     // 이미지별 설명
     const imageDescriptions = [

@@ -1,18 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { noticeService } from '../../api/services/noticeService';
-import { Notice, NoticePayload, NoticeType } from '../../types/notice';
+import { Notice, NoticePayload, NoticeType, ContentType } from '../../types/notice';
 import { useAuth } from '../../contexts/AuthContext';
 import styles from '../../styles/NoticeManagement.module.css';
+import NoticeModal from '../../components/NoticeModal'; // NoticeModal 임포트
 
 type NoticeTypeFilter = NoticeType | 'all';
 
 const emptyForm: NoticePayload = {
     title: '',
     content: '',
+    contentType: 'text', // 기본값 text
     noticeType: 'system',
     notifyStartAt: null,
     notifyEndAt: null,
-    isActive: false // 초기값을 미체크 상태로 변경
+    isActive: false 
 };
 
 const NoticeManagement: React.FC = () => {
@@ -22,10 +24,13 @@ const NoticeManagement: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedType, setSelectedType] = useState<NoticeTypeFilter>('all');
-    const [showInactive, setShowInactive] = useState(false);
+    const [showActiveOnly, setShowActiveOnly] = useState(false); // 초기값을 false로 변경하여 모든 공지 표시
     const [form, setForm] = useState<NoticePayload>(emptyForm);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [previewNotice, setPreviewNotice] = useState<Notice | null>(null);
+    
+    // HTML 미리보기 상태
+    const [showHtmlPreview, setShowHtmlPreview] = useState(false);
 
     // 페이징 상태
     const [page, setPage] = useState(1);
@@ -34,7 +39,7 @@ const NoticeManagement: React.FC = () => {
 
     useEffect(() => {
         fetchNotices(1); // 필터 변경 시 1페이지부터 조회
-    }, [selectedType, showInactive]);
+    }, [selectedType, showActiveOnly]); // showInactive -> showActiveOnly
 
     useEffect(() => {
         fetchNotices(page); // 페이지 변경 시 해당 페이지 조회
@@ -46,7 +51,7 @@ const NoticeManagement: React.FC = () => {
         try {
             const data = await noticeService.getNotices({
                 noticeType: selectedType === 'all' ? undefined : selectedType,
-                isActive: showInactive ? undefined : true,
+                isActive: showActiveOnly ? true : undefined, // 로직 반전: showActiveOnly가 true면 isActive:true, 아니면 undefined
                 page: currentPage,
                 limit: limit
             });
@@ -59,6 +64,7 @@ const NoticeManagement: React.FC = () => {
             setLoading(false);
         }
     };
+
 
     const handlePageChange = (newPage: number) => {
         if (newPage >= 1 && newPage <= totalPages) {
@@ -104,6 +110,7 @@ const NoticeManagement: React.FC = () => {
     const resetForm = () => {
         setForm(emptyForm);
         setEditingId(null);
+        setShowHtmlPreview(false);
     };
 
     const handleEdit = (notice: Notice) => {
@@ -111,11 +118,13 @@ const NoticeManagement: React.FC = () => {
         setForm({
             title: notice.title,
             content: notice.content,
+            contentType: notice.contentType || 'text',
             noticeType: notice.noticeType,
             notifyStartAt: notice.notifyStartAt ? toLocalInputValue(notice.notifyStartAt) : null,
             notifyEndAt: notice.notifyEndAt ? toLocalInputValue(notice.notifyEndAt) : null,
             isActive: notice.isActive
         });
+        setShowHtmlPreview(false);
     };
 
     const handleDelete = async (id: number) => {
@@ -139,11 +148,39 @@ const NoticeManagement: React.FC = () => {
         }
     };
 
-    const statusBadge = (isActive: boolean) => (
-        <span className={`${styles.statusBadge} ${isActive ? styles.statusActive : styles.statusInactive}`}>
-            {isActive ? '활성' : '비활성'}
-        </span>
-    );
+    const statusBadge = (notice: Notice) => {
+        const now = new Date();
+        const start = notice.notifyStartAt ? new Date(notice.notifyStartAt) : null;
+        const end = notice.notifyEndAt ? new Date(notice.notifyEndAt) : null;
+
+        let emoji = '';
+        let statusText = '';
+        let badgeClass = '';
+
+        if (!notice.isActive) {
+            emoji = '🔴';
+            statusText = '비활성';
+            badgeClass = styles.statusInactive;
+        } else if (!start || (start && now < start)) { // 시작일이 없거나 현재보다 미래인 경우
+            emoji = '🔵';
+            statusText = '노출 대기';
+            badgeClass = styles.statusActive; // 노출 예정도 활성 대기이므로 active와 유사한 색상
+        } else if (end && now > end) { // 활성이고 시작일이 지났지만, 종료일이 현재보다 과거인 경우
+            emoji = '⚫';
+            statusText = '노출 만료';
+            badgeClass = styles.statusExpired;
+        } else { // 활성이고 시작일이 지났고, 종료일이 없거나 현재보다 미래인 경우
+            emoji = '🟢';
+            statusText = '활성';
+            badgeClass = styles.statusActive;
+        }
+
+        return (
+            <span className={`${styles.statusBadge} ${badgeClass}`}>
+                {emoji} {statusText}
+            </span>
+        );
+    };
 
     const typeLabel = (type: NoticeType) => {
         const map: Record<NoticeType, string> = {
@@ -231,13 +268,62 @@ const NoticeManagement: React.FC = () => {
                                     {form.notifyEndAt ? formatDate(form.notifyEndAt) : '종료일 미정'}
                                 </span>
                             </div>
-                            <textarea
-                                className={styles.invisibleTextarea}
-                                value={form.content}
-                                onChange={(e) => setForm(prev => ({ ...prev, content: e.target.value }))}
-                                required
-                                placeholder="공지 내용을 입력하세요. 실제 모달과 유사한 환경에서 작성할 수 있습니다."
-                            />
+                            
+                            {/* Content Type Selector & Preview Toggle */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0' }}>
+                                <div style={{ display: 'flex', gap: '12px', fontSize: '12px' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                                        <input
+                                            type="radio"
+                                            name="contentType"
+                                            value="text"
+                                            checked={form.contentType === 'text'}
+                                            onChange={() => {
+                                                setForm(prev => ({ ...prev, contentType: 'text' }));
+                                                setShowHtmlPreview(false);
+                                            }}
+                                        />
+                                        Text
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                                        <input
+                                            type="radio"
+                                            name="contentType"
+                                            value="html"
+                                            checked={form.contentType === 'html'}
+                                            onChange={() => setForm(prev => ({ ...prev, contentType: 'html' }))}
+                                        />
+                                        HTML
+                                    </label>
+                                </div>
+                                {form.contentType === 'html' && (
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '12px', color: '#2563eb' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={showHtmlPreview}
+                                            onChange={(e) => setShowHtmlPreview(e.target.checked)}
+                                        />
+                                        미리보기
+                                    </label>
+                                )}
+                            </div>
+
+                            {/* Content Area */}
+                            {form.contentType === 'html' && showHtmlPreview ? (
+                                <div 
+                                    className={styles.invisibleTextarea} 
+                                    style={{ whiteSpace: 'normal', overflowY: 'auto', border: '1px solid #e5e7eb', padding: '8px' }}
+                                    dangerouslySetInnerHTML={{ __html: form.content }}
+                                />
+                            ) : (
+                                <textarea
+                                    className={styles.invisibleTextarea}
+                                    value={form.content}
+                                    onChange={(e) => setForm(prev => ({ ...prev, content: e.target.value }))}
+                                    required
+                                    placeholder={form.contentType === 'html' ? "HTML 태그를 입력하세요." : "공지 내용을 입력하세요. 실제 모달과 유사한 환경에서 작성할 수 있습니다."}
+                                />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -322,48 +408,6 @@ const NoticeManagement: React.FC = () => {
                 </div>
             </form>
 
-            {/* Filter Section */}
-            <div className={styles.noticeFilterBar}>
-                <div className={styles.noticeFormGroup}>
-                    <label className={styles.noticeFormLabel}>유형 필터</label>
-                    <select
-                        className={styles.noticeSelect}
-                        value={selectedType}
-                        onChange={(e) => {
-                            setSelectedType(e.target.value as NoticeTypeFilter);
-                            setPage(1); // 필터 변경 시 1페이지로
-                        }}
-                    >
-                        <option value="all">전체 보기</option>
-                        <option value="system">시스템</option>
-                        <option value="maintenance">점검</option>
-                        <option value="alert">알림</option>
-                        <option value="emergency">긴급</option>
-                        <option value="guide">가이드</option>
-                    </select>
-                </div>
-                <div className={styles.noticeCheckboxWrapper} style={{ marginTop: '26px', marginBottom: '4px' }}>
-                    <input
-                        type="checkbox"
-                        id="showInactive"
-                        checked={showInactive}
-                        onChange={(e) => {
-                            setShowInactive(e.target.checked);
-                            setPage(1); // 필터 변경 시 1페이지로
-                        }}
-                    />
-                    <label htmlFor="showInactive" className={styles.noticeCheckboxLabel}>비활성 공지 포함</label>
-                </div>
-                <button
-                    type="button"
-                    className={`${styles.btn} ${styles.btnSecondary}`}
-                    onClick={() => fetchNotices(page)}
-                    style={{ marginLeft: 'auto' }}
-                >
-                    ↻ 목록 새로고침
-                </button>
-            </div>
-
             {/* List Section */}
             <div className={styles.noticeListCard}>
                 {loading && (
@@ -373,15 +417,58 @@ const NoticeManagement: React.FC = () => {
                 )}
                 <div className={styles.noticeListHeader}>
                     <h2 className={styles.noticeListTitle}>📋 공지 목록</h2>
+                    <button
+                        type="button"
+                        className={`${styles.btn} ${styles.btnSecondary}`}
+                        onClick={() => fetchNotices(page)}
+                        style={{ padding: '8px 16px', fontSize: '13px', flex: 'none' }}
+                    >
+                        ↻ 목록 새로고침
+                    </button>
                 </div>
                 <div className={styles.noticeTableContainer}>
                     <table className={styles.noticeTable}>
                         <thead>
                             <tr>
                                 <th style={{ width: '30%' }}>제목</th>
-                                <th>유형</th>
+                                <th>
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        유형
+                                        <select
+                                            className={styles.thSelect}
+                                            value={selectedType}
+                                            onChange={(e) => {
+                                                setSelectedType(e.target.value as NoticeTypeFilter);
+                                                setPage(1);
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <option value="all">전체</option>
+                                            <option value="system">시스템</option>
+                                            <option value="maintenance">점검</option>
+                                            <option value="alert">알림</option>
+                                            <option value="emergency">긴급</option>
+                                            <option value="guide">가이드</option>
+                                        </select>
+                                    </div>
+                                </th>
                                 <th>노출 기간</th>
-                                <th>상태</th>
+                                <th>
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        상태
+                                        <label className={styles.thCheckboxWrapper} onClick={(e) => e.stopPropagation()}>
+                                            <input
+                                                type="checkbox"
+                                                checked={showActiveOnly}
+                                                onChange={(e) => {
+                                                    setShowActiveOnly(e.target.checked);
+                                                    setPage(1);
+                                                }}
+                                            />
+                                            <span style={{ fontSize: '12px', fontWeight: 'normal' }}>활성만</span>
+                                        </label>
+                                    </div>
+                                </th>
                                 <th style={{ width: '200px' }}>관리</th>
                             </tr>
                         </thead>
@@ -404,9 +491,7 @@ const NoticeManagement: React.FC = () => {
                                             </div>
                                         </td>
                                         <td>
-                                            <span className={`${styles.statusBadge} ${notice.isActive ? styles.statusActive : styles.statusInactive}`}>
-                                                {notice.isActive ? '활성' : '비활성'}
-                                            </span>
+                                            {statusBadge(notice)}
                                         </td>
                                         <td>
                                             <div className={styles.actionButtons}>
@@ -414,22 +499,25 @@ const NoticeManagement: React.FC = () => {
                                                     type="button"
                                                     className={`${styles.btnSm} ${styles.btnPreview}`}
                                                     onClick={() => setPreviewNotice(notice)}
+                                                    title="미리보기"
                                                 >
-                                                    미리보기
+                                                    👁️
                                                 </button>
                                                 <button
                                                     type="button"
                                                     className={`${styles.btnSm} ${styles.btnEdit}`}
                                                     onClick={() => handleEdit(notice)}
+                                                    title="수정"
                                                 >
-                                                    수정
+                                                    ✏️
                                                 </button>
                                                 <button
                                                     type="button"
                                                     className={`${styles.btnSm} ${styles.btnDelete}`}
                                                     onClick={() => handleDelete(notice.id)}
+                                                    title="삭제"
                                                 >
-                                                    삭제
+                                                    🗑️
                                                 </button>
                                             </div>
                                         </td>
@@ -465,29 +553,13 @@ const NoticeManagement: React.FC = () => {
                 )}
             </div>
 
-            {/* Preview Modal */}
+            {/* Preview Modal (Using Shared Component) */}
             {previewNotice && (
-                <div className={styles.previewModalOverlay} onClick={() => setPreviewNotice(null)}>
-                    <div className={styles.previewModalContent} onClick={(e) => e.stopPropagation()}>
-                        <div className={styles.previewModalHeader}>
-                            <h2>📢 공지 미리보기</h2>
-                            <button className={styles.previewCloseBtn} onClick={() => setPreviewNotice(null)}>×</button>
-                        </div>
-                        <div className={styles.previewModalBody}>
-                            <h3 style={{ marginTop: 0, fontSize: '20px', color: '#111827' }}>{previewNotice.title}</h3>
-                            <div className={styles.previewNoticeMeta}>
-                                <span>🏷️ {typeLabel(previewNotice.noticeType)}</span>
-                                <span>📅 {formatDate(previewNotice.notifyStartAt)} ~ {formatDate(previewNotice.notifyEndAt)}</span>
-                                <span className={`${styles.statusBadge} ${previewNotice.isActive ? styles.statusActive : styles.statusInactive}`}>
-                                    {previewNotice.isActive ? '활성' : '비활성'}
-                                </span>
-                            </div>
-                            <div className={styles.previewNoticeContent}>
-                                {previewNotice.content}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <NoticeModal
+                    isOpen={!!previewNotice}
+                    onClose={() => setPreviewNotice(null)}
+                    previewNotice={previewNotice}
+                />
             )}
         </div>
     );

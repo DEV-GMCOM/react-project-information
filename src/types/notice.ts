@@ -1,9 +1,11 @@
 export type NoticeType = 'system' | 'maintenance' | 'alert' | 'emergency' | 'guide';
+export type ContentType = 'text' | 'html';
 
 export interface Notice {
     id: number;
     title: string;
     content: string;
+    contentType: ContentType; // 추가
     noticeType: NoticeType;
     notifyStartAt?: string | null;
     notifyEndAt?: string | null;
@@ -19,6 +21,7 @@ export interface Notice {
 export interface NoticePayload {
     title: string;
     content: string;
+    contentType: ContentType; // 추가
     noticeType: NoticeType;
     notifyStartAt?: string | null;
     notifyEndAt?: string | null;
