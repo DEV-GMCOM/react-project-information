@@ -29,6 +29,10 @@ import PTPostmortem from './pages/project/PTPostmortem';
 import ProjectPostmortem from './pages/project/ProjectPostmortem';
 import PTChecklist from './pages/project/PTChecklist';
 import ProjectBasicInfoTest from './pages/project/ProjectBasicInforTest';
+import CorporateDocuments from './pages/documents/CorporateDocuments';
+import NoticeManagement from './pages/operations/NoticeManagement';
+import LogViewer from './pages/operations/LogViewer';
+import DocumentManagement from './pages/operations/DocumentManagement';
 import MeetingMinutes from './pages/working/MeetingMinutes';
 import ProjectExecution from './pages/project/ProjectExecution';
 import FileManagementSystem from './pages/working/FileManagementSystem';
@@ -46,6 +50,16 @@ import CalendarStatus from "./pages/sales/CalendarStatus.tsx";
 import NotificationStatus from "./pages/sales/NotificationStatus.tsx";
 import ClockInOut from "./pages/working/ClockInOut.tsx";
 import Scheduling from "./pages/working/Scheduling.tsx";
+import PTScript from "./pages/working/PTScript.tsx";
+import Ideation from "./pages/working/Ideation.tsx";
+import VideoAnalysis from "./pages/working/VideoAnalysis.tsx";
+import VideoAnalysisPT from "./pages/working/VideoAnalysisPT.tsx";
+import VideoAnalysisCurator from "./pages/working/VideoAnalysisCurator.tsx";
+import LLMPayments from "./pages/working/LLMPayments.tsx";
+import LLMPaymentsVacation from "./pages/working/LLMPaymentsVacation.tsx";
+import LLMPaymentsExpense from "./pages/working/LLMPaymentsExpense.tsx";
+import LLMPaymentsProject from "./pages/working/LLMPaymentsProject.tsx";
+import LLMPaymentsOvertime from "./pages/working/LLMPaymentsOvertime.tsx";
 
 
 import './styles/App.css';
@@ -105,11 +119,29 @@ function App() {
                     <Route path="notifications" element={<NotificationStatus />} />
                 </Route>
 
+                {/* Documents */}
+                <Route path="/enterprise-documents" element={<ProtectedRoute><Layout><CorporateDocuments /></Layout></ProtectedRoute>} />
+
+                {/* Operations */}
+                <Route path="/operations/notices" element={<ProtectedRoute><Layout><NoticeManagement /></Layout></ProtectedRoute>} />
+                <Route path="/operations/logs" element={<ProtectedRoute><Layout><LogViewer /></Layout></ProtectedRoute>} />
+                <Route path="/operations/documents" element={<ProtectedRoute><Layout><DocumentManagement /></Layout></ProtectedRoute>} />
+
                 {/* Working */}
                 <Route path="/working/meeting-minutes" element={<ProtectedRoute><Layout><MeetingMinutes /></Layout></ProtectedRoute>} />
                 <Route path="/working/fms" element={<ProtectedRoute><Layout><FileManagementSystem /></Layout></ProtectedRoute>} />
                 <Route path="/working/clock-in-out" element={<ProtectedRoute><Layout><ClockInOut /></Layout></ProtectedRoute>} />
                 <Route path="/working/scheduling" element={<ProtectedRoute><Layout><Scheduling /></Layout></ProtectedRoute>} />
+                <Route path="/working/pt-script" element={<ProtectedRoute><Layout><PTScript /></Layout></ProtectedRoute>} />
+                <Route path="/working/ideation" element={<ProtectedRoute><Layout><Ideation /></Layout></ProtectedRoute>} />
+                <Route path="/working/video-analysis" element={<ProtectedRoute><Layout><VideoAnalysis /></Layout></ProtectedRoute>} />
+                <Route path="/working/video-analysis/pt" element={<ProtectedRoute><Layout><VideoAnalysisPT /></Layout></ProtectedRoute>} />
+                <Route path="/working/video-analysis/curator" element={<ProtectedRoute><Layout><VideoAnalysisCurator /></Layout></ProtectedRoute>} />
+                <Route path="/working/llm-payments" element={<ProtectedRoute><Layout><LLMPayments /></Layout></ProtectedRoute>} />
+                <Route path="/working/llm-payments/vacation" element={<ProtectedRoute><Layout><LLMPaymentsVacation /></Layout></ProtectedRoute>} />
+                <Route path="/working/llm-payments/expense" element={<ProtectedRoute><Layout><LLMPaymentsExpense /></Layout></ProtectedRoute>} />
+                <Route path="/working/llm-payments/project" element={<ProtectedRoute><Layout><LLMPaymentsProject /></Layout></ProtectedRoute>} />
+                <Route path="/working/llm-payments/overtime" element={<ProtectedRoute><Layout><LLMPaymentsOvertime /></Layout></ProtectedRoute>} />
 
                 {/* Admin & Permissions */}
                 <Route path="/admin/permission/policy" element={<ProtectedRoute><Layout><PolicyManagement /></Layout></ProtectedRoute>} />

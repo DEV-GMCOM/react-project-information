@@ -23,6 +23,7 @@ import { employeeService } from './services/employeeService';
 import { projectService } from './services/projectService';
 import { dashboardService } from './services/dashboardService';
 import { departmentService } from './services/departmentService';
+import { noticeService } from './services/noticeService';
 
 
 export const apiService = {
@@ -64,6 +65,12 @@ export const apiService = {
     getProjectsByStatus: dashboardService.getProjectsByStatus.bind(dashboardService),
     getEmployeesByDepartment: dashboardService.getEmployeesByDepartment.bind(dashboardService),
     healthCheck: dashboardService.healthCheck.bind(dashboardService),
+
+    // Notices
+    getNotices: noticeService.getNotices.bind(noticeService),
+    createNotice: noticeService.createNotice.bind(noticeService),
+    updateNotice: noticeService.updateNotice.bind(noticeService),
+    deleteNotice: noticeService.deleteNotice.bind(noticeService),
 };
 
 export { ptChecklistService } from './services/ptChecklistService';
@@ -72,3 +79,5 @@ export type { PTChecklistItem, PTChecklistRequest, PTChecklistResponse } from '.
 // Auth 서비스 추가
 export { authService } from './services/authService';
 export type { LoginRequest, User, LoginResponse } from './services/authService';
+export { noticeService } from './services/noticeService';
+export type { Notice, NoticePayload, NoticeType } from '../types/notice';

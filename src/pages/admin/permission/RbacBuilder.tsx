@@ -32,10 +32,17 @@ interface PermissionFormData {
     parentId: string; // For Sections/Actions, the Page ID
 }
 
-// 모든 메뉴 항목을 병합 (개발 메뉴 포함)
+// RBAC에서 권한 대상이 되는 메뉴만 병합 (권한이 없는 상위 컨테이너는 제외)
+const flattenMenusWithPermission = (menus: NavMenuItem[]): (NavMenuItem | NavSubMenuItem)[] =>
+    menus.flatMap(item => {
+        const subMenus = item.subMenus ?? [];
+        const eligible = item.permission ? [item] : [];
+        return [...eligible, ...subMenus.filter(sub => sub.permission)];
+    });
+
 const ALL_MENUS_FOR_RBAC: (NavMenuItem | NavSubMenuItem)[] = [
-    ...baseMainMenuItems.flatMap(item => item.subMenus ? [item, ...item.subMenus] : [item]),
-    ...devMenuItems.flatMap(item => item.subMenus ? [item, ...item.subMenus] : [item]),
+    ...flattenMenusWithPermission(baseMainMenuItems),
+    ...flattenMenusWithPermission(devMenuItems),
 ];
 
 // Flatten menu for easy lookup (모든 메뉴 포함)

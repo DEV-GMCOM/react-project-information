@@ -35,7 +35,6 @@ export const baseMainMenuItems: NavMenuItem[] = [
         path: '/information',
         name: '기본정보',
         icon: '📋',
-        permission: 'page:information',
         subMenus: [
             { path: '/info-management/advertiser', name: '기업 / 광고주 ( 담당자 )', permission: 'page:info-management_advertiser' },
             { path: '/info-management/project', name: '프로젝트 프로파일', permission: 'page:info-management_project' }
@@ -56,10 +55,46 @@ export const baseMainMenuItems: NavMenuItem[] = [
 ];
 
 export const devMenuItems: NavMenuItem[] = [
-    { path: '/hr/employee-management', name: '직원정보 관리', icon: '🧑‍💼', permission: 'page:hr_employee-management' },
-    { path: '/working/fms', name: 'GMCOM 저장소', icon: '💾', permission: 'page:working_fms' },
-    { path: '/working/clock-in-out', name: '출퇴근 체크', icon: '⏱️', permission: 'page:working_clock-in-out' },
-    { path: '/sales/schedule', name: '영업스케쥴', icon: '📈', permission: 'page:sales_schedule' },
+    { path: '/dashboard', name: '대시보드', icon: '📊', permission: 'page:dashboard' },
+    { path: '/enterprise-documents', name: '전사 문서', icon: '📚', permission: 'page:enterprise-documents' },
+    {
+        path: '/operations',
+        name: '운영관리',
+        icon: '🛠️',
+        subMenus: [
+            { path: '/operations/notices', name: '공지 관리', permission: 'page:operations_notices' },
+            { path: '/operations/logs', name: '로그 확인', permission: 'page:operations_logs' },
+            { path: '/hr/employee-management', name: '직원정보 관리', permission: 'page:hr_employee-management' },
+            { path: '/operations/documents', name: '전사문서 관리', permission: 'page:operations_documents' },
+            { path: '/working/fms', name: 'GMCOM 저장소', permission: 'page:working_fms' },
+            { path: '/working/clock-in-out', name: '출퇴근 체크', permission: 'page:working_clock-in-out' },
+            { path: '/sales/schedule', name: '영업 스케쥴 관리', permission: 'page:sales_schedule' }
+        ]
+    },
+    { path: '/working/pt-script', name: 'PT 스크립트 생성', icon: '📝', permission: 'page:working_pt-script' },
+    { path: '/working/ideation', name: '제안(기획) Ideation', icon: '💡', permission: 'page:working_ideation' },
+    {
+        path: '/working/video-analysis',
+        name: '영상 분석',
+        icon: '🎥',
+        permission: 'page:working_video-analysis',
+        subMenus: [
+            { path: '/working/video-analysis/pt', name: 'PT 분석', permission: 'page:working_video-analysis_pt' },
+            { path: '/working/video-analysis/curator', name: '큐레이터 응대 분석', permission: 'page:working_video-analysis_curator' }
+        ]
+    },
+    {
+        path: '/working/llm-payments',
+        name: 'LLM 결제',
+        icon: '💳',
+        permission: 'page:working_llm-payments',
+        subMenus: [
+            { path: '/working/llm-payments/vacation', name: '휴가계', permission: 'page:working_llm-payments_vacation' },
+            { path: '/working/llm-payments/expense', name: '지출결의서', permission: 'page:working_llm-payments_expense' },
+            { path: '/working/llm-payments/project', name: '프로젝트 집행 관련', permission: 'page:working_llm-payments_project' },
+            { path: '/working/llm-payments/overtime', name: '야근(추가업무)계', permission: 'page:working_llm-payments_overtime' }
+        ]
+    },
     { path: '/working/scheduling', name: '스케쥴링', icon: '📅', permission: 'page:working_scheduling' },
 ];
 
