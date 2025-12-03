@@ -22,7 +22,7 @@ const IdleTimeoutModal: React.FC<IdleTimeoutModalProps> = ({
 
     return (
         <div className="modal-overlay">
-            <div className="modal-content idle-timeout-modal">
+            <div className="idle-timeout-popup">
                 <h2>⏰ 세션 만료 경고</h2>
                 <p>
                     {idleTimeText}간 활동이 없었습니다.<br />

@@ -20,8 +20,8 @@ echo "--------------------------------------------------------"
 cd "$LOCAL_PROJECT_PATH" || exit
 
 # 2. React 프로젝트 빌드
-echo "📦 React 프로젝트를 빌드합니다... (npm run build)"
-npm run build
+echo "📦 React 프로젝트를 빌드합니다... (npm run build:staging)"
+npm run build:staging
 
 # 빌드 성공 여부 확인
 if [ $? -ne 0 ]; then

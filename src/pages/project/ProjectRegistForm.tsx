@@ -149,7 +149,7 @@ const ProjectRegistForm: React.FC = () => {
             // 클라이언트 회사 ID 찾기
             const selectedCompany = companies.find(c => c.company_name === formData.client_company);
 
-            // 프로젝트 매니저 ID 찾기
+            // 프로젝트 매니저 emp_id 찾기
             const selectedManager = employees.find(e => e.name === formData.project_manager);
 
             const submitData = {
@@ -168,7 +168,7 @@ const ProjectRegistForm: React.FC = () => {
                 status: 'planning' as const,
                 budget: formData.budget ? Number(formData.budget) : undefined,
                 company_id: selectedCompany?.id || undefined,
-                manager_id: selectedManager?.id || undefined,
+                manager_id: selectedManager?.emp_id || undefined, // emp_id 사용
                 project_type: formData.project_type || undefined
             };
 

@@ -70,6 +70,20 @@ const getLLMDocLabel = (type: string): string => {
     }
 };
 
+// Helper function: 초를 시분초로 변환
+const formatTimeFromSeconds = (totalSeconds: number): string => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = Math.ceil(totalSeconds % 60);
+
+    const parts: string[] = [];
+    if (hours > 0) parts.push(`${hours}시간`);
+    if (minutes > 0) parts.push(`${minutes}분`);
+    if (seconds > 0 || parts.length === 0) parts.push(`${seconds}초`);
+
+    return parts.join(' ');
+};
+
 const MeetingMinutes = () => {
     const { user } = useAuth(); // ✅ 사용자 정보 가져오기
     // ... (기존 상태들) ...
@@ -314,7 +328,7 @@ const MeetingMinutes = () => {
         const savedLanguage = Cookies.get('stt_language');
 
         if (savedEngine) setSttEngine(savedEngine);
-        if (savedModelSize) setSttModelSize(savedModelSize as any);
+        setSttModelSize('medium'); // 백엔드에서 medium 모델로 고정되었으므로 프론트엔드도 고정
         if (savedLanguage) setSttLanguage(savedLanguage as any);
     }, []);
 
@@ -322,7 +336,6 @@ const MeetingMinutes = () => {
     const handleSaveSettings = () => {
         // 쿠키에 무기한 저장 (expires 생략하면 세션 쿠키가 되므로 명시)
         Cookies.set('stt_engine', sttEngine, { expires: 36500 }); // 100년
-        Cookies.set('stt_model_size', sttModelSize, { expires: 36500 });
         Cookies.set('stt_language', sttLanguage, { expires: 36500 });
 
         alert('설정이 저장되었습니다.');
@@ -361,7 +374,7 @@ const MeetingMinutes = () => {
                 meeting_datetime: new Date(meetingDateTime).toISOString(),
                 meeting_place: meetingPlace || '미정',
                 project_id: selectedProjectId,
-                shared_with_ids: sharedWith.map(emp => emp.id),
+                shared_with_ids: sharedWith.map(emp => emp.emp_id),
                 share_methods: Object.entries(shareMethods)
                     .filter(([, checked]) => checked)
                     .map(([key]) => key),
@@ -764,7 +777,7 @@ const MeetingMinutes = () => {
                 meetingDateTime: meeting.meeting_datetime ? new Date(meeting.meeting_datetime) : null,
                 meetingPlace: meeting.meeting_place || '',
                 projectId: meeting.project_id || null,
-                sharedWithIds: (meeting.shared_with || []).map(emp => emp.id),
+                sharedWithIds: (meeting.shared_with || []).map(emp => emp.emp_id),
                 tags: meeting.tags?.join(', ') || '',
                 shareMethods: {
                     email: meeting.share_methods?.includes('email') ?? true,
@@ -889,31 +902,35 @@ const MeetingMinutes = () => {
 
     // ✅ [추가] STT 작업 시작 시 프로그레스 바로 스크롤하는 효과
     useEffect(() => {
-        if (isGenerating && generationPhase === 1 && sttProgressRef.current) {
-            sttProgressRef.current.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
+        if (isGenerating && generationPhase === 1) {
+            // DOM 렌더링 완료 대기 후 스크롤
+            const scrollTimer = setTimeout(() => {
+                if (sttProgressRef.current) {
+                    sttProgressRef.current.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
+            }, 100); // 100ms 딜레이로 DOM 렌더링 보장
+
+            return () => clearTimeout(scrollTimer);
         }
     }, [isGenerating, generationPhase]);
 
     // [추가] LLM 생성 시작 시 프로그레스 바로 스크롤
     useEffect(() => {
-        if (isGenerating && generationPhase === 2 && llmProgressRef.current) {
-            llmProgressRef.current.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
-        }
-    }, [isGenerating, generationPhase]);
+        if (isGenerating && generationPhase === 2) {
+            // DOM 렌더링 완료 대기 후 스크롤
+            const scrollTimer = setTimeout(() => {
+                if (llmProgressRef.current) {
+                    llmProgressRef.current.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
+            }, 100); // 100ms 딜레이로 DOM 렌더링 보장
 
-    // [추가] LLM 생성 시작 시 프로그레스 바로 스크롤
-    useEffect(() => {
-        if (isGenerating && generationPhase === 2 && llmProgressRef.current) {
-            llmProgressRef.current.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
+            return () => clearTimeout(scrollTimer);
         }
     }, [isGenerating, generationPhase]);
 
@@ -1437,14 +1454,14 @@ const MeetingMinutes = () => {
     const handleSharedWithSelect = (selectedEmployees: Employee[]) => {
         // Employee[]를 EmployeeSimple[]로 변환 (id, name만 저장)
         const simpleEmployees: EmployeeSimple[] = selectedEmployees.map(emp => ({
-            id: emp.id,
+            emp_id: emp.emp_id, // emp_id 사용
             name: emp.name
         }));
         setSharedWith(simpleEmployees);
     };
 
     const removeSharedEmployee = (employeeId: number) => {
-        setSharedWith(prev => prev.filter(e => e.id !== employeeId));
+        setSharedWith(prev => prev.filter(e => e.emp_id !== employeeId));
     };
     // --- ▲▲▲ 공유 인원 핸들러 종료 ▲▲▲ ---
 
@@ -1465,7 +1482,7 @@ const MeetingMinutes = () => {
             meeting_datetime: new Date(meetingDateTime).toISOString(),
             meeting_place: meetingPlace || '미정',
             project_id: selectedProjectId,
-            shared_with_ids: sharedWith.map(emp => emp.id),
+            shared_with_ids: sharedWith.map(emp => emp.emp_id),
             share_methods: Object.entries(shareMethods)
                 .filter(([, checked]) => checked)
                 .map(([key]) => key),
@@ -1555,18 +1572,61 @@ const MeetingMinutes = () => {
         }
     }, [sttEngine]);
 
-    // [추가] 작업 복구 로직
+    // [추가] 작업 복구 로직 - selectedMeeting이 있을 때만 실행 (상세 페이지에서만)
     useEffect(() => {
+        if (!selectedMeeting) return; // 리스트 페이지에서는 실행 안함
+
         const savedTaskId = localStorage.getItem('currentSttTaskId');
         if (savedTaskId) {
             checkAndResumeTask(savedTaskId);
         }
-    }, []); // 마운트 시 1회 실행
+    }, [selectedMeeting?.meeting_id]); // selectedMeeting이 있을 때만 실행
+
+    // [추가] 앱 복귀 시(백그라운드 -> 포그라운드) 상태 재확인
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                const savedTaskId = localStorage.getItem('currentSttTaskId');
+                // 현재 생성 중이라고 표시되어 있는데 포그라운드로 왔다면 상태 확인 필요
+                if (savedTaskId && isGenerating) {
+                    console.log("👀 앱 복귀 감지: STT 작업 상태 재확인");
+                    checkAndResumeTask(savedTaskId);
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [isGenerating]);
 
     const checkAndResumeTask = async (taskId: string) => {
         try {
             const statusRes = await generationService.getSTTStatus(taskId);
-            if (['processing', 'pending'].includes(statusRes.status)) {
+            
+            if (statusRes.status === 'completed') {
+                console.log("✅ STT 작업이 이미 완료되었습니다. 결과를 로드합니다.");
+                
+                // 완료 UI 처리
+                setSttProgress(100);
+                setSttStatusMessage('변환 완료!');
+                
+                // 결과 텍스트 업데이트
+                if (statusRes.result_text) {
+                    const engine = (statusRes.metadata as any)?.engine || sttEngine;
+                    setSttResults(prev => ({ ...prev, [engine]: statusRes.result_text! }));
+                    setSelectedSttSource(engine);
+                }
+                
+                // 상태 정리
+                setIsGenerating(false);
+                setSttCompleted(true);
+                setCurrentTaskId(null);
+                setEstimatedTimeRemaining(null);
+                localStorage.removeItem('currentSttTaskId');
+                
+            } else if (['processing', 'pending'].includes(statusRes.status)) {
                 console.log("🔄 STT 작업 복구 중:", taskId);
                 setIsGenerating(true);
                 setGenerationPhase(1);
@@ -1583,11 +1643,14 @@ const MeetingMinutes = () => {
                 );
                 setWsConnection(ws);
             } else {
+                // failed, aborted 등
                 localStorage.removeItem('currentSttTaskId');
+                setIsGenerating(false);
             }
         } catch (e) {
             console.error("작업 복구 실패:", e);
             localStorage.removeItem('currentSttTaskId');
+            setIsGenerating(false);
         }
     };
 
@@ -1668,6 +1731,12 @@ const MeetingMinutes = () => {
             const engineToUse = sttEngine as any; // STTEngine 타입
             let createResponse: STTCreateResponse | undefined;
 
+            // ✅ 참석자 정보 준비 (shared_with_ids, share_methods)
+            const shared_with_ids = sharedWith.map(emp => emp.emp_id);
+            const share_methods_array = Object.entries(shareMethods)
+                .filter(([_, enabled]) => enabled)
+                .map(([method, _]) => method);
+
             if (fileToConvert) {
                 // [기존 로직] 파일 업로드 및 작업 생성
                 setSttStatusMessage('파일 업로드 중...');
@@ -1677,7 +1746,9 @@ const MeetingMinutes = () => {
                     {
                         model_size: sttModelSize,
                         language: sttLanguage,
-                        meeting_id: meetingId
+                        meeting_id: meetingId,
+                        shared_with_ids: shared_with_ids,  // ✅ 추가
+                        share_methods: share_methods_array  // ✅ 추가
                     }
                 );
             } else if (existingFileId) {
@@ -1688,7 +1759,9 @@ const MeetingMinutes = () => {
                     existingFileId,
                     {
                         model_size: sttModelSize,
-                        language: sttLanguage
+                        language: sttLanguage,
+                        shared_with_ids: shared_with_ids,  // ✅ 추가
+                        share_methods: share_methods_array  // ✅ 추가
                     }
                 );
             }
@@ -1924,12 +1997,20 @@ const MeetingMinutes = () => {
         }
 
         try {
+            // ✅ 참석자 정보 준비
+            const shared_with_ids = sharedWith.map(emp => emp.emp_id);
+            const share_methods_array = Object.entries(shareMethods)
+                .filter(([_, enabled]) => enabled)
+                .map(([method, _]) => method);
+
             const payload = {
                 source_text,
                 engine,
                 doc_types,
                 meeting_id: meetingId,  // ✅ 추가
-                stt_original_id         // ✅ 추가 (선택)
+                stt_original_id,        // ✅ 추가 (선택)
+                shared_with_ids: shared_with_ids,  // ✅ 추가
+                share_methods: share_methods_array  // ✅ 추가
             };
 
             setLlmStatusMessage('AI 모델 호출 중...'); // [추가]
@@ -2046,7 +2127,7 @@ const MeetingMinutes = () => {
                 .map(([key]) => key);
 
             // [추가] sharedWith를 [1, 2, 3] 형태의 ID 배열로 변환
-            const sharedWithIds = sharedWith.map(emp => emp.id);
+            const sharedWithIds = sharedWith.map(emp => emp.emp_id);
 
             // [추가] tags를 ['tag1', 'tag2'] 형태의 배열로 변환
             const tagArray = tags.split(',').map(t => t.trim()).filter(t => t);
@@ -2081,7 +2162,7 @@ const MeetingMinutes = () => {
 
                 // (가정) 백엔드 필드명: 'shared_with_ids' (공유 대상 직원 ID 목록)
                 // ✅ ID가 문자열로 오는 경우를 대비해 숫자로 변환
-                shared_with_ids: sharedWith.map(emp => Number(emp.id)),
+                shared_with_ids: sharedWith.map(emp => emp.emp_id),
 
                 // (가정) 백엔드 필드명: 'tags'
                 tags: tagArray,
@@ -2179,7 +2260,7 @@ const MeetingMinutes = () => {
                 meetingDateTime,
                 meetingPlace,
                 projectId: selectedProjectId,
-                sharedWithIds: sharedWith.map(emp => emp.id),
+                sharedWithIds: sharedWith.map(emp => emp.emp_id),
                 tags,
                 shareMethods: { ...shareMethods },
                 // attendees,
@@ -2225,7 +2306,7 @@ const MeetingMinutes = () => {
         const manualInputChanged = manualInput !== originalData.manualInput;
 
         // sharedWith 비교
-        const currentSharedIds = sharedWith.map(emp => emp.id).sort();
+        const currentSharedIds = sharedWith.map(emp => emp.emp_id).sort();
         const originalSharedIds = [...originalData.sharedWithIds].sort();
         const sharedWithChanged = JSON.stringify(currentSharedIds) !== JSON.stringify(originalSharedIds);
 
@@ -2520,7 +2601,7 @@ const MeetingMinutes = () => {
                                 onProjectSearch={() => setShowProjectSearchModal(true)}
                                 sharedWith={sharedWith}
                                 onEmployeeSearch={() => setShowEmployeeSearchModal(true)}
-                                onRemoveEmployee={(id) => setSharedWith(prev => prev.filter(emp => emp.id !== id))}
+                                onRemoveEmployee={(id) => setSharedWith(prev => prev.filter(emp => emp.emp_id !== id))}
                                 tags={tags}
                                 setTags={setTags}
                                 companionAttendees={companionAttendees} // ✅ 추가
@@ -2742,7 +2823,7 @@ const MeetingMinutes = () => {
                                                         {/* [추가] 예상 소요 시간 표시 */}
                                                         {audioDuration && !isGenerating && !sttCompleted && (
                                                             <div style={{ fontSize: '12px', color: '#1890ff', fontWeight: 'bold' }}>
-                                                                ⏱️ 예상 소요 시간: 약 {Math.ceil(audioDuration / (STT_SPEED_FACTORS[sttModelSize as keyof typeof STT_SPEED_FACTORS] || 1.5))}초
+                                                                ⏱️ 예상 소요 시간: 약 {formatTimeFromSeconds(Math.ceil(audioDuration / (STT_SPEED_FACTORS[sttModelSize as keyof typeof STT_SPEED_FACTORS] || 1.5)))}
                                                             </div>
                                                         )}
                                                         <div style={{ display: 'flex', gap: '8px' }}>
@@ -2865,8 +2946,8 @@ const MeetingMinutes = () => {
                         />
 
                         {/* ✅ 프로그레스 바 추가 (STT) */}
-                                                    {isGenerating && (
-                                                        <div className="generation-progress">
+                                                    {isGenerating && generationPhase === 1 && (
+                                                        <div className="generation-progress" ref={sttProgressRef}>
                                                             <div className="progress-header">
                                                                 {/* h4와 메시지 결합 */}
                                                                 <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -2891,7 +2972,7 @@ const MeetingMinutes = () => {
                                                             </div>
                                                             {estimatedTimeRemaining !== null && (
                                                                 <p className="progress-info" style={{ color: '#1890ff' }}>
-                                                                    예상 남은 시간: 약 {estimatedTimeRemaining}초
+                                                                    예상 남은 시간: 약 {formatTimeFromSeconds(estimatedTimeRemaining)}
                                                                 </p>
                                                             )}
                         
@@ -3045,7 +3126,7 @@ const MeetingMinutes = () => {
                     onProjectSearch={() => setShowProjectSearchModal(true)}
                     sharedWith={sharedWith}
                     onEmployeeSearch={() => setShowEmployeeSearchModal(true)}
-                    onRemoveEmployee={(id) => setSharedWith(prev => prev.filter(emp => emp.id !== id))}
+                    onRemoveEmployee={(id) => setSharedWith(prev => prev.filter(emp => emp.emp_id !== id))}
                     tags={tags}
                     setTags={setTags}
                     companionAttendees={companionAttendees} // ✅ 추가

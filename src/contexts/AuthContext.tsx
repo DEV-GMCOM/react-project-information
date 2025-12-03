@@ -4,6 +4,9 @@ import IdleTimeoutModal from '../components/IdleTimeoutModal';
 import AutoLogoutAlertModal from '../components/AutoLogoutAlertModal';
 import { setLogoutCallback } from '../api/utils/apiClient';
 import { ENV } from '../config/env';
+import { noticeService } from '../api/services/noticeService';
+import { notificationService } from '../api/services/notificationService';
+import { hasNewPublicNotices } from '../utils/noticeCookie';
 
 // --- 인터페이스 정의 (수정) ---
 interface Permission {
@@ -42,6 +45,9 @@ interface AuthContextType {
     refreshUser: () => Promise<void>; // Add this line
     hasRole: (roleCode: string) => boolean;
     hasPermission: (permissionCode: string) => boolean;
+    hasUnreadNotification: boolean; // ✅ 추가 (개인 알림)
+    hasUnreadPublicNotice: boolean; // ✅ 추가 (공지사항)
+    refreshNotifications: () => Promise<void>;
 }
 
 interface AuthProviderProps {
@@ -66,12 +72,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [showIdleModal, setShowIdleModal] = useState(false);
     const [modalCountdown, setModalCountdown] = useState(ENV.IDLE_WARNING_COUNTDOWN / 1000);
     const [showAutoLogoutAlert, setShowAutoLogoutAlert] = useState(false);
+    
+    // 알림 상태
+    const [hasUnreadNotification, setHasUnreadNotification] = useState(false); // 개인 알림
+    const [hasUnreadPublicNotice, setHasUnreadPublicNotice] = useState(false); // 공지사항
 
     // 타이머와 마지막 활동 시간을 관리하기 위한 ref
     const lastActivityTimeRef = useRef(Date.now());
     const mainTimerRef = useRef<NodeJS.Timeout>();
     const heartbeatTimerRef = useRef<NodeJS.Timeout>();
     const showIdleModalRef = useRef(showIdleModal);
+    const notificationCheckCounter = useRef(0); // ✅ 알림 체크 카운터 추가
+    const heartbeatCounter = useRef(0); // ✅ Heartbeat 카운터 추가
 
     useEffect(() => {
         showIdleModalRef.current = showIdleModal;
@@ -135,20 +147,59 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     }, [user, logout]);
 
+    // ✅ 알림 및 공지사항 체크 함수 (3분마다 실행)
+    const checkNotifications = useCallback(async () => {
+        if (!user) return;
+
+        // 1. 개인 알림 체크
+        try {
+            const unreadCount = await notificationService.getUnreadCount();
+            setHasUnreadNotification(unreadCount > 0);
+        } catch (e) {
+            console.error("Failed to check notifications:", e);
+        }
+
+        // 2. 공지사항 체크
+        try {
+             const data = await noticeService.getNotices({ isActive: true, limit: 100 });
+             // 필터링 로직 (NoticeModal과 동일하게 적용)
+             const now = new Date();
+             const validNotices = data.items.filter(notice => {
+                 if (!notice.notifyStartAt) return false;
+                 const start = new Date(notice.notifyStartAt);
+                 const end = notice.notifyEndAt ? new Date(notice.notifyEndAt) : null;
+                 if (now < start) return false;
+                 if (!end) return true;
+                 return now <= end;
+             });
+
+             const serverIds = validNotices.map(n => n.id);
+             // 쿠키와 비교
+             const hasNew = hasNewPublicNotices(serverIds);
+             setHasUnreadPublicNotice(hasNew);
+
+        } catch (e) {
+            console.error("Failed to check public notices:", e);
+        }
+    }, [user]);
+
 
     // --- 2. 타이머 관리 로직 ---
 
     const stopAllTimers = useCallback(() => {
         if (mainTimerRef.current) clearInterval(mainTimerRef.current);
-        if (heartbeatTimerRef.current) clearInterval(heartbeatTimerRef.current);
+        // if (heartbeatTimerRef.current) clearInterval(heartbeatTimerRef.current); // 통합으로 인해 불필요
         console.log('⏹️ 모든 타이머가 중지되었습니다.');
     }, []);
 
     const startAllTimers = useCallback(() => {
         stopAllTimers();
 
-        heartbeatTimerRef.current = setInterval(sendHeartbeat, ENV.HEARTBEAT_INTERVAL);
-        console.log(`❤️ Heartbeat 타이머 시작 (${ENV.HEARTBEAT_INTERVAL / 1000}초 간격)`);
+        // 기존 별도 타이머 제거
+        // heartbeatTimerRef.current = setInterval(sendHeartbeat, ENV.HEARTBEAT_INTERVAL);
+        
+        // 초기 실행 (로그인 직후 등)
+        checkNotifications();
 
         mainTimerRef.current = setInterval(() => {
             if (showIdleModalRef.current) {
@@ -167,11 +218,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     setShowIdleModal(true);
                     setModalCountdown(ENV.IDLE_WARNING_COUNTDOWN / 1000);
                 }
+
+                // ✅ 1. Heartbeat 체크 (설정된 간격마다)
+                heartbeatCounter.current += 1;
+                const heartbeatIntervalSec = ENV.HEARTBEAT_INTERVAL / 1000;
+                if (heartbeatCounter.current >= heartbeatIntervalSec) {
+                    heartbeatCounter.current = 0;
+                    sendHeartbeat();
+                }
+
+                // ✅ 2. 알림 폴링 (180초 = 3분)
+                notificationCheckCounter.current += 1;
+                if (notificationCheckCounter.current >= 180) {
+                    notificationCheckCounter.current = 0;
+                    checkNotifications();
+                }
             }
         }, 1000);
-        console.log('⏰ 메인 유휴상태 체크 타이머 시작 (1초 간격)');
+        console.log('⏰ 메인 통합 타이머 시작 (1초 간격 - Idle/Heartbeat/Noti)');
 
-    }, [stopAllTimers, sendHeartbeat, logout]);
+    }, [stopAllTimers, sendHeartbeat, logout, checkNotifications]);
 
 
     // --- 3. 이벤트 핸들러 및 라이프사이클 관리 ---
@@ -272,7 +338,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         checkSession,
         refreshUser, // Add this line
         hasRole,
-        hasPermission
+        hasPermission,
+        hasUnreadNotification, // ✅ 추가 (개인 알림)
+        hasUnreadPublicNotice, // ✅ 추가 (공지사항)
+        refreshNotifications: checkNotifications // 강제 새로고침 필요 시 사용
     };
 
     return (

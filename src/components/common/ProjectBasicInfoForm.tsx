@@ -36,6 +36,7 @@ interface KickoffReport {
     progressSchedule: string;
     riskFactors: string;
     nextReport: string;
+    others: string;
 }
 
 interface PTPostmortem {
@@ -242,7 +243,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         proceedDecision: '',
     });
 
-    const [kickoff, setKickoff] = useState<KickoffReport>({
+    const initialKickoff: KickoffReport = {
         department: '',
         presenter: '',
         personnel: '',
@@ -251,7 +252,10 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         progressSchedule: '',
         riskFactors: '',
         nextReport: '',
-    });
+        others: '',
+    };
+
+    const [kickoff, setKickoff] = useState<KickoffReport>(initialKickoff);
 
     const handleKickoffInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -447,6 +451,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
     };
 
     const selectProject = async (project: ProjectData) => {
+        // 새 프로젝트 선택 시 기존 착수보고 값 초기화 (데이터 미존재 시 이전 값 노출 방지)
+        setKickoff(initialKickoff);
         try {
             setSearchLoading(true);
             const response = await apiClient.get(`/projects/${project.project_id}`);
@@ -545,9 +551,11 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                     progressSchedule:  kickoffResponse.data.progress_schedule || '',
                     riskFactors:       kickoffResponse.data.risk_factors || '',
                     nextReport:        kickoffResponse.data.next_report || '',
+                    others:            kickoffResponse.data.other_notes || '',
                 }));
                 // setSaveMode('update');
             } else {
+                setKickoff(initialKickoff);
                 // setSaveMode('insert');
             }
             //
@@ -564,6 +572,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
         } catch (error) {
             const errorMessage = handleApiError(error);
             console.error('프로젝트 데이터 로드 오류:', errorMessage);
+            setKickoff(initialKickoff);
             alert(`프로젝트 데이터를 불러오는 중 오류가 발생했습니다: ${errorMessage}`);
         } finally {
             setSearchLoading(false);
@@ -1385,10 +1394,7 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td className="table-cell table-cell-label">
-                                                투입인력 및<br/>
-                                                역할, 기여도
-                                            </td>
+                                            <td className="table-cell table-cell-label">기획자</td>
                                             <td className="table-cell-input">
                                             <textarea
                                                 name="personnel"
@@ -1414,22 +1420,8 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td className="table-cell table-cell-label">기획 예상경비</td>
-                                            <td className="table-cell-input">
-                                            <textarea
-                                                name="plannedExpense"
-                                                value={kickoff.plannedExpense}
-                                                onChange={handleKickoffInputChange}
-                                                placeholder="출장, 야근택시비, 용역비 등"
-                                                className="postmortem-textarea textarea-medium bullet-textarea"
-                                                readOnly={readOnly}
-                                            />
-                                            </td>
-                                        </tr>
-                                        <tr>
                                             <td className="table-cell table-cell-label">
-                                                진행 일정<br/>
-                                                (마일스톤)
+                                                추진일정
                                             </td>
                                             <td className="table-cell-input">
                                             <textarea
@@ -1443,27 +1435,14 @@ const ProjectBasicInfoForm: React.FC<ProjectBasicInfoFormProps> = ({
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td className="table-cell table-cell-label">위험요소</td>
+                                            <td className="table-cell table-cell-label">기타</td>
                                             <td className="table-cell-input">
                                             <textarea
-                                                name="riskFactors"
-                                                value={kickoff.riskFactors}
+                                                name="others"
+                                                value={kickoff.others}
                                                 onChange={handleKickoffInputChange}
-                                                placeholder="예상되는 리스크와 대응방안"
+                                                placeholder="기타 메모"
                                                 className="postmortem-textarea textarea-medium bullet-textarea"
-                                                readOnly={readOnly}
-                                            />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td className="table-cell table-cell-label">차기 보고</td>
-                                            <td className="table-cell-input">
-                                            <textarea
-                                                name="nextReport"
-                                                value={kickoff.nextReport}
-                                                onChange={handleKickoffInputChange}
-                                                placeholder="다음 보고 예정일과 내용"
-                                                className="postmortem-textarea textarea-small"
                                                 readOnly={readOnly}
                                             />
                                             </td>

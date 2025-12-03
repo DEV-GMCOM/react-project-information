@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import NoticeModal from '../NoticeModal';
 import HelpModal from '../HelpModal';
 import { HelpProvider, useHelp } from '../../contexts/HelpContext';
-import { usePermissions } from '../../hooks/usePermissions'; // usePermissions 훅 임포트
+import { usePermissions } from '../../hooks/usePermissions';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -34,7 +34,6 @@ export const baseMainMenuItems: NavMenuItem[] = [
         path: '/information',
         name: '기본정보',
         icon: '📋',
-        permission: 'page:information',
         subMenus: [
             { path: '/info-management/advertiser', name: '기업 / 광고주 ( 담당자 )', permission: 'page:info-management_advertiser' },
             { path: '/info-management/project', name: '프로젝트 프로파일', permission: 'page:info-management_project' }
@@ -47,6 +46,18 @@ export const baseMainMenuItems: NavMenuItem[] = [
     { path: '/project-postmortem', name: '프로젝트 결과분석', icon: '📊', permission: 'page:project-postmortem' },
     { path: '/working/meeting-minutes', name: '자동 회의록', icon: '🗒️', permission: 'page:working_meeting-minutes' },
     {
+        path: '/operations',
+        name: '운영관리',
+        icon: '🛠️',
+        // permission: 'page:operations', // Parent 메뉴는 권한 체크 없음
+        subMenus: [
+            { path: '/operations/notices', name: '공지 관리', permission: 'page:operations_notices' },
+            { path: '/hr/employee-management', name: '직원정보 관리', permission: 'page:hr_employee-management' },
+            { path: '/working/fms', name: 'GMCOM 저장소', permission: 'page:working_fms' },
+            { path: '/sales/schedule', name: '영업 스케쥴 관리', permission: 'page:sales_schedule' }
+        ]
+    },
+    {
         path: '/admin/permission',
         name: '권한 관리',
         icon: '🚫️',
@@ -55,10 +66,42 @@ export const baseMainMenuItems: NavMenuItem[] = [
 ];
 
 export const devMenuItems: NavMenuItem[] = [
-    { path: '/hr/employee-management', name: '직원정보 관리', icon: '🧑‍💼', permission: 'page:hr_employee-management' },
-    { path: '/working/fms', name: 'GMCOM 저장소', icon: '💾', permission: 'page:working_fms' },
-    { path: '/working/clock-in-out', name: '출퇴근 체크', icon: '⏱️', permission: 'page:working_clock-in-out' },
-    { path: '/sales/schedule', name: '영업스케쥴', icon: '📈', permission: 'page:sales_schedule' },
+    { path: '/dashboard', name: '대시보드', icon: '📊', permission: 'page:dashboard' },
+    { path: '/enterprise-documents', name: '전사 문서', icon: '📚', permission: 'page:enterprise-documents' },
+    {
+        path: '/operations-dev', // Key 중복 방지 및 구분
+        name: '운영관리 (Dev)',
+        icon: '🛠️',
+        subMenus: [
+            { path: '/operations/logs', name: '로그 확인', permission: 'page:operations_logs' },
+            { path: '/operations/documents', name: '전사문서 관리', permission: 'page:operations_documents' },
+            { path: '/working/clock-in-out', name: '출퇴근 체크', permission: 'page:working_clock-in-out' }
+        ]
+    },
+    { path: '/working/pt-script', name: 'PT 스크립트 생성', icon: '📝', permission: 'page:working_pt-script' },
+    { path: '/working/ideation', name: '제안(기획) Ideation', icon: '💡', permission: 'page:working_ideation' },
+    {
+        path: '/working/video-analysis',
+        name: '영상 분석',
+        icon: '🎥',
+        permission: 'page:working_video-analysis',
+        subMenus: [
+            { path: '/working/video-analysis/pt', name: 'PT 분석', permission: 'page:working_video-analysis_pt' },
+            { path: '/working/video-analysis/curator', name: '큐레이터 응대 분석', permission: 'page:working_video-analysis_curator' }
+        ]
+    },
+    {
+        path: '/working/llm-payments',
+        name: 'LLM 결제',
+        icon: '💳',
+        permission: 'page:working_llm-payments',
+        subMenus: [
+            { path: '/working/llm-payments/vacation', name: '휴가계', permission: 'page:working_llm-payments_vacation' },
+            { path: '/working/llm-payments/expense', name: '지출결의서', permission: 'page:working_llm-payments_expense' },
+            { path: '/working/llm-payments/project', name: '프로젝트 집행 관련', permission: 'page:working_llm-payments_project' },
+            { path: '/working/llm-payments/overtime', name: '야근(추가업무)계', permission: 'page:working_llm-payments_overtime' }
+        ]
+    },
     { path: '/working/scheduling', name: '스케쥴링', icon: '📅', permission: 'page:working_scheduling' },
 ];
 
@@ -69,13 +112,30 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, logout } = useAuth();
+    const { user, logout, hasUnreadNotification, hasUnreadPublicNotice, refreshNotifications } = useAuth(); // ✅ useAuth에서 가져옴
     const { hasPermission } = usePermissions(); // 권한 확인 훅 사용
+
+    // 🔴 디버깅용 로그: 빨간 점 표시 원인 추적
+    useEffect(() => {
+        if (hasUnreadPublicNotice || hasUnreadNotification) {
+            console.log(
+                `🔴 [알림 점 표시] 원인: ` +
+                `${hasUnreadPublicNotice ? '[공지사항(Public)] ' : ''}` +
+                `${hasUnreadNotification ? '[개인알림(Personal)]' : ''}`
+            );
+        }
+    }, [hasUnreadPublicNotice, hasUnreadNotification]);
 
     const [showNoticeModal, setShowNoticeModal] = useState(false);
     const [showHelpModal, setShowHelpModal] = useState(false);
     const [currentHelpContent, setCurrentHelpContent] = useState<{ pageName: string; content: React.ReactNode } | null>(null);
     const hideRestrictedUi = import.meta.env.VITE_HIDE_RESTRICTED_UI === 'true'; // prod-only safety flag
+
+    // 모달이 닫힐 때 읽음 상태 다시 체크 (API를 통해 갱신 요청)
+    const handleNoticeModalClose = async () => {
+        setShowNoticeModal(false);
+        await refreshNotifications();
+    };
 
     // 현재 경로에 대한 권한 체크
     const checkCurrentPagePermission = () => {
@@ -115,11 +175,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const headerTitle = import.meta.env.VITE_APP_TITLE || 'GMCOM Information System';
 
     // Layout 내부에서 사용할 필터링된 메뉴
-    const displayMainMenus = hideRestrictedUi
-        ? baseMainMenuItems.filter(item => item.path !== '/working/meeting-minutes') // block experimental pages in prod
-        : baseMainMenuItems;
-
-    const displayDevMenus = hideRestrictedUi ? [] : devMenuItems;
+    // 메뉴 숨김 처리 해제 (항상 모든 메뉴 표시)
+    const displayMainMenus = baseMainMenuItems;
+    const displayDevMenus = devMenuItems;
     
     useEffect(() => {
         const allMenuItems = [...displayMainMenus, ...displayDevMenus, ...adminMenuItems]; // Display 메뉴들을 사용
@@ -258,11 +316,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                     {user?.team && ` - ${user.team}`}
                                 </span>
                             </div>
+                            <button 
+                                className="notice-btn" 
+                                onClick={() => setShowNoticeModal(true)} 
+                                title="공지사항"
+                                style={{ position: 'relative' }}
+                            >
+                                📢 공지
+                                {(hasUnreadPublicNotice || hasUnreadNotification) && (
+                                    <span style={{ 
+                                        position: 'absolute', 
+                                        top: '2px', 
+                                        right: '2px', 
+                                        color: '#ef4444', 
+                                        fontSize: '8px',
+                                        lineHeight: 1 
+                                    }}>●</span>
+                                )}
+                            </button>
                             {!hideRestrictedUi && (
-                                <>
-                                    <button className="notice-btn" onClick={() => setShowNoticeModal(true)} title="공지사항">📢 공지</button>
-                                    <button className="help-btn" onClick={handleShowHelp} title="도움말">❓ 도움말</button>
-                                </>
+                                <button className="help-btn" onClick={handleShowHelp} title="도움말">❓ 도움말</button>
                             )}
                             <button className="logout-btn" onClick={handleLogout}>로그아웃</button>
                         </>
@@ -334,7 +407,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             />
             <NoticeModal
                 isOpen={showNoticeModal}
-                onClose={() => setShowNoticeModal(false)}
+                onClose={handleNoticeModalClose}
             />
         </div>
     );

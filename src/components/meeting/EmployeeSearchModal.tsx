@@ -32,7 +32,7 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
             const employees = await employeeService.getEmployees(params);
             // 현재 사용자와 employee_id가 'admin'인 경우 제외
             const filteredEmployees = employees.filter(emp => {
-                if (currentUserId && emp.id === currentUserId) return false;
+                if (currentUserId && emp.emp_id === currentUserId) return false;
                 if (emp.employee_id === 'admin') return false;
                 return true;
             });
@@ -50,17 +50,17 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
     }, []);
 
     useEffect(() => {
-        // initialSelected가 EmployeeSimple[]인 경우 id만으로 매칭
-        // results에서 해당 id를 찾아 Employee[]로 변환
-        const initialIds = initialSelected.map(emp => emp.id);
-        const matchedEmployees = results.filter(emp => initialIds.includes(emp.id));
+        // initialSelected가 EmployeeSimple[]인 경우 emp_id만으로 매칭
+        // results에서 해당 emp_id를 찾아 Employee[]로 변환
+        const initialIds = initialSelected.map(emp => emp.emp_id); // Employee도 emp_id를 가짐
+        const matchedEmployees = results.filter(emp => initialIds.includes(emp.emp_id));
         setSelected(matchedEmployees);
     }, [initialSelected, results]);
 
     const handleCheckboxChange = (employee: Employee) => {
         setSelected(prev => {
-            if (prev.some(e => e.id === employee.id)) {
-                return prev.filter(e => e.id !== employee.id);
+            if (prev.some(e => e.emp_id === employee.emp_id)) {
+                return prev.filter(e => e.emp_id !== employee.emp_id);
             } else {
                 return [...prev, employee];
             }
@@ -76,16 +76,16 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
     const handleSelectAll = () => {
         if (results.length === 0) return;
 
-        const allSelected = results.every(emp => selected.some(s => s.id === emp.id));
+        const allSelected = results.every(emp => selected.some(s => s.emp_id === emp.emp_id));
 
         if (allSelected) {
             // 전체 해제: 현재 결과에 있는 항목들을 selected에서 제거
-            setSelected(prev => prev.filter(s => !results.some(r => r.id === s.id)));
+            setSelected(prev => prev.filter(s => !results.some(r => r.emp_id === s.emp_id)));
         } else {
             // 전체 선택: 현재 결과 항목들을 selected에 추가 (중복 방지)
             const newSelected = [...selected];
             results.forEach(emp => {
-                if (!newSelected.some(s => s.id === emp.id)) {
+                if (!newSelected.some(s => s.emp_id === emp.emp_id)) {
                     newSelected.push(emp);
                 }
             });
@@ -94,7 +94,7 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
     };
 
     // 전체 선택 상태 여부
-    const isAllSelected = results.length > 0 && results.every(emp => selected.some(s => s.id === emp.id));
+    const isAllSelected = results.length > 0 && results.every(emp => selected.some(s => s.emp_id === emp.emp_id));
 
     // 부서명 표시 헬퍼 함수
     const getDeptString = (emp: Employee) => {
@@ -215,11 +215,11 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
                             <tbody>
                             {sortedResults.length > 0 ? (
                                 sortedResults.map(emp => (
-                                    <tr key={emp.id}>
+                                    <tr key={emp.emp_id}>
                                         <td style={{ textAlign: 'center' }}>
                                             <input
                                                 type="checkbox"
-                                                checked={selected.some(e => e.id === emp.id)}
+                                                checked={selected.some(e => e.emp_id === emp.emp_id)}
                                                 onChange={() => handleCheckboxChange(emp)}
                                                 className="meeting-minutes-checkbox"
                                             />

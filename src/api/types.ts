@@ -80,46 +80,125 @@ export interface CompanySearchParams {
 }
 
 export interface Department {
-    id: number;
-    name: string;
+    id?: number;           // 일부 화면에서 사용
+    name?: string;         // 일부 화면에서 사용
+    dept_id: number;
+    dept_name: string;
+    dept_code: string | null; // null 허용, undefined 불허
+    description: string | null; // null 허용, undefined 불허
+    parent_dept_id: number | null; // null 허용, undefined 불허
+    manager_emp_id: number | null; // null 허용, undefined 불허
+    sort_order: number | null; // null 허용, undefined 불허
+    is_active?: boolean;
+    created_at?: string;
+    updated_at?: string;
+    employee_count: number; // number | null; // API 스키마에 따라 유동적
+    manager_name?: string;
 }
 
+// ✅ 부서 관리용 상세 타입 (Department와 동일)
+export type DepartmentFull = Department;
+
+export interface DepartmentCreate {
+    dept_name: string;
+    dept_code: string | null; // null 허용, undefined 불허
+    description: string | null; // null 허용, undefined 불허
+    parent_dept_id: number | null; // null 허용, undefined 불허
+    manager_emp_id: number | null; // null 허용, undefined 불허
+    sort_order: number | null; // null 허용, undefined 불허
+}
+
+export interface DepartmentUpdate {
+    dept_name?: string;
+    dept_code: string | null; // null 허용, undefined 불허
+    description: string | null; // null 허용, undefined 불허
+    parent_dept_id: number | null; // null 허용, undefined 불허
+    manager_emp_id: number | null; // null 허용, undefined 불허
+    sort_order: number | null; // null 허용, undefined 불허
+    is_active?: boolean;
+}
+
+export interface DepartmentEmployee {
+    emp_id: number;
+    id: string;
+    name: string;
+    team?: string;
+    title?: string;
+    position?: string;
+    email?: string;
+    is_active: boolean;
+}
+
+export interface DepartmentEmployeesResponse {
+    dept_id: number;
+    dept_name: string;
+    employees: DepartmentEmployee[];
+}
+
+
 export interface EmployeeSimple { // ✅ 새로운 인터페이스
-    id: number;
+    emp_id: number;
     name: string;
 }
 
 export interface Employee { // ✅ 복구
-    id: number;
+    emp_id: number;  // 기본키 (DB emp_id)
+    id: string;      // 로그인 ID (DB id)
     employee_id: string;
     name: string;
     department?: Department; // ✅ Department 객체 타입으로 복구
     division?: string;
     team?: string;
     position?: string;
+    title?: string;      // 직급
     email?: string;
     phone?: string;
+    mobile?: string;     // 휴대폰
     hire_date?: string;
     birth_date?: string;
+    birth?: string;      // 생년월일 (YYYYMMDD)
     address?: string;
     status: 'active' | 'inactive' | 'terminated';
+    is_active?: boolean; // 재직 상태
     created_at: string;
     updated_at: string;
     role?: Role;
 }
 
 export interface EmployeeCreate {
-    employee_id: string;
+    id?: string;           // 사번/로그인 ID
+    pw?: string;           // 비밀번호
+    employee_id?: string;  // 사원번호 (optional)
     name: string;
     department_id?: number;
+    division?: string;
+    team?: string;
     position?: string;
+    title?: string;
     email?: string;
     phone?: string;
+    mobile?: string;
     hire_date?: string;
     birth_date?: string;
+    birth?: string;
     address?: string;
-    status: 'active' | 'inactive' | 'terminated';
+    status?: 'active' | 'inactive' | 'terminated';
+    is_active?: boolean;
 }
+
+export interface EmployeeUpdate {
+    name?: string;
+    division?: string;
+    team?: string;
+    position?: string;
+    title?: string;
+    email?: string;
+    mobile?: string;
+    birth?: string;
+    role_id?: number;
+    is_active?: boolean;
+}
+
 
 export interface Project {
     id: number;

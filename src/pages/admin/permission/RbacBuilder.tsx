@@ -32,10 +32,17 @@ interface PermissionFormData {
     parentId: string; // For Sections/Actions, the Page ID
 }
 
-// 모든 메뉴 항목을 병합 (개발 메뉴 포함)
+// RBAC에서 권한 대상이 되는 메뉴만 병합 (권한이 없는 상위 컨테이너는 제외)
+const flattenMenusWithPermission = (menus: NavMenuItem[]): (NavMenuItem | NavSubMenuItem)[] =>
+    menus.flatMap(item => {
+        const subMenus = item.subMenus ?? [];
+        const eligible = item.permission ? [item] : [];
+        return [...eligible, ...subMenus.filter(sub => sub.permission)];
+    });
+
 const ALL_MENUS_FOR_RBAC: (NavMenuItem | NavSubMenuItem)[] = [
-    ...baseMainMenuItems.flatMap(item => item.subMenus ? [item, ...item.subMenus] : [item]),
-    ...devMenuItems.flatMap(item => item.subMenus ? [item, ...item.subMenus] : [item]),
+    ...flattenMenusWithPermission(baseMainMenuItems),
+    ...flattenMenusWithPermission(devMenuItems),
 ];
 
 // Flatten menu for easy lookup (모든 메뉴 포함)
@@ -334,10 +341,10 @@ const RbacBuilder: React.FC = () => {
             setPendingPermissionIds(new Set(finalPermissionIds)); // Save state
 
             // 2. Save Employees (Diffing)
-            const currentIds = new Set(assignedEmployees.map(e => e.id));
-            const initialIds = new Set(initialAssignedEmployees.map(e => e.id));
-            const toAdd = assignedEmployees.filter(e => !initialIds.has(e.id)).map(e => e.id);
-            const toRemove = initialAssignedEmployees.filter(e => !currentIds.has(e.id)).map(e => e.id);
+            const currentIds = new Set(assignedEmployees.map(e => e.emp_id)); // emp_id 사용
+            const initialIds = new Set(initialAssignedEmployees.map(e => e.emp_id)); // emp_id 사용
+            const toAdd = assignedEmployees.filter(e => !initialIds.has(e.emp_id)).map(e => e.emp_id);
+            const toRemove = initialAssignedEmployees.filter(e => !currentIds.has(e.emp_id)).map(e => e.emp_id);
 
             if (toAdd.length > 0) await roleService.assignRoleToEmployeesBatch(selectedRole.role_id, toAdd);
             
@@ -418,8 +425,8 @@ const RbacBuilder: React.FC = () => {
         if (permissionsChanged) return true;
 
         // 2. Check Employee Changes
-        const originalEmpIds = new Set(initialAssignedEmployees.map(e => e.id));
-        const currentEmpIds = new Set(assignedEmployees.map(e => e.id));
+        const originalEmpIds = new Set(initialAssignedEmployees.map(e => e.emp_id)); // emp_id 사용
+        const currentEmpIds = new Set(assignedEmployees.map(e => e.emp_id)); // emp_id 사용
         
         if (originalEmpIds.size !== currentEmpIds.size) return true;
         for (const id of originalEmpIds) {
@@ -508,7 +515,7 @@ const RbacBuilder: React.FC = () => {
     };
 
     const handleRemoveEmployee = (empId: number) => {
-        setAssignedEmployees(prev => prev.filter(e => e.id !== empId));
+        setAssignedEmployees(prev => prev.filter(e => e.emp_id !== empId));
     };
 
     return (
@@ -737,7 +744,7 @@ const RbacBuilder: React.FC = () => {
                                                             <span>
                                                                 {emp.name} | {emp.position || '-'} | {deptInfo || '-'}
                                                             </span>
-                                                            <button onClick={() => handleRemoveEmployee(emp.id)}>×</button>
+                                                            <button onClick={() => handleRemoveEmployee(emp.emp_id)}>×</button>
                                                         </div>
                                                     );
                                                 })}
@@ -828,8 +835,8 @@ const RbacBuilder: React.FC = () => {
                     onClose={() => setIsEmployeeModalOpen(false)}
                     onSelect={(emps) => {
                         setAssignedEmployees(prev => {
-                            const existing = new Set(prev.map(e => e.id));
-                            const newEmps = emps.filter(e => !existing.has(e.id));
+                            const existing = new Set(prev.map(e => e.emp_id)); // emp_id 사용
+                            const newEmps = emps.filter(e => !existing.has(e.emp_id)); // emp_id 사용
                             return [...prev, ...newEmps];
                         });
                         setIsEmployeeModalOpen(false);
