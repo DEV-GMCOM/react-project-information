@@ -25,51 +25,6 @@
     color: #333;
 }
 
-.notice-tabs {
-    display: flex;
-    gap: 0;
-}
-
-.notice-tab {
-    padding: 8px 24px;
-    font-size: 16px;
-    font-weight: 600;
-    border: none;
-    background: transparent;
-    color: #999;
-    cursor: pointer;
-    position: relative;
-    transition: color 0.2s;
-}
-
-.notice-tab:hover {
-    color: #666;
-}
-
-.notice-tab.active {
-    color: #1890ff;
-}
-
-.notice-tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background-color: #1890ff;
-    border-radius: 2px 2px 0 0;
-}
-
-.notice-item.notification {
-    border-left-color: #52c41a;
-}
-
-.notice-item.notification.read {
-    opacity: 0.7;
-    border-left-color: #d9d9d9;
-}
-
 .notice-close-btn {
     background: none;
     border: none;
