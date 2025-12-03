@@ -140,6 +140,19 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, previewNotic
         }
     };
 
+    const getNotificationEmoji = (type: string) => {
+        switch (type) {
+            case 'stt': return '🎙️'; // STT 변환 완료
+            case 'stt-llm': return '📝'; // STT-LLM 요약/분석
+            case 'approval-hr': return '✅'; // 인사 관련 승인/반려
+            case 'approval-finance': return '💰'; // 재무 관련 승인/반려
+            case 'meeting-assign': return '🤝'; // 회의 배정/초대
+            case 'system': return '⚙️'; // 시스템 일반 알림
+            default: return '💬'; // 기본 알림
+        }
+    };
+
+
     if (!isOpen) return null;
 
     // 미리보기 모드일 경우 렌더링
@@ -297,7 +310,7 @@ const NoticeModal: React.FC<NoticeModalProps> = ({ isOpen, onClose, previewNotic
                                                                                 className={`notification-item ${!noti.isRead ? 'unread' : ''}`}
                                                                             >
                                                                                 <div className="notification-icon">
-                                                                                    {noti.notice_type === 'stt' ? '🎙️' : '📢'}
+                                                                                    {getNotificationEmoji(noti.notice_type)}
                                                                                 </div>
                                                                                 <div className="notification-content-wrapper">
                                                                                     <h4 className="notification-title">{noti.title}</h4>
