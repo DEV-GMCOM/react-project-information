@@ -47,6 +47,18 @@ export const baseMainMenuItems: NavMenuItem[] = [
     { path: '/project-postmortem', name: '프로젝트 결과분석', icon: '📊', permission: 'page:project-postmortem' },
     { path: '/working/meeting-minutes', name: '자동 회의록', icon: '🗒️', permission: 'page:working_meeting-minutes' },
     {
+        path: '/operations',
+        name: '운영관리',
+        icon: '🛠️',
+        // permission: 'page:operations', // Parent 메뉴는 권한 체크 없음
+        subMenus: [
+            { path: '/operations/notices', name: '공지 관리', permission: 'page:operations_notices' },
+            { path: '/hr/employee-management', name: '직원정보 관리', permission: 'page:hr_employee-management' },
+            { path: '/working/fms', name: 'GMCOM 저장소', permission: 'page:working_fms' },
+            { path: '/sales/schedule', name: '영업 스케쥴 관리', permission: 'page:sales_schedule' }
+        ]
+    },
+    {
         path: '/admin/permission',
         name: '권한 관리',
         icon: '🚫️',
@@ -58,17 +70,13 @@ export const devMenuItems: NavMenuItem[] = [
     { path: '/dashboard', name: '대시보드', icon: '📊', permission: 'page:dashboard' },
     { path: '/enterprise-documents', name: '전사 문서', icon: '📚', permission: 'page:enterprise-documents' },
     {
-        path: '/operations',
-        name: '운영관리',
+        path: '/operations-dev', // Key 중복 방지 및 구분
+        name: '운영관리 (Dev)',
         icon: '🛠️',
         subMenus: [
-            { path: '/operations/notices', name: '공지 관리', permission: 'page:operations_notices' },
             { path: '/operations/logs', name: '로그 확인', permission: 'page:operations_logs' },
-            { path: '/hr/employee-management', name: '직원정보 관리', permission: 'page:hr_employee-management' },
             { path: '/operations/documents', name: '전사문서 관리', permission: 'page:operations_documents' },
-            { path: '/working/fms', name: 'GMCOM 저장소', permission: 'page:working_fms' },
-            { path: '/working/clock-in-out', name: '출퇴근 체크', permission: 'page:working_clock-in-out' },
-            { path: '/sales/schedule', name: '영업 스케쥴 관리', permission: 'page:sales_schedule' }
+            { path: '/working/clock-in-out', name: '출퇴근 체크', permission: 'page:working_clock-in-out' }
         ]
     },
     { path: '/working/pt-script', name: 'PT 스크립트 생성', icon: '📝', permission: 'page:working_pt-script' },
