@@ -273,6 +273,241 @@ export interface DashboardStats {
     };
 }
 
+// ============ 프로젝트 대시보드 타입 ============
+
+// 기간 유형
+export type ProjectPeriodType =
+    | 'yearly'          // 년간
+    | 'half_year'       // 반기
+    | 'quarterly'       // 분기
+    | 'monthly'         // 월간 (매월 1일~말일)
+    | 'weekly'          // 주간
+    | 'recent_30_days'  // 최근 30일
+    | 'custom';         // 사용자 지정 (특정 구간)
+
+export const PROJECT_PERIOD_LABELS: Record<ProjectPeriodType, string> = {
+    yearly: '년간',
+    half_year: '반기',
+    quarterly: '분기',
+    monthly: '월간',
+    weekly: '주간',
+    recent_30_days: '최근 30일',
+    custom: '사용자 지정'
+};
+
+// 프로젝트 상태
+export type ProjectStatusType =
+    | 'lead'           // 리드/발굴
+    | 'proposal'       // 제안 준비
+    | 'ot_scheduled'   // OT 예정
+    | 'pt_scheduled'   // PT 예정
+    | 'submitted'      // 제출 완료
+    | 'won'            // 수주
+    | 'lost'           // 실주
+    | 'cancelled'      // 취소
+    | 'planning'       // 기획 중
+    | 'active'         // 진행 중
+    | 'completed';     // 완료
+
+export const PROJECT_STATUS_LABELS: Record<ProjectStatusType, string> = {
+    lead: '리드/발굴',
+    proposal: '제안 준비',
+    ot_scheduled: 'OT 예정',
+    pt_scheduled: 'PT 예정',
+    submitted: '제출 완료',
+    won: '수주',
+    lost: '실주',
+    cancelled: '취소',
+    planning: '기획 중',
+    active: '진행 중',
+    completed: '완료'
+};
+
+export const PROJECT_STATUS_COLORS: Record<ProjectStatusType, string> = {
+    lead: '#9CA3AF',
+    proposal: '#60A5FA',
+    ot_scheduled: '#FBBF24',
+    pt_scheduled: '#F97316',
+    submitted: '#8B5CF6',
+    won: '#10B981',
+    lost: '#EF4444',
+    cancelled: '#6B7280',
+    planning: '#3B82F6',
+    active: '#22C55E',
+    completed: '#14B8A6'
+};
+
+// 프로젝트 기본 정보
+export interface ProjectBasicInfo {
+    project_id: number;
+    project_name: string;
+    inflow_path?: string;          // 유입경로
+    client?: string;               // 발주처
+    manager?: string;              // 담당자
+    event_date?: string;           // 행사일
+    event_location?: string;       // 행사장소
+    attendees?: string;            // 참석대상
+    event_nature?: string;         // 행사성격
+    ot_schedule?: string;          // OT 일정
+    submission_schedule?: string;  // 제출 일정
+    pt_schedule?: string;          // PT 일정
+    budget?: string;               // 예산 (단위: 천만원)
+    bid_amount?: string;           // 제출/투찰 금액
+    expected_competitors?: string; // 예상 경쟁사
+    score_table?: string;          // 배점표
+    status: string;
+    status_label?: string;
+    created_at?: string;
+    company_name?: string;
+    writer_name?: string;
+}
+
+// 상태별 카운트
+export interface StatusCount {
+    status: string;
+    status_label: string;
+    count: number;
+    percentage: number;
+}
+
+// 기간별 통계
+export interface PeriodStats {
+    period_type: string;
+    period_label: string;
+    start_date: string;
+    end_date: string;
+    total_projects: number;
+    total_budget: string;
+    total_bid_amount: string;
+    status_breakdown: StatusCount[];
+}
+
+// 월별 프로젝트
+export interface MonthlyProject {
+    month: number;
+    month_label: string;
+    project_count: number;
+    projects: ProjectBasicInfo[];
+}
+
+// 금액 통계
+export interface AmountStats {
+    total_contract_amount: string;
+    total_bid_amount: string;
+    avg_contract_amount: string;
+    max_contract_amount: string;
+    min_contract_amount: string;
+    total_contract_amount_raw?: number;
+    total_bid_amount_raw?: number;
+}
+
+// 프로젝트 대시보드 메인 통계
+export interface ProjectDashboardStats {
+    total_projects: number;
+    total_budget: string;
+    active_projects: number;
+    won_projects: number;
+    lost_projects: number;
+    win_rate: number;
+    active_percentage?: number;
+    won_percentage?: number;
+    lost_percentage?: number;
+    amount_stats?: AmountStats;
+    status_distribution: StatusCount[];
+    period_stats?: PeriodStats;
+    monthly_projects: MonthlyProject[];
+}
+
+// 프로젝트 대시보드 필터
+export interface ProjectDashboardFilter {
+    period_type: ProjectPeriodType;
+    year?: number;
+    month?: number;
+    quarter?: number;
+    half_year?: number;
+    start_date?: string;
+    end_date?: string;
+    status?: string;
+    client?: string;
+    manager?: string;
+    search?: string;
+}
+
+// 프로젝트 목록 응답
+export interface ProjectListResponse {
+    period_label: string;
+    total_count: number;
+    items: ProjectBasicInfo[];
+}
+
+// 프로젝트 상태 변경 요청
+export interface ProjectStatusUpdateRequest {
+    project_id: number;
+    new_status: string;
+    note?: string;
+}
+
+// 프로젝트 상태 변경 응답
+export interface ProjectStatusUpdateResponse {
+    project_id: number;
+    old_status: string;
+    new_status: string;
+    updated_at: string;
+    updated_by?: string;
+}
+
+// 프로젝트 트리 노드
+export interface ProjectTreeNode {
+    id: string;
+    label: string;
+    type: 'year' | 'quarter' | 'month' | 'project';
+    children?: ProjectTreeNode[];
+    data?: ProjectBasicInfo;
+    count?: number;
+}
+
+// 프로젝트 계층 구조
+export interface ProjectHierarchy {
+    year: number;
+    tree: ProjectTreeNode[];
+    total_count: number;
+}
+
+// 점유율
+export interface OccupancyRate {
+    category: string;
+    label: string;
+    value: number;
+    total: number;
+    percentage: number;
+}
+
+// 점유율 데이터
+export interface OccupancyData {
+    period_label: string;
+    total: number;
+    by_status: OccupancyRate[];
+    by_client: OccupancyRate[];
+    by_inflow_path: OccupancyRate[];
+    by_manager?: OccupancyRate[];
+}
+
+// 일별 추이
+export interface DailyTrend {
+    date: string;
+    count: number;
+}
+
+// 최근 30일 통계
+export interface Recent30DaysStats {
+    period: string;
+    total_new_projects: number;
+    status_breakdown: StatusCount[];
+    daily_trend: DailyTrend[];
+}
+
+// ============ 프로젝트 대시보드 타입 끝 ============
+
 // 💡 [추가] ProjectKickoff 타입을 아래 내용으로 추가합니다.
 export interface ProjectKickoff {
     id?: number;

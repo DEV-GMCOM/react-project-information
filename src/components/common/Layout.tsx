@@ -67,7 +67,15 @@ export const baseMainMenuItems: NavMenuItem[] = [
 ];
 
 export const devMenuItems: NavMenuItem[] = [
-    { path: '/dashboard', name: '대시보드', icon: '📊', permission: 'page:dashboard' },
+    {
+        path: '/dashboard',
+        name: '대시보드',
+        icon: '📊',
+        subMenus: [
+            { path: '/dashboard', name: '기본 대시보드' },
+            { path: '/dashboard/project', name: '프로젝트 대시보드' }
+        ]
+    },
     { path: '/enterprise-documents', name: '전사 문서', icon: '📚', permission: 'page:enterprise-documents' },
     {
         path: '/operations-dev', // Key 중복 방지 및 구분

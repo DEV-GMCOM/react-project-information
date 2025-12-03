@@ -10,6 +10,7 @@ import ChangePassword from './pages/auth/ChangePassword';
 
 // Pages
 import Dashboard from './pages/Dashboard';
+import ProjectDashboard from './pages/dashboard/ProjectDashboard';
 import CompanyList from './pages/company/CompanyList';
 import CompanyForm from './pages/company/CompanyForm';
 import CompanyRegistForm from './pages/company/CompanyRegistForm';
@@ -73,6 +74,7 @@ function App() {
 
                 {/* Dashboard */}
                 <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+                <Route path="/dashboard/project" element={<ProtectedRoute><Layout><ProjectDashboard /></Layout></ProtectedRoute>} />
 
                 {/* Profile */}
                 <Route path="/profile/change-password" element={<ProtectedRoute><Layout><ChangePassword /></Layout></ProtectedRoute>} />
