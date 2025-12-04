@@ -59,6 +59,11 @@ export class ProjectService {
         const response = await apiClient.get('/project-calendar/advertisers');
         return response.data;
     }
+
+    async getProjectCalendarYears(): Promise<number[]> {
+        const response = await apiClient.get('/project-calendar/years');
+        return response.data;
+    }
 }
 
 // 인스턴스 export (중요!)

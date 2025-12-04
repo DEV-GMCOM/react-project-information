@@ -56,77 +56,145 @@
     color: #333;
 }
 
-.year-sector {
-    margin-bottom: 30px;
+/* --- New Calendar Year View Styles --- */
+
+.calendar-year-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4 columns for 12 months */
+    gap: 15px;
+    margin-bottom: 40px;
 }
 
-.year-header {
-    font-size: 20px;
-    font-weight: bold;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #007bff;
-    margin-bottom: 15px;
-    color: #007bff;
+.calendar-month-card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px; /* Fixed height for uniformity */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: box-shadow 0.2s ease;
 }
 
-.sales-schedule-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-    font-size: 13px;
-    table-layout: fixed;
+.calendar-month-card:hover {
+    box-shadow: 0 5px 10px rgba(0,0,0,0.1);
 }
 
-.sales-schedule-table th,
-.sales-schedule-table td {
-    border: 1px solid #eee;
-    padding: 10px 12px;
-    text-align: left;
-    vertical-align: middle;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* 월 단위 시작 행의 상단 테두리를 두껍게 */
-.sales-schedule-table .month-start-row {
-    border-top: 2px solid #999; /* 두껍고 약간 어두운 테두리 */
-}
-
-/* 첫 번째 행은 항상 두꺼운 테두리를 갖도록 */
-.sales-schedule-table tbody tr:first-child {
-    border-top: 2px solid #999;
-}
-
-.sales-schedule-table th {
+.calendar-month-header {
     background-color: #f8f9fa;
-    font-weight: 600;
-    white-space: normal;
-}
-
-.sales-schedule-table tbody tr:hover {
-    background-color: #f0f8ff;
-}
-
-.no-results {
+    padding: 10px 15px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    border-bottom: 1px solid #e0e0e0;
+    border-radius: 8px 8px 0 0;
     text-align: center;
-    color: #888;
-    padding: 20px;
-    font-style: italic;
 }
 
-/* Common button styles if needed, from FormPage.css or similar */
-.btn-primary {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 8px 16px;
+.calendar-month-body {
+    padding: 10px;
+    flex: 1;
+    overflow-y: auto; /* Allow scrolling if too many events */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+}
+
+.calendar-event-item {
+    background-color: #fff;
+    border: 1px solid #eee;
     border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.2s;
+    padding: 8px;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-left-width: 10px; /* Color indicator on left */
+    border-left-style: solid;
+    transition: transform 0.1s;
 }
 
-.btn-primary:hover {
-    background-color: #0056b3;
+.calendar-event-item:hover {
+    transform: translateX(2px);
+    background-color: #fafafa;
 }
+
+.calendar-event-title {
+    font-weight: bold;
+    color: #333;
+    line-height: 1.2;
+}
+
+.calendar-event-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: #666;
+    font-size: 11px;
+}
+
+.calendar-event-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.no-events-placeholder {
+    color: #ccc;
+    text-align: center;
+    margin-top: 20px;
+    font-size: 12px;
+}
+
+/* Common styles */
+.loading, .error, .no-results {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.error {
+    color: #dc3545;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1024px) {
+    .calendar-year-container {
+        grid-template-columns: repeat(3, 1fr); /* 3 cols on tablet */
+    }
+}
+
+@media (max-width: 768px) {
+    .calendar-year-container {
+        grid-template-columns: repeat(2, 1fr); /* 2 cols on smaller screens */
+    }
+}
+
+@media (max-width: 480px) {
+    .calendar-year-container {
+        grid-template-columns: 1fr; /* 1 col on mobile */
+    }
+}
+
+/* Spinner Styles */
+.spinner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 150px; /* or whatever height is appropriate */
+}
+
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-left-color: #007bff; /* Primary color for spinner */
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
