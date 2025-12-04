@@ -1,5 +1,6 @@
 // src/components/meeting/EmployeeSearchModal.tsx
 import React, { useState, useEffect, useMemo } from 'react';
+import { Checkbox } from '@mui/material';
 import { Employee, EmployeeSimple } from '../../api/types';
 import { employeeService } from '../../api/services/employeeService';
 import '../../styles/modal.css';
@@ -184,22 +185,24 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
                 {/* 리스트 영역: 스크롤 가능 */}
                 <div className="modal-body" style={{ padding: '0 24px 20px', flexGrow: 1, overflowY: 'auto' }}>
                     {loading ? (
-                        <div className="loading" style={{ textAlign: 'center', padding: '20px' }}>검색 중...</div>
+                        <div className="spinner-container">
+                            <div className="spinner"></div>
+                        </div>
                     ) : (
                         <table className="search-table" style={{ width: '100%' }}>
                             <thead style={{ position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1 }}>
                             <tr>
                                 <th style={{ width: '50px', textAlign: 'center' }}>
-                                    <input
-                                        type="checkbox"
+                                    <Checkbox
                                         checked={isAllSelected}
                                         onChange={handleSelectAll}
-                                        className="meeting-minutes-checkbox"
+                                        size="small"
+                                        style={{ padding: 0 }}
                                     />
                                 </th>
                                 <th
                                     onClick={() => handleSort('name')}
-                                    style={{ cursor: 'pointer', userSelect: 'none', width: '5rem' }}
+                                    style={{ cursor: 'pointer', userSelect: 'none', width: '10rem', textAlign: 'center' }}
                                 >
                                     이름 {renderSortIcon('name')}
                                 </th>
@@ -214,21 +217,24 @@ const EmployeeSearchModal: React.FC<EmployeeSearchModalProps> = ({ onClose, onSe
                             </thead>
                             <tbody>
                             {sortedResults.length > 0 ? (
-                                sortedResults.map(emp => (
-                                    <tr key={emp.emp_id}>
-                                        <td style={{ textAlign: 'center' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={selected.some(e => e.emp_id === emp.emp_id)}
-                                                onChange={() => handleCheckboxChange(emp)}
-                                                className="meeting-minutes-checkbox"
-                                            />
-                                        </td>
-                                        <td style={{ textAlign: 'center' }}>{emp.name}</td>
-                                        <td>{getDeptString(emp)}</td>
-                                        <td>{emp.position || '-'}</td>
-                                    </tr>
-                                ))
+                                sortedResults.map(emp => {
+                                    const isSelected = selected.some(e => e.emp_id === emp.emp_id);
+                                    return (
+                                        <tr key={emp.emp_id} style={{ backgroundColor: isSelected ? '#f0f9ff' : 'inherit' }}>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <Checkbox
+                                                    checked={isSelected}
+                                                    onChange={() => handleCheckboxChange(emp)}
+                                                    size="small"
+                                                    style={{ padding: 0 }}
+                                                />
+                                            </td>
+                                            <td style={{ textAlign: 'center' }}>{emp.name}</td>
+                                            <td>{getDeptString(emp)}</td>
+                                            <td>{emp.position || '-'}</td>
+                                        </tr>
+                                    );
+                                })
                             ) : (
                                 <tr>
                                     <td colSpan={4} className="no-results" style={{ textAlign: 'center', padding: '20px' }}>검색 결과가 없습니다.</td>

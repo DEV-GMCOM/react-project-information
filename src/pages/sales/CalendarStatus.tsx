@@ -1,8 +1,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
+import GMComLoading from '../../components/common/GMComLoading';
 import { projectService } from '../../api/services/projectService';
 import { ProjectCalendarEntry } from '../../api/types';
+import NotificationBundleModal from '../../components/sales/NotificationBundleModal';
 import '../../styles/SalesSchedule.css';
+import '../../styles/ContextMenu.css';
 
 const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to CalendarStatus
 
@@ -25,6 +28,10 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
         y: 0,
         entry: null
     });
+    const [isBundleModalOpen, setIsBundleModalOpen] = useState(false);
+
+
+    // Fetch initial data (advertisers and years) on component mount
 
     // Fetch initial data (advertisers and years) on component mount
     useEffect(() => {
@@ -121,10 +128,8 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
         });
     };
 
-    const handleContextMenuAction = (action: 'register' | 'detail') => {
-        if (!contextMenu.entry) return;
-        // 추후 실제 동작 연동 지점을 여기서 처리
-        console.info(`[context] ${action} for`, contextMenu.entry);
+    const handleRegisterClick = () => {
+        setIsBundleModalOpen(true);
         closeContextMenu();
     };
 
@@ -307,19 +312,23 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
                     <button
                         type="button"
                         className="context-menu-item"
-                        onClick={() => handleContextMenuAction('register')}
+                        onClick={handleRegisterClick}
                     >
                         스케쥴에 등록하기
                     </button>
-                    <button
-                        type="button"
-                        className="context-menu-item"
-                        onClick={() => handleContextMenuAction('detail')}
-                    >
-                        상세내용 확인하기
-                    </button>
                 </div>
             )}
+            
+            <NotificationBundleModal
+                isOpen={isBundleModalOpen}
+                onRequestClose={() => {
+                    setIsBundleModalOpen(false);
+                }}
+                selectedEntry={contextMenu.entry || null}
+                onSuccess={() => {
+                    setIsBundleModalOpen(false);
+                }}
+            />
         </div>
     );
 };

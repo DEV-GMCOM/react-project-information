@@ -213,27 +213,46 @@
     }
 }
 
-/* Spinner Styles */
-.spinner-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 150px; /* or whatever height is appropriate */
+/* Badge Styles */
+.badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-right: 4px;
+    display: inline-block;
 }
 
-.spinner {
-    border: 4px solid rgba(0, 0, 0, 0.1);
-    border-left-color: #007bff; /* Primary color for spinner */
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    animation: spin 1s linear infinite;
+.channel-email {
+    background-color: #e3f2fd;
+    color: #0d47a1;
+    border: 1px solid #bbdefb;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+.channel-jandi {
+    background-color: #e8f5e9;
+    color: #1b5e20;
+    border: 1px solid #c8e6c9;
 }
+
+.priority-high {
+    background-color: #ffebee;
+    color: #b71c1c;
+    border: 1px solid #ffcdd2;
+}
+
+.priority-medium {
+    background-color: #fff3e0;
+    color: #e65100;
+    border: 1px solid #ffe0b2;
+}
+
+.priority-low {
+    background-color: #f3e5f5;
+    color: #4a148c;
+    border: 1px solid #e1bee7;
+}
+
 
 .context-menu {
     position: fixed;

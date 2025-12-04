@@ -609,13 +609,6 @@ const RbacBuilder: React.FC = () => {
                 <div className="permission-content">
                     <div className="content-header">
                         <h2>{selectedRole ? `${selectedRole.role_name} 권한 설정` : '역할을 선택해주세요'}</h2>
-                        {selectedRole && (
-                            <div className="header-actions">
-                                <button className="btn-primary" onClick={handleSaveAssignments} disabled={!hasUnsavedChanges || isSavingAssignments}>
-                                    {isSavingAssignments ? '저장 중...' : '변경사항 저장'}
-                                </button>
-                            </div>
-                        )}
                     </div>
 
                     {selectedRole ? (
@@ -771,6 +764,18 @@ const RbacBuilder: React.FC = () => {
                                         )}
                                     </>
                                 )}
+                            </div>
+
+                            {/* Bottom Actions */}
+                            <div className="bottom-actions" style={{ marginTop: '20px', padding: '20px 0', borderTop: '1px solid #eee', textAlign: 'right' }}>
+                                <button 
+                                    className="btn-primary" 
+                                    onClick={handleSaveAssignments} 
+                                    disabled={!hasUnsavedChanges || isSavingAssignments}
+                                    style={{ padding: '12px 24px', fontSize: '1.1em' }}
+                                >
+                                    {isSavingAssignments ? '저장 중...' : '변경사항 저장'}
+                                </button>
                             </div>
 
                         </div>

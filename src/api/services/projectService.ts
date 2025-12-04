@@ -1,6 +1,6 @@
 // src/api/services/projectService.ts
 import { apiClient } from '../utils/apiClient';
-import { Project, ProjectCalendarEntry } from '../types';
+import { Project, ProjectCalendarEntry, ProjectCalendarBundle, ProjectCalendarBundleCreateRequest } from '../types';
 
 export class ProjectService {
     async getProjects(params?: {
@@ -11,6 +11,22 @@ export class ProjectService {
         company_id?: number;
     }): Promise<Project[]> { // Changed from Paginated<Project> to Project[] assuming backend returns array
         const response = await apiClient.get('/projects/', { params });
+        return response.data;
+    }
+    
+    // ... existing methods ...
+
+    async getProjectCalendarBundles(params?: { year?: number | ''; month?: number | '' }): Promise<ProjectCalendarBundle[]> {
+        const queryParams: any = {};
+        if (params?.year) queryParams.year = params.year;
+        if (params?.month) queryParams.month = params.month;
+        
+        const response = await apiClient.get('/project-calendar/bundles', { params: queryParams });
+        return response.data;
+    }
+
+    async createProjectCalendarBundle(data: ProjectCalendarBundleCreateRequest): Promise<any> {
+        const response = await apiClient.post('/project-calendar/bundles', data);
         return response.data;
     }
 

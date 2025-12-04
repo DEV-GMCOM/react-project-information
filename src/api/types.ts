@@ -243,6 +243,11 @@ export interface ProjectCalendarBundle {
     alarm_repeat_count?: number;
     channels: ProjectCalendarBundleChannel[];
     recipients: ProjectCalendarBundleRecipient[];
+    
+    // Flattened fields
+    event_name?: string;
+    advertiser?: string;
+    ot_date?: string;
 }
 
 export interface ProjectCalendarBundleChannel {
@@ -255,6 +260,19 @@ export interface ProjectCalendarBundleRecipient {
     id: number;
     bundle_id: number;
     emp_id: number;
+    employee_name?: string;
+    employee_department?: string;
+}
+
+export interface ProjectCalendarBundleCreateRequest {
+    project_calendar_event_ids: number[];
+    bundle_nickname?: string;
+    priority: 'low' | 'medium' | 'high';
+    alarm_start_at?: string;
+    alarm_interval_days?: number;
+    alarm_repeat_count?: number;
+    channels: ('email' | 'jandi')[];
+    recipient_emp_ids: number[];
 }
 
 export interface DashboardStats {

@@ -68,6 +68,28 @@
     flex: 1; /* 💡 이 한 줄을 추가합니다. */
 }
 
+/* Spinner Styles */
+.spinner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 150px; /* or whatever height is appropriate */
+}
+
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1) !important;
+    border-left-color: #007bff !important;
+    border-radius: 50% !important;
+    width: 30px !important;
+    height: 30px !important;
+    animation: spin 1s linear infinite !important;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 /* 버튼 스타일 */
 .btn-primary {
     background-color: #3b82f6;
