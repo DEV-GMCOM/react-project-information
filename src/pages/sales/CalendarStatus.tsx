@@ -17,6 +17,7 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [collapsedEntries, setCollapsedEntries] = useState<Set<number>>(new Set());
+    const [selectedProjectIds, setSelectedProjectIds] = useState<Set<number>>(new Set());
     const [contextMenu, setContextMenu] = useState<{
         visible: boolean;
         x: number;
@@ -29,9 +30,24 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
         entry: null
     });
     const [isBundleModalOpen, setIsBundleModalOpen] = useState(false);
+    const [modalSelectedEntries, setModalSelectedEntries] = useState<ProjectCalendarEntry[]>([]);
 
 
     // Fetch initial data (advertisers and years) on component mount
+    
+    const toggleProjectSelection = (eventId: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setSelectedProjectIds(prev => {
+            const next = new Set(prev);
+            if (next.has(eventId)) {
+                next.delete(eventId);
+            } else {
+                next.add(eventId);
+            }
+            return next;
+        });
+    };
+
 
     // Fetch initial data (advertisers and years) on component mount
     useEffect(() => {
@@ -113,11 +129,7 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
         };
     }, [closeContextMenu]);
 
-    const handleContextMenu = (event: React.MouseEvent, entry: ProjectCalendarEntry, isCollapsed: boolean) => {
-        if (!isCollapsed) {
-            closeContextMenu();
-            return;
-        }
+    const handleContextMenu = (event: React.MouseEvent, entry: ProjectCalendarEntry) => {
         event.preventDefault();
         event.stopPropagation();
         setContextMenu({
@@ -129,6 +141,18 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
     };
 
     const handleRegisterClick = () => {
+        if (!contextMenu.entry) return;
+
+        let entriesToRegister: ProjectCalendarEntry[] = [];
+        // If the right-clicked entry is part of the selection, include all selected entries
+        if (selectedProjectIds.has(contextMenu.entry.event_id)) {
+            entriesToRegister = calendarEntries.filter(e => selectedProjectIds.has(e.event_id));
+        } else {
+            // Otherwise, just the single right-clicked entry
+            entriesToRegister = [contextMenu.entry];
+        }
+        
+        setModalSelectedEntries(entriesToRegister);
         setIsBundleModalOpen(true);
         closeContextMenu();
     };
@@ -180,8 +204,10 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
                                             const formattedCellColor = entry.cell_color ? `#${entry.cell_color}` : 'transparent';
                                             // const badgeText = colorMeaningMap[entry.cell_color || ''] || ''; // Option to use badge text if needed
                                             const isCollapsed = collapsedEntries.has(entry.event_id);
+                                            const isSelected = selectedProjectIds.has(entry.event_id);
 
-                                            const toggleEntryCollapse = () => {
+                                            const toggleEntryCollapse = (e: React.MouseEvent) => {
+                                                e.stopPropagation();
                                                 setCollapsedEntries(prev => {
                                                     const next = new Set(prev);
                                                     if (next.has(entry.event_id)) {
@@ -196,23 +222,31 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
                                             return (
                                                 <div
                                                     key={entry.event_id}
-                                                    className={`calendar-event-item${isCollapsed ? ' collapsed' : ''}`}
-                                                    style={{ borderLeftColor: entry.cell_color ? formattedCellColor : '#ddd' }}
+                                                    className={`calendar-event-item${isCollapsed ? ' collapsed' : ''} ${isSelected ? 'selected' : ''}`}
+                                                    style={{ 
+                                                        borderLeftColor: entry.cell_color ? formattedCellColor : '#ddd',
+                                                        backgroundColor: isSelected ? '#e8f0fe' : undefined
+                                                    }}
                                                     role="button"
                                                     tabIndex={0}
                                                     aria-expanded={!isCollapsed}
-                                                    onClick={toggleEntryCollapse}
-                                                    onContextMenu={e => handleContextMenu(e, entry, isCollapsed)}
+                                                    onClick={(e) => toggleProjectSelection(entry.event_id, e)}
+                                                    onContextMenu={e => handleContextMenu(e, entry)}
                                                     onKeyDown={e => {
                                                         if (e.key === 'Enter' || e.key === ' ') {
                                                             e.preventDefault();
-                                                            toggleEntryCollapse();
+                                                            toggleProjectSelection(entry.event_id, e as any);
                                                         }
                                                     }}
                                                 >
                                                     <div className="calendar-event-top">
                                                         <div className="calendar-event-title">{entry.event_name}</div>
-                                                        <span className="calendar-event-chevron" aria-hidden="true">
+                                                        <span 
+                                                            className="calendar-event-chevron" 
+                                                            aria-hidden="true"
+                                                            onClick={toggleEntryCollapse}
+                                                            style={{ cursor: 'pointer', padding: '0 5px' }}
+                                                        >
                                                             {isCollapsed ? '▸' : '▾'}
                                                         </span>
                                                     </div>
@@ -323,10 +357,13 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
                 isOpen={isBundleModalOpen}
                 onRequestClose={() => {
                     setIsBundleModalOpen(false);
+                    setModalSelectedEntries([]);
                 }}
-                selectedEntry={contextMenu.entry || null}
+                selectedEntries={modalSelectedEntries}
                 onSuccess={() => {
                     setIsBundleModalOpen(false);
+                    setModalSelectedEntries([]);
+                    setSelectedProjectIds(new Set()); // Clear selection on success
                 }}
             />
         </div>

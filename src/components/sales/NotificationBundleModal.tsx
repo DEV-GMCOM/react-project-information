@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import DatePicker from 'react-datepicker';
+import { ko } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
 import { projectService } from '../../api/services/projectService';
 import { ProjectCalendarEntry, EmployeeSimple, ProjectCalendarBundleCreateRequest, Employee } from '../../api/types';
@@ -10,14 +11,14 @@ import '../../styles/NotificationBundleModal.css';
 interface NotificationBundleModalProps {
     isOpen: boolean;
     onRequestClose: () => void;
-    selectedEntry: ProjectCalendarEntry | null;
+    selectedEntries: ProjectCalendarEntry[];
     onSuccess: () => void;
 }
 
 const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
     isOpen,
     onRequestClose,
-    selectedEntry,
+    selectedEntries,
     onSuccess
 }) => {
     const [nickname, setNickname] = useState('');
@@ -31,12 +32,18 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
-        if (isOpen && selectedEntry) {
+        if (isOpen && selectedEntries.length > 0) {
             // Reset form
-            setNickname(`${selectedEntry.event_name} 알림`);
+            const firstEntry = selectedEntries[0];
+            if (selectedEntries.length === 1) {
+                setNickname(`${firstEntry.event_name} 알림`);
+            } else {
+                setNickname(`${firstEntry.event_name} 외 ${selectedEntries.length - 1}건 알림`);
+            }
+
             setPriority('medium');
-            if (selectedEntry.ot_date) {
-                setAlarmStartAt(selectedEntry.ot_date);
+            if (firstEntry.ot_date) {
+                setAlarmStartAt(firstEntry.ot_date);
             } else {
                 setAlarmStartAt('');
             }
@@ -45,7 +52,7 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
             setSelectedChannels(new Set(['email']));
             setRecipients([]);
         }
-    }, [isOpen, selectedEntry]);
+    }, [isOpen, selectedEntries]);
 
     const highlightDates = useMemo(() => {
         if (!alarmStartAt) return [];
@@ -77,7 +84,7 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedEntry) return;
+        if (selectedEntries.length === 0) return;
         if (selectedChannels.size === 0) {
             alert('적어도 하나의 알림 채널을 선택해주세요.');
             return;
@@ -86,7 +93,7 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
         setSubmitting(true);
         try {
             const requestData: ProjectCalendarBundleCreateRequest = {
-                project_calendar_event_ids: [selectedEntry.event_id],
+                project_calendar_event_ids: selectedEntries.map(e => e.event_id),
                 bundle_nickname: nickname,
                 priority,
                 alarm_start_at: alarmStartAt ? new Date(alarmStartAt).toISOString() : undefined,
@@ -118,9 +125,31 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                     <button onClick={onRequestClose} className="modal-close-button">&times;</button>
                 </div>
                 <div className="modal-body">
-                    {selectedEntry && (
-                        <div className="selected-projects-summary">
-                            <strong>선택된 프로젝트:</strong> {selectedEntry.event_name}
+                    {selectedEntries.length > 0 && (
+                        <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
+                            <div style={{ marginBottom: '10px', color: '#495057', fontWeight: 'bold' }}>
+                                선택된 프로젝트 ({selectedEntries.length}건)
+                            </div>
+                            <div className="project-list-scrollable" style={{ maxHeight: '200px', overflowY: 'scroll', border: '1px solid #dee2e6', borderRadius: '4px', backgroundColor: '#fff' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', tableLayout: 'fixed' }}>
+                                    <thead style={{ backgroundColor: '#e9ecef', position: 'sticky', top: 0, zIndex: 1 }}>
+                                        <tr>
+                                            <th style={{ width: '55%', padding: '8px 12px', textAlign: 'left', color: '#495057', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>프로젝트명</th>
+                                            <th style={{ width: '30%', padding: '8px 12px', textAlign: 'left', color: '#495057', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>광고주</th>
+                                            <th style={{ width: '15%', padding: '8px 12px', textAlign: 'left', color: '#495057', fontWeight: '600', borderBottom: '1px solid #dee2e6' }}>OT 일자</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {selectedEntries.map(entry => (
+                                            <tr key={entry.event_id} style={{ borderBottom: '1px solid #f1f3f5' }}>
+                                                <td style={{ padding: '8px 12px', color: '#212529', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.event_name}</td>
+                                                <td style={{ padding: '8px 12px', color: '#495057', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.advertiser || '-'}</td>
+                                                <td style={{ padding: '8px 12px', color: '#868e96', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.ot_date || '-'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
 
@@ -151,26 +180,27 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
 
                         <div className="form-group" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-start', gap: '30px', alignItems: 'flex-start', flexWrap: 'nowrap' }}>
                             <DatePicker
+                                locale={ko}
                                 selected={alarmStartAt ? new Date(alarmStartAt) : null}
                                 onChange={(date: Date | null) => {
                                     if (date) {
-                                        // Format to YYYY-MM-DD for state consistency
-                                        const year = date.getFullYear();
-                                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                                        const day = String(date.getDate()).padStart(2, '0');
-                                        setAlarmStartAt(`${year}-${month}-${day}`);
+                                        setAlarmStartAt(date.toISOString()); // Store full date-time in ISO format
                                     } else {
                                         setAlarmStartAt('');
                                     }
                                 }}
                                 inline
-                                dateFormat="yyyy-MM-dd"
+                                showTimeSelect
+                                dateFormat="yyyy-MM-dd HH:mm"
+                                timeFormat="HH:mm"
+                                timeIntervals={15} // Adjust as needed (e.g., 5, 10, 15, 30)
+                                timeCaption="시간"
                                 highlightDates={highlightDates}
                             />
                             <div style={{ display: 'flex', flexDirection: 'column', paddingTop: '10px', flex: 1 }}>
-                                <label style={{ marginBottom: '8px', fontWeight: '500', fontSize: '14px', color: '#495057' }}>알림 시작일</label>
+                                <label style={{ marginBottom: '8px', fontWeight: '500', fontSize: '14px', color: '#495057' }}>알림 시작일시</label>
                                 <div style={{ fontSize: '18px', fontWeight: '500', color: '#212529', marginBottom: '20px' }}>
-                                    {alarmStartAt || <span style={{ color: '#adb5bd', fontSize: '14px' }}>날짜 미선택</span>}
+                                    {alarmStartAt ? new Date(alarmStartAt).toLocaleString() : <span style={{ color: '#adb5bd', fontSize: '14px' }}>날짜/시간 미선택</span>}
                                 </div>
 
                                 <div className="form-group">
@@ -232,7 +262,7 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                                     )}
                                 </div>
                                 <button type="button" className="btn-add-recipient" onClick={() => setIsEmployeeSearchOpen(true)}>
-                                    + 직원 추가
+                                    + 수신인 추가
                                 </button>
                             </div>
                         </div>
