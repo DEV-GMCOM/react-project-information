@@ -223,31 +223,37 @@
     display: inline-block;
 }
 
-.channel-email {
+.channel-EMAIL {
     background-color: #e3f2fd;
     color: #0d47a1;
     border: 1px solid #bbdefb;
 }
 
-.channel-jandi {
+.channel-JANDI {
     background-color: #e8f5e9;
     color: #1b5e20;
     border: 1px solid #c8e6c9;
 }
 
-.priority-high {
+.channel-SMS {
+    background-color: #fff3e0; /* Orange-ish for SMS */
+    color: #e65100;
+    border: 1px solid #ffe0b2;
+}
+
+.priority-HIGH {
     background-color: #ffebee;
     color: #b71c1c;
     border: 1px solid #ffcdd2;
 }
 
-.priority-medium {
+.priority-MID {
     background-color: #fff3e0;
     color: #e65100;
     border: 1px solid #ffe0b2;
 }
 
-.priority-low {
+.priority-LOW {
     background-color: #f3e5f5;
     color: #4a148c;
     border: 1px solid #e1bee7;

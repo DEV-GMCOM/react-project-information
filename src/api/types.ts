@@ -237,7 +237,7 @@ export interface ProjectCalendarBundle {
     bundle_id: number;
     project_calendar_event_id: number;
     bundle_nickname?: string;
-    priority: 'low' | 'medium' | 'high';
+    priority: 'HIGH' | 'MID' | 'LOW' | '4회' | '3회' | '2회' | '체험존' | '유니시티' | 'SKT특화';
     alarm_start_at?: string;
     alarm_interval_days?: number;
     alarm_repeat_count?: number;
@@ -253,7 +253,7 @@ export interface ProjectCalendarBundle {
 export interface ProjectCalendarBundleChannel {
     id: number;
     bundle_id: number;
-    channel: 'email' | 'jandi';
+    channel: 'EMAIL' | 'SMS' | 'JANDI';
 }
 
 export interface ProjectCalendarBundleRecipient {
@@ -267,11 +267,11 @@ export interface ProjectCalendarBundleRecipient {
 export interface ProjectCalendarBundleCreateRequest {
     project_calendar_event_ids: number[];
     bundle_nickname?: string;
-    priority: 'low' | 'medium' | 'high';
+    priority: 'HIGH' | 'MID' | 'LOW' | '4회' | '3회' | '2회' | '체험존' | '유니시티' | 'SKT특화';
     alarm_start_at?: string;
     alarm_interval_days?: number;
     alarm_repeat_count?: number;
-    channels: ('email' | 'jandi')[];
+    channels: ('EMAIL' | 'SMS' | 'JANDI')[];
     recipient_emp_ids: number[];
 }
 

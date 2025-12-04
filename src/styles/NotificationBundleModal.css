@@ -253,6 +253,8 @@
     font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
     flex-shrink: 0; /* Prevent expansion within flex container */
     display: flex; /* Ensure flex layout for calendar + time */
+    flex-direction: row; /* Calendar and time side-by-side */
+    overflow: visible; /* Ensure nothing is hidden by default */
 }
 
 /* 토요일 날짜 파란색 */

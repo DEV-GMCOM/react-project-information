@@ -24,14 +24,17 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
     onSuccess
 }) => {
     const [nickname, setNickname] = useState('');
-    const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+    const [priority, setPriority] = useState<'HIGH' | 'MID' | 'LOW'>('MID');
     const [alarmStartAt, setAlarmStartAt] = useState<Date | null>(null);
     const [alarmIntervalDays, setAlarmIntervalDays] = useState<number | ''>('');
     const [alarmRepeatCount, setAlarmRepeatCount] = useState<number | ''>('');
-    const [selectedChannels, setSelectedChannels] = useState<Set<'email' | 'jandi'>>(new Set(['email']));
+    const [selectedChannels, setSelectedChannels] = useState<Set<'EMAIL' | 'SMS' | 'JANDI'>>(new Set(['EMAIL']));
     const [recipients, setRecipients] = useState<EmployeeSimple[]>([]);
     const [isEmployeeSearchOpen, setIsEmployeeSearchOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    
+    // Track previous selected entries to prevent unnecessary resets
+    const prevEntriesSignatureRef = React.useRef<string>('');
 
     // 한국 공휴일 체크
     const holidays = useMemo(() => new Holidays('KR'), []);
@@ -49,24 +52,37 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
 
     useEffect(() => {
         if (isOpen && selectedEntries.length > 0) {
-            // Reset form
-            const firstEntry = selectedEntries[0];
-            if (selectedEntries.length === 1) {
-                setNickname(`${firstEntry.event_name} 알림`);
-            } else {
-                setNickname(`${firstEntry.event_name} 외 ${selectedEntries.length - 1}건 알림`);
+            // Create a signature based on event IDs to detect actual changes
+            const currentSignature = selectedEntries.map(e => e.event_id).sort().join(',');
+            
+            // Only reset form if the entries have actually changed
+            if (prevEntriesSignatureRef.current !== currentSignature) {
+                prevEntriesSignatureRef.current = currentSignature;
+                
+                // Reset form
+                const firstEntry = selectedEntries[0];
+                            if (selectedEntries.length === 1) {
+                                setNickname(`${firstEntry.event_name} 알림`);
+                            } else {
+                                setNickname(`${firstEntry.event_name} 외 ${selectedEntries.length - 1}건 알림`);
+                            }
+                
+                            setPriority('MID');
+                            let initialAlarmStartAt: Date;                if (firstEntry.ot_date) {
+                    initialAlarmStartAt = new Date(firstEntry.ot_date);
+                } else {
+                    initialAlarmStartAt = new Date(); // Use current date if ot_date is not available
+                }
+                initialAlarmStartAt.setHours(8, 0, 0, 0); // Set default time to 08:00
+                setAlarmStartAt(initialAlarmStartAt);
+                setAlarmIntervalDays(1); // Default to 1
+                setAlarmRepeatCount(1);   // Default to 1
+                setSelectedChannels(new Set(['EMAIL']));
+                setRecipients([]);
             }
-
-            setPriority('medium');
-            if (firstEntry.ot_date) {
-                setAlarmStartAt(new Date(firstEntry.ot_date));
-            } else {
-                setAlarmStartAt(null);
-            }
-            setAlarmIntervalDays('');
-            setAlarmRepeatCount('');
-            setSelectedChannels(new Set(['email']));
-            setRecipients([]);
+        } else if (!isOpen) {
+             // Reset signature when modal closes so it re-initializes next time
+             prevEntriesSignatureRef.current = '';
         }
     }, [isOpen, selectedEntries]);
 
@@ -88,7 +104,7 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
         return dates;
     }, [alarmStartAt, alarmIntervalDays, alarmRepeatCount]);
 
-    const handleChannelToggle = (channel: 'email' | 'jandi') => {
+    const handleChannelToggle = (channel: 'EMAIL' | 'SMS' | 'JANDI') => {
         const next = new Set(selectedChannels);
         if (next.has(channel)) {
             next.delete(channel);
@@ -101,8 +117,14 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (selectedEntries.length === 0) return;
-        if (selectedChannels.size === 0) {
-            alert('적어도 하나의 알림 채널을 선택해주세요.');
+
+        const missingFields = [];
+        if (!alarmStartAt) missingFields.push('알림 시작일시');
+        if (selectedChannels.size === 0) missingFields.push('알림 채널');
+        if (recipients.length === 0) missingFields.push('수신자');
+
+        if (missingFields.length > 0) {
+            alert(`다음 항목을 선택해주세요:\n- ${missingFields.join('\n- ')}`);
             return;
         }
 
@@ -188,9 +210,9 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                                 value={priority}
                                 onChange={e => setPriority(e.target.value as any)}
                             >
-                                <option value="low">낮음</option>
-                                <option value="medium">중간</option>
-                                <option value="high">매우중요</option>
+                                <option value="LOW">낮음</option>
+                                <option value="MID">중간</option>
+                                <option value="HIGH">매우중요</option>
                             </select>
                         </div>
 
@@ -207,6 +229,7 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                                     locale={ko}
                                     inline
                                     dayClassName={getDayClassName}
+                                    highlightDates={highlightDates}
                                 />
                             </div>
 
@@ -229,8 +252,21 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                                         type="number"
                                         className="form-input"
                                         value={alarmIntervalDays}
-                                        onChange={e => setAlarmIntervalDays(e.target.value === '' ? '' : Number(e.target.value))}
+                                        onChange={e => {
+                                            const value = e.target.value;
+                                            if (value === '') {
+                                                setAlarmIntervalDays(''); // Allow clearing input
+                                            } else {
+                                                const numValue = Number(value);
+                                                if (isNaN(numValue) || numValue < 1) {
+                                                    setAlarmIntervalDays(1); // Enforce minimum 1
+                                                } else {
+                                                    setAlarmIntervalDays(numValue);
+                                                }
+                                            }
+                                        }}
                                         placeholder="예: 7"
+                                        min="1"
                                     />
                                 </div>
                                 <div className="form-group" style={{ marginBottom: 0 }}>
@@ -239,8 +275,21 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                                         type="number"
                                         className="form-input"
                                         value={alarmRepeatCount}
-                                        onChange={e => setAlarmRepeatCount(e.target.value === '' ? '' : Number(e.target.value))}
+                                        onChange={e => {
+                                            const value = e.target.value;
+                                            if (value === '') {
+                                                setAlarmRepeatCount(''); // Allow clearing input
+                                            } else {
+                                                const numValue = Number(value);
+                                                if (isNaN(numValue) || numValue < 1) {
+                                                    setAlarmRepeatCount(1); // Enforce minimum 1
+                                                } else {
+                                                    setAlarmRepeatCount(numValue);
+                                                }
+                                            }
+                                        }}
                                         placeholder="예: 5"
+                                        min="1"
                                     />
                                 </div>
                             </div>
@@ -250,16 +299,23 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                             <label>알림 채널</label>
                             <div className="checkbox-group">
                                 <div 
-                                    className={`checkbox-card ${selectedChannels.has('email') ? 'checked' : ''}`}
-                                    onClick={() => handleChannelToggle('email')}
+                                    className={`checkbox-card ${selectedChannels.has('EMAIL') ? 'checked' : ''}`}
+                                    onClick={() => handleChannelToggle('EMAIL')}
                                 >
                                     <span>Email</span>
                                 </div>
-                                <div 
-                                    className={`checkbox-card ${selectedChannels.has('jandi') ? 'checked' : ''}`}
-                                    onClick={() => handleChannelToggle('jandi')}
+                                <div
+                                    className={`checkbox-card ${selectedChannels.has('JANDI') ? 'checked' : ''}`}
+                                    onClick={() => handleChannelToggle('JANDI')}
                                 >
                                     <span>JANDI</span>
+                                </div>
+                                <div
+                                    className="checkbox-card disabled"
+                                    style={{ opacity: 0.5, cursor: 'not-allowed', backgroundColor: '#f8f9fa' }}
+                                    title="SMS 알림은 준비 중입니다."
+                                >
+                                    <span>SMS (준비중)</span>
                                 </div>
                             </div>
                         </div>

@@ -73,50 +73,52 @@ const NotificationStatus: React.FC = () => {
             ) : bundles.length === 0 ? (
                 <div className="no-results">등록된 알림 설정이 없습니다.</div>
             ) : (
-                <table className="sales-schedule-table">
-                    <thead>
-                        <tr>
-                            <th style={{ width: '20%' }}>이벤트명</th>
-                            <th style={{ width: '15%' }}>알림 그룹명</th>
-                            <th style={{ width: '20%' }}>수신자</th>
-                            <th style={{ width: '15%' }}>채널</th>
-                            <th style={{ width: '10%' }}>시작일</th>
-                            <th style={{ width: '10%' }}>주기</th>
-                            <th style={{ width: '10%' }}>우선순위</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {bundles.map(bundle => (
-                            <tr key={bundle.id}>
-                                <td>
-                                    <div style={{fontWeight: 'bold'}}>{bundle.event_name}</div>
-                                    <div style={{fontSize: '11px', color: '#666'}}>{bundle.advertiser}</div>
-                                </td>
-                                <td>{bundle.bundle_nickname || '-'}</td>
-                                <td title={bundle.recipients.map(r => r.employee_name).join(', ')}>
-                                    {renderRecipients(bundle.recipients)}
-                                </td>
-                                <td>
-                                    {bundle.channels.map(c => (
-                                        <span key={c.id} className={`badge channel-${c.channel}`}>
-                                            {c.channel === 'jandi' ? 'JANDI' : 'Email'}
-                                        </span>
-                                    ))}
-                                </td>
-                                <td>{bundle.alarm_start_at ? new Date(bundle.alarm_start_at).toLocaleDateString() : '-'}</td>
-                                <td>
-                                    {bundle.alarm_interval_days ? `${bundle.alarm_interval_days}일` : '-'}
-                                    {bundle.alarm_repeat_count ? ` (${bundle.alarm_repeat_count}회)` : ''}
-                                </td>
-                                <td>
-                                    <span className={`badge priority-${bundle.priority}`}>
-                                        {bundle.priority.toUpperCase()}
-                                    </span>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                                <table className="sales-schedule-table">
+                                    <thead>
+                                        <tr>
+                                            <th style={{ width: '20%' }}>이벤트명</th>
+                                            <th style={{ width: '15%' }}>알림 그룹명</th>
+                                            <th style={{ width: '20%', textAlign: 'center' }}>수신자</th>
+                                            <th style={{ width: '15%', textAlign: 'center' }}>채널</th>
+                                            <th style={{ width: '10%', textAlign: 'center' }}>시작일</th>
+                                            <th style={{ width: '10%', textAlign: 'center' }}>주기</th>
+                                            <th style={{ width: '10%', textAlign: 'center' }}>우선순위</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {bundles.map(bundle => (
+                                            <tr key={bundle.id}>
+                                                <td>
+                                                    <div style={{fontWeight: 'bold'}}>{bundle.event_name}</div>
+                                                    <div style={{fontSize: '11px', color: '#666'}}>{bundle.advertiser}</div>
+                                                </td>
+                                                <td>{bundle.bundle_nickname || '-'}
+                                                </td>
+                                                <td title={bundle.recipients.map(r => r.employee_name).join(', ')} style={{ textAlign: 'center' }}>
+                                                    {renderRecipients(bundle.recipients)}
+                                                </td>
+                                                <td style={{ textAlign: 'center' }}>
+                                                    {bundle.channels.map(c => (
+                                                        <span key={c.id} className={`badge channel-${c.channel}`}>
+                                                            {c.channel === 'JANDI' ? 'JANDI' : c.channel === 'SMS' ? 'SMS' : 'Email'}
+                                                        </span>
+                                                    ))}
+                                                </td>
+                                                <td style={{ textAlign: 'center' }}>{bundle.alarm_start_at ? new Date(bundle.alarm_start_at).toLocaleDateString() : '-'}
+                                                </td>
+                                                <td style={{ textAlign: 'center' }}>
+                                                    {bundle.alarm_interval_days ? `${bundle.alarm_interval_days}일` : '-'}
+                                                    {bundle.alarm_repeat_count ? ` (${bundle.alarm_repeat_count}회)` : ''}
+                                                </td>
+                                                <td style={{ textAlign: 'center' }}>
+                                                    <span className={`badge priority-${bundle.priority}`}>
+                                                        {bundle.priority.toUpperCase()}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
             )}
         </div>
     );
