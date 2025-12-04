@@ -255,6 +255,37 @@
     display: flex; /* Ensure flex layout for calendar + time */
 }
 
+/* 토요일 날짜 파란색 */
+.notification-bundle-modal .react-datepicker__week .react-datepicker__day:nth-child(7):not(.react-datepicker__day--outside-month) {
+    color: #0066cc;
+}
+
+/* 일요일 날짜 빨간색 */
+.notification-bundle-modal .react-datepicker__week .react-datepicker__day:nth-child(1):not(.react-datepicker__day--outside-month) {
+    color: #dc3545;
+}
+
+/* 공휴일 빨간색 */
+.notification-bundle-modal .react-datepicker__day.holiday:not(.react-datepicker__day--outside-month) {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+/* 선택된 날짜는 원래 스타일 유지 */
+.notification-bundle-modal .react-datepicker__day--selected {
+    background-color: #007bff !important;
+    color: white !important;
+}
+
+/* 오늘 날짜도 색상 유지 */
+.notification-bundle-modal .react-datepicker__day--today.react-datepicker__day:nth-child(7):not(.react-datepicker__day--selected) {
+    color: #0066cc;
+}
+
+.notification-bundle-modal .react-datepicker__day--today.react-datepicker__day:nth-child(1):not(.react-datepicker__day--selected) {
+    color: #dc3545;
+}
+
 .notification-bundle-modal .react-datepicker__time-container {
     border-left: 1px solid #ced4da;
     width: 100px; /* Adjust width as needed */

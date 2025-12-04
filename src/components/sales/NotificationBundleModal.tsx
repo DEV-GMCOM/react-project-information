@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import DatePicker from 'react-datepicker';
 import { ko } from 'date-fns/locale';
-import 'react-datepicker/dist/react-datepicker.css';
 import { projectService } from '../../api/services/projectService';
 import { ProjectCalendarEntry, EmployeeSimple, ProjectCalendarBundleCreateRequest, Employee } from '../../api/types';
 import EmployeeSearchModal from '../meeting/EmployeeSearchModal';
+import DatePicker from 'react-datepicker';
+import Holidays from 'date-holidays';
+import 'react-datepicker/dist/react-datepicker.css';
 import '../../styles/modal.css';
 import '../../styles/NotificationBundleModal.css';
+
 
 interface NotificationBundleModalProps {
     isOpen: boolean;
@@ -23,13 +25,27 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
 }) => {
     const [nickname, setNickname] = useState('');
     const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
-    const [alarmStartAt, setAlarmStartAt] = useState('');
+    const [alarmStartAt, setAlarmStartAt] = useState<Date | null>(null);
     const [alarmIntervalDays, setAlarmIntervalDays] = useState<number | ''>('');
     const [alarmRepeatCount, setAlarmRepeatCount] = useState<number | ''>('');
     const [selectedChannels, setSelectedChannels] = useState<Set<'email' | 'jandi'>>(new Set(['email']));
     const [recipients, setRecipients] = useState<EmployeeSimple[]>([]);
     const [isEmployeeSearchOpen, setIsEmployeeSearchOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+
+    // 한국 공휴일 체크
+    const holidays = useMemo(() => new Holidays('KR'), []);
+
+    const isHoliday = (date: Date): boolean => {
+        return holidays.isHoliday(date) !== false;
+    };
+
+    const getDayClassName = (date: Date): string => {
+        if (isHoliday(date)) {
+            return 'holiday';
+        }
+        return '';
+    };
 
     useEffect(() => {
         if (isOpen && selectedEntries.length > 0) {
@@ -43,9 +59,9 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
 
             setPriority('medium');
             if (firstEntry.ot_date) {
-                setAlarmStartAt(firstEntry.ot_date);
+                setAlarmStartAt(new Date(firstEntry.ot_date));
             } else {
-                setAlarmStartAt('');
+                setAlarmStartAt(null);
             }
             setAlarmIntervalDays('');
             setAlarmRepeatCount('');
@@ -58,7 +74,7 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
         if (!alarmStartAt) return [];
 
         const dates: Date[] = [];
-        const start = new Date(alarmStartAt);
+        const start = alarmStartAt;
         // If no count or interval specified, just highlight the start date (already handled by 'selected')
         // If specified, calculate sequence
         const count = alarmRepeatCount === '' ? 1 : Number(alarmRepeatCount);
@@ -96,7 +112,7 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                 project_calendar_event_ids: selectedEntries.map(e => e.event_id),
                 bundle_nickname: nickname,
                 priority,
-                alarm_start_at: alarmStartAt ? new Date(alarmStartAt).toISOString() : undefined,
+                alarm_start_at: alarmStartAt ? alarmStartAt.toISOString() : undefined,
                 alarm_interval_days: alarmIntervalDays === '' ? undefined : Number(alarmIntervalDays),
                 alarm_repeat_count: alarmRepeatCount === '' ? undefined : Number(alarmRepeatCount),
                 channels: Array.from(selectedChannels),
@@ -179,28 +195,32 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                         </div>
 
                         <div className="form-group" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-start', gap: '30px', alignItems: 'flex-start', flexWrap: 'nowrap' }}>
-                            <DatePicker
-                                locale={ko}
-                                selected={alarmStartAt ? new Date(alarmStartAt) : null}
-                                onChange={(date: Date | null) => {
-                                    if (date) {
-                                        setAlarmStartAt(date.toISOString()); // Store full date-time in ISO format
-                                    } else {
-                                        setAlarmStartAt('');
-                                    }
-                                }}
-                                inline
-                                showTimeSelect
-                                dateFormat="yyyy-MM-dd HH:mm"
-                                timeFormat="HH:mm"
-                                timeIntervals={15} // Adjust as needed (e.g., 5, 10, 15, 30)
-                                timeCaption="시간"
-                                highlightDates={highlightDates}
-                            />
+                            <div>
+                                <DatePicker
+                                    selected={alarmStartAt}
+                                    onChange={(date: Date | null) => setAlarmStartAt(date)}
+                                    showTimeSelect
+                                    timeFormat="HH:mm"
+                                    timeIntervals={15}
+                                    dateFormat="yyyy-MM-dd HH:mm"
+                                    timeCaption="시간"
+                                    locale={ko}
+                                    inline
+                                    dayClassName={getDayClassName}
+                                />
+                            </div>
+
                             <div style={{ display: 'flex', flexDirection: 'column', paddingTop: '10px', flex: 1 }}>
                                 <label style={{ marginBottom: '8px', fontWeight: '500', fontSize: '14px', color: '#495057' }}>알림 시작일시</label>
                                 <div style={{ fontSize: '18px', fontWeight: '500', color: '#212529', marginBottom: '20px' }}>
-                                    {alarmStartAt ? new Date(alarmStartAt).toLocaleString() : <span style={{ color: '#adb5bd', fontSize: '14px' }}>날짜/시간 미선택</span>}
+                                    {alarmStartAt ? alarmStartAt.toLocaleString('ko-KR', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: false
+                                    }) : <span style={{ color: '#adb5bd', fontSize: '14px' }}>날짜/시간 미선택</span>}
                                 </div>
 
                                 <div className="form-group">
