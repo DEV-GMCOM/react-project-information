@@ -33,6 +33,7 @@ import CorporateDocuments from './pages/documents/CorporateDocuments';
 import NoticeManagement from './pages/operations/NoticeManagement';
 import LogViewer from './pages/operations/LogViewer';
 import DocumentManagement from './pages/operations/DocumentManagement';
+import FixedExpenseCalendar from './pages/operations/FixedExpenseCalendar';
 import MeetingMinutes from './pages/working/MeetingMinutes';
 import ProjectExecution from './pages/project/ProjectExecution';
 import FileManagementSystem from './pages/working/FileManagementSystem';
@@ -126,6 +127,7 @@ function App() {
                 <Route path="/operations/notices" element={<ProtectedRoute><Layout><NoticeManagement /></Layout></ProtectedRoute>} />
                 <Route path="/operations/logs" element={<ProtectedRoute><Layout><LogViewer /></Layout></ProtectedRoute>} />
                 <Route path="/operations/documents" element={<ProtectedRoute><Layout><DocumentManagement /></Layout></ProtectedRoute>} />
+                <Route path="/operations/fixed-expenses" element={<ProtectedRoute><Layout><FixedExpenseCalendar /></Layout></ProtectedRoute>} />
 
                 {/* Working */}
                 <Route path="/working/meeting-minutes" element={<ProtectedRoute><Layout><MeetingMinutes /></Layout></ProtectedRoute>} />

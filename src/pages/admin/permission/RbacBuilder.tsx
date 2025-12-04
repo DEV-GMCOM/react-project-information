@@ -182,6 +182,7 @@ const RbacBuilder: React.FC = () => {
         parentId: ''
     });
     const [editingPermId, setEditingPermId] = useState<number | null>(null);
+    const [isSavingAssignments, setIsSavingAssignments] = useState(false);
 
     const { user, refreshUser } = useAuth(); // Auth Context 가져오기
 
@@ -304,6 +305,7 @@ const RbacBuilder: React.FC = () => {
         // 일단 경고 없이 진행하거나, 정말 필요하다면 백엔드에서 막는 것이 좋음.
 
         try {
+            setIsSavingAssignments(true);
             // 0. Update role's applying_to_all field if changed
             if (applyingToAll !== (selectedRole.applying_to_all || false)) {
                 await roleService.updateRole(selectedRole.role_id, {
@@ -356,6 +358,8 @@ const RbacBuilder: React.FC = () => {
                 await Promise.all(toRemove.map(id => roleService.unassignRoleFromEmployee(id, selectedRole.role_id)));
             }
             
+            // 저장 완료 시점에 로딩 오버레이 종료
+            setIsSavingAssignments(false);
             alert('저장되었습니다.');
             
             // AuthContext의 사용자 정보(권한)를 갱신
@@ -386,6 +390,8 @@ const RbacBuilder: React.FC = () => {
             } else {
                 alert('저장 실패: ' + (e.message || '알 수 없는 오류가 발생했습니다.'));
             }
+        } finally {
+            setIsSavingAssignments(false);
         }
     };
 
@@ -520,6 +526,12 @@ const RbacBuilder: React.FC = () => {
 
     return (
         <div className="rbac-builder-container">
+            {isSavingAssignments && (
+                <div className="rbac-saving-overlay" aria-live="assertive" aria-label="변경사항 저장 중">
+                    <div className="spinner" aria-hidden="true"></div>
+                    <p>변경사항을 저장하고 있습니다...</p>
+                </div>
+            )}
             {/* Top Header Area (No CRUD, just title) */}
             <div className="rbac-layout-bottom-header" style={{marginTop: '20px'}}>
                 <h2>역할 및 접근 권한 관리</h2>
@@ -599,7 +611,9 @@ const RbacBuilder: React.FC = () => {
                         <h2>{selectedRole ? `${selectedRole.role_name} 권한 설정` : '역할을 선택해주세요'}</h2>
                         {selectedRole && (
                             <div className="header-actions">
-                                <button className="btn-primary" onClick={handleSaveAssignments} disabled={!hasUnsavedChanges}>변경사항 저장</button>
+                                <button className="btn-primary" onClick={handleSaveAssignments} disabled={!hasUnsavedChanges || isSavingAssignments}>
+                                    {isSavingAssignments ? '저장 중...' : '변경사항 저장'}
+                                </button>
                             </div>
                         )}
                     </div>

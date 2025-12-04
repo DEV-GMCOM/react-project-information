@@ -75,6 +75,7 @@ export const devMenuItems: NavMenuItem[] = [
         subMenus: [
             { path: '/operations/logs', name: '로그 확인', permission: 'page:operations_logs' },
             { path: '/operations/documents', name: '전사문서 관리', permission: 'page:operations_documents' },
+            { path: '/operations/fixed-expenses', name: '고정지출비용', permission: 'page:operations_fixed-expenses' },
             { path: '/working/clock-in-out', name: '출퇴근 체크', permission: 'page:working_clock-in-out' }
         ]
     },

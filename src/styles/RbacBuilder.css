@@ -9,6 +9,34 @@
     position: relative;
 }
 
+.rbac-saving-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 1500;
+    text-align: center;
+}
+
+.rbac-saving-overlay .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #eef2f7;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+}
+
+.rbac-saving-overlay p {
+    margin: 0;
+    color: #3c4257;
+    font-weight: 600;
+}
+
 /* Role List Loading */
 .role-list-loading {
     display: flex;
