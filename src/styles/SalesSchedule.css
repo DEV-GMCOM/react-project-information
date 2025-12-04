@@ -112,7 +112,9 @@
     gap: 4px;
     border-left-width: 10px; /* Color indicator on left */
     border-left-style: solid;
-    transition: transform 0.1s;
+    transition: transform 0.1s, background-color 0.2s ease, border-color 0.2s ease;
+    cursor: pointer;
+    outline: none;
 }
 
 .calendar-event-item:hover {
@@ -120,10 +122,33 @@
     background-color: #fafafa;
 }
 
+.calendar-event-item:focus-visible {
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.3);
+}
+
+.calendar-event-item.collapsed {
+    background-color: #f1f4ff;
+    border-color: #d6defa;
+}
+
+.calendar-event-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
 .calendar-event-title {
     font-weight: bold;
     color: #333;
     line-height: 1.2;
+}
+
+.calendar-event-meta {
+    display: flex;
+    justify-content: space-between;
+    color: #666;
+    font-size: 11px;
 }
 
 .calendar-event-details {
@@ -137,6 +162,18 @@
 .calendar-event-row {
     display: flex;
     justify-content: space-between;
+}
+
+.calendar-event-chevron {
+    font-size: 12px;
+    color: #666;
+    width: 14px;
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+
+.calendar-event-item.collapsed .calendar-event-chevron {
+    transform: rotate(-90deg);
 }
 
 .no-events-placeholder {
@@ -198,3 +235,36 @@
     100% { transform: rotate(360deg); }
 }
 
+.context-menu {
+    position: fixed;
+    z-index: 9999;
+    background: #fff;
+    border: 1px solid #d6defa;
+    border-radius: 6px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    min-width: 180px;
+    padding: 6px 0;
+    animation: fadeIn 0.12s ease;
+}
+
+.context-menu-item {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #333;
+    cursor: pointer;
+}
+
+.context-menu-item:hover,
+.context-menu-item:focus-visible {
+    background: #f1f4ff;
+    outline: none;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-3px); }
+    to { opacity: 1; transform: translateY(0); }
+}

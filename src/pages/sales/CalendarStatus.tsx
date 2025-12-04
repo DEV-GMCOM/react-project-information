@@ -13,6 +13,18 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
     const [selectedAdvertiser, setSelectedAdvertiser] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [collapsedEntries, setCollapsedEntries] = useState<Set<number>>(new Set());
+    const [contextMenu, setContextMenu] = useState<{
+        visible: boolean;
+        x: number;
+        y: number;
+        entry?: ProjectCalendarEntry | null;
+    }>({
+        visible: false,
+        x: 0,
+        y: 0,
+        entry: null
+    });
 
     // Fetch initial data (advertisers and years) on component mount
     useEffect(() => {
@@ -75,6 +87,47 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
         fetchCalendarEntries(year, selectedAdvertiser);
     }, [year, selectedAdvertiser, fetchCalendarEntries]);
 
+    const closeContextMenu = useCallback(() => {
+        setContextMenu(prev => (prev.visible ? { visible: false, x: 0, y: 0, entry: null } : prev));
+    }, []);
+
+    useEffect(() => {
+        const handleGlobalClick = () => closeContextMenu();
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                closeContextMenu();
+            }
+        };
+        document.addEventListener('click', handleGlobalClick);
+        document.addEventListener('keydown', handleEsc);
+        return () => {
+            document.removeEventListener('click', handleGlobalClick);
+            document.removeEventListener('keydown', handleEsc);
+        };
+    }, [closeContextMenu]);
+
+    const handleContextMenu = (event: React.MouseEvent, entry: ProjectCalendarEntry, isCollapsed: boolean) => {
+        if (!isCollapsed) {
+            closeContextMenu();
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        setContextMenu({
+            visible: true,
+            x: event.clientX,
+            y: event.clientY,
+            entry
+        });
+    };
+
+    const handleContextMenuAction = (action: 'register' | 'detail') => {
+        if (!contextMenu.entry) return;
+        // 추후 실제 동작 연동 지점을 여기서 처리
+        console.info(`[context] ${action} for`, contextMenu.entry);
+        closeContextMenu();
+    };
+
     
     const colorMeaningMap: Record<string, string> = {
         'f7e3d7': '4회',
@@ -121,25 +174,56 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
                                         monthEntries.map(entry => {
                                             const formattedCellColor = entry.cell_color ? `#${entry.cell_color}` : 'transparent';
                                             // const badgeText = colorMeaningMap[entry.cell_color || ''] || ''; // Option to use badge text if needed
+                                            const isCollapsed = collapsedEntries.has(entry.event_id);
+
+                                            const toggleEntryCollapse = () => {
+                                                setCollapsedEntries(prev => {
+                                                    const next = new Set(prev);
+                                                    if (next.has(entry.event_id)) {
+                                                        next.delete(entry.event_id);
+                                                    } else {
+                                                        next.add(entry.event_id);
+                                                    }
+                                                    return next;
+                                                });
+                                            };
 
                                             return (
                                                 <div
                                                     key={entry.event_id}
-                                                    className="calendar-event-item"
+                                                    className={`calendar-event-item${isCollapsed ? ' collapsed' : ''}`}
                                                     style={{ borderLeftColor: entry.cell_color ? formattedCellColor : '#ddd' }}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    aria-expanded={!isCollapsed}
+                                                    onClick={toggleEntryCollapse}
+                                                    onContextMenu={e => handleContextMenu(e, entry, isCollapsed)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.preventDefault();
+                                                            toggleEntryCollapse();
+                                                        }
+                                                    }}
                                                 >
-                                                    <div className="calendar-event-title">{entry.event_name}</div>
-                                                    <div className="calendar-event-details">
-                                                        <div className="calendar-event-row">
-                                                            <span>{entry.advertiser || '-'}</span>
-                                                            <span>{entry.ot_date ? entry.ot_date.slice(5) : '-'}</span>
-                                                        </div>
-                                                        {entry.budget && (
-                                                            <div className="calendar-event-row">
-                                                                <span>예산: {entry.budget.toLocaleString()}</span>
-                                                            </div>
-                                                        )}
+                                                    <div className="calendar-event-top">
+                                                        <div className="calendar-event-title">{entry.event_name}</div>
+                                                        <span className="calendar-event-chevron" aria-hidden="true">
+                                                            {isCollapsed ? '▸' : '▾'}
+                                                        </span>
                                                     </div>
+                                                    <div className="calendar-event-meta">
+                                                        <span>{entry.advertiser || '-'}</span>
+                                                        <span>{entry.ot_date ? entry.ot_date.slice(5) : '-'}</span>
+                                                    </div>
+                                                    {!isCollapsed && (
+                                                        <div className="calendar-event-details">
+                                                            {entry.budget && (
+                                                                <div className="calendar-event-row">
+                                                                    <span>예산: {entry.budget.toLocaleString()}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         })
@@ -185,7 +269,7 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
         return (
             <>
                 <div className="total-count">
-                    총 {calendarEntries.length}개의 스케쥴이 있습니다.
+                    총 {calendarEntries.length}개의 프로젝트가 있습니다.
                 </div>
                 <div>
                     {yearsToRender.map(y => renderYearGrid(y, grouped))}
@@ -214,6 +298,28 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
                 </div>
                 {renderContent()}
             </div>
+            {contextMenu.visible && (
+                <div
+                    className="context-menu"
+                    style={{ top: contextMenu.y, left: contextMenu.x }}
+                    onClick={e => e.stopPropagation()}
+                >
+                    <button
+                        type="button"
+                        className="context-menu-item"
+                        onClick={() => handleContextMenuAction('register')}
+                    >
+                        스케쥴에 등록하기
+                    </button>
+                    <button
+                        type="button"
+                        className="context-menu-item"
+                        onClick={() => handleContextMenuAction('detail')}
+                    >
+                        상세내용 확인하기
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
