@@ -121,7 +121,7 @@ const NotificationStatus: React.FC = () => {
                             <th style={{ width: '20%', textAlign: 'center' }}>수신자</th>
                             <th style={{ width: '2.5rem', textAlign: 'center' }}>채널</th>
                             <th style={{ width: '7rem', textAlign: 'center' }}>시작일/주기</th>
-                            <th style={{ width: '5rem', textAlign: 'center' }}>우선순위</th>
+                            <th style={{ width: '5rem', textAlign: 'center' }}>중요도</th>
                             {/* <th style={{ width: '15%' }}>이벤트명</th> */}
                             <th>이벤트명</th>
                             <th style={{ width: '10%', textAlign: 'center' }}>관리</th>
@@ -129,68 +129,83 @@ const NotificationStatus: React.FC = () => {
                     </thead>
                     <tbody>
 
-                        {groupedBundles.map(group => {
+                        {groupedBundles.map((group, groupIndex) => {
                             const first = group[0];
-                            return group.map((bundle, index) => (
-                                <tr key={bundle.id}>
-                                    {index === 0 && (
-                                        <>
-                                            <td rowSpan={group.length} style={{ verticalAlign: 'middle' }}>
-                                                {first.bundle_nickname || '-'}
-                                            </td>
-                                            <td rowSpan={group.length} title={first.recipients.map(r => r.employee_name).join(', ')} style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                {renderRecipients(first.recipients)}
-                                            </td>
-                                            <td rowSpan={group.length} style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                {first.channels.map(c => (
-                                                    <span key={c.id} className={`badge channel-${c.channel}`}>
-                                                        {c.channel === 'JANDI' ? 'JANDI' : c.channel === 'SMS' ? 'SMS' : 'Email'}
+                            const isEvenGroup = groupIndex % 2 === 1;
+                            const groupBackgroundColor = isEvenGroup ? '#ffffff' : '#f0f0f0'; // 흰색 또는 연회색 교차
+
+                            return group.map((bundle, index) => {
+                                const isLastInGroup = index === group.length - 1;
+                                const rowStyle: React.CSSProperties = {
+                                    backgroundColor: groupBackgroundColor,
+                                    borderBottom: isLastInGroup ? '2px solid #ccc' : '1px solid #eee' // 그룹 내 마지막 행에 두꺼운 구분선
+                                };
+
+                                return (
+                                    <tr key={bundle.id} style={rowStyle}>
+                                        {index === 0 && (
+                                            <>
+                                                <td rowSpan={group.length} style={{ verticalAlign: 'middle' }}>
+                                                    {first.bundle_nickname || '-'}
+                                                </td>
+                                                <td rowSpan={group.length} title={first.recipients.map(r => r.employee_name).join(', ')} style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                    {renderRecipients(first.recipients)}
+                                                </td>
+                                                <td rowSpan={group.length} style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                    {first.channels.map(c => (
+                                                        <span key={c.id} className={`badge channel-${c.channel}`}>
+                                                            {c.channel === 'JANDI' ? 'JANDI' : c.channel === 'SMS' ? 'SMS' : 'Email'}
+                                                        </span>
+                                                    ))}
+                                                </td>
+                                                <td rowSpan={group.length} style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                    <div>{first.alarm_start_at ? new Date(first.alarm_start_at).toLocaleDateString() : '-'}</div>
+                                                    <div style={{ fontSize: '0.9em', color: '#667' }}>
+                                                        {first.alarm_interval ? (
+                                                            `${first.alarm_interval}${first.alarm_interval_unit === 'YEAR' ? '년' :
+                                                                first.alarm_interval_unit === 'MONTH' ? '개월' : '일'
+                                                            } 마다`
+                                                        ) : '-'}
+                                                        {first.alarm_repeat_count ? ` (${first.alarm_repeat_count}회)` : ''}
+                                                    </div>
+                                                </td>
+
+                                                <td rowSpan={group.length} style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                                                    <span className={`badge priority-${first.priority}`}>
+                                                        {first.priority.toUpperCase()}
                                                     </span>
-                                                ))}
-                                            </td>
-                                            <td rowSpan={group.length} style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                <div>{first.alarm_start_at ? new Date(first.alarm_start_at).toLocaleDateString() : '-'}</div>
-                                                <div style={{ fontSize: '0.9em', color: '#667' }}>
-                                                    {first.alarm_interval_days ? `${first.alarm_interval_days}일` : '-'}
-                                                    {first.alarm_repeat_count ? ` (${first.alarm_repeat_count}회)` : ''}
-                                                </div>
-                                            </td>
+                                                </td>
+                                            </>
+                                        )}
 
-                                            <td rowSpan={group.length} style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-                                                <span className={`badge priority-${first.priority}`}>
-                                                    {first.priority.toUpperCase()}
-                                                </span>
-                                            </td>
-                                        </>
-                                    )}
-
-                                    <td style={{ borderLeft: '1px solid #eee' }}>
-                                        <div style={{ fontWeight: 'bold' }}>{bundle.event_name}</div>
-                                        <div style={{ fontSize: '11px', color: '#666' }}>{bundle.advertiser}</div>
-                                    </td>
-
-                                    {index === 0 && (
-                                        <td rowSpan={group.length} style={{ textAlign: 'center', verticalAlign: 'middle', borderLeft: '1px solid #eee' }}>
-                                            <button
-                                                className="btn-icon"
-                                                onClick={() => handleEdit(first.bundle_id, group)}
-                                                title="수정"
-                                                style={{ marginRight: '5px', cursor: 'pointer', background: 'none', border: 'none', fontSize: '1.2em' }}
-                                            >
-                                                ✏️
-                                            </button>
-                                            <button
-                                                className="btn-icon"
-                                                onClick={() => handleDelete(first.bundle_id)}
-                                                title="삭제"
-                                                style={{ cursor: 'pointer', background: 'none', border: 'none', fontSize: '1.2em' }}
-                                            >
-                                                🗑️
-                                            </button>
+                                        <td style={{ borderLeft: '1px solid #eee', textAlign: 'center' }}>
+                                            <div style={{ fontWeight: 'bold' }}>{bundle.event_name}</div>
+                                            <div style={{ fontSize: '11px', color: '#668' }}>{bundle.advertiser}</div>
                                         </td>
-                                    )}
-                                </tr>
-                            ));
+
+                                        {index === 0 && (
+                                            <td rowSpan={group.length} style={{ textAlign: 'center', verticalAlign: 'middle', borderLeft: '1px solid #eee' }}>
+                                                <button
+                                                    className="btn-icon"
+                                                    onClick={() => handleEdit(first.bundle_id, group)}
+                                                    title="수정"
+                                                    style={{ marginRight: '5px', cursor: 'pointer', background: 'none', border: 'none', fontSize: '1.2em' }}
+                                                >
+                                                    ✏️
+                                                </button>
+                                                <button
+                                                    className="btn-icon"
+                                                    onClick={() => handleDelete(first.bundle_id)}
+                                                    title="삭제"
+                                                    style={{ cursor: 'pointer', background: 'none', border: 'none', fontSize: '1.2em' }}
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </td>
+                                        )}
+                                    </tr>
+                                );
+                            });
                         })}
                     </tbody>
                 </table>

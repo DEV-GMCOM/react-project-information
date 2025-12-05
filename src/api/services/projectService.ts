@@ -1,6 +1,6 @@
 // src/api/services/projectService.ts
 import { apiClient } from '../utils/apiClient';
-import { Project, ProjectCalendarEntry, ProjectCalendarBundle, ProjectCalendarBundleCreateRequest } from '../types';
+import { Project, ProjectCalendarEntry, ProjectCalendarBundle, ProjectCalendarBundleCreateRequest, ProjectNotificationLog } from '../types';
 
 export class ProjectService {
     async getProjects(params?: {
@@ -22,6 +22,18 @@ export class ProjectService {
         if (params?.month) queryParams.month = params.month;
         
         const response = await apiClient.get('/project-calendar/bundles', { params: queryParams });
+        return response.data;
+    }
+
+    async getProjectNotificationLogs(params?: { 
+        skip?: number; 
+        limit?: number; 
+        status?: string; 
+        year?: number | ''; 
+        month?: number | '' 
+    }): Promise<ProjectNotificationLog[]> {
+        const queryParams: any = { ...params };
+        const response = await apiClient.get('/project-calendar/logs', { params: queryParams });
         return response.data;
     }
 

@@ -239,7 +239,11 @@ export interface ProjectCalendarBundle {
     bundle_nickname?: string;
     priority: 'HIGH' | 'MID' | 'LOW' | '4회' | '3회' | '2회' | '체험존' | '유니시티' | 'SKT특화';
     alarm_start_at?: string;
-    alarm_interval_days?: number;
+    
+    // [수정] alarm_interval_days -> alarm_interval + alarm_interval_unit
+    alarm_interval?: number;
+    alarm_interval_unit?: 'YEAR' | 'MONTH' | 'DAY';
+    
     alarm_repeat_count?: number;
     channels: ProjectCalendarBundleChannel[];
     recipients: ProjectCalendarBundleRecipient[];
@@ -269,7 +273,11 @@ export interface ProjectCalendarBundleCreateRequest {
     bundle_nickname?: string;
     priority: 'HIGH' | 'MID' | 'LOW' | '4회' | '3회' | '2회' | '체험존' | '유니시티' | 'SKT특화';
     alarm_start_at?: string;
-    alarm_interval_days?: number;
+    
+    // [수정] Request 타입도 변경
+    alarm_interval?: number;
+    alarm_interval_unit?: 'YEAR' | 'MONTH' | 'DAY';
+    
     alarm_repeat_count?: number;
     channels: ('EMAIL' | 'SMS' | 'JANDI')[];
     recipient_emp_ids: number[];
@@ -472,4 +480,14 @@ export interface RoleUpdate extends Partial<RoleCreate> {}
 //     role_id: number;
 // }
 
-
+export interface ProjectNotificationLog {
+    log_id: number;
+    bundle_id: number;
+    sent_at: string;
+    sequence_number?: number;
+    status: string;
+    error_message?: string;
+    bundle_nickname?: string;
+    event_names?: string;
+    recipients?: string;
+}

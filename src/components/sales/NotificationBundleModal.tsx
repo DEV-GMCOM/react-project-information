@@ -30,13 +30,17 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
     const [nickname, setNickname] = useState('');
     const [priority, setPriority] = useState<'HIGH' | 'MID' | 'LOW'>('MID');
     const [alarmStartAt, setAlarmStartAt] = useState<Date | null>(null);
-    const [alarmIntervalDays, setAlarmIntervalDays] = useState<number | ''>('');
+
+    // [수정] 반복 설정 상태 변경
+    const [alarmInterval, setAlarmInterval] = useState<number | ''>('');
+    const [alarmIntervalUnit, setAlarmIntervalUnit] = useState<'YEAR' | 'MONTH' | 'DAY'>('DAY');
+
     const [alarmRepeatCount, setAlarmRepeatCount] = useState<number | ''>('');
     const [selectedChannels, setSelectedChannels] = useState<Set<'EMAIL' | 'SMS' | 'JANDI'>>(new Set(['EMAIL']));
     const [recipients, setRecipients] = useState<EmployeeSimple[]>([]);
     const [isEmployeeSearchOpen, setIsEmployeeSearchOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    
+
     // Track previous selected entries to prevent unnecessary resets
     const prevEntriesSignatureRef = React.useRef<string>('');
 
@@ -62,9 +66,13 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                 setNickname(bundle.bundle_nickname || '');
                 setPriority(bundle.priority as any);
                 setAlarmStartAt(bundle.alarm_start_at ? new Date(bundle.alarm_start_at) : null);
-                setAlarmIntervalDays(bundle.alarm_interval_days || '');
+
+                // [수정] 기존 데이터 매핑
+                setAlarmInterval(bundle.alarm_interval || '');
+                setAlarmIntervalUnit(bundle.alarm_interval_unit || 'DAY');
+
                 setAlarmRepeatCount(bundle.alarm_repeat_count || '');
-                
+
                 const channels = new Set<'EMAIL' | 'SMS' | 'JANDI'>();
                 bundle.channels.forEach(c => channels.add(c.channel));
                 setSelectedChannels(channels);
@@ -76,39 +84,39 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                 setRecipients(recips);
             } else if (selectedEntries.length > 0) {
                 // Create Mode
-                // Create a signature based on event IDs to detect actual changes
                 const currentSignature = selectedEntries.map(e => e.event_id).sort().join(',');
-                
-                // Only reset form if the entries have actually changed
+
                 if (prevEntriesSignatureRef.current !== currentSignature) {
                     prevEntriesSignatureRef.current = currentSignature;
-                    
-                    // Reset form
+
                     const firstEntry = selectedEntries[0];
                     if (selectedEntries.length === 1) {
                         setNickname(`${firstEntry.event_name} 알림`);
                     } else {
                         setNickname(`${firstEntry.event_name} 외 ${selectedEntries.length - 1}건 알림`);
                     }
-        
+
                     setPriority('MID');
                     let initialAlarmStartAt: Date;
                     if (firstEntry.ot_date) {
                         initialAlarmStartAt = new Date(firstEntry.ot_date);
                     } else {
-                        initialAlarmStartAt = new Date(); // Use current date if ot_date is not available
+                        initialAlarmStartAt = new Date();
                     }
-                    initialAlarmStartAt.setHours(8, 0, 0, 0); // Set default time to 08:00
+                    initialAlarmStartAt.setHours(8, 0, 0, 0);
                     setAlarmStartAt(initialAlarmStartAt);
-                    setAlarmIntervalDays(1); // Default to 1
-                    setAlarmRepeatCount(1);   // Default to 1
+
+                    // [수정] 초기값 설정
+                    setAlarmInterval(1);
+                    setAlarmIntervalUnit('DAY');
+
+                    setAlarmRepeatCount('');
                     setSelectedChannels(new Set(['EMAIL']));
                     setRecipients([]);
                 }
             }
         } else if (!isOpen) {
-             // Reset signature when modal closes so it re-initializes next time
-             prevEntriesSignatureRef.current = '';
+            prevEntriesSignatureRef.current = '';
         }
     }, [isOpen, selectedEntries, existingBundleId, existingBundleGroup]);
 
@@ -117,18 +125,26 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
 
         const dates: Date[] = [];
         const start = alarmStartAt;
-        // If no count or interval specified, just highlight the start date (already handled by 'selected')
-        // If specified, calculate sequence
-        const count = alarmRepeatCount === '' ? 1 : Number(alarmRepeatCount);
-        const interval = alarmIntervalDays === '' ? 0 : Number(alarmIntervalDays);
+        // If alarmRepeatCount is empty (infinite), set a high default for display purposes
+        const count = alarmRepeatCount === '' ? 100 : Number(alarmRepeatCount); 
+        const interval = alarmInterval === '' ? 0 : Number(alarmInterval);
 
+        // [수정] 단위별 날짜 계산
         for (let i = 0; i < count; i++) {
             const nextDate = new Date(start);
-            nextDate.setDate(start.getDate() + (i * interval));
+
+            if (alarmIntervalUnit === 'DAY') {
+                nextDate.setDate(start.getDate() + (i * interval));
+            } else if (alarmIntervalUnit === 'MONTH') {
+                nextDate.setMonth(start.getMonth() + (i * interval));
+            } else if (alarmIntervalUnit === 'YEAR') {
+                nextDate.setFullYear(start.getFullYear() + (i * interval));
+            }
+
             dates.push(nextDate);
         }
         return dates;
-    }, [alarmStartAt, alarmIntervalDays, alarmRepeatCount]);
+    }, [alarmStartAt, alarmInterval, alarmIntervalUnit, alarmRepeatCount]);
 
     const handleChannelToggle = (channel: 'EMAIL' | 'SMS' | 'JANDI') => {
         const next = new Set(selectedChannels);
@@ -142,12 +158,8 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // In edit mode, we rely on existingBundleGroup for IDs if selectedEntries is empty/irrelevant?
-        // But usually selectedEntries should reflect what's being edited if possible.
-        // However, the modal logic uses selectedEntries for creating Request.
-        
-        // If editing, we use existingBundleId
-        const targetEventIds = existingBundleId && existingBundleGroup 
+
+        const targetEventIds = existingBundleId && existingBundleGroup
             ? existingBundleGroup.map(b => b.project_calendar_event_id)
             : selectedEntries.map(e => e.event_id);
 
@@ -170,7 +182,11 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                 bundle_nickname: nickname,
                 priority,
                 alarm_start_at: alarmStartAt ? alarmStartAt.toISOString() : undefined,
-                alarm_interval_days: alarmIntervalDays === '' ? undefined : Number(alarmIntervalDays),
+
+                // [수정] 변경된 필드 사용
+                alarm_interval: alarmInterval === '' ? undefined : Number(alarmInterval),
+                alarm_interval_unit: alarmIntervalUnit,
+
                 alarm_repeat_count: alarmRepeatCount === '' ? undefined : Number(alarmRepeatCount),
                 channels: Array.from(selectedChannels),
                 recipient_emp_ids: recipients.map(r => r.emp_id)
@@ -183,7 +199,7 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                 await projectService.createProjectCalendarBundle(requestData);
                 alert('알림 설정이 저장되었습니다.');
             }
-            
+
             onSuccess();
             onRequestClose();
         } catch (error) {
@@ -204,9 +220,6 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                     <button onClick={onRequestClose} className="modal-close-button">&times;</button>
                 </div>
                 <div className="modal-body">
-                    {/* Only show selected entries list in Create Mode or if we manually populate it in Edit Mode. 
-                        For now, hide in Edit Mode to simplify, or show if selectedEntries is populated.
-                    */}
                     {!existingBundleId && selectedEntries.length > 0 && (
                         <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
                             <div style={{ marginBottom: '10px', color: '#495057', fontWeight: 'bold' }}>
@@ -291,30 +304,65 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                                 </div>
 
                                 <div className="form-group">
-                                    <label>알림 간격 (일)</label>
-                                    <input
-                                        type="number"
-                                        className="form-input"
-                                        value={alarmIntervalDays}
-                                        onChange={e => {
-                                            const value = e.target.value;
-                                            if (value === '') {
-                                                setAlarmIntervalDays(''); // Allow clearing input
-                                            } else {
-                                                const numValue = Number(value);
-                                                if (isNaN(numValue) || numValue < 1) {
-                                                    setAlarmIntervalDays(1); // Enforce minimum 1
+                                    <label>알림 주기</label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <input
+                                            type="number"
+                                            className="form-input"
+                                            style={{ width: '60px' }}
+                                            value={alarmInterval}
+                                            onChange={e => {
+                                                const value = e.target.value;
+                                                if (value === '') {
+                                                    setAlarmInterval('');
                                                 } else {
-                                                    setAlarmIntervalDays(numValue);
+                                                    const numValue = Number(value);
+                                                    if (isNaN(numValue) || numValue < 1) {
+                                                        setAlarmInterval(1);
+                                                    } else {
+                                                        setAlarmInterval(numValue);
+                                                    }
                                                 }
-                                            }
-                                        }}
-                                        placeholder="예: 7"
-                                        min="1"
-                                    />
+                                            }}
+                                            placeholder="1"
+                                            min="1"
+                                        />
+                                        <div className="radio-group" style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', width: '2rem', marginLeft: '20px', marginRight: '20px' }}>
+                                                <input
+                                                    type="radio"
+                                                    name="intervalUnit"
+                                                    value="YEAR"
+                                                    checked={alarmIntervalUnit === 'YEAR'}
+                                                    onChange={() => setAlarmIntervalUnit('YEAR')}
+                                                />
+                                                년
+                                            </label>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', width: '2rem', marginRight: '20px' }}>
+                                                <input
+                                                    type="radio"
+                                                    name="intervalUnit"
+                                                    value="MONTH"
+                                                    checked={alarmIntervalUnit === 'MONTH'}
+                                                    onChange={() => setAlarmIntervalUnit('MONTH')}
+                                                />
+                                                월
+                                            </label>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', width: '2rem' }}>
+                                                <input
+                                                    type="radio"
+                                                    name="intervalUnit"
+                                                    value="DAY"
+                                                    checked={alarmIntervalUnit === 'DAY'}
+                                                    onChange={() => setAlarmIntervalUnit('DAY')}
+                                                />
+                                                일
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="form-group" style={{ marginBottom: 0 }}>
-                                    <label>반복 횟수</label>
+                                    <label>반복 횟수 (비워두면 무한 반복)</label>
                                     <input
                                         type="number"
                                         className="form-input"
@@ -322,14 +370,12 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                                         onChange={e => {
                                             const value = e.target.value;
                                             if (value === '') {
-                                                setAlarmRepeatCount(''); // Allow clearing input
+                                                setAlarmRepeatCount('');
                                             } else {
                                                 const numValue = Number(value);
-                                                if (isNaN(numValue) || numValue < 1) {
-                                                    setAlarmRepeatCount(1); // Enforce minimum 1
-                                                } else {
-                                                    setAlarmRepeatCount(numValue);
-                                                }
+                                                // 0이나 음수 입력 시 그냥 빈값(무한) 처리하거나 1로?
+                                                // 사용자가 0 입력 시 무한으로 인지하게 둠.
+                                                setAlarmRepeatCount(numValue);
                                             }
                                         }}
                                         placeholder="예: 5"
@@ -342,7 +388,7 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                         <div className="form-group">
                             <label>알림 채널</label>
                             <div className="checkbox-group">
-                                <div 
+                                <div
                                     className={`checkbox-card ${selectedChannels.has('EMAIL') ? 'checked' : ''}`}
                                     onClick={() => handleChannelToggle('EMAIL')}
                                 >
@@ -406,7 +452,7 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                             emp_id: e.emp_id,
                             name: e.name
                         }));
-                        
+
                         setRecipients(prev => {
                             const currentIds = new Set(prev.map(r => r.emp_id));
                             const toAdd = newRecipients.filter(r => !currentIds.has(r.emp_id));

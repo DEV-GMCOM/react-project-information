@@ -19,7 +19,19 @@ const SalesSchedule: React.FC = () => {
                     to="/sales/schedule/notifications"
                     className={({ isActive }) => "tab-button" + (isActive ? " active" : "")}
                 >
-                    알림현황
+                    알림등록정보
+                </NavLink>
+                <NavLink
+                    to="/sales/schedule/scheduler"
+                    className={({ isActive }) => "tab-button" + (isActive ? " active" : "")}
+                >
+                    알림스케쥴러
+                </NavLink>
+                <NavLink
+                    to="/sales/schedule/history"
+                    className={({ isActive }) => "tab-button" + (isActive ? " active" : "")}
+                >
+                    알림 이력
                 </NavLink>
             </div>
             <div className="sales-schedule-main" style={{ borderRadius: '0 8px 8px 8px' }}>

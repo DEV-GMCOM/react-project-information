@@ -49,6 +49,8 @@ import AbacBuilder from "./pages/admin/permission/AbacBuilder.tsx";
 import SalesSchedule from "./pages/sales/Schedule.tsx";
 import CalendarStatus from "./pages/sales/CalendarStatus.tsx";
 import NotificationStatus from "./pages/sales/NotificationStatus.tsx";
+import NotificationHistory from "./pages/sales/NotificationHistory.tsx";
+import SchedulerStatus from "./pages/sales/SchedulerStatus.tsx";
 import ClockInOut from "./pages/working/ClockInOut.tsx";
 import Scheduling from "./pages/working/Scheduling.tsx";
 import PTScript from "./pages/working/PTScript.tsx";
@@ -118,6 +120,8 @@ function App() {
                 <Route path="/sales/schedule" element={<ProtectedRoute><Layout><SalesSchedule /></Layout></ProtectedRoute>}>
                     <Route index element={<CalendarStatus />} />
                     <Route path="notifications" element={<NotificationStatus />} />
+                    <Route path="scheduler" element={<SchedulerStatus />} />
+                    <Route path="history" element={<NotificationHistory />} />
                 </Route>
 
                 {/* Documents */}

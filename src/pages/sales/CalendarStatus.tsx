@@ -132,6 +132,12 @@ const CalendarStatus: React.FC = () => { // Renamed from SalesSchedule to Calend
     const handleContextMenu = (event: React.MouseEvent, entry: ProjectCalendarEntry) => {
         event.preventDefault();
         event.stopPropagation();
+        
+        // Only show context menu if the item is selected
+        if (!selectedProjectIds.has(entry.event_id)) {
+            return;
+        }
+
         setContextMenu({
             visible: true,
             x: event.clientX,
