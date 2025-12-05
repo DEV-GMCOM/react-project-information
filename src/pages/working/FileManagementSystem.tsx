@@ -813,10 +813,10 @@ const FileManagementSystem: React.FC = () => {
                 )}
                 </div>
 
-                {/* 비교 결과 섹션 */}
-                {comparisonResults.length > 0 && (
-                    <div className="file-management-system-section">
-                        <h3 className="section-header">■ 5. 클라우드 파일과 엑셀 메타데이터 비교 결과</h3>
+                {/* 비교 결과 섹션 - 항상 표시 */}
+                <div className="file-management-system-section">
+                    <h3 className="section-header">■ 5. 클라우드 파일과 엑셀 메타데이터 비교 결과 - {comparisonResults.length}개</h3>
+                    {comparisonResults.length > 0 ? (
                         <div style={{ padding: '20px' }}>
                             <table style={{
                                 width: '100%',
@@ -966,8 +966,13 @@ const FileManagementSystem: React.FC = () => {
                                 </p>
                             </div>
                         </div>
-                    </div>
-                )}
+                    ) : (
+                        <div style={{ padding: '30px', textAlign: 'center', color: '#90a4ae' }}>
+                            <div style={{ fontSize: '28px', marginBottom: '10px' }}>📊</div>
+                            <p style={{ margin: 0 }}>비교 결과가 없습니다. 엑셀 파일을 업로드하면 자동으로 비교됩니다.</p>
+                        </div>
+                    )}
+                </div>
 
                 {/* 클라우드 파일 목록 표시 */}
                 {cloudFiles.length > 0 && comparisonResults.length === 0 && (

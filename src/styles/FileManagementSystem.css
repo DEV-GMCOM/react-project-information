@@ -467,6 +467,7 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .modal-header {
@@ -475,10 +476,13 @@
     align-items: center;
     padding: 16px 20px;
     border-bottom: 1px solid #eee;
+    background-color: #f8f9fa;
 }
 
 .modal-header h3 {
     margin: 0;
+    font-size: 18px;
+    font-weight: bold;
 }
 
 .modal-close-btn {
@@ -486,11 +490,40 @@
     border: none;
     font-size: 24px;
     cursor: pointer;
+    color: #6c757d;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.modal-close-btn:hover {
+    background-color: #e9ecef;
 }
 
 .modal-body {
     padding: 20px;
+    max-height: 60vh;
     overflow-y: auto;
+}
+
+/* 검색 정보 스타일 */
+.search-info {
+    margin-bottom: 20px;
+    padding: 12px;
+    background: #e3f2fd;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
+}
+
+.search-info p {
+    margin: 0;
+    font-weight: 600;
+    color: #0056b3;
 }
 
 /* --- 검색 테이블 --- */
@@ -498,18 +531,37 @@
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 20px;
+    border: 1px solid #e9ecef;
 }
 
 .search-table th,
 .search-table td {
     padding: 12px;
     text-align: left;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #e9ecef;
 }
 
 .search-table th {
     background: #f8f9fa;
     font-weight: 600;
+    font-size: 13px;
+    color: #333;
+}
+
+.search-table td {
+    font-size: 13px;
+}
+
+.search-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.search-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.search-table td strong {
+    color: #007bff;
 }
 
 .select-btn {
@@ -520,16 +572,64 @@
     border-radius: 4px;
     cursor: pointer;
     font-size: 12px;
+    transition: background-color 0.2s;
 }
 
 .select-btn:hover {
     background: #0056b3;
 }
 
+/* 페이지네이션 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.page-btn {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #007bff;
+}
+
+.page-btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 로딩 및 빈 결과 */
 .loading, .no-results {
     text-align: center;
     padding: 40px;
     color: #666;
+    font-style: italic;
+}
+
+.loading::before {
+    content: "🔄 ";
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 
@@ -565,42 +665,432 @@
 
 /* --- 파일 업로드 섹션 --- */
 .file-upload-section {
-    margin-top: 15px;
-    margin-bottom: 20px;
+    margin-top: 10px;
+    margin-bottom: 15px;
+    padding: 0 15px;
 }
 
 .file-drop-zone {
-    border: 2px dashed #ccc;
-    border-radius: 8px;
-    padding: 20px;
+    border: 1px dashed #ccc;
+    border-radius: 4px;
+    padding: 8px 12px;
+    min-height: 40px;
     text-align: center;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
+    background: #fafafa;
+}
+
+.file-drop-zone:hover {
+    border-color: #999;
+    background: #f5f5f5;
 }
 
 .file-drop-zone.drag-over {
-    background-color: #e9ecef;
-    border-color: #007bff;
+    background: #f0f0f0;
+    border-color: #666;
+    border-style: solid;
 }
 
 .drop-zone-message {
-    /* ... 메시지 스타일 ... */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.drop-zone-icon {
+    font-size: 16px;
+}
+
+.drop-zone-text p {
+    margin: 0;
+    font-size: 12px;
+    color: #666;
+}
+
+.drop-zone-hint {
+    font-size: 10px !important;
+    color: #999 !important;
+    display: none;
 }
 
 .file-list {
-    /* ... 파일 목록 스타일 ... */
+    text-align: left;
 }
 
 .file-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px;
-    border-bottom: 1px solid #eee;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #e0e0e0;
 }
-/* ... 이하 file-info, file-name, file-remove-btn 등 상세 스타일 ... */
 
+.file-item:last-child {
+    margin-bottom: 0;
+}
 
+.file-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.file-name {
+    font-size: 13px;
+    color: #37474f;
+}
+
+.file-details {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.file-category-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    background: #e3f2fd;
+    color: #1565c0;
+    border-radius: 3px;
+}
+
+.file-size {
+    font-size: 11px;
+    color: #90a4ae;
+}
+
+.file-remove-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.file-remove-btn:hover {
+    opacity: 1;
+}
+
+.drop-zone-add-more {
+    padding: 8px;
+    text-align: center;
+    color: #1976d2;
+    font-size: 12px;
+    cursor: pointer;
+    border-top: 1px dashed #e0e0e0;
+    margin-top: 8px;
+}
+
+.drop-zone-add-more:hover {
+    background: #e3f2fd;
+    border-radius: 4px;
+}
+
+.upload-actions {
+    margin-top: 10px;
+    text-align: right;
+}
+
+/* --- PDFFileSearch 스타일 적용 (FormPage.css 기반) --- */
+
+/* 페이지 헤더 - 그라데이션 배경 */
+.file-management-system-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.file-management-system-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+    font-weight: 600;
+    color: white !important;
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+    -webkit-text-fill-color: initial;
+}
+
+.file-management-system-logo {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    opacity: 0.9;
+}
+
+/* 메인 컨텐츠 */
+.file-management-system-main {
+    background: transparent;
+    padding: 0;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    box-shadow: none;
+}
+
+/* 폼 섹션 스타일 */
+.file-management-system-section {
+    padding: 2rem;
+    border-bottom: 1px solid #e9ecef;
+    margin-bottom: 1.5rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.file-management-system-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+/* 섹션 헤더 개선 */
+.section-header {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 0.5rem;
+    background: transparent;
+}
+
+/* 프로젝트 실행 섹션 */
+.project-execution-section {
+    margin-bottom: 0;
+    padding: 1.5rem 2rem;
+    background: white;
+    border-radius: 8px 8px 0 0;
+}
+
+.project-execution-section .section-header {
+    margin-bottom: 0.5rem;
+    border-bottom: 2px solid #27ae60;
+}
+
+/* 버튼 스타일 개선 - PDFFileSearch 스타일 */
+.btn-primary {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    min-width: 120px;
+}
+
+.btn-primary:hover {
+    background: #2980b9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+.btn-primary:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-secondary {
+    background: #95a5a6;
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    min-width: 120px;
+}
+
+.btn-secondary:hover {
+    background: #7f8c8d;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(149, 165, 166, 0.3);
+}
+
+.btn-sm {
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+    min-width: auto;
+}
+
+.btn-danger {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-danger:hover {
+    background: #c0392b;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+}
+
+/* 폼 액션 버튼 영역 - PDFFileSearch 스타일 */
+.button-section {
+    padding: 2rem;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    border-top: 1px solid #e9ecef;
+    border-radius: 0 0 8px 8px;
+}
+
+.submit-btn {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 120px;
+}
+
+.submit-btn:hover {
+    background: #219a52;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
+}
+
+.submit-btn:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* 테이블 스타일 개선 */
+.file-list-table-wrapper {
+    overflow-x: auto;
+    padding: 15px;
+}
+
+.file-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.file-list-table th {
+    background: #f5f7fa;
+    padding: 12px 10px;
+    text-align: left;
+    font-weight: 600;
+    color: #37474f;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.file-list-table td {
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #546e7a;
+}
+
+.file-list-table tr:hover td {
+    background: #fafafa;
+}
+
+.file-type-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    background: #e3f2fd;
+    color: #1565c0;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.btn-preview {
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.btn-preview:hover {
+    background: #e3f2fd;
+    border-color: #90caf9;
+}
+
+.btn-download {
+    display: inline-block;
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.btn-download:hover {
+    background: #e8f5e9;
+    border-color: #a5d6a7;
+}
+
+.btn-close-preview {
+    background: #ffebee;
+    border: 1px solid #ffcdd2;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #c62828;
+    transition: all 0.2s;
+}
+
+.btn-close-preview:hover {
+    background: #ffcdd2;
+}
+
+/* 로딩 상태 */
+.loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #1976d2;
+}
+
+/* 빈 상태 메시지 */
+.empty-state {
+    text-align: center;
+    padding: 30px 20px;
+    color: #90a4ae;
+}
+
+.empty-state-icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+}
 
 
 
