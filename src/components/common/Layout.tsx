@@ -240,11 +240,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     };
 
     const isSubMenuActive = (subPath: string) => {
-        return location.pathname === subPath;
+        return location.pathname === subPath || location.pathname.startsWith(`${subPath}/`);
     };
 
     const hasActiveSubMenu = (item: NavMenuItem) => {
-        return item.subMenus?.some(subMenu => location.pathname === subMenu.path) ?? false;
+        return item.subMenus?.some(subMenu => isSubMenuActive(subMenu.path)) ?? false;
     };
 
     const handleLogout = async () => {

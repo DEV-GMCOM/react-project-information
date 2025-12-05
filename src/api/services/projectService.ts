@@ -30,6 +30,16 @@ export class ProjectService {
         return response.data;
     }
 
+    async updateProjectCalendarBundle(bundleId: number, data: ProjectCalendarBundleCreateRequest): Promise<any> {
+        const response = await apiClient.put(`/project-calendar/bundles/${bundleId}`, data);
+        return response.data;
+    }
+
+    async deleteProjectCalendarBundle(bundleId: number): Promise<any> {
+        const response = await apiClient.delete(`/project-calendar/bundles/${bundleId}`);
+        return response.data;
+    }
+
     async getProject(id: number): Promise<Project> {
         const response = await apiClient.get(`/projects/${id}`);
         return response.data;

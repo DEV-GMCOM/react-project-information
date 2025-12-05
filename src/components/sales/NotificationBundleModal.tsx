@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ko } from 'date-fns/locale';
 import { projectService } from '../../api/services/projectService';
-import { ProjectCalendarEntry, EmployeeSimple, ProjectCalendarBundleCreateRequest, Employee } from '../../api/types';
+import { ProjectCalendarEntry, EmployeeSimple, ProjectCalendarBundleCreateRequest, Employee, ProjectCalendarBundle } from '../../api/types';
 import EmployeeSearchModal from '../meeting/EmployeeSearchModal';
 import DatePicker from 'react-datepicker';
 import Holidays from 'date-holidays';
@@ -15,13 +15,17 @@ interface NotificationBundleModalProps {
     onRequestClose: () => void;
     selectedEntries: ProjectCalendarEntry[];
     onSuccess: () => void;
+    existingBundleId?: number;
+    existingBundleGroup?: ProjectCalendarBundle[];
 }
 
 const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
     isOpen,
     onRequestClose,
     selectedEntries,
-    onSuccess
+    onSuccess,
+    existingBundleId,
+    existingBundleGroup
 }) => {
     const [nickname, setNickname] = useState('');
     const [priority, setPriority] = useState<'HIGH' | 'MID' | 'LOW'>('MID');
@@ -51,40 +55,62 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
     };
 
     useEffect(() => {
-        if (isOpen && selectedEntries.length > 0) {
-            // Create a signature based on event IDs to detect actual changes
-            const currentSignature = selectedEntries.map(e => e.event_id).sort().join(',');
-            
-            // Only reset form if the entries have actually changed
-            if (prevEntriesSignatureRef.current !== currentSignature) {
-                prevEntriesSignatureRef.current = currentSignature;
+        if (isOpen) {
+            if (existingBundleId && existingBundleGroup && existingBundleGroup.length > 0) {
+                // Edit Mode
+                const bundle = existingBundleGroup[0];
+                setNickname(bundle.bundle_nickname || '');
+                setPriority(bundle.priority as any);
+                setAlarmStartAt(bundle.alarm_start_at ? new Date(bundle.alarm_start_at) : null);
+                setAlarmIntervalDays(bundle.alarm_interval_days || '');
+                setAlarmRepeatCount(bundle.alarm_repeat_count || '');
                 
-                // Reset form
-                const firstEntry = selectedEntries[0];
-                            if (selectedEntries.length === 1) {
-                                setNickname(`${firstEntry.event_name} 알림`);
-                            } else {
-                                setNickname(`${firstEntry.event_name} 외 ${selectedEntries.length - 1}건 알림`);
-                            }
+                const channels = new Set<'EMAIL' | 'SMS' | 'JANDI'>();
+                bundle.channels.forEach(c => channels.add(c.channel));
+                setSelectedChannels(channels);
+
+                const recips: EmployeeSimple[] = bundle.recipients.map(r => ({
+                    emp_id: r.emp_id,
+                    name: r.employee_name || ''
+                }));
+                setRecipients(recips);
+            } else if (selectedEntries.length > 0) {
+                // Create Mode
+                // Create a signature based on event IDs to detect actual changes
+                const currentSignature = selectedEntries.map(e => e.event_id).sort().join(',');
                 
-                            setPriority('MID');
-                            let initialAlarmStartAt: Date;                if (firstEntry.ot_date) {
-                    initialAlarmStartAt = new Date(firstEntry.ot_date);
-                } else {
-                    initialAlarmStartAt = new Date(); // Use current date if ot_date is not available
+                // Only reset form if the entries have actually changed
+                if (prevEntriesSignatureRef.current !== currentSignature) {
+                    prevEntriesSignatureRef.current = currentSignature;
+                    
+                    // Reset form
+                    const firstEntry = selectedEntries[0];
+                    if (selectedEntries.length === 1) {
+                        setNickname(`${firstEntry.event_name} 알림`);
+                    } else {
+                        setNickname(`${firstEntry.event_name} 외 ${selectedEntries.length - 1}건 알림`);
+                    }
+        
+                    setPriority('MID');
+                    let initialAlarmStartAt: Date;
+                    if (firstEntry.ot_date) {
+                        initialAlarmStartAt = new Date(firstEntry.ot_date);
+                    } else {
+                        initialAlarmStartAt = new Date(); // Use current date if ot_date is not available
+                    }
+                    initialAlarmStartAt.setHours(8, 0, 0, 0); // Set default time to 08:00
+                    setAlarmStartAt(initialAlarmStartAt);
+                    setAlarmIntervalDays(1); // Default to 1
+                    setAlarmRepeatCount(1);   // Default to 1
+                    setSelectedChannels(new Set(['EMAIL']));
+                    setRecipients([]);
                 }
-                initialAlarmStartAt.setHours(8, 0, 0, 0); // Set default time to 08:00
-                setAlarmStartAt(initialAlarmStartAt);
-                setAlarmIntervalDays(1); // Default to 1
-                setAlarmRepeatCount(1);   // Default to 1
-                setSelectedChannels(new Set(['EMAIL']));
-                setRecipients([]);
             }
         } else if (!isOpen) {
              // Reset signature when modal closes so it re-initializes next time
              prevEntriesSignatureRef.current = '';
         }
-    }, [isOpen, selectedEntries]);
+    }, [isOpen, selectedEntries, existingBundleId, existingBundleGroup]);
 
     const highlightDates = useMemo(() => {
         if (!alarmStartAt) return [];
@@ -116,7 +142,16 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (selectedEntries.length === 0) return;
+        // In edit mode, we rely on existingBundleGroup for IDs if selectedEntries is empty/irrelevant?
+        // But usually selectedEntries should reflect what's being edited if possible.
+        // However, the modal logic uses selectedEntries for creating Request.
+        
+        // If editing, we use existingBundleId
+        const targetEventIds = existingBundleId && existingBundleGroup 
+            ? existingBundleGroup.map(b => b.project_calendar_event_id)
+            : selectedEntries.map(e => e.event_id);
+
+        if (targetEventIds.length === 0) return;
 
         const missingFields = [];
         if (!alarmStartAt) missingFields.push('알림 시작일시');
@@ -131,7 +166,7 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
         setSubmitting(true);
         try {
             const requestData: ProjectCalendarBundleCreateRequest = {
-                project_calendar_event_ids: selectedEntries.map(e => e.event_id),
+                project_calendar_event_ids: targetEventIds,
                 bundle_nickname: nickname,
                 priority,
                 alarm_start_at: alarmStartAt ? alarmStartAt.toISOString() : undefined,
@@ -141,12 +176,18 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
                 recipient_emp_ids: recipients.map(r => r.emp_id)
             };
 
-            await projectService.createProjectCalendarBundle(requestData);
-            alert('알림 설정이 저장되었습니다.');
+            if (existingBundleId) {
+                await projectService.updateProjectCalendarBundle(existingBundleId, requestData);
+                alert('알림 설정이 수정되었습니다.');
+            } else {
+                await projectService.createProjectCalendarBundle(requestData);
+                alert('알림 설정이 저장되었습니다.');
+            }
+            
             onSuccess();
             onRequestClose();
         } catch (error) {
-            console.error('Failed to create bundle:', error);
+            console.error('Failed to save bundle:', error);
             alert('알림 설정 저장에 실패했습니다.');
         } finally {
             setSubmitting(false);
@@ -159,11 +200,14 @@ const NotificationBundleModal: React.FC<NotificationBundleModalProps> = ({
         <div className="modal-overlay notification-bundle-modal">
             <div className="modal-content" style={{ width: '600px', maxWidth: '95%' }}>
                 <div className="modal-header">
-                    <h2>알림 설정 등록</h2>
+                    <h2>{existingBundleId ? '알림 설정 수정' : '알림 설정 등록'}</h2>
                     <button onClick={onRequestClose} className="modal-close-button">&times;</button>
                 </div>
                 <div className="modal-body">
-                    {selectedEntries.length > 0 && (
+                    {/* Only show selected entries list in Create Mode or if we manually populate it in Edit Mode. 
+                        For now, hide in Edit Mode to simplify, or show if selectedEntries is populated.
+                    */}
+                    {!existingBundleId && selectedEntries.length > 0 && (
                         <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
                             <div style={{ marginBottom: '10px', color: '#495057', fontWeight: 'bold' }}>
                                 선택된 프로젝트 ({selectedEntries.length}건)

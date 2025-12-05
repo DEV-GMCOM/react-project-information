@@ -14,9 +14,7 @@ const SalesSchedule: React.FC = () => {
                     to="/sales/schedule"
                     className={({ isActive }) => "tab-button" + (isActive ? " active" : "")}
                     end // Important: this ensures the base path is only active when no other sub-route is
-                >
-                    현황확인
-                </NavLink>
+                >프로젝트 현황</NavLink>
                 <NavLink
                     to="/sales/schedule/notifications"
                     className={({ isActive }) => "tab-button" + (isActive ? " active" : "")}
