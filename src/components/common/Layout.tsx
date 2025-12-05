@@ -104,6 +104,7 @@ export const devMenuItems: NavMenuItem[] = [
         ]
     },
     { path: '/working/scheduling', name: '스케쥴링', icon: '📅', permission: 'page:working_scheduling' },
+    { path: '/working/pdf-file-search', name: 'PDF 파일서치', icon: '📄' },
 ];
 
 const adminMenuItems: NavMenuItem[] = []; // 현재 사용 안 함

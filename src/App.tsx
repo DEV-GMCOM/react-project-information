@@ -61,6 +61,7 @@ import LLMPaymentsVacation from "./pages/working/LLMPaymentsVacation.tsx";
 import LLMPaymentsExpense from "./pages/working/LLMPaymentsExpense.tsx";
 import LLMPaymentsProject from "./pages/working/LLMPaymentsProject.tsx";
 import LLMPaymentsOvertime from "./pages/working/LLMPaymentsOvertime.tsx";
+import PDFFileSearch from "./pages/working/PDFFileSearch.tsx";
 
 
 import './styles/App.css';
@@ -144,6 +145,7 @@ function App() {
                 <Route path="/working/llm-payments/expense" element={<ProtectedRoute><Layout><LLMPaymentsExpense /></Layout></ProtectedRoute>} />
                 <Route path="/working/llm-payments/project" element={<ProtectedRoute><Layout><LLMPaymentsProject /></Layout></ProtectedRoute>} />
                 <Route path="/working/llm-payments/overtime" element={<ProtectedRoute><Layout><LLMPaymentsOvertime /></Layout></ProtectedRoute>} />
+                <Route path="/working/pdf-file-search" element={<ProtectedRoute><Layout><PDFFileSearch /></Layout></ProtectedRoute>} />
 
                 {/* Admin & Permissions */}
                 <Route path="/admin/permission/policy" element={<ProtectedRoute><Layout><PolicyManagement /></Layout></ProtectedRoute>} />
